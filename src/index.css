@@ -2,120 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Conforma PRO Design System — Navy & Green (from logo)
+   Navy ≈ hsl(211 94% 13%)  |  Green ≈ hsl(100 100% 32%)
 */
 
 @layer base {
   :root {
+    /* Core */
     --background: 210 20% 98%;
-    --foreground: 210 95% 15%;
+    --foreground: 211 94% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 95% 15%;
+    --card-foreground: 211 94% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 95% 15%;
+    --popover-foreground: 211 94% 13%;
 
-    --primary: 210 95% 15%;
+    /* Brand */
+    --primary: 211 94% 13%;           /* Conforma navy */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 90%;
-    --secondary-foreground: 210 95% 15%;
-
-    --muted: 210 15% 94%;
-    --muted-foreground: 210 20% 40%;
-
-    --accent: 43 81% 47%;
+    --accent: 100 100% 32%;           /* Conforma green */
     --accent-foreground: 0 0% 100%;
 
+    /* UI neutrals (navy-tinted grays) */
+    --secondary: 210 20% 90%;
+    --secondary-foreground: 211 94% 13%;
+
+    --muted: 210 15% 94%;
+    --muted-foreground: 210 15% 40%;
+
+    /* Feedback */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 100 100% 32%;          /* reuse brand green */
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    /* Borders, inputs, rings */
     --border: 210 20% 88%;
     --input: 210 20% 92%;
-    --ring: 43 81% 47%;
+    --ring: 100 100% 32%;
 
+    /* Radius */
     --radius: 0.5rem;
 
-    --sidebar-background: 210 95% 15%;
+    /* Sidebar (dark navy) */
+    --sidebar-background: 211 94% 12%;
     --sidebar-foreground: 210 15% 85%;
-    --sidebar-primary: 43 81% 47%;
+    --sidebar-primary: 100 100% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 80% 20%;
+    --sidebar-accent: 211 80% 18%;
     --sidebar-accent-foreground: 210 15% 95%;
-    --sidebar-border: 210 80% 18%;
-    --sidebar-ring: 43 81% 47%;
+    --sidebar-border: 211 80% 18%;
+    --sidebar-ring: 100 100% 32%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(210 95% 15%), hsl(210 80% 25%));
-    --gradient-accent: linear-gradient(135deg, hsl(43 81% 47%), hsl(43 81% 60%));
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(211 94% 13%), hsl(211 70% 22%));
+    --gradient-accent: linear-gradient(135deg, hsl(100 100% 32%), hsl(100 90% 42%));
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 60%));
-    --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
-    
-    --shadow-soft: 0 2px 8px -2px hsl(210 95% 15% / 0.08);
-    --shadow-medium: 0 4px 16px -4px hsl(210 95% 15% / 0.12);
-    --shadow-strong: 0 8px 24px -6px hsl(210 95% 15% / 0.16);
-    --shadow-gold: 0 4px 16px -4px hsl(43 81% 47% / 0.15);
+    --gradient-success: linear-gradient(135deg, hsl(100 100% 32%), hsl(100 85% 40%));
+
+    /* Shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(211 94% 13% / 0.08);
+    --shadow-medium: 0 4px 16px -4px hsl(211 94% 13% / 0.12);
+    --shadow-strong: 0 8px 24px -6px hsl(211 94% 13% / 0.16);
+    --shadow-brand: 0 4px 16px -4px hsl(100 100% 32% / 0.15);
   }
 
   .dark {
-    --background: 215 30% 10%;
+    --background: 215 25% 10%;
     --foreground: 210 15% 92%;
 
-    --card: 215 25% 13%;
+    --card: 215 22% 12%;
     --card-foreground: 210 15% 92%;
 
-    --popover: 215 25% 13%;
+    --popover: 215 22% 12%;
     --popover-foreground: 210 15% 92%;
 
-    --primary: 215 95% 55%;
+    --primary: 211 94% 62%;           /* brighter navy for dark mode */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 20% 18%;
+    --secondary: 215 18% 18%;
     --secondary-foreground: 210 15% 92%;
 
-    --muted: 215 20% 16%;
-    --muted-foreground: 215 15% 65%;
+    --muted: 215 18% 16%;
+    --muted-foreground: 215 12% 65%;
 
-    --accent: 215 95% 60%;
+    --accent: 100 100% 40%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 80% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 145 60% 50%;
+    --success: 100 100% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 35 90% 60%;
+    --warning: 38 92% 56%;
     --warning-foreground: 0 0% 100%;
 
     --border: 215 20% 20%;
     --input: 215 20% 20%;
-    --ring: 215 95% 55%;
+    --ring: 100 100% 40%;
 
-    --sidebar-background: 215 30% 8%;
-    --sidebar-foreground: 210 15% 85%;
-    --sidebar-primary: 215 95% 55%;
+    --sidebar-background: 211 60% 9%;
+    --sidebar-foreground: 210 15% 88%;
+    --sidebar-primary: 100 100% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 15%;
-    --sidebar-accent-foreground: 210 15% 95%;
-    --sidebar-border: 215 25% 12%;
-    --sidebar-ring: 215 95% 60%;
+    --sidebar-accent: 211 35% 14%;
+    --sidebar-accent-foreground: 210 15% 96%;
+    --sidebar-border: 211 35% 14%;
+    --sidebar-ring: 100 100% 42%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
 }
