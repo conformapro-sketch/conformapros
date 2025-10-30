@@ -1,0 +1,6 @@
+// CM-AUDIT: UI - Existing routes include `src/pages/Clients.tsx`, `ClientDetail.tsx`, `ClientFormModal`, `ClientUserManagementSection`, `Sites.tsx`, `SiteDetail.tsx`, and drawers/modals for sites; no dedicated `/abonnement` or `/facture` screens yet.
+// CM-AUDIT: Data Model - Supabase `public.clients` lacks `tenant_id`, billing metadata (billing_mode, payment_terms, currency), and only stores contacts as JSON; `public.sites` misses tenant linkage, site-level matricule fiscale, billable flags, and billing configuration.
+// CM-AUDIT: API Layer - Frontend calls Supabase directly via `src/lib/multi-tenant-queries.ts` without tenant isolation, RBAC checks, or scoped filters; deletes cascade without guardrails.
+// CM-AUDIT: Billing Stack - No tables or types exist for plans, subscriptions, invoices, invoice_items, payments, or consolidated invoicing; invoice export/PDF actions are placeholders.
+// CM-AUDIT: RBAC - Current enum `public.app_role` = {admin_global, admin_client, gestionnaire_hse, chef_site, lecteur, med_*}; missing required roles (Super Admin, Billing Manager, Account Manager, Viewer) and policy helpers to enforce billing restrictions.
+// CM-AUDIT: Observability - `logAudit` helper targets `audit_logs` but schema/table and policies are absent; no structured audit trail today.
