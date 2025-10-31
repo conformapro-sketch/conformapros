@@ -1149,7 +1149,7 @@ export const fetchClientUsers = async (clientId: string) => {
         sites(nom_site)
       )
     `)
-    .eq("client_id", clientId)
+    .eq("tenant_id", clientId)  // Users belonging to this client/tenant (ConformaPro staff have tenant_id = NULL)
     .order("nom");
 
   if (error) throw error;
