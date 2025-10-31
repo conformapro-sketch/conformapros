@@ -152,9 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserRole(null);
         setUserRoles([]);
         setTenantId(null);
+        setLoading(false);
       }
-
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -218,7 +217,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const hasRole = (roleName: string): boolean => {
-    return allRoles.some(r => r.name === roleName);
+    if (loading) return false; // Prevent checks during loading
+    const result = allRoles.some(r => r.name === roleName);
+    console.log('[hasRole]', { roleName, allRoles: allRoles.map(r => r.name), result });
+    return result;
   };
 
   return (
