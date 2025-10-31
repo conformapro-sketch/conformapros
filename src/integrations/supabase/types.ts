@@ -3677,7 +3677,7 @@ export type Database = {
         | "REPORTEE"
         | "ANNULEE"
         | "NO_SHOW"
-      type_acte:`n        | "loi"`n        | "decret"`n        | "arrete"`n        | "circulaire"
+type_acte: "loi" | "decret" | "arrete" | "circulaire"
       type_document_medical:
         | "CONVOCATION"
         | "AVIS_APTITUDE"
@@ -3836,7 +3836,7 @@ export const Constants = {
         "chef_site",
         "lecteur",
         "med_practitioner",
-        "med_admin",\r
+        "med_admin",
       ],
       billing_mode: ["client", "site", "hybrid"],
       domaine_reglementaire: [
