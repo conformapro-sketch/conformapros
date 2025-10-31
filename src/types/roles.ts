@@ -46,7 +46,8 @@ export interface RoleAuditLog {
   created_at: string;
 }
 
-export const MODULES = [
+// Client-facing operational modules
+export const CLIENT_MODULES = [
   'bibliotheque',
   'veille',
   'evaluation',
@@ -62,14 +63,21 @@ export const MODULES = [
   'epi',
   'prestataires',
   'permis',
+  'rapports',
+] as const;
+
+// Admin/ConformaPro only modules
+export const ADMIN_MODULES = [
   'clients',
   'sites',
   'factures',
   'abonnements',
   'utilisateurs',
   'roles',
-  'rapports',
 ] as const;
+
+// All modules combined
+export const MODULES = [...CLIENT_MODULES, ...ADMIN_MODULES] as const;
 
 export const ACTIONS = [
   'view',

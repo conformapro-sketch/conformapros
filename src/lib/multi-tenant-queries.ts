@@ -1,5 +1,6 @@
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { Database } from "@/types/db";
+import type { PermissionScope } from "@/types/roles";
 
 type Json = Database["public"]["Tables"]["audit_logs"]["Insert"]["details"];
 
@@ -1852,4 +1853,66 @@ export const updateInvoiceStatus = async (
     { siteId: invoice.site_id ?? undefined, entity: "invoice", entityId: invoiceId },
   );
   return invoice;
+};
+
+// ==================== SITE-SPECIFIC PERMISSIONS ====================
+
+export const fetchUserSitesWithPermissions = async (userId: string) => {
+  const { data, error } = await supabase.rpc("get_user_sites_with_permissions", {
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return data || [];
+};
+
+export const fetchSitePermissions = async (userId: string, siteId: string) => {
+  const { data, error } = await supabase
+    .from("user_permissions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("site_id", siteId);
+  if (error) throw error;
+  return data || [];
+};
+
+export const saveSitePermissions = async (
+  userId: string,
+  siteId: string,
+  clientId: string,
+  permissions: Array<{ module: string; action: string; decision: 'allow' | 'deny'; scope: PermissionScope }>
+) => {
+  // Delete existing site-specific permissions
+  const { error: deleteError } = await supabase
+    .from("user_permissions")
+    .delete()
+    .eq("user_id", userId)
+    .eq("site_id", siteId);
+  
+  if (deleteError) throw deleteError;
+
+  // Insert new permissions (only explicit allow/deny, not inherit)
+  if (permissions.length > 0) {
+    const permissionsToInsert = permissions.map(p => ({
+      user_id: userId,
+      site_id: siteId,
+      module: p.module,
+      action: p.action,
+      decision: p.decision,
+      scope: p.scope,
+    }));
+
+    const { error: insertError } = await supabase
+      .from("user_permissions")
+      .insert(permissionsToInsert);
+    
+    if (insertError) throw insertError;
+  }
+
+  await logAudit(
+    await getCurrentUserId(),
+    clientId,
+    "user_site_permissions_updated",
+    { user_id: userId, site_id: siteId, permission_count: permissions.length },
+    { siteId, entity: "user_permissions", entityId: userId }
+  );
 };

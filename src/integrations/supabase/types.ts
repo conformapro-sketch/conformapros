@@ -2213,6 +2213,7 @@ export type Database = {
           id: string
           module: string
           scope: Database["public"]["Enums"]["permission_scope"]
+          site_id: string | null
           updated_at: string
           updated_by: string | null
           user_id: string
@@ -2226,6 +2227,7 @@ export type Database = {
           id?: string
           module: string
           scope?: Database["public"]["Enums"]["permission_scope"]
+          site_id?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id: string
@@ -2239,6 +2241,7 @@ export type Database = {
           id?: string
           module?: string
           scope?: Database["public"]["Enums"]["permission_scope"]
+          site_id?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string
@@ -2256,6 +2259,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
           {
@@ -2519,6 +2529,15 @@ export type Database = {
           roles: Json
           telephone: string
           updated_at: string
+        }[]
+      }
+      get_user_sites_with_permissions: {
+        Args: { p_user_id: string }
+        Returns: {
+          permission_count: number
+          site_active: boolean
+          site_id: string
+          site_name: string
         }[]
       }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }

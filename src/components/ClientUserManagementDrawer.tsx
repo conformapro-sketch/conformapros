@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -14,12 +14,15 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Briefcase, User as UserIcon, Upload } from "lucide-react";
+import { MapPin, Briefcase, User as UserIcon, Upload, ChevronRight } from "lucide-react";
 import { PermissionMatrix } from "@/components/roles/PermissionMatrix";
-import { MODULES, ACTIONS, type PermissionScope } from "@/types/roles";
+import { fetchUserSitesWithPermissions, fetchSitePermissions, saveSitePermissions } from "@/lib/multi-tenant-queries";
+import type { PermissionScope } from "@/types/roles";
 
 interface ClientUserManagementDrawerProps {
   open: boolean;
@@ -36,8 +39,6 @@ export function ClientUserManagementDrawer({
 }: ClientUserManagementDrawerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [permissions, setPermissions] = useState<any[]>([]);
-  const [scope, setScope] = useState<PermissionScope>("tenant");
   const [selectedDomaines, setSelectedDomaines] = useState<string[]>([]);
   const [profileData, setProfileData] = useState({
     nom: "",
@@ -47,23 +48,47 @@ export function ClientUserManagementDrawer({
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const [expandedSite, setExpandedSite] = useState<string | null>(null);
+  const [sitePermissions, setSitePermissions] = useState<Record<string, any[]>>({});
+  const [siteScopes, setSiteScopes] = useState<Record<string, PermissionScope>>({});
 
-  // Fetch user permissions
-  const { data: userPermissions, isLoading: loadingPermissions } = useQuery({
-    queryKey: ["user-permissions", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_permissions")
-        .select("*")
-        .eq("user_id", user.id);
-      if (error) throw error;
-      return data || [];
-    },
+  // Fetch user's sites with permission counts
+  const { data: userSites = [], isLoading: loadingSites } = useQuery({
+    queryKey: ["user-sites-permissions", user?.id],
+    queryFn: () => fetchUserSitesWithPermissions(user.id),
     enabled: !!user?.id && open,
   });
 
+  // Fetch permissions for expanded site
+  const { data: currentSitePerms, isLoading: loadingCurrentSitePerms } = useQuery({
+    queryKey: ["site-permissions", user?.id, expandedSite],
+    queryFn: () => fetchSitePermissions(user.id, expandedSite!),
+    enabled: !!user?.id && !!expandedSite && open,
+  });
+
+  // Update site permissions when fetched
+  useEffect(() => {
+    if (currentSitePerms && expandedSite) {
+      setSitePermissions(prev => ({
+        ...prev,
+        [expandedSite]: currentSitePerms.map(p => ({
+          module: p.module,
+          action: p.action,
+          decision: p.decision,
+        })),
+      }));
+      
+      if (currentSitePerms.length > 0) {
+        setSiteScopes(prev => ({
+          ...prev,
+          [expandedSite]: currentSitePerms[0].scope as PermissionScope,
+        }));
+      }
+    }
+  }, [currentSitePerms, expandedSite]);
+
   // Fetch user domain scopes
-  const { data: userDomains, isLoading: loadingDomains } = useQuery({
+  const { data: userDomains } = useQuery({
     queryKey: ["user-domains", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -92,10 +117,7 @@ export function ClientUserManagementDrawer({
   });
 
   // Initialize states when data loads
-  useState(() => {
-    if (userPermissions) {
-      setPermissions(userPermissions);
-    }
+  useEffect(() => {
     if (userDomains) {
       setSelectedDomaines(userDomains);
     }
@@ -108,43 +130,33 @@ export function ClientUserManagementDrawer({
       });
       setAvatarPreview(user.avatar_url || "");
     }
-  });
+  }, [userDomains, user]);
 
-  // Save permissions mutation
-  const savePermissionsMutation = useMutation({
-    mutationFn: async () => {
-      const permissionsToSave = permissions.filter(p => p.decision !== 'inherit');
+  // Save site permissions mutation
+  const saveSitePermissionsMutation = useMutation({
+    mutationFn: async ({ siteId }: { siteId: string }) => {
+      const perms = sitePermissions[siteId] || [];
+      const scope = siteScopes[siteId] || 'site';
+      const permissionsToSave = perms
+        .filter(p => p.decision !== 'inherit')
+        .map(p => ({
+          module: p.module,
+          action: p.action,
+          decision: p.decision,
+          scope: scope,
+        }));
       
-      // Delete existing permissions
-      await supabase
-        .from("user_permissions")
-        .delete()
-        .eq("user_id", user.id);
-
-      // Insert new permissions
-      if (permissionsToSave.length > 0) {
-        const { error } = await supabase
-          .from("user_permissions")
-          .insert(
-            permissionsToSave.map(p => ({
-              user_id: user.id,
-              module: p.module,
-              action: p.action,
-              decision: p.decision,
-              scope: scope,
-            }))
-          );
-        if (error) throw error;
-      }
+      await saveSitePermissions(user.id, siteId, clientId, permissionsToSave);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-permissions", user.id] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["user-sites-permissions", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["site-permissions", user.id, variables.siteId] });
       toast({
         title: "Permissions mises à jour",
-        description: "Les permissions de l'utilisateur ont été enregistrées.",
+        description: "Les permissions pour ce site ont été enregistrées.",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les permissions.",
@@ -169,7 +181,7 @@ export function ClientUserManagementDrawer({
         description: "Les domaines de veille réglementaire ont été enregistrés.",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les domaines.",
@@ -204,7 +216,7 @@ export function ClientUserManagementDrawer({
 
       // Update profile
       const { error } = await supabase
-        .from("profiles")
+        .from("client_users")
         .update({
           nom: profileData.nom,
           prenom: profileData.prenom,
@@ -224,7 +236,7 @@ export function ClientUserManagementDrawer({
         description: "Les informations du profil ont été enregistrées.",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder le profil.",
@@ -253,13 +265,27 @@ export function ClientUserManagementDrawer({
     );
   };
 
+  const updateSitePermissions = (siteId: string, perms: any[]) => {
+    setSitePermissions(prev => ({
+      ...prev,
+      [siteId]: perms,
+    }));
+  };
+
+  const updateSiteScope = (siteId: string, scope: PermissionScope) => {
+    setSiteScopes(prev => ({
+      ...prev,
+      [siteId]: scope,
+    }));
+  };
+
   if (!user) return null;
 
   const userInitials = `${user.prenom?.charAt(0) || ""}${user.nom?.charAt(0) || ""}`.toUpperCase() || "U";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-3xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Gestion de l'utilisateur</SheetTitle>
           <SheetDescription>
@@ -267,11 +293,11 @@ export function ClientUserManagementDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        <Tabs defaultValue="permissions" className="mt-6">
+        <Tabs defaultValue="sites" className="mt-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="permissions">
-              <Shield className="h-4 w-4 mr-2" />
-              Permissions
+            <TabsTrigger value="sites">
+              <MapPin className="h-4 w-4 mr-2" />
+              Sites & Permissions
             </TabsTrigger>
             <TabsTrigger value="domaines">
               <Briefcase className="h-4 w-4 mr-2" />
@@ -283,27 +309,84 @@ export function ClientUserManagementDrawer({
             </TabsTrigger>
           </TabsList>
 
-          {/* Permissions Tab */}
-          <TabsContent value="permissions" className="space-y-4">
+          {/* Sites & Permissions Tab */}
+          <TabsContent value="sites" className="space-y-4">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Configurez les permissions individuelles pour cet utilisateur.
+                Gérez les permissions de cet utilisateur pour chaque site auquel il a accès.
               </p>
-              <PermissionMatrix
-                permissions={permissions}
-                onPermissionsChange={setPermissions}
-                scope={scope}
-                onScopeChange={setScope}
-                roleType="client"
-              />
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => savePermissionsMutation.mutate()}
-                  disabled={savePermissionsMutation.isPending}
+
+              {loadingSites ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Chargement des sites...
+                </div>
+              ) : userSites.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6 text-center text-muted-foreground">
+                    Cet utilisateur n'a accès à aucun site pour le moment.
+                  </CardContent>
+                </Card>
+              ) : (
+                <Accordion
+                  type="single"
+                  collapsible
+                  value={expandedSite || undefined}
+                  onValueChange={setExpandedSite}
                 >
-                  {savePermissionsMutation.isPending ? "Enregistrement..." : "Enregistrer les permissions"}
-                </Button>
-              </div>
+                  {userSites.map((site: any) => (
+                    <AccordionItem key={site.site_id} value={site.site_id}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center justify-between w-full pr-4">
+                          <div className="flex items-center gap-3">
+                            <MapPin className="h-5 w-5 text-primary" />
+                            <div className="text-left">
+                              <div className="font-medium">{site.site_name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {site.permission_count || 0} permission(s) configurée(s)
+                              </div>
+                            </div>
+                          </div>
+                          {!site.site_active && (
+                            <span className="text-xs bg-muted px-2 py-1 rounded">Inactif</span>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="pt-4 space-y-4">
+                          {loadingCurrentSitePerms && expandedSite === site.site_id ? (
+                            <div className="text-center py-4 text-muted-foreground">
+                              Chargement des permissions...
+                            </div>
+                          ) : (
+                            <>
+                              <PermissionMatrix
+                                permissions={sitePermissions[site.site_id] || []}
+                                onPermissionsChange={(perms) => updateSitePermissions(site.site_id, perms)}
+                                scope={siteScopes[site.site_id] || 'site'}
+                                onScopeChange={(scope) => updateSiteScope(site.site_id, scope)}
+                                roleType="client"
+                                userType="client"
+                                siteId={site.site_id}
+                              />
+                              <div className="flex justify-end">
+                                <Button
+                                  onClick={() => saveSitePermissionsMutation.mutate({ siteId: site.site_id })}
+                                  disabled={saveSitePermissionsMutation.isPending}
+                                >
+                                  {saveSitePermissionsMutation.isPending 
+                                    ? "Enregistrement..." 
+                                    : "Enregistrer les permissions"
+                                  }
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              )}
             </div>
           </TabsContent>
 

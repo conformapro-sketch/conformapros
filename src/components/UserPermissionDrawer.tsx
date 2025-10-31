@@ -133,6 +133,7 @@ export function UserPermissionDrawer({
               onScopeChange={setScope}
               roleType="client"
               readOnly={false}
+              userType="client"
             />
           )}
         </div>

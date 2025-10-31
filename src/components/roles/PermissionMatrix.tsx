@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, ChevronDown, ChevronRight, Lock } from "lucide-react";
-import { MODULES, ACTIONS, MODULE_LABELS, ACTION_LABELS } from "@/types/roles";
+import { MODULES, CLIENT_MODULES, ADMIN_MODULES, ACTIONS, MODULE_LABELS, ACTION_LABELS } from "@/types/roles";
 import type { PermissionDecision, PermissionScope } from "@/types/roles";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +31,8 @@ interface PermissionMatrixProps {
   onScopeChange: (scope: PermissionScope) => void;
   roleType: 'team' | 'client';
   readOnly?: boolean;
+  userType?: 'team' | 'client'; // For filtering modules
+  siteId?: string; // For site-specific permissions
 }
 
 export function PermissionMatrix({
@@ -40,15 +42,25 @@ export function PermissionMatrix({
   onScopeChange,
   roleType,
   readOnly = false,
+  userType,
+  siteId,
 }: PermissionMatrixProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
 
+  // Filter modules based on user type
+  const availableModules = useMemo(() => {
+    if (userType === 'client') {
+      return CLIENT_MODULES as readonly string[];
+    }
+    return MODULES;
+  }, [userType]);
+
   const filteredModules = useMemo(() => {
-    return MODULES.filter(module =>
+    return availableModules.filter(module =>
       MODULE_LABELS[module].toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [searchTerm, availableModules]);
 
   const getPermission = (module: string, action: string): PermissionDecision => {
     const perm = permissions.find(p => p.module === module && p.action === action);
@@ -133,7 +145,7 @@ export function PermissionMatrix({
       case 'allow':
         return 'Autorisé';
       case 'deny':
-        return 'Interdit';
+        return 'Refusé';
       case 'inherit':
       default:
         return 'Hérité';
@@ -141,6 +153,12 @@ export function PermissionMatrix({
   };
 
   const cycleDecision = (current: PermissionDecision): PermissionDecision => {
+    // For client users, only cycle between allow and deny (skip inherit)
+    if (userType === 'client') {
+      return current === 'allow' ? 'deny' : 'allow';
+    }
+    
+    // For team users, include inherit
     switch (current) {
       case 'inherit':
         return 'allow';
@@ -314,7 +332,10 @@ export function PermissionMatrix({
       </Card>
 
       <p className="text-sm text-muted-foreground">
-        Cliquez sur une cellule pour alterner entre: Hérité → Autorisé → Interdit
+        {userType === 'client' 
+          ? "Cliquez sur une cellule pour alterner entre: Autorisé ↔ Refusé"
+          : "Cliquez sur une cellule pour alterner entre: Hérité → Autorisé → Refusé"
+        }
       </p>
     </div>
   );
