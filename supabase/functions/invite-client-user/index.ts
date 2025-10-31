@@ -203,6 +203,8 @@ Deno.serve(async (req) => {
 
     // Create access_scopes for specified sites
     if (siteIds && siteIds.length > 0) {
+      console.log('invite-client-user: Creating access scopes', { userId, siteIds, tenantId: finalTenantId })
+      
       const accessScopes = siteIds.map(siteId => ({
         user_id: userId,
         site_id: siteId,
@@ -211,18 +213,30 @@ Deno.serve(async (req) => {
         read_only: false
       }))
 
-      const { error: scopeError } = await supabaseAdmin
+      const { data: scopeData, error: scopeError } = await supabaseAdmin
         .from('access_scopes')
         .upsert(accessScopes, {
           onConflict: 'user_id,site_id'
         })
+        .select()
 
       if (scopeError) {
-        console.error('invite-client-user: Failed to create access scopes', scopeError)
-        // Don't throw, user is created
+        console.error('invite-client-user: FAILED to create access scopes', {
+          error: scopeError,
+          message: scopeError.message,
+          details: scopeError.details,
+          hint: scopeError.hint,
+          code: scopeError.code
+        })
+        throw new Error(`Failed to assign sites: ${scopeError.message}`)
       } else {
-        console.log('invite-client-user: Access scopes created', siteIds.length)
+        console.log('invite-client-user: Access scopes created successfully', {
+          count: scopeData?.length,
+          scopes: scopeData
+        })
       }
+    } else {
+      console.log('invite-client-user: No sites to assign')
     }
 
     // Log audit trail to role_audit_logs
