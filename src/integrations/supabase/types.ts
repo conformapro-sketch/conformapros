@@ -546,6 +546,7 @@ export type Database = {
           code: string
           couleur: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           icone: string | null
           id: string
@@ -556,6 +557,7 @@ export type Database = {
           code: string
           couleur?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           icone?: string | null
           id?: string
@@ -566,6 +568,7 @@ export type Database = {
           code?: string
           couleur?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           icone?: string | null
           id?: string
@@ -714,7 +717,9 @@ export type Database = {
           observations: string | null
           organisme_controleur: string | null
           prochain_controle: string | null
+          prochaine_echeance: string | null
           resultat: string | null
+          statut_conformite: string | null
           type_controle: string
           updated_at: string
         }
@@ -727,7 +732,9 @@ export type Database = {
           observations?: string | null
           organisme_controleur?: string | null
           prochain_controle?: string | null
+          prochaine_echeance?: string | null
           resultat?: string | null
+          statut_conformite?: string | null
           type_controle: string
           updated_at?: string
         }
@@ -740,7 +747,9 @@ export type Database = {
           observations?: string | null
           organisme_controleur?: string | null
           prochain_controle?: string | null
+          prochaine_echeance?: string | null
           resultat?: string | null
+          statut_conformite?: string | null
           type_controle?: string
           updated_at?: string
         }
@@ -1030,6 +1039,7 @@ export type Database = {
       }
       organismes_controle: {
         Row: {
+          actif: boolean | null
           adresse: string | null
           agrement: string | null
           created_at: string
@@ -1039,6 +1049,7 @@ export type Database = {
           telephone: string | null
         }
         Insert: {
+          actif?: boolean | null
           adresse?: string | null
           agrement?: string | null
           created_at?: string
@@ -1048,6 +1059,7 @@ export type Database = {
           telephone?: string | null
         }
         Update: {
+          actif?: boolean | null
           adresse?: string | null
           agrement?: string | null
           created_at?: string
@@ -1197,6 +1209,129 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      role_audit_logs: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_audit_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_permissions: {
+        Row: {
+          action: string
+          created_at: string
+          decision: Database["public"]["Enums"]["permission_decision"]
+          id: string
+          module: string
+          role_id: string
+          scope: Database["public"]["Enums"]["permission_scope"]
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          decision?: Database["public"]["Enums"]["permission_decision"]
+          id?: string
+          module: string
+          role_id: string
+          scope?: Database["public"]["Enums"]["permission_scope"]
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          decision?: Database["public"]["Enums"]["permission_decision"]
+          id?: string
+          module?: string
+          role_id?: string
+          scope?: Database["public"]["Enums"]["permission_scope"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          tenant_id: string | null
+          type: Database["public"]["Enums"]["role_type"]
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          tenant_id?: string | null
+          type: Database["public"]["Enums"]["role_type"]
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          tenant_id?: string | null
+          type?: Database["public"]["Enums"]["role_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_article_preuves: {
         Row: {
@@ -1393,24 +1528,30 @@ export type Database = {
       }
       sous_domaines_application: {
         Row: {
+          actif: boolean | null
           code: string
           created_at: string
+          deleted_at: string | null
           description: string | null
           domaine_id: string
           id: string
           libelle: string
         }
         Insert: {
+          actif?: boolean | null
           code: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domaine_id: string
           id?: string
           libelle: string
         }
         Update: {
+          actif?: boolean | null
           code?: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domaine_id?: string
           id?: string
@@ -1475,6 +1616,7 @@ export type Database = {
           numero_article: string
           ordre: number | null
           parent_article_id: string | null
+          reference: string | null
           texte_id: string
           titre: string | null
           titre_court: string | null
@@ -1489,6 +1631,7 @@ export type Database = {
           numero_article: string
           ordre?: number | null
           parent_article_id?: string | null
+          reference?: string | null
           texte_id: string
           titre?: string | null
           titre_court?: string | null
@@ -1503,6 +1646,7 @@ export type Database = {
           numero_article?: string
           ordre?: number | null
           parent_article_id?: string | null
+          reference?: string | null
           texte_id?: string
           titre?: string | null
           titre_court?: string | null
@@ -1582,6 +1726,7 @@ export type Database = {
       }
       types_equipement: {
         Row: {
+          actif: boolean | null
           created_at: string
           description: string | null
           id: string
@@ -1589,6 +1734,7 @@ export type Database = {
           periodicite_mois: number | null
         }
         Insert: {
+          actif?: boolean | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1596,6 +1742,7 @@ export type Database = {
           periodicite_mois?: number | null
         }
         Update: {
+          actif?: boolean | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1610,6 +1757,8 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          role_uuid: string | null
+          site_scope: string[] | null
           user_id: string
         }
         Insert: {
@@ -1617,6 +1766,8 @@ export type Database = {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          role_uuid?: string | null
+          site_scope?: string[] | null
           user_id: string
         }
         Update: {
@@ -1624,6 +1775,8 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          role_uuid?: string | null
+          site_scope?: string[] | null
           user_id?: string
         }
         Relationships: [
@@ -1632,6 +1785,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_role_uuid_fkey"
+            columns: ["role_uuid"]
+            isOneToOne: false
+            referencedRelation: "roles"
             referencedColumns: ["id"]
           },
         ]
@@ -1850,7 +2010,10 @@ export type Database = {
         | "configuration_batiment"
         | "dispense_reglementaire"
         | "autre"
+      permission_decision: "allow" | "deny" | "inherit"
+      permission_scope: "global" | "tenant" | "site"
       priorite: "haute" | "moyenne" | "basse"
+      role_type: "team" | "client"
       statut_action: "a_faire" | "en_cours" | "terminee" | "annulee"
       statut_visite: "programmee" | "effectuee" | "annulee" | "reportee"
       type_document_medical: "aptitude" | "inaptitude" | "restriction" | "autre"
@@ -2014,7 +2177,10 @@ export const Constants = {
         "dispense_reglementaire",
         "autre",
       ],
+      permission_decision: ["allow", "deny", "inherit"],
+      permission_scope: ["global", "tenant", "site"],
       priorite: ["haute", "moyenne", "basse"],
+      role_type: ["team", "client"],
       statut_action: ["a_faire", "en_cours", "terminee", "annulee"],
       statut_visite: ["programmee", "effectuee", "annulee", "reportee"],
       type_document_medical: ["aptitude", "inaptitude", "restriction", "autre"],

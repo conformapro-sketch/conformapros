@@ -39,6 +39,7 @@ import TexteDetail from "./pages/TexteDetail";
 import TexteForm from "./pages/TexteForm";
 import GestionUtilisateurs from "./pages/GestionUtilisateurs";
 import GestionRoles from "./pages/GestionRoles";
+import RoleManager from "./pages/RoleManager";
 import ClientUsers from "./pages/ClientUsers";
 import VisitesMedicales from "./pages/VisitesMedicales";
 import ComingSoon from "./pages/ComingSoon";
