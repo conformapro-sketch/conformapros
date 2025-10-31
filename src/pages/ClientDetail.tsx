@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,14 +13,20 @@ import {
   FileText,
   MapPin,
   Users,
+  Plus,
+  Pencil,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchClientById, fetchSitesByClient } from "@/lib/multi-tenant-queries";
 import { ClientUserManagementSection } from "@/components/ClientUserManagementSection";
+import { ClientFormModal } from "@/components/ClientFormModal";
+import { SiteFormModal } from "@/components/SiteFormModal";
 
 export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddSiteModal, setShowAddSiteModal] = useState(false);
 
   const {
     data: client,
@@ -123,8 +129,8 @@ export default function ClientDetail() {
             </div>
           </div>
 
-  <Button className="w-full sm:w-auto">
-            <Edit className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => setShowEditModal(true)}>
+            <Pencil className="mr-2 h-4 w-4" />
             Modifier
           </Button>
         </div>
@@ -215,8 +221,8 @@ export default function ClientDetail() {
             <p className="text-sm text-muted-foreground">
               {sites.length} site{sites.length > 1 ? "s" : ""} enregistré{sites.length > 1 ? "s" : ""}
             </p>
-            <Button size="sm">
-              <Factory className="mr-2 h-4 w-4" />
+            <Button size="sm" onClick={() => setShowAddSiteModal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
               Ajouter un site
             </Button>
           </div>
@@ -279,6 +285,19 @@ export default function ClientDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <ClientFormModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        client={client}
+      />
+
+      <SiteFormModal
+        open={showAddSiteModal}
+        onOpenChange={setShowAddSiteModal}
+        clientId={client.id}
+      />
     </div>
   );
 }
