@@ -26,8 +26,7 @@ export default function BibliothequeTableauDeBord() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('actes_reglementaires')
-        .select('*, actes_reglementaires_domaines(domaine_id)')
-        .is('deleted_at', null);
+        .select('*, actes_reglementaires_domaines(domaine_id)');
       if (error) throw error;
       return data || [];
     },
@@ -50,10 +49,9 @@ export default function BibliothequeTableauDeBord() {
     queryKey: ['domaines_filter'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('domaines_application')
+        .from('domaines_reglementaires')
         .select('*')
-        .eq('actif', true)
-        .is('deleted_at', null);
+        .eq('actif', true);
       if (error) throw error;
       return data || [];
     },
@@ -63,7 +61,7 @@ export default function BibliothequeTableauDeBord() {
   const filteredTextes = useMemo(() => {
     return textes.filter(texte => {
       const yearMatch = yearFilter === "all" || texte.annee?.toString() === yearFilter;
-      const autoriteMatch = autoriteFilter === "all" || texte.autorite === autoriteFilter;
+      const autoriteMatch = autoriteFilter === "all" || texte.autorite_emettrice === autoriteFilter;
       const domaineMatch = domaineFilter === "all" || 
         (texte.actes_reglementaires_domaines || []).some((d: any) => d.domaine_id === domaineFilter);
       return yearMatch && autoriteMatch && domaineMatch;
@@ -77,7 +75,7 @@ export default function BibliothequeTableauDeBord() {
   );
   
   const uniqueAutorites = useMemo(() => 
-    Array.from(new Set(textes.map(t => t.autorite).filter(Boolean))).sort(),
+    Array.from(new Set(textes.map(t => t.autorite_emettrice).filter(Boolean))).sort(),
     [textes]
   );
 
