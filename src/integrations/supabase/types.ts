@@ -1624,6 +1624,7 @@ export type Database = {
           superficie: number | null
           surface: number | null
           telephone: string | null
+          tenant_id: string | null
           updated_at: string
           ville: string | null
         }
@@ -1658,6 +1659,7 @@ export type Database = {
           superficie?: number | null
           surface?: number | null
           telephone?: string | null
+          tenant_id?: string | null
           updated_at?: string
           ville?: string | null
         }
@@ -1692,6 +1694,7 @@ export type Database = {
           superficie?: number | null
           surface?: number | null
           telephone?: string | null
+          tenant_id?: string | null
           updated_at?: string
           ville?: string | null
         }

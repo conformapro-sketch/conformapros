@@ -70,7 +70,7 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
     }
   };
 
-  const defaultCenter: [number, number] = [34.0, 9.0]; // Tunisia center
+  const defaultCenter: [number, number] = [36.8, 10.2]; // Tunisia center
   const defaultZoom = 7;
 
   return (

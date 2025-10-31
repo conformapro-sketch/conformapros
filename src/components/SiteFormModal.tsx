@@ -122,14 +122,21 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: roles } = await supabase
+      const { data: userRoles } = await supabase
         .from("user_roles")
-        .select("role")
+        .select(`
+          role_uuid,
+          roles!inner(name, type)
+        `)
         .eq("user_id", user.id);
 
-      const hasAdminRole = roles?.some((r) =>
-        ["super_admin", "admin", "gestionnaire"].includes(r.role as any)
-      );
+      const hasAdminRole = userRoles?.some((ur: any) => {
+        const roleName = ur.roles?.name;
+        if (!roleName) return false;
+        const normalized = roleName.toLowerCase().replace(/\s+/g, '_');
+        return ['super_admin', 'admin_global', 'admin_client', 'gestionnaire'].includes(normalized);
+      });
+      
       setIsAdmin(hasAdminRole || false);
     };
     checkRole();

@@ -226,11 +226,19 @@ export const fetchSiteById = async (siteId: string) => {
 };
 
 export const createSite = async (site: SiteInsert) => {
+  // Fetch client's tenant_id for multi-tenant isolation
+  const { data: client } = await supabase
+    .from("clients")
+    .select("tenant_id")
+    .eq("id", site.client_id)
+    .single();
+
   const payload: SiteInsert = {
     ...site,
     nom: site.nom_site ?? site.nom ?? "",
     nom_site: site.nom_site ?? site.nom ?? "",
     is_active: site.is_active ?? true,
+    tenant_id: client?.tenant_id ?? null,
   };
 
   const { data, error } = await supabase
