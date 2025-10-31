@@ -153,10 +153,9 @@ export default function ClientUsers() {
       `${user.nom} ${user.prenom}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // user_roles comes from Supabase as array of objects with role property
-    const userRoleObj = user.user_roles?.[0] as any;
-    const userRoleValue = typeof userRoleObj === 'object' ? userRoleObj?.role : userRoleObj;
-    const matchesRole = roleFilter === "all" || userRoleValue === roleFilter;
+    const matchesRole = roleFilter === "all" || 
+      (roleFilter === "admin_client" && user.is_client_admin);
+    
     const matchesStatus = statusFilter === "all" || 
       (statusFilter === "actif" && user.actif) ||
       (statusFilter === "inactif" && !user.actif);
@@ -175,28 +174,6 @@ export default function ClientUsers() {
 
   const handleResendInvite = (email: string) => {
     resendInviteMutation.mutate(email);
-  };
-
-  const roleLabels: Record<string, string> = {
-    admin_client: "Admin client",
-    gestionnaire_hse: "Gestionnaire HSE",
-    chef_site: "Chef de site",
-    lecteur: "Lecteur",
-    admin_global: "Admin global",
-  };
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case "admin_global":
-      case "admin_client":
-        return "default";
-      case "gestionnaire_hse":
-        return "secondary";
-      case "chef_site":
-        return "outline";
-      default:
-        return "outline";
-    }
   };
 
   if (!currentClientId) {
@@ -254,14 +231,11 @@ export default function ClientUsers() {
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Tous les rôles" />
+                  <SelectValue placeholder="Tous les utilisateurs" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50">
-                  <SelectItem value="all">Tous les rôles</SelectItem>
-                  <SelectItem value="admin_client">Admin client</SelectItem>
-                  <SelectItem value="gestionnaire_hse">Gestionnaire HSE</SelectItem>
-                  <SelectItem value="chef_site">Chef de site</SelectItem>
-                  <SelectItem value="lecteur">Lecteur</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="admin_client">Admins uniquement</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -334,24 +308,21 @@ export default function ClientUsers() {
                 <TableBody>
                   {filteredUsers.map((user) => {
                     const userSites = user.access_scopes || [];
-                    // user_roles comes from Supabase as array of objects with role property
-                    const userRoleObj = user.user_roles?.[0] as any;
-                    const role = typeof userRoleObj === 'object' ? userRoleObj?.role : userRoleObj;
 
                     return (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
-                          {user.nom} {user.prenom}
+                          <div className="flex items-center gap-2">
+                            {user.nom} {user.prenom}
+                            {user.is_client_admin && (
+                              <Badge variant="default" className="text-xs">
+                                <Shield className="h-3 w-3 mr-1" />
+                                Admin
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          {role && (
-                            <Badge variant={getRoleBadgeVariant(role)}>
-                              <Shield className="h-3 w-3 mr-1" />
-                              {roleLabels[role] || role}
-                            </Badge>
-                          )}
-                        </TableCell>
                         <TableCell>
                           <TooltipProvider>
                             <Tooltip>

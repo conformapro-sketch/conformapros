@@ -65,6 +65,47 @@ export type Database = {
           },
         ]
       }
+      access_scopes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          read_only: boolean
+          site_id: string
+          tenant_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          read_only?: boolean
+          site_id: string
+          tenant_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          read_only?: boolean
+          site_id?: string
+          tenant_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_scopes_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       actes_annexes: {
         Row: {
           acte_id: string

@@ -1189,25 +1189,22 @@ export const fetchAllClients = async () => {
 
 export const fetchClientUsers = async (clientId: string) => {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("client_users")
     .select(`
       *,
-      user_roles!left(
-        role_uuid,
-        roles(name, id, type)
-      ),
       access_scopes(
         site_id,
         read_only,
         sites(nom_site)
       )
     `)
-    .eq("tenant_id", clientId)  // Users belonging to this client/tenant (ConformaPro staff have tenant_id = NULL)
+    .eq("client_id", clientId)
     .order("nom");
 
   if (error) throw error;
   return data;
 };
+
 
 type ClientUserFilters = {
   search?: string;
@@ -1228,14 +1225,10 @@ export const fetchClientUsersPaginated = async (
   const to = from + pageSize - 1;
 
   let query = supabase
-    .from("profiles")
+    .from("client_users")
     .select(
       `
         *,
-        user_roles!left(
-          role_uuid,
-          roles(name, id, type)
-        ),
         access_scopes(
           site_id,
           read_only,
@@ -1881,6 +1874,8 @@ export const saveSitePermissions = async (
   clientId: string,
   permissions: Array<{ module: string; action: string; decision: 'allow' | 'deny'; scope: PermissionScope }>
 ) => {
+  const actorId = await getCurrentUserId();
+  
   // Delete existing site-specific permissions
   const { error: deleteError } = await supabase
     .from("user_permissions")
@@ -1894,11 +1889,13 @@ export const saveSitePermissions = async (
   if (permissions.length > 0) {
     const permissionsToInsert = permissions.map(p => ({
       user_id: userId,
+      client_id: clientId,
       site_id: siteId,
       module: p.module,
       action: p.action,
       decision: p.decision,
       scope: p.scope,
+      created_by: actorId,
     }));
 
     const { error: insertError } = await supabase
@@ -1909,7 +1906,7 @@ export const saveSitePermissions = async (
   }
 
   await logAudit(
-    await getCurrentUserId(),
+    actorId,
     clientId,
     "user_site_permissions_updated",
     { user_id: userId, site_id: siteId, permission_count: permissions.length },
