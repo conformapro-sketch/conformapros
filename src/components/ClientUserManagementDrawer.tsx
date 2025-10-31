@@ -294,6 +294,7 @@ export function ClientUserManagementDrawer({
                 onPermissionsChange={setPermissions}
                 scope={scope}
                 onScopeChange={setScope}
+                roleType="client"
               />
               <div className="flex justify-end">
                 <Button

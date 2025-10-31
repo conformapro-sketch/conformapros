@@ -12,10 +12,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, Shield, User as UserIcon, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 export function UserMenu() {
   const { user, userRole, signOut } = useAuth();
   const navigate = useNavigate();
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   if (!user) return null;
 
@@ -62,11 +65,21 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setPasswordDialogOpen(true)}>
+          <KeyRound className="mr-2 h-4 w-4" />
+          <span>Changer le mot de passe</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Déconnexion</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+
+      <ChangePasswordDialog
+        open={passwordDialogOpen}
+        onOpenChange={setPasswordDialogOpen}
+      />
     </DropdownMenu>
   );
 }

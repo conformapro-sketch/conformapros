@@ -53,9 +53,9 @@ export default function AllClientUsers() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [userFormOpen, setUserFormOpen] = useState(false);
-  const [permissionDrawerOpen, setPermissionDrawerOpen] = useState(false);
+  const [managementDrawerOpen, setManagementDrawerOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(undefined);
-  const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients"],
@@ -361,8 +361,8 @@ export default function AllClientUsers() {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setSelectedUserForPermissions(user);
-                                setPermissionDrawerOpen(true);
+                                setSelectedUser(user);
+                                setManagementDrawerOpen(true);
                               }}
                               title="Gérer les permissions"
                             >

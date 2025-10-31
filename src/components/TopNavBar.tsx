@@ -31,6 +31,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -89,6 +91,22 @@ export default function TopNavBar({
   const { user: authUser, userRole, primaryRole, signOut } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch current user's client info (for client users)
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile", authUser?.id],
+    queryFn: async () => {
+      if (!authUser?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("managed_client_id, clients!profiles_managed_client_id_fkey(logo_url, nom)")
+        .eq("id", authUser.id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!authUser?.id,
+  });
 
   useEffect(() => {
     applyMode(prefs.mode);
@@ -166,7 +184,13 @@ export default function TopNavBar({
               to="/"
               className="group flex items-center gap-2 rounded-md p-1 transition-colors hover:text-[#2FB200]"
             >
-
+              {userProfile?.clients?.logo_url ? (
+                <img 
+                  src={userProfile.clients.logo_url} 
+                  alt={userProfile.clients.nom || "Client logo"} 
+                  className="h-8 w-auto max-w-[120px] object-contain"
+                />
+              ) : null}
             </Link>
           </div>
 
