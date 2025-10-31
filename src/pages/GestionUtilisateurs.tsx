@@ -36,7 +36,7 @@ import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 export default function GestionUtilisateurs() {
   const queryClient = useQueryClient();
-  const { hasRole } = useAuth();
+  const { hasRole, loading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -49,6 +49,15 @@ export default function GestionUtilisateurs() {
     role_uuid: "",
     telephone: "",
   });
+
+  // Show loading spinner while auth is loading
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // Check if user has Super Admin role
   if (!hasRole('Super Admin')) {

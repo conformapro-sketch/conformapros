@@ -1,5 +1,6 @@
-﻿import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { slugifyRole } from "@/lib/utils";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,7 +24,18 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (allowedRoles && allowedRoles.length > 0) {
     const effectiveRoles = userRoles.length > 0 ? userRoles : (userRole ? [userRole] : []);
-    const hasAccess = effectiveRoles.some((role) => allowedRoles.includes(role));
+    
+    // Build a set with both raw role names and their slugified versions
+    const normalizedUserRoles = new Set<string>();
+    effectiveRoles.forEach(role => {
+      normalizedUserRoles.add(role); // Add raw role name
+      normalizedUserRoles.add(slugifyRole(role)); // Add slugified version
+    });
+    
+    // Check if any allowed role matches (either raw or slugified)
+    const hasAccess = allowedRoles.some(allowedRole => 
+      normalizedUserRoles.has(allowedRole) || normalizedUserRoles.has(slugifyRole(allowedRole))
+    );
 
     if (!hasAccess) {
       return (
