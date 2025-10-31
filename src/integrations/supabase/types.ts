@@ -1294,6 +1294,70 @@ export type Database = {
           },
         ]
       }
+      incident_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          incident_id: string
+          user_id: string | null
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          incident_id: string
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          incident_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_comments_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_config: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          settings_json: Json
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          settings_json?: Json
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          settings_json?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_config_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_history: {
         Row: {
           action: string
@@ -1373,6 +1437,107 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_question_templates: {
+        Row: {
+          actif: boolean | null
+          created_at: string
+          id: string
+          questions_json: Json
+          type_incident: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean | null
+          created_at?: string
+          id?: string
+          questions_json: Json
+          type_incident: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean | null
+          created_at?: string
+          id?: string
+          questions_json?: Json
+          type_incident?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      incident_recurrent_groups: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          site_id: string | null
+          type_incident: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          site_id?: string | null
+          type_incident?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          site_id?: string | null
+          type_incident?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_recurrent_groups_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_recurrent_mapping: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          incident_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          incident_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          incident_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_recurrent_mapping_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "incident_recurrent_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_recurrent_mapping_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
             referencedColumns: ["id"]
           },
         ]

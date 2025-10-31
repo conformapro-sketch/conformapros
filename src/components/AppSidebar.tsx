@@ -88,7 +88,18 @@ const menuItems: MenuItem[] = [
   },
   { title: "Dossier réglementaire", url: "/dossier", icon: BookOpen },
   { title: "Contrôles techniques", url: "/controles", icon: ClipboardCheck },
-  { title: "Incidents HSE", url: "/incidents", icon: AlertTriangle },
+  {
+    title: "Incidents HSE",
+    url: "/incidents",
+    icon: AlertTriangle,
+    subItems: [
+      { title: "Tableau de bord", url: "/incidents/dashboard" },
+      { title: "Liste des incidents", url: "/incidents" },
+      { title: "Analyse & Statistiques", url: "/incidents/analyse" },
+      { title: "Incidents récurrents", url: "/incidents/recurrents" },
+      { title: "Configuration", url: "/incidents/configuration" },
+    ],
+  },
   { title: "Audits & Inspections", url: "/audits", icon: Search },
   {
     title: "Formations",

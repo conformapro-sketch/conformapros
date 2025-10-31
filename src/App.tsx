@@ -37,6 +37,10 @@ import GestionArticles from "./pages/GestionArticles";
 import DossierReglementaire from "./pages/DossierReglementaire";
 import ControlesTechniques from "./pages/ControlesTechniques";
 import Incidents from "./pages/Incidents";
+import IncidentsDashboard from "./pages/IncidentsDashboard";
+import IncidentsAnalyse from "./pages/IncidentsAnalyse";
+import IncidentsRecurrents from "./pages/IncidentsRecurrents";
+import IncidentsConfiguration from "./pages/IncidentsConfiguration";
 import TextesReglementaires from "./pages/TextesReglementaires";
 import TexteDetail from "./pages/TexteDetail";
 import TexteForm from "./pages/TexteForm";
@@ -183,6 +187,10 @@ const App = () => (
                           <Route path="/dossier" element={<DossierReglementaire />} />
                           <Route path="/controles" element={<ControlesTechniques />} />
                           <Route path="/incidents" element={<Incidents />} />
+                          <Route path="/incidents/dashboard" element={<IncidentsDashboard />} />
+                          <Route path="/incidents/analyse" element={<IncidentsAnalyse />} />
+                          <Route path="/incidents/recurrents" element={<IncidentsRecurrents />} />
+                          <Route path="/incidents/configuration" element={<IncidentsConfiguration />} />
                           <Route path="/audits" element={<ComingSoon title="Audits & Inspections" description="Gestion des audits, inspections et checklists de conformité" />} />
               <Route path="/formations" element={<Formations />} />
               <Route path="/formations/dashboard" element={<FormationsDashboard />} />
