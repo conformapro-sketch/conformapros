@@ -69,7 +69,7 @@ export default function GestionUtilisateurs() {
           </h2>
           <p className="text-muted-foreground">
             Vous n'avez pas les permissions nécessaires pour accéder à cette page.
-            Seuls les Super Admins peuvent gérer les utilisateurs internes.
+            Seuls les Super Admins peuvent gérer les membres de l'équipe.
           </p>
         </div>
       </div>
@@ -87,7 +87,7 @@ export default function GestionUtilisateurs() {
   if (usersError) {
     const errorMessage = usersError instanceof Error ? usersError.message : 'Erreur lors du chargement';
     if (errorMessage.includes('Not authorized')) {
-      toast.error('Accès refusé: seuls les Super Admins peuvent voir les utilisateurs internes');
+      toast.error('Accès refusé: seuls les Super Admins peuvent voir les membres de l\'équipe');
     } else {
       toast.error(errorMessage);
     }
@@ -117,7 +117,7 @@ export default function GestionUtilisateurs() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Utilisateur créé avec succès');
+      toast.success('Membre ajouté avec succès');
       setOpen(false);
       setFormData({
         email: '',
@@ -130,7 +130,7 @@ export default function GestionUtilisateurs() {
     },
     onError: (error: any) => {
       console.error('Error creating user:', error);
-      toast.error(error?.message || 'Erreur lors de la création de l\'utilisateur');
+      toast.error(error?.message || 'Erreur lors de l\'ajout du membre');
     },
   });
 
@@ -199,7 +199,7 @@ export default function GestionUtilisateurs() {
           await updateRoleMutation.mutateAsync({ userId: editingUser.id, roleUuid: role_uuid });
         }
         
-        toast.success('Utilisateur modifié avec succès');
+        toast.success('Membre modifié avec succès');
         queryClient.invalidateQueries({ queryKey: ['users'] });
         setOpen(false);
         setEditingUser(null);
@@ -229,9 +229,9 @@ export default function GestionUtilisateurs() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Gestion des utilisateurs</h1>
+          <h1 className="text-3xl font-bold">Gestion de l'équipe</h1>
           <p className="text-muted-foreground mt-1">
-            Gérez les utilisateurs internes Conforma Pro
+            Gérez les membres de l'équipe Conforma Pro
           </p>
         </div>
         <Button onClick={() => {
@@ -247,7 +247,7 @@ export default function GestionUtilisateurs() {
           setOpen(true);
         }}>
           <UserPlus className="w-4 h-4 mr-2" />
-          Nouvel utilisateur
+          Nouveau membre
         </Button>
       </div>
 
@@ -257,7 +257,7 @@ export default function GestionUtilisateurs() {
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom ou email..."
+              placeholder="Rechercher un membre..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -292,7 +292,7 @@ export default function GestionUtilisateurs() {
                 ) : filteredUsers?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8">
-                      Aucun utilisateur trouvé
+                      Aucun membre trouvé
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -364,10 +364,10 @@ export default function GestionUtilisateurs() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingUser ? 'Modifier l\'utilisateur' : 'Créer un utilisateur'}
+              {editingUser ? 'Modifier le membre' : 'Ajouter un membre'}
             </DialogTitle>
             <DialogDescription>
-              Remplissez les informations de l'utilisateur interne
+              Remplissez les informations du membre de l'équipe
             </DialogDescription>
           </DialogHeader>
 
