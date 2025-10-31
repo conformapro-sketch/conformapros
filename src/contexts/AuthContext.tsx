@@ -49,12 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserRoles([]);
       } else {
         const roles = (roleData ?? [])
-          .map((entry) =>
-            typeof entry?.role === "string" ? entry.role : null,
-          )
-          .filter((role): role is string => !!role);
-        setUserRoles(roles);
-        setUserRole(roles[0] ?? null);
+          .map((entry) => entry.role as string)
+          .filter((r) => !!r);
+        setUserRoles(roles as string[]);
+        setUserRole((roles as string[])[0] ?? null);
       }
 
       if (profileError) {

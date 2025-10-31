@@ -124,8 +124,8 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
         .select("role")
         .eq("user_id", user.id);
 
-      const hasAdminRole = roles?.some(r => 
-        r.role === 'admin_global' || r.role === 'admin_client'
+      const hasAdminRole = roles?.some((r) =>
+        ["super_admin", "admin", "gestionnaire"].includes(r.role as any)
       );
       setIsAdmin(hasAdminRole || false);
     };
