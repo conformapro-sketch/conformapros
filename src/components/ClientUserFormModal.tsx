@@ -18,6 +18,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { inviteClientUser, fetchSitesByClient, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
 import { useToast } from "@/hooks/use-toast";
 import { Building2 } from "lucide-react";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 const userSchema = z.object({
   email: z.string().trim().email("Email invalide").min(1, "L'email est requis"),

@@ -57,7 +57,7 @@ export default function GestionRoles() {
   }>({ open: false, mode: 'create' });
 
   const [formData, setFormData] = useState({
-    nom: "",
+    name: "",
     description: "",
     permissions: {} as Record<string, string[]>,
   });
@@ -128,7 +128,7 @@ export default function GestionRoles() {
       const role = roles?.find(r => r.id === roleId);
       if (role) {
         setFormData({
-          nom: role.nom,
+          name: role.name,
           description: role.description || "",
           permissions: role.permissions as Record<string, string[]>,
         });
@@ -147,7 +147,7 @@ export default function GestionRoles() {
 
   const resetForm = () => {
     setFormData({
-      nom: "",
+      name: "",
       description: "",
       permissions: {},
     });
@@ -170,7 +170,8 @@ export default function GestionRoles() {
     });
   };
 
-  const countPermissions = (permissions: Record<string, string[]>) => {
+  const countPermissions = (permissions: Record<string, string[]> | null | undefined) => {
+    if (!permissions) return 0;
     return Object.values(permissions).reduce((acc, actions) => acc + actions.length, 0);
   };
 
@@ -222,7 +223,7 @@ export default function GestionRoles() {
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <Shield className="w-4 h-4 text-primary" />
-                          {role.nom}
+                          {role.name}
                         </div>
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
@@ -284,8 +285,8 @@ export default function GestionRoles() {
             <div>
               <Label>Nom du rôle</Label>
               <Input
-                value={formData.nom}
-                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ex: Responsable HSE"
               />
             </div>
