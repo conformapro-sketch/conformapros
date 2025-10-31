@@ -134,7 +134,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ["client-users", selectedClientId] });
       queryClient.invalidateQueries({ queryKey: ["client-users", clientId] });
-      queryClient.invalidateQueries({ queryKey: ["all-client-users"] });
+      queryClient.invalidateQueries({ queryKey: ["all-client-users"], exact: false });
       toast({
         title: "Succès",
         description: result.data?.message || "Utilisateur invité avec succès",

@@ -29,6 +29,8 @@ import { fetchAllClientUsers, fetchClients, resendInvite, toggleUtilisateurActif
 import { ClientUserFormModal } from "@/components/ClientUserFormModal";
 import { ClientUserManagementDrawer } from "@/components/ClientUserManagementDrawer";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -47,6 +49,8 @@ import {
 export default function AllClientUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isSuperAdmin, hasRole } = useAuth();
+  const isAdminGlobal = hasRole("admin_global");
   
   const [searchQuery, setSearchQuery] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
@@ -62,7 +66,15 @@ export default function AllClientUsers() {
     queryFn: fetchClients,
   });
 
-  const { data: usersData, isLoading } = useQuery({
+  // Default client filter for non-global admins
+  useEffect(() => {
+    if (!isSuperAdmin() && !isAdminGlobal && clients.length === 1 && clientFilter === "all") {
+      setClientFilter(clients[0].id);
+      setCurrentPage(1);
+    }
+  }, [clients, clientFilter, isAdminGlobal, isSuperAdmin]);
+
+  const { data: usersData, isLoading, error: usersError } = useQuery({
     queryKey: ["all-client-users", searchQuery, clientFilter, statusFilter, currentPage],
     queryFn: () => fetchAllClientUsers({
       search: searchQuery || undefined,
@@ -197,7 +209,7 @@ export default function AllClientUsers() {
                   <SelectValue placeholder="Tous les clients" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50">
-                  <SelectItem value="all">Tous les clients</SelectItem>
+                  {(isSuperAdmin() || isAdminGlobal) && <SelectItem value="all">Tous les clients</SelectItem>}
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.nom}
@@ -269,7 +281,15 @@ export default function AllClientUsers() {
       </div>
 
       {/* Users table */}
-      {isLoading ? (
+      {usersError ? (
+        <Card className="shadow-soft">
+          <CardContent className="py-6">
+            <p className="text-sm text-destructive">
+              {(usersError as any)?.message || "Vous n'êtes pas autorisé à voir cette liste."}
+            </p>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
