@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null);
 
   const fetchUserAccessContext = async (userId: string) => {
+    setLoading(true);
     try {
       // Fetch user roles with full role details and permissions
       const { data: userRolesData, error: rolesError } = await supabase
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole(primary?.name || null);
       setUserRoles(roles.map(r => r.name));
       setTenantId(profile?.tenant_id || null);
+      setLoading(false);
     } catch (err) {
       console.error("Error fetching user access context:", err);
       setPrimaryRole(null);
@@ -112,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole(null);
       setUserRoles([]);
       setTenantId(null);
+      setLoading(false);
     }
   };
 
