@@ -73,10 +73,11 @@ const menuItems: MenuItem[] = [
   },
   {
     title: "Veille réglementaire",
-    url: "/veille",
     icon: FileText,
     subItems: [
-      { title: "Evaluation de la conformite", url: "/veille/evaluation" },
+      { title: "Tableau de bord", url: "/veille/dashboard" },
+      { title: "Applicabilité", url: "/veille/applicabilite" },
+      { title: "Évaluation conformité", url: "/veille/evaluation" },
       { title: "Plan d'action", url: "/veille/actions" },
     ],
   },
@@ -136,6 +137,13 @@ export function AppSidebar() {
     if (location.pathname.startsWith("/veille/bibliotheque")) {
       setOpenItems((prev) =>
         prev.includes(BIBLIOTHEQUE_TITLE) ? prev : [...prev, BIBLIOTHEQUE_TITLE],
+      );
+    }
+    
+    // Open Veille réglementaire submenu when on veille routes
+    if (location.pathname.startsWith("/veille") && !location.pathname.startsWith("/veille/bibliotheque")) {
+      setOpenItems((prev) =>
+        prev.includes("Veille réglementaire") ? prev : [...prev, "Veille réglementaire"],
       );
     }
   }, [location.pathname]);

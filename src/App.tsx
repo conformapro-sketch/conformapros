@@ -18,6 +18,8 @@ import SiteDetail from "./pages/SiteDetail";
 import Abonnement from "./pages/Abonnement";
 import Facture from "./pages/Facture";
 import VeilleReglementaire from "./pages/VeilleReglementaire";
+import VeilleDashboard from "./pages/VeilleDashboard";
+import VeilleApplicabilite from "./pages/VeilleApplicabilite";
 import BibliothequeTextes from "./pages/BibliothequeTextes";
 import BibliothequeReglementaire from "./pages/BibliothequeReglementaire";
 import BibliothequeNavigationTree from "./pages/BibliothequeNavigationTree";
@@ -124,7 +126,9 @@ const App = () => (
                           <Route path="/bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
                           <Route path="/bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
                           <Route path="/bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
-                          <Route path="/veille" element={<VeilleReglementaire />} />
+                          <Route path="/veille" element={<Navigate to="/veille/dashboard" replace />} />
+                          <Route path="/veille/dashboard" element={<VeilleDashboard />} />
+                          <Route path="/veille/applicabilite" element={<VeilleApplicabilite />} />
                           <Route path="/veille/bibliotheque" element={<BibliothequeReglementaire />} />
                           <Route path="/veille/bibliotheque-ancienne" element={<BibliothequeTextes />} />
                           <Route path="/veille/bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
