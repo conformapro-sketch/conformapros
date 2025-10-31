@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { rolesQueries } from "@/lib/users-queries";
+import { rolesQueries } from "@/lib/roles-queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,53 +24,74 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Shield } from "lucide-react";
+import { Plus, Edit, Trash2, Shield, Copy } from "lucide-react";
+import {
+  MODULES,
+  ACTIONS,
+  MODULE_LABELS,
+  ACTION_LABELS,
+  type Role,
+  type RolePermission,
+} from "@/types/roles";
 
-const MODULES = [
-  { id: 'clients', label: 'Clients' },
-  { id: 'sites', label: 'Sites' },
-  { id: 'utilisateurs', label: 'Utilisateurs' },
-  { id: 'roles', label: 'Rôles' },
-  { id: 'veille', label: 'Veille Réglementaire' },
-  { id: 'conformite', label: 'Conformité' },
-  { id: 'actions', label: 'Actions Correctives' },
-  { id: 'incidents', label: 'Incidents' },
-  { id: 'controles', label: 'Contrôles Techniques' },
-  { id: 'domaines', label: 'Domaines' },
-];
-
-const ACTIONS = [
-  { id: 'create', label: 'Créer' },
-  { id: 'read', label: 'Lire' },
-  { id: 'update', label: 'Modifier' },
-  { id: 'delete', label: 'Supprimer' },
-];
+interface PermissionState {
+  module: string;
+  action: string;
+  decision: 'allow' | 'deny' | 'inherit';
+  scope: 'global' | 'tenant' | 'site';
+}
 
 export default function GestionRoles() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [roleType, setRoleType] = useState<'team' | 'client'>('team');
   const [roleDialog, setRoleDialog] = useState<{
     open: boolean;
     mode: 'create' | 'edit';
     roleId?: string;
   }>({ open: false, mode: 'create' });
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    type: 'team' | 'client';
+    permissions: PermissionState[];
+  }>({
     name: "",
     description: "",
-    permissions: {} as Record<string, string[]>,
+    type: 'team',
+    permissions: [],
   });
 
-  // Fetch roles
+  // Fetch roles by type
   const { data: roles, isLoading } = useQuery({
-    queryKey: ["roles"],
-    queryFn: rolesQueries.getAll,
+    queryKey: ["roles", roleType],
+    queryFn: () => rolesQueries.getByType(roleType),
   });
 
   // Create role mutation
   const createRoleMutation = useMutation({
-    mutationFn: rolesQueries.create,
+    mutationFn: async (data: typeof formData) => {
+      const role = await rolesQueries.create({
+        type: data.type,
+        name: data.name,
+        description: data.description,
+      });
+      
+      if (data.permissions.length > 0) {
+        await rolesQueries.updatePermissions(role.id, data.permissions);
+      }
+      
+      return role;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast({
@@ -91,8 +112,14 @@ export default function GestionRoles() {
 
   // Update role mutation
   const updateRoleMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      rolesQueries.update(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      await rolesQueries.update(id, {
+        name: data.name,
+        description: data.description,
+      });
+      
+      await rolesQueries.updatePermissions(id, data.permissions);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast({
@@ -121,16 +148,29 @@ export default function GestionRoles() {
         description: "Le rôle a été supprimé avec succès.",
       });
     },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer le rôle.",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleOpenDialog = async (mode: 'create' | 'edit', roleId?: string) => {
     if (mode === 'edit' && roleId) {
-      const role = roles?.find(r => r.id === roleId);
+      const role = await rolesQueries.getById(roleId);
       if (role) {
         setFormData({
           name: role.name,
           description: role.description || "",
-          permissions: role.permissions as Record<string, string[]>,
+          type: role.type,
+          permissions: (role.role_permissions || []).map(p => ({
+            module: p.module,
+            action: p.action,
+            decision: p.decision,
+            scope: p.scope,
+          })),
         });
       }
     }
@@ -149,30 +189,46 @@ export default function GestionRoles() {
     setFormData({
       name: "",
       description: "",
-      permissions: {},
+      type: roleType,
+      permissions: [],
     });
   };
 
-  const togglePermission = (moduleId: string, actionId: string) => {
+  const togglePermission = (module: string, action: string) => {
     setFormData((prev) => {
-      const modulePermissions = prev.permissions[moduleId] || [];
-      const hasPermission = modulePermissions.includes(actionId);
+      const existing = prev.permissions.find(
+        p => p.module === module && p.action === action
+      );
       
-      return {
-        ...prev,
-        permissions: {
-          ...prev.permissions,
-          [moduleId]: hasPermission
-            ? modulePermissions.filter((a) => a !== actionId)
-            : [...modulePermissions, actionId],
-        },
-      };
+      if (existing) {
+        // Remove permission
+        return {
+          ...prev,
+          permissions: prev.permissions.filter(
+            p => !(p.module === module && p.action === action)
+          ),
+        };
+      } else {
+        // Add permission
+        return {
+          ...prev,
+          permissions: [
+            ...prev.permissions,
+            { module, action, decision: 'allow' as const, scope: 'tenant' as const },
+          ],
+        };
+      }
     });
   };
 
-  const countPermissions = (permissions: Record<string, string[]> | null | undefined) => {
-    if (!permissions) return 0;
-    return Object.values(permissions).reduce((acc, actions) => acc + actions.length, 0);
+  const hasPermission = (module: string, action: string) => {
+    return formData.permissions.some(
+      p => p.module === module && p.action === action
+    );
+  };
+
+  const countPermissions = (permissions?: RolePermission[]) => {
+    return permissions?.length || 0;
   };
 
   return (
@@ -184,10 +240,21 @@ export default function GestionRoles() {
             Gérez les rôles et leurs permissions
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog('create')}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nouveau rôle
-        </Button>
+        <div className="flex gap-2">
+          <Select value={roleType} onValueChange={(v: 'team' | 'client') => setRoleType(v)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="team">Équipe Interne</SelectItem>
+              <SelectItem value="client">Clients</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => handleOpenDialog('create')}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nouveau rôle
+          </Button>
+        </div>
       </div>
 
       {/* Roles Table */}
@@ -199,21 +266,22 @@ export default function GestionRoles() {
                 <TableRow>
                   <TableHead>Rôle</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Permissions</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead>Utilisateurs</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={6} className="text-center py-8">
                       Chargement...
                     </TableCell>
                   </TableRow>
                 ) : roles?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={6} className="text-center py-8">
                       Aucun rôle trouvé
                     </TableCell>
                   </TableRow>
@@ -224,6 +292,9 @@ export default function GestionRoles() {
                         <div className="flex items-center gap-2">
                           <Shield className="w-4 h-4 text-primary" />
                           {role.name}
+                          {role.is_system && (
+                            <Badge variant="outline" className="text-xs">Système</Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="max-w-xs truncate">
@@ -231,21 +302,25 @@ export default function GestionRoles() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {countPermissions(role.permissions as Record<string, string[]>)} permissions
+                          {role.type === 'team' ? 'Équipe' : 'Client'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {role.actif ? (
-                          <Badge className="bg-success text-success-foreground">Actif</Badge>
-                        ) : (
-                          <Badge variant="outline">Inactif</Badge>
-                        )}
+                        <Badge variant="outline">
+                          {countPermissions(role.role_permissions)} permissions
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {role.user_count || 0} utilisateurs
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleOpenDialog('edit', role.id)}
+                          disabled={role.is_system}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -253,6 +328,7 @@ export default function GestionRoles() {
                           size="sm"
                           variant="outline"
                           onClick={() => deleteRoleMutation.mutate(role.id)}
+                          disabled={role.is_system}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -282,14 +358,33 @@ export default function GestionRoles() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <Label>Nom du rôle</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ex: Responsable HSE"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Nom du rôle</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ex: Responsable HSE"
+                />
+              </div>
+              <div>
+                <Label>Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(v: 'team' | 'client') => setFormData({ ...formData, type: v })}
+                  disabled={roleDialog.mode === 'edit'}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="team">Équipe Interne</SelectItem>
+                    <SelectItem value="client">Client</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
             <div>
               <Label>Description</Label>
               <Textarea
@@ -304,24 +399,24 @@ export default function GestionRoles() {
               <Label className="text-lg">Permissions par module</Label>
               <div className="mt-4 space-y-4">
                 {MODULES.map((module) => (
-                  <Card key={module.id}>
+                  <Card key={module}>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">{module.label}</CardTitle>
+                      <CardTitle className="text-base">{MODULE_LABELS[module]}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-4 gap-4">
                         {ACTIONS.map((action) => (
-                          <div key={action.id} className="flex items-center space-x-2">
+                          <div key={action} className="flex items-center space-x-2">
                             <Checkbox
-                              id={`${module.id}-${action.id}`}
-                              checked={formData.permissions[module.id]?.includes(action.id)}
-                              onCheckedChange={() => togglePermission(module.id, action.id)}
+                              id={`${module}-${action}`}
+                              checked={hasPermission(module, action)}
+                              onCheckedChange={() => togglePermission(module, action)}
                             />
                             <Label
-                              htmlFor={`${module.id}-${action.id}`}
-                              className="cursor-pointer"
+                              htmlFor={`${module}-${action}`}
+                              className="cursor-pointer text-sm"
                             >
-                              {action.label}
+                              {ACTION_LABELS[action]}
                             </Label>
                           </div>
                         ))}
@@ -337,7 +432,7 @@ export default function GestionRoles() {
             <Button variant="outline" onClick={() => setRoleDialog({ ...roleDialog, open: false })}>
               Annuler
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button onClick={handleSubmit} disabled={!formData.name.trim()}>
               {roleDialog.mode === 'create' ? 'Créer' : 'Modifier'}
             </Button>
           </DialogFooter>
