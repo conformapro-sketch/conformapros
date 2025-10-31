@@ -2,7 +2,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 import {
   Dialog,
   DialogContent,

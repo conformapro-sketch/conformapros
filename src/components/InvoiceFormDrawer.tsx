@@ -3,7 +3,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as z from "zod";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 import {
   createInvoice,
   fetchClients,

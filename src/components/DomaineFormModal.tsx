@@ -10,7 +10,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createDomaine, updateDomaine } from "@/lib/domaines-queries";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 type DomaineRow = Database["public"]["Tables"]["domaines_application"]["Row"];
 

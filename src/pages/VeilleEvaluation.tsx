@@ -94,7 +94,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { fr } from "date-fns/locale";
-import type { Database, Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/types/db";
 import type { RegulatoryApplicability, ConformityState } from "@/lib/evaluation-queries";
 import type { RegulatoryNonApplicableReason as NonApplicableReason } from "@/lib/evaluation-queries";
 

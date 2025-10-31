@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 type EquipementControle = Database["public"]["Tables"]["equipements_controle"]["Row"];
 type EquipementControleInsert = Database["public"]["Tables"]["equipements_controle"]["Insert"];

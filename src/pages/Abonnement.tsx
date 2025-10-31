@@ -37,7 +37,7 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 const BILLING_MANAGER_ROLES = ["super_admin", "admin_global", "billing_manager"];
 

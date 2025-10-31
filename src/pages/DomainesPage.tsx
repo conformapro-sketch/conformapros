@@ -20,7 +20,7 @@ import { SousDomaineFormModal } from "@/components/SousDomaineFormModal";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 type DomaineRow = Database["public"]["Tables"]["domaines_application"]["Row"];
 type SousDomaineRow = Database["public"]["Tables"]["sous_domaines_application"]["Row"];

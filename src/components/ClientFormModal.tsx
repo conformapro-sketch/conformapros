@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { createClient, updateClient, fetchSites } from "@/lib/multi-tenant-queries";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,

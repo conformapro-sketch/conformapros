@@ -13,7 +13,7 @@ import { SitesDrawer } from "@/components/SitesDrawer";
 import { IntegrityCheckerModal } from "@/components/IntegrityCheckerModal";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 type ClientRow = Database["public"]["Tables"]["clients"]["Row"];
 

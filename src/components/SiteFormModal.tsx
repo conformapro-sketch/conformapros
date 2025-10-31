@@ -31,7 +31,7 @@ import {
   listGouvernorats,
   listDelegationsByGouvernorat,
 } from "@/lib/multi-tenant-queries";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";

@@ -9,7 +9,7 @@ import { fetchSitesByClient, deleteSite } from "@/lib/multi-tenant-queries";
 import { SiteFormModal } from "./SiteFormModal";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 type SiteRow = Database["public"]["Tables"]["sites"]["Row"];
 

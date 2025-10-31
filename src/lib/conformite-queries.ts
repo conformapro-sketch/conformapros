@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 type EtatConformite = Database['public']['Enums']['etat_conformite'];
 

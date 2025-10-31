@@ -11,7 +11,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createSousDomaine, updateSousDomaine, fetchDomaines } from "@/lib/domaines-queries";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 type SousDomaineRow = Database["public"]["Tables"]["sous_domaines_application"]["Row"];
 

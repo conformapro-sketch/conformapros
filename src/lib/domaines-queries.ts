@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/types/db";
 
 type DomaineRow = Database["public"]["Tables"]["domaines_application"]["Row"];
 type DomaineInsert = Database["public"]["Tables"]["domaines_application"]["Insert"];

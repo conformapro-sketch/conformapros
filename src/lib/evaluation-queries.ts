@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database, Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/types/db";
 import { getCurrentTenantId, logAudit } from "@/lib/multi-tenant-queries";
 
 type SiteArticleStatusRow = Database["public"]["Tables"]["site_article_status"]["Row"];
