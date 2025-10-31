@@ -16,6 +16,9 @@ import {
   UserCog,
   Shield,
   Stethoscope,
+  Bell,
+  BookOpen,
+  Search,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo, type ComponentType } from "react";
@@ -73,18 +76,19 @@ const menuItems: MenuItem[] = [
   },
   {
     title: "Veille réglementaire",
-    icon: FileText,
+    icon: Bell,
     subItems: [
       { title: "Tableau de bord", url: "/veille/dashboard" },
       { title: "Applicabilité", url: "/veille/applicabilite" },
+      { title: "Matrice d'applicabilité", url: "/veille/matrice" },
       { title: "Évaluation conformité", url: "/veille/evaluation" },
       { title: "Plan d'action", url: "/veille/actions" },
     ],
   },
-  { title: "Dossier réglementaire", url: "/dossier", icon: FileCheck },
+  { title: "Dossier réglementaire", url: "/dossier", icon: BookOpen },
   { title: "Contrôles techniques", url: "/controles", icon: ClipboardCheck },
   { title: "Incidents HSE", url: "/incidents", icon: AlertTriangle },
-  { title: "Audits & Inspections", url: "/audits", icon: ShieldCheck },
+  { title: "Audits & Inspections", url: "/audits", icon: Search },
   { title: "Formations", url: "/formations", icon: GraduationCap },
   { title: "Visites médicales", url: "/visites-medicales", icon: Stethoscope },
   { title: "EPI & Équipements", url: "/epi", icon: HardHat },
