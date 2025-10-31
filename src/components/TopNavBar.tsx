@@ -86,7 +86,7 @@ export default function TopNavBar({
 }: TopNavBarProps) {
   const [prefs, setPrefs] = useState<ThemePrefs>(() => readPrefs());
   const { state, isMobile, toggleSidebar } = useSidebar();
-  const { user: authUser, userRole, signOut } = useAuth();
+  const { user: authUser, userRole, primaryRole, signOut } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -110,7 +110,7 @@ export default function TopNavBar({
   const primaryName = user?.name ?? (metaFullName.length > 0 ? metaFullName : undefined);
   const fallbackName = authUser?.email ?? "Utilisateur";
   const resolvedName = (primaryName && primaryName.trim().length > 0 ? primaryName : fallbackName).trim();
-  const resolvedRole = user?.role ?? userRole ?? undefined;
+  const resolvedRole = user?.role ?? primaryRole?.name ?? userRole ?? undefined;
   const resolvedAvatarUrl = user?.avatarUrl ?? metaAvatar;
   const initials = resolvedName
     .replace(/\s+/g, " ")

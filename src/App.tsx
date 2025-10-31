@@ -142,7 +142,14 @@ const App = () => (
                           <Route path="/veille/domaines" element={<Navigate to="/veille/bibliotheque/domain" replace />} />
                           <Route path="/veille/bibliotheque/domain" element={<DomainesPage />} />
                           <Route path="/veille/textes/:id/articles" element={<GestionArticles />} />
-                          <Route path="/utilisateurs" element={<GestionUtilisateurs />} />
+                          <Route
+                            path="/utilisateurs"
+                            element={
+                              <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
+                                <GestionUtilisateurs />
+                              </ProtectedRoute>
+                            }
+                          />
                           <Route path="/roles" element={<GestionRoles />} />
                           <Route path="/client-users" element={<ClientUsers />} />
                           <Route path="/dossier" element={<DossierReglementaire />} />

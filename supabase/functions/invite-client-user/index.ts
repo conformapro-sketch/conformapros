@@ -10,7 +10,7 @@ interface InviteUserRequest {
   nom: string
   prenom: string
   telephone?: string
-  role: string
+  role_uuid: string
   clientId: string
   siteIds?: string[]
   tenantId?: string
@@ -63,13 +63,26 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body: InviteUserRequest = await req.json()
-    const { email, nom, prenom, telephone, role, clientId, siteIds, tenantId } = body
+    const { email, nom, prenom, telephone, role_uuid, clientId, siteIds, tenantId } = body
 
-    console.log('invite-client-user: Request data', { email, nom, prenom, role, clientId })
+    console.log('invite-client-user: Request data', { email, nom, prenom, role_uuid, clientId })
 
     // Validate required fields
-    if (!email || !nom || !prenom || !role || !clientId) {
-      throw new Error('Missing required fields: email, nom, prenom, role, clientId')
+    if (!email || !nom || !prenom || !role_uuid || !clientId) {
+      throw new Error('Missing required fields: email, nom, prenom, role_uuid, clientId')
+    }
+
+    // Validate that the role_uuid exists and is a client role
+    const { data: roleCheck, error: roleCheckError } = await supabaseClient
+      .from('roles')
+      .select('id, name, type')
+      .eq('id', role_uuid)
+      .eq('type', 'client')
+      .single()
+
+    if (roleCheckError || !roleCheck) {
+      console.error('invite-client-user: Invalid role_uuid', { role_uuid, error: roleCheckError })
+      throw new Error('Invalid role specified')
     }
 
     // Verify calling user has permission to invite users for this client
@@ -173,14 +186,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Create or update user_role
+    // Create or update user_role using role_uuid
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .upsert({
         user_id: userId,
-        role: role,
-        client_id: clientId,
-        role_uuid: null // Set to null for now, can be updated later if role system uses UUIDs
+        role_uuid: role_uuid,
+        client_id: clientId
       }, {
         onConflict: 'user_id,client_id'
       })
@@ -190,7 +202,7 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to assign role: ${roleError.message}`)
     }
 
-    console.log('invite-client-user: Role assigned', { userId, role, clientId })
+    console.log('invite-client-user: Role assigned', { userId, role_uuid, clientId })
 
     // Create access_scopes for specified sites
     if (siteIds && siteIds.length > 0) {
@@ -228,7 +240,7 @@ Deno.serve(async (req) => {
           email,
           nom,
           prenom,
-          role,
+          role_uuid,
           clientId,
           siteIds: siteIds || [],
           tenantId: finalTenantId

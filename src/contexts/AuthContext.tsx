@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { toast } from "sonner";
 import { Role, RolePermission } from "@/types/roles";
+import { slugifyRole } from "@/lib/utils";
 
 interface AuthContextType {
   user: User | null;
@@ -218,8 +219,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasRole = (roleName: string): boolean => {
     if (loading) return false; // Prevent checks during loading
-    const result = allRoles.some(r => r.name === roleName);
-    console.log('[hasRole]', { roleName, allRoles: allRoles.map(r => r.name), result });
+    const target = slugifyRole(roleName);
+    const names = allRoles.map(r => r.name);
+    const result = names.some(n => n === roleName || slugifyRole(n) === target);
+    console.log('[hasRole]', { roleName, target, allRoles: names, result });
     return result;
   };
 

@@ -364,7 +364,10 @@ export const fetchUtilisateurs = async () => {
       *,
       clients(nom_legal),
       sites(nom_site),
-      user_roles(role)
+      user_roles!left(
+        role_uuid,
+        roles(name, id, type)
+      )
     `)
     .order("nom");
   
@@ -378,7 +381,10 @@ export const fetchUtilisateursByClient = async (clientId: string) => {
     .select(`
       *,
       sites(nom_site),
-      user_roles(role)
+      user_roles!left(
+        role_uuid,
+        roles(name, id, type)
+      )
     `)
     .eq("client_id", clientId)
     .order("nom");
@@ -394,7 +400,10 @@ export const fetchUtilisateurById = async (utilisateurId: string) => {
       *,
       clients(nom_legal),
       sites(nom_site),
-      user_roles(role)
+      user_roles!left(
+        role_uuid,
+        roles(name, id, type)
+      )
     `)
     .eq("id", utilisateurId)
     .single();
@@ -849,7 +858,7 @@ export const uploadProof = async (siteId: string, file: File, destinationPath?: 
 export const inviteClientUser = async (
   email: string,
   fullName: string,
-  role: string,
+  roleUuid: string,
   clientId: string,
   siteIds: string[]
 ) => {
@@ -866,7 +875,7 @@ export const inviteClientUser = async (
         nom,
         prenom,
         telephone: null,
-        role,
+        role_uuid: roleUuid,
         clientId,
         siteIds: siteIds || []
       }
@@ -899,7 +908,7 @@ export const createUserProfile = async (
   userId: string,
   email: string,
   fullName: string,
-  role: string,
+  roleUuid: string,
   clientId: string,
   siteIds: string[]
 ) => {
@@ -922,18 +931,18 @@ export const createUserProfile = async (
     .delete()
     .eq("user_id", userId);
 
-  // Insert new role (using type assertion since types may not be updated)
+  // Insert new role using role_uuid
   const { error: roleError } = await supabase
     .from("user_roles")
-    .insert([{ user_id: userId, role: role }] as any);
+    .insert([{ user_id: userId, role_uuid: roleUuid, client_id: clientId }]);
 
   if (roleError) throw roleError;
 
   // Create access scopes
   const scopes = siteIds.map(siteId => ({
-    utilisateur_id: userId,
+    user_id: userId,
     site_id: siteId,
-    read_only: role === 'lecteur',
+    read_only: false,
   }));
 
   const { error: scopesError } = await supabase
@@ -945,7 +954,7 @@ export const createUserProfile = async (
 
 export const updateClientUserAccess = async (
   userId: string,
-  role: string,
+  roleUuid: string,
   clientId: string,
   siteIds: string[]
 ) => {
@@ -953,12 +962,13 @@ export const updateClientUserAccess = async (
   await supabase
     .from("user_roles")
     .delete()
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .eq("client_id", clientId);
 
-  // Insert new role
+  // Insert new role using role_uuid
   const { error: roleError } = await supabase
     .from("user_roles")
-    .insert([{ user_id: userId, role: role }] as any);
+    .insert([{ user_id: userId, role_uuid: roleUuid, client_id: clientId }]);
 
   if (roleError) throw roleError;
 
@@ -973,15 +983,15 @@ export const updateClientUserAccess = async (
     await supabase
       .from("access_scopes")
       .delete()
-      .eq("utilisateur_id", userId)
+      .eq("user_id", userId)
       .in("site_id", siteIdsList);
   }
 
   // Create new access scopes
   const scopes = siteIds.map(siteId => ({
-    utilisateur_id: userId,
+    user_id: userId,
     site_id: siteId,
-    read_only: role === 'lecteur',
+    read_only: false,
   }));
 
   await supabase
@@ -994,7 +1004,10 @@ export const fetchClientUsers = async (clientId: string) => {
     .from("profiles")
     .select(`
       *,
-      user_roles(role),
+      user_roles!left(
+        role_uuid,
+        roles(name, id, type)
+      ),
       access_scopes(
         site_id,
         read_only,
@@ -1031,7 +1044,10 @@ export const fetchClientUsersPaginated = async (
     .select(
       `
         *,
-        user_roles(role),
+        user_roles!left(
+          role_uuid,
+          roles(name, id, type)
+        ),
         access_scopes(
           site_id,
           read_only,
