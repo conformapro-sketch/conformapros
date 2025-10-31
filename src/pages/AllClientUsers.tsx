@@ -311,11 +311,10 @@ export default function AllClientUsers() {
                 </TableHeader>
                 <TableBody>
                   {users.map((user: any) => {
-                    const userSites = user.access_scopes || [];
-                    const userRoleObj = user.user_roles?.[0] as any;
-                    const userRoles = userRoleObj?.roles;
-                    const role = Array.isArray(userRoles) ? userRoles[0]?.name : userRoles?.name;
-                    const clientData = user.clients;
+                    const userSites = user.sites_data || [];
+                    const rolesData = user.roles_data || [];
+                    const role = rolesData[0]?.roles?.name;
+                    const clientData = user.client_data;
 
                     return (
                       <TableRow key={user.id}>
@@ -349,13 +348,13 @@ export default function AllClientUsers() {
                                   </span>
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
+                               <TooltipContent className="max-w-xs">
                                 {userSites.length > 0 ? (
                                   <ul className="space-y-1">
-                                    {userSites.map((as: any) => (
-                                      <li key={as.site_id} className="text-sm">
-                                        • {as.sites?.nom_site}
-                                        {as.read_only && (
+                                    {userSites.map((site: any) => (
+                                      <li key={site.site_id} className="text-sm">
+                                        • {site.nom_site}
+                                        {site.read_only && (
                                           <span className="text-muted-foreground ml-1">(lecture seule)</span>
                                         )}
                                       </li>
