@@ -44,11 +44,13 @@ export const usersQueries = {
 
     if (error) throw error;
     
-    // Filter for team users in JavaScript, not SQL
+    // Filter for team users: exclude client users (those with managed_client_id)
     const teamUsers = data.filter(user => {
-      // Include users with no role OR users with team roles
-      if (!user.user_roles || user.user_roles.length === 0) return true;
-      return user.user_roles.some(ur => ur.roles?.type === 'team');
+      // Exclude client users
+      if (user.managed_client_id) return false;
+      
+      // Include all internal ConformaPro users (no managed_client_id)
+      return true;
     });
     
     return teamUsers;
