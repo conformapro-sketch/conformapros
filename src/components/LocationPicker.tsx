@@ -105,7 +105,6 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
             center={position || defaultCenter}
             zoom={position ? 12 : defaultZoom}
             style={{ height: "100%", width: "100%" }}
-            key={position ? `${position[0]}-${position[1]}` : 'default'}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
