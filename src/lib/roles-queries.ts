@@ -96,6 +96,19 @@ export const rolesQueries = {
 
   // Archive role
   archive: async (id: string) => {
+    const { data: role } = await supabase
+      .from('roles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!role) throw new Error('Role not found');
+    
+    // Prevent archiving system roles
+    if (role.is_system) {
+      throw new Error('Cannot archive system roles');
+    }
+
     const { data, error } = await supabase
       .from('roles')
       .update({ archived_at: new Date().toISOString() })
@@ -244,6 +257,17 @@ export const rolesQueries = {
       scope: 'global' | 'tenant' | 'site';
     }>
   ) => {
+    // Check if this is a system role
+    const { data: role } = await supabase
+      .from('roles')
+      .select('is_system')
+      .eq('id', roleId)
+      .single();
+
+    if (role?.is_system) {
+      throw new Error('Cannot modify permissions for system roles');
+    }
+
     // Delete existing permissions
     await supabase
       .from('role_permissions')

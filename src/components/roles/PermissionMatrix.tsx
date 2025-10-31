@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { MODULES, ACTIONS, MODULE_LABELS, ACTION_LABELS } from "@/types/roles";
 import type { PermissionDecision, PermissionScope } from "@/types/roles";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ interface PermissionMatrixProps {
   onPermissionsChange: (permissions: Permission[]) => void;
   onScopeChange: (scope: PermissionScope) => void;
   roleType: 'team' | 'client';
+  readOnly?: boolean;
 }
 
 export function PermissionMatrix({
@@ -37,6 +39,7 @@ export function PermissionMatrix({
   onPermissionsChange,
   onScopeChange,
   roleType,
+  readOnly = false,
 }: PermissionMatrixProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
@@ -152,11 +155,25 @@ export function PermissionMatrix({
 
   return (
     <div className="space-y-4">
+      {readOnly && (
+        <Alert>
+          <Lock className="h-4 w-4" />
+          <AlertDescription>
+            Ce rôle système possède automatiquement toutes les permissions avec portée globale.
+            Les permissions ne peuvent pas être modifiées.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Scope Selector */}
       <Card className="p-4">
         <div className="flex items-center gap-4">
           <Label>Portée par défaut:</Label>
-          <Select value={scope} onValueChange={(v) => onScopeChange(v as PermissionScope)}>
+          <Select 
+            value={scope} 
+            onValueChange={(v) => onScopeChange(v as PermissionScope)}
+            disabled={readOnly}
+          >
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
@@ -175,6 +192,7 @@ export function PermissionMatrix({
               variant="outline"
               size="sm"
               onClick={() => applyPreset('all')}
+              disabled={readOnly}
             >
               Tout autoriser
             </Button>
@@ -183,6 +201,7 @@ export function PermissionMatrix({
               variant="outline"
               size="sm"
               onClick={() => applyPreset('read_only')}
+              disabled={readOnly}
             >
               Lecture seule
             </Button>
@@ -191,6 +210,7 @@ export function PermissionMatrix({
               variant="outline"
               size="sm"
               onClick={() => applyPreset('none')}
+              disabled={readOnly}
             >
               Tout réinitialiser
             </Button>
@@ -241,6 +261,7 @@ export function PermissionMatrix({
                           size="icon"
                           className="h-6 w-6"
                           onClick={() => toggleModule(module)}
+                          disabled={readOnly}
                         >
                           {isCollapsed ? (
                             <ChevronRight className="h-4 w-4" />
@@ -249,10 +270,12 @@ export function PermissionMatrix({
                           )}
                         </Button>
                         <span className="font-medium">{MODULE_LABELS[module]}</span>
+                        {readOnly && <Lock className="h-3 w-3 ml-1 text-muted-foreground" />}
                         <Switch
                           checked={hasAnyAllow}
                           onCheckedChange={(checked) => toggleModuleActions(module, checked)}
                           className="ml-2"
+                          disabled={readOnly}
                         />
                       </div>
                     </td>
@@ -262,11 +285,13 @@ export function PermissionMatrix({
                         <td key={action} className="text-center p-3">
                           <button
                             type="button"
-                            onClick={() => setPermission(module, action, cycleDecision(decision))}
+                            onClick={() => !readOnly && setPermission(module, action, cycleDecision(decision))}
                             className={cn(
                               "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
-                              getDecisionColor(decision)
+                              getDecisionColor(decision),
+                              readOnly ? "cursor-not-allowed opacity-75" : "cursor-pointer"
                             )}
+                            disabled={readOnly}
                           >
                             {getDecisionLabel(decision)}
                           </button>

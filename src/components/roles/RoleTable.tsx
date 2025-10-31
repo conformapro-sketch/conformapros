@@ -19,6 +19,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -28,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Edit, Copy, Archive, Trash2, Users, ArchiveRestore } from "lucide-react";
+import { MoreHorizontal, Edit, Copy, Archive, Trash2, Users, ArchiveRestore, Shield } from "lucide-react";
 import { rolesQueries } from "@/lib/roles-queries";
 import { toast } from "sonner";
 import type { Role } from "@/types/roles";
@@ -151,19 +157,38 @@ export function RoleTable({ roles, isLoading, onEdit, type }: RoleTableProps) {
         </TableHeader>
         <TableBody>
           {roles.map((role) => (
-            <TableRow key={role.id} className={role.archived_at ? 'opacity-50' : ''}>
+            <TableRow 
+              key={role.id} 
+              className={role.is_system ? 'bg-accent/10' : role.archived_at ? 'opacity-50' : ''}
+            >
               <TableCell className="font-medium">
-                {role.name}
-                {role.is_system && (
-                  <Badge variant="secondary" className="ml-2">
-                    Système
-                  </Badge>
-                )}
-                {role.archived_at && (
-                  <Badge variant="outline" className="ml-2">
-                    Archivé
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {role.name}
+                  {role.is_system && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Shield className="h-4 w-4 text-primary" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Rôle système protégé - Ne peut pas être supprimé ni archivé</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-1">
+                  {role.is_system && (
+                    <Badge variant="secondary">
+                      Système
+                    </Badge>
+                  )}
+                  {role.archived_at && (
+                    <Badge variant="outline">
+                      Archivé
+                    </Badge>
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {role.description || '-'}
@@ -196,19 +221,21 @@ export function RoleTable({ roles, isLoading, onEdit, type }: RoleTableProps) {
                       <Copy className="mr-2 h-4 w-4" />
                       Cloner
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleArchive(role)}>
-                      {role.archived_at ? (
-                        <>
-                          <ArchiveRestore className="mr-2 h-4 w-4" />
-                          Restaurer
-                        </>
-                      ) : (
-                        <>
-                          <Archive className="mr-2 h-4 w-4" />
-                          Archiver
-                        </>
-                      )}
-                    </DropdownMenuItem>
+                    {!role.is_system && (
+                      <DropdownMenuItem onClick={() => handleArchive(role)}>
+                        {role.archived_at ? (
+                          <>
+                            <ArchiveRestore className="mr-2 h-4 w-4" />
+                            Restaurer
+                          </>
+                        ) : (
+                          <>
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archiver
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    )}
                     {!role.is_system && (
                       <>
                         <DropdownMenuSeparator />

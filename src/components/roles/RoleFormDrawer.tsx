@@ -23,6 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Shield } from "lucide-react";
 import { toast } from "sonner";
 import { rolesQueries } from "@/lib/roles-queries";
 import { PermissionMatrix } from "./PermissionMatrix";
@@ -182,6 +184,16 @@ export function RoleFormDrawer({
           </SheetDescription>
         </SheetHeader>
 
+        {role?.is_system && (
+          <Alert className="mt-4">
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              Ce rôle système ne peut pas être supprimé et dispose de tous les privilèges.
+              Seules certaines modifications sont autorisées.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details">Détails</TabsTrigger>
@@ -199,7 +211,11 @@ export function RoleFormDrawer({
                     <FormItem>
                       <FormLabel>Nom du rôle</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Ex: Gestionnaire de site" />
+                        <Input 
+                          {...field} 
+                          placeholder="Ex: Gestionnaire de site" 
+                          disabled={role?.is_system}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -253,6 +269,7 @@ export function RoleFormDrawer({
               onPermissionsChange={setPermissions}
               onScopeChange={setScope}
               roleType={type}
+              readOnly={role?.is_system}
             />
 
             <div className="flex gap-3 pt-4">

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Shield, Info } from "lucide-react";
 import { RoleTable } from "@/components/roles/RoleTable";
 import { RoleFormDrawer } from "@/components/roles/RoleFormDrawer";
 import { rolesQueries } from "@/lib/roles-queries";
@@ -45,12 +46,31 @@ export default function RoleManager() {
     setDrawerOpen(true);
   };
 
-  const filteredTeamRoles = teamRoles?.filter(role =>
+  // Sort roles: system roles first, then by name
+  const sortedTeamRoles = useMemo(() => {
+    if (!teamRoles) return [];
+    return [...teamRoles].sort((a, b) => {
+      if (a.is_system && !b.is_system) return -1;
+      if (!a.is_system && b.is_system) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [teamRoles]);
+
+  const sortedClientRoles = useMemo(() => {
+    if (!clientRoles) return [];
+    return [...clientRoles].sort((a, b) => {
+      if (a.is_system && !b.is_system) return -1;
+      if (!a.is_system && b.is_system) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [clientRoles]);
+
+  const filteredTeamRoles = sortedTeamRoles?.filter(role =>
     role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredClientRoles = clientRoles?.filter(role =>
+  const filteredClientRoles = sortedClientRoles?.filter(role =>
     role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -78,6 +98,18 @@ export default function RoleManager() {
           </p>
         </div>
       </div>
+
+      <Alert className="mb-6">
+        <Info className="h-4 w-4" />
+        <AlertTitle>Hiérarchie des rôles</AlertTitle>
+        <AlertDescription>
+          <div className="flex items-center gap-2 mt-2">
+            <Shield className="h-4 w-4 text-primary" />
+            <span className="font-medium">Super Admin</span>
+            <span className="text-muted-foreground">- Rôle le plus élevé avec accès complet à toutes les fonctionnalités. Ne peut pas être supprimé ou archivé.</span>
+          </div>
+        </AlertDescription>
+      </Alert>
 
       <Card className="p-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'team' | 'client')}>
