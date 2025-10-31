@@ -846,35 +846,46 @@ export const inviteClientUser = async (
   clientId: string,
   siteIds: string[]
 ) => {
-  // First, check if user already exists
-  const { data: existingProfile } = await supabase
-    .from("profiles")
-    .select("id, email, client_id")
-    .eq("email", email)
-    .single();
+  try {
+    // Parse name into nom and prenom
+    const nameParts = fullName.trim().split(' ');
+    const prenom = nameParts[0] || '';
+    const nom = nameParts.slice(1).join(' ') || prenom;
 
-  if (existingProfile) {
-    // User exists - verify same client
-    if (existingProfile.client_id && existingProfile.client_id !== clientId) {
-      throw new Error("Cet utilisateur appartient à un autre client");
+    // Call the Edge Function to handle user creation securely
+    const { data: result, error } = await supabase.functions.invoke('invite-client-user', {
+      body: {
+        email: email.trim().toLowerCase(),
+        nom,
+        prenom,
+        telephone: null,
+        role,
+        clientId,
+        siteIds: siteIds || []
+      }
+    });
+
+    if (error) {
+      console.error('Error invoking invite-client-user function:', error);
+      throw error;
     }
 
-    // Update existing user
-    await updateClientUserAccess(existingProfile.id, role, clientId, siteIds);
-    return { action: 'updated', userId: existingProfile.id };
-  }
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to invite user');
+    }
 
-  // User doesn't exist - create via Supabase Auth signUp
-  // Note: In production, you'd use admin.inviteUserByEmail with service role key
-  // For now, we'll return that invite is needed
-  return {
-    action: 'invite_needed',
-    email,
-    fullName,
-    role,
-    clientId,
-    siteIds,
-  };
+    return { 
+      data: { 
+        userId: result.userId, 
+        action: result.action,
+        message: result.message 
+      }, 
+      error: null 
+    };
+  } catch (error: any) {
+    console.error('Error in inviteClientUser:', error);
+    return { data: null, error };
+  }
 };
 
 export const createUserProfile = async (

@@ -487,7 +487,79 @@ const createMutation = useMutation({
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Placeholder rows; real data loaded below */}
+                        {usersLoading ? (
+                          <tr>
+                            <td colSpan={7} className="text-center py-8">
+                              <div className="flex items-center justify-center gap-2">
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                <span className="text-muted-foreground">Chargement...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : users.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="text-center py-8">
+                              <div className="text-muted-foreground">
+                                Aucun utilisateur trouvé
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          users.map((user) => (
+                            <tr key={user.id} className="border-b border-border">
+                              <td className="p-2">
+                                <div className="font-medium">{user.prenom} {user.nom}</div>
+                              </td>
+                              <td className="p-2 text-muted-foreground">{user.email}</td>
+                              <td className="p-2">
+                                <Badge variant={user.role === 'super_admin' ? 'default' : 'secondary'}>
+                                  {user.role === 'super_admin' ? 'Super Admin' :
+                                   user.role === 'admin_client' ? 'Admin Client' :
+                                   user.role === 'consultant' ? 'Consultant' :
+                                   user.role === 'user' ? 'Utilisateur' :
+                                   user.role}
+                                </Badge>
+                              </td>
+                              <td className="p-2">
+                                {user.sites && user.sites.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {user.sites.slice(0, 2).map((site: any) => (
+                                      <Badge key={site.id} variant="outline" className="text-xs">
+                                        {site.nom}
+                                      </Badge>
+                                    ))}
+                                    {user.sites.length > 2 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        +{user.sites.length - 2}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Tous les sites</span>
+                                )}
+                              </td>
+                              <td className="p-2">
+                                <Badge variant={user.actif ? 'default' : 'secondary'}>
+                                  {user.actif ? 'Actif' : 'Inactif'}
+                                </Badge>
+                              </td>
+                              <td className="p-2 text-muted-foreground text-sm">
+                                {user.last_access ? new Date(user.last_access).toLocaleDateString() : 'Jamais'}
+                              </td>
+                              <td className="p-2">
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditUser(user)}
+                                  >
+                                    Modifier
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>

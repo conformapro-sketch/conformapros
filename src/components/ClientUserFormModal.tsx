@@ -17,9 +17,7 @@ import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { inviteClientUser, fetchSitesByClient, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Mail, User as UserIcon, Shield, Building2 } from "lucide-react";
-import { useState } from "react";
-import { supabaseAny as supabase } from "@/lib/supabase-any";
+import { Building2 } from "lucide-react";
 
 const userSchema = z.object({
   email: z.string().trim().email("Email invalide").min(1, "L'email est requis"),
@@ -43,8 +41,6 @@ interface ClientUserFormModalProps {
 export function ClientUserFormModal({ open, onOpenChange, clientId, user }: ClientUserFormModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showInviteFlow, setShowInviteFlow] = useState(false);
-  const [pendingInvite, setPendingInvite] = useState<any>(null);
 
   // Fetch sites for this client
   const { data: sites = [] } = useQuery({
@@ -87,6 +83,10 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
         data.siteIds
       );
 
+      if (result.error) {
+        throw result.error;
+      }
+
       if (user?.id && (user.actif ?? true) !== data.actif) {
         await toggleUtilisateurActif(user.id, data.actif);
       }
@@ -94,16 +94,10 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       return result;
     },
     onSuccess: (result: any) => {
-      if (result?.action === 'invite_needed') {
-        setPendingInvite(result);
-        setShowInviteFlow(true);
-        return;
-      }
-
       queryClient.invalidateQueries({ queryKey: ["client-users", clientId] });
       toast({
-        title: user ? "Acces mis a jour" : "Invitation envoyee",
-        description: user ? "Les acces ont ete mis a jour avec succes." : "Invitation envoyee et acces aux sites configures.",
+        title: "Succès",
+        description: result.data?.message || "Utilisateur invité avec succès",
       });
       reset();
       onOpenChange(false);
@@ -128,97 +122,6 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     }
     saveMutation.mutate(data);
   };
-  const handleManualInvite = async () => {
-    if (!pendingInvite) return;
-
-    try {
-      // Use Supabase signup (user will need to set password)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: pendingInvite.email,
-        password: Math.random().toString(36).slice(-12), // Temporary password
-        options: {
-          data: {
-            full_name: pendingInvite.fullName,
-          },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (authError) throw authError;
-
-      toast({
-        title: "Utilisateur invité",
-        description: "Un email d'invitation a été envoyé à l'utilisateur.",
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["client-users", clientId] });
-      setShowInviteFlow(false);
-      setPendingInvite(null);
-      reset();
-      onOpenChange(false);
-    } catch (error: any) {
-      toast({
-        title: "Erreur d'invitation",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (showInviteFlow && pendingInvite) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Invitation requise</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="bg-muted/50 border border-border rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Nouvel utilisateur détecté</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  L'utilisateur {pendingInvite.email} n'existe pas encore. Cliquez sur "Envoyer l'invitation" pour créer le compte et envoyer un email d'invitation.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Email:</span> {pendingInvite.email}
-              </div>
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Nom:</span> {pendingInvite.fullName}
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Rôle:</span> {pendingInvite.role}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setShowInviteFlow(false);
-                  setPendingInvite(null);
-                }}
-              >
-                Annuler
-              </Button>
-              <Button onClick={handleManualInvite}>
-                Envoyer l'invitation
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   const roleLabels: Record<string, string> = {
     admin_client: "Administrateur client",
