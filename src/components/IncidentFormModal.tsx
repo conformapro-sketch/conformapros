@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,10 +82,14 @@ export function IncidentFormModal({ open, onOpenChange }: IncidentFormModalProps
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const incident = await createIncident({
+      // Clean empty UUID fields
+      const cleanedData = {
         ...formData,
         date_incident: new Date(`${formData.date_incident}T${formData.heure_incident}`).toISOString(),
-      });
+        responsable_suivi_id: formData.responsable_suivi_id || undefined,
+      };
+      
+      const incident = await createIncident(cleanedData);
 
       // Create causes
       for (let i = 0; i < causes.length; i++) {
@@ -171,6 +175,9 @@ export function IncidentFormModal({ open, onOpenChange }: IncidentFormModalProps
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Déclarer un incident HSE</DialogTitle>
+          <DialogDescription>
+            Enregistrez les détails de l'incident en 4 étapes simples
+          </DialogDescription>
         </DialogHeader>
 
         {/* Progress indicator */}
