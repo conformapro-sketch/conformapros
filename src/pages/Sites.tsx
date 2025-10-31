@@ -10,13 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, Plus, Search, Factory, Users, Pencil, Trash2, FileText, Building2, Settings, Filter, FileDown } from "lucide-react";
+import { MapPin, Plus, Search, Factory, Users, Pencil, Trash2, FileText, Building2, Settings, Filter, FileDown, Grid3x3, List, Eye, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSites, deleteSite, fetchClients, listSiteModules, listGouvernorats } from "@/lib/multi-tenant-queries";
 import { SiteFormModal } from "@/components/SiteFormModal";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { Database } from "@/types/db";
 
 type SiteRow = Database["public"]["Tables"]["sites"]["Row"];
@@ -55,6 +57,9 @@ export default function Sites() {
   const [siteFormOpen, setSiteFormOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<SiteRow | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('sites-view-mode') as 'grid' | 'list') || 'grid';
+  });
 
   const { data: sites, isLoading } = useQuery({
     queryKey: ["sites"],
@@ -133,6 +138,11 @@ export default function Sites() {
 
     return matchesSearch && matchesClient && matchesGouvernorat && matchesSecteur && matchesClassification;
   }) || [];
+
+  const toggleViewMode = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('sites-view-mode', mode);
+  };
 
   const handleEdit = (site: SiteRow) => {
     setEditingSite(site);
@@ -328,14 +338,32 @@ export default function Sites() {
       {/* Search & Filters */}
       <Card className="shadow-soft">
         <CardContent className="pt-6 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par nom, code, gouvernorat, délégation, localité..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par nom, code, gouvernorat, délégation, localité..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex items-center gap-2 border-l pl-2">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => toggleViewMode('grid')}
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => toggleViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -471,6 +499,76 @@ export default function Sites() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : filteredSites.length > 0 ? (
+        viewMode === 'list' ? (
+          <Card className="shadow-soft overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Gouvernorat</TableHead>
+                  <TableHead>Secteur</TableHead>
+                  <TableHead className="text-center">Effectif</TableHead>
+                  <TableHead className="text-center">Risque</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSites.map((site) => (
+                  <TableRow key={site.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/sites/${site.id}`)}>
+                    <TableCell className="font-medium">{site.nom_site}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs font-mono">
+                        {site.code_site}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {(site as any).clients?.nom_legal || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm">{site.gouvernorat || "—"}</TableCell>
+                    <TableCell className="text-sm">{site.secteur_activite || "—"}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className="font-mono">
+                        {site.effectif || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {site.niveau_risque && (
+                        <Badge variant={getRisqueBadgeVariant(site.niveau_risque)} className="text-xs">
+                          {site.niveau_risque}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="z-50">
+                          <DropdownMenuItem onClick={() => navigate(`/sites/${site.id}`)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Voir détails
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setEditingSite(site); setSiteFormOpen(true); }}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(site.id)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {filteredSites.map((site) => (
             <Card 
@@ -579,6 +677,7 @@ export default function Sites() {
             </Card>
           ))}
         </div>
+        )
       ) : (
         <Card className="shadow-soft">
           <CardContent className="py-12 text-center">
