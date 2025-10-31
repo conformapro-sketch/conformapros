@@ -237,7 +237,7 @@ export const createSite = async (site: SiteInsert) => {
     ...site,
     nom: site.nom_site ?? site.nom ?? "",
     nom_site: site.nom_site ?? site.nom ?? "",
-    is_active: site.is_active ?? true,
+    
     tenant_id: client?.tenant_id ?? null,
   };
 
