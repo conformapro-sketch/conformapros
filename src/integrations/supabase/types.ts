@@ -482,6 +482,59 @@ export type Database = {
           },
         ]
       }
+      client_users: {
+        Row: {
+          actif: boolean
+          avatar_url: string | null
+          client_id: string
+          created_at: string
+          email: string
+          id: string
+          is_client_admin: boolean
+          nom: string | null
+          prenom: string | null
+          telephone: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          avatar_url?: string | null
+          client_id: string
+          created_at?: string
+          email: string
+          id: string
+          is_client_admin?: boolean
+          nom?: string | null
+          prenom?: string | null
+          telephone?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          avatar_url?: string | null
+          client_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          is_client_admin?: boolean
+          nom?: string | null
+          prenom?: string | null
+          telephone?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_users_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string | null
