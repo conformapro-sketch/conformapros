@@ -102,18 +102,18 @@ export const MedicalVisitFormDrawer = ({
     if (visit) {
       form.reset({
         employe_id: visit.employe_id,
-        type_visite: visit.type_visite,
+        type_visite: visit.type_visite as any,
         date_planifiee: visit.date_planifiee.split('T')[0],
         motif: visit.motif || "",
-        statut_visite: visit.statut_visite,
+        statut_visite: visit.statut_visite as any,
         date_realisee: visit.date_realisee?.split('T')[0] || "",
-        resultat_aptitude: visit.resultat_aptitude || "EN_ATTENTE",
+        resultat_aptitude: (visit.resultat_aptitude as any) || "EN_ATTENTE",
         restrictions: visit.restrictions || "",
         validite_jusqua: visit.validite_jusqua || "",
         prochaine_echeance: visit.prochaine_echeance || "",
         medecin_nom: visit.medecin_nom || "",
         medecin_organisme: visit.medecin_organisme || "",
-        sms_flags: visit.sms_flags || [],
+        sms_flags: Array.isArray(visit.sms_flags) ? visit.sms_flags : [],
       });
     }
   }, [visit, form]);

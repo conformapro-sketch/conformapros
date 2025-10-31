@@ -154,6 +154,7 @@ export type Database = {
           texte_integral: string | null
           type_acte: string
           updated_at: string
+          version: number | null
         }
         Insert: {
           created_at?: string
@@ -169,6 +170,7 @@ export type Database = {
           texte_integral?: string | null
           type_acte: string
           updated_at?: string
+          version?: number | null
         }
         Update: {
           created_at?: string
@@ -183,6 +185,105 @@ export type Database = {
           statut_vigueur?: string | null
           texte_integral?: string | null
           type_acte?: string
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
+      actions_correctives: {
+        Row: {
+          conformite_id: string
+          cout_estime: number | null
+          created_at: string
+          created_by: string | null
+          date_echeance: string | null
+          description: string | null
+          id: string
+          manquement: string | null
+          priorite: string
+          responsable_id: string | null
+          statut: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          conformite_id: string
+          cout_estime?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_echeance?: string | null
+          description?: string | null
+          id?: string
+          manquement?: string | null
+          priorite?: string
+          responsable_id?: string | null
+          statut?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          conformite_id?: string
+          cout_estime?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_echeance?: string | null
+          description?: string | null
+          id?: string
+          manquement?: string | null
+          priorite?: string
+          responsable_id?: string | null
+          statut?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actions_correctives_conformite_id_fkey"
+            columns: ["conformite_id"]
+            isOneToOne: false
+            referencedRelation: "conformite"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      applicabilite: {
+        Row: {
+          activite: string | null
+          applicable: string
+          article_id: string
+          commentaire_non_applicable: string | null
+          created_at: string
+          id: string
+          justification: string | null
+          motif_non_applicable: string | null
+          site_id: string
+          texte_id: string
+          updated_at: string
+        }
+        Insert: {
+          activite?: string | null
+          applicable?: string
+          article_id: string
+          commentaire_non_applicable?: string | null
+          created_at?: string
+          id?: string
+          justification?: string | null
+          motif_non_applicable?: string | null
+          site_id: string
+          texte_id: string
+          updated_at?: string
+        }
+        Update: {
+          activite?: string | null
+          applicable?: string
+          article_id?: string
+          commentaire_non_applicable?: string | null
+          created_at?: string
+          id?: string
+          justification?: string | null
+          motif_non_applicable?: string | null
+          site_id?: string
+          texte_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -291,6 +392,47 @@ export type Database = {
         }
         Relationships: []
       }
+      changelog_reglementaire: {
+        Row: {
+          acte_id: string
+          created_at: string
+          created_by: string | null
+          date_changement: string
+          description: string
+          id: string
+          type_changement: string
+          version: number
+        }
+        Insert: {
+          acte_id: string
+          created_at?: string
+          created_by?: string | null
+          date_changement: string
+          description: string
+          id?: string
+          type_changement: string
+          version: number
+        }
+        Update: {
+          acte_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_changement?: string
+          description?: string
+          id?: string
+          type_changement?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "changelog_reglementaire_acte_id_fkey"
+            columns: ["acte_id"]
+            isOneToOne: false
+            referencedRelation: "actes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           adresse: string | null
@@ -344,6 +486,59 @@ export type Database = {
           ville?: string | null
         }
         Relationships: []
+      }
+      conformite: {
+        Row: {
+          applicabilite_id: string
+          commentaire: string | null
+          created_at: string
+          date_evaluation: string | null
+          derniere_mise_a_jour: string | null
+          etat: string
+          evaluateur_id: string | null
+          id: string
+          mise_a_jour_par: string | null
+          score: number | null
+          score_conformite: number | null
+          updated_at: string
+        }
+        Insert: {
+          applicabilite_id: string
+          commentaire?: string | null
+          created_at?: string
+          date_evaluation?: string | null
+          derniere_mise_a_jour?: string | null
+          etat?: string
+          evaluateur_id?: string | null
+          id?: string
+          mise_a_jour_par?: string | null
+          score?: number | null
+          score_conformite?: number | null
+          updated_at?: string
+        }
+        Update: {
+          applicabilite_id?: string
+          commentaire?: string | null
+          created_at?: string
+          date_evaluation?: string | null
+          derniere_mise_a_jour?: string | null
+          etat?: string
+          evaluateur_id?: string | null
+          id?: string
+          mise_a_jour_par?: string | null
+          score?: number | null
+          score_conformite?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conformite_applicabilite_id_fkey"
+            columns: ["applicabilite_id"]
+            isOneToOne: false
+            referencedRelation: "applicabilite"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       domaines_reglementaires: {
         Row: {
@@ -505,6 +700,56 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipements_controle: {
+        Row: {
+          created_at: string
+          date_controle: string
+          document_url: string | null
+          equipement_id: string
+          id: string
+          observations: string | null
+          organisme_controleur: string | null
+          prochain_controle: string | null
+          resultat: string | null
+          type_controle: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_controle: string
+          document_url?: string | null
+          equipement_id: string
+          id?: string
+          observations?: string | null
+          organisme_controleur?: string | null
+          prochain_controle?: string | null
+          resultat?: string | null
+          type_controle: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_controle?: string
+          document_url?: string | null
+          equipement_id?: string
+          id?: string
+          observations?: string | null
+          organisme_controleur?: string | null
+          prochain_controle?: string | null
+          resultat?: string | null
+          type_controle?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipements_controle_equipement_id_fkey"
+            columns: ["equipement_id"]
+            isOneToOne: false
+            referencedRelation: "equipements"
             referencedColumns: ["id"]
           },
         ]
@@ -783,6 +1028,36 @@ export type Database = {
           },
         ]
       }
+      organismes_controle: {
+        Row: {
+          adresse: string | null
+          agrement: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nom: string
+          telephone: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          agrement?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nom: string
+          telephone?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          agrement?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nom?: string
+          telephone?: string | null
+        }
+        Relationships: []
+      }
       plans_action: {
         Row: {
           article_id: string | null
@@ -842,6 +1117,50 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preuves: {
+        Row: {
+          conformite_id: string
+          created_at: string
+          date_document: string | null
+          description: string | null
+          id: string
+          titre: string
+          type_document: string | null
+          uploaded_by: string | null
+          url_document: string
+        }
+        Insert: {
+          conformite_id: string
+          created_at?: string
+          date_document?: string | null
+          description?: string | null
+          id?: string
+          titre: string
+          type_document?: string | null
+          uploaded_by?: string | null
+          url_document: string
+        }
+        Update: {
+          conformite_id?: string
+          created_at?: string
+          date_document?: string | null
+          description?: string | null
+          id?: string
+          titre?: string
+          type_document?: string | null
+          uploaded_by?: string | null
+          url_document?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preuves_conformite_id_fkey"
+            columns: ["conformite_id"]
+            isOneToOne: false
+            referencedRelation: "conformite"
             referencedColumns: ["id"]
           },
         ]
@@ -1152,11 +1471,13 @@ export type Database = {
           contenu: string
           created_at: string
           id: string
+          numero: string | null
           numero_article: string
           ordre: number | null
           parent_article_id: string | null
           texte_id: string
           titre: string | null
+          titre_court: string | null
           updated_at: string
           version_active: string | null
         }
@@ -1164,11 +1485,13 @@ export type Database = {
           contenu: string
           created_at?: string
           id?: string
+          numero?: string | null
           numero_article: string
           ordre?: number | null
           parent_article_id?: string | null
           texte_id: string
           titre?: string | null
+          titre_court?: string | null
           updated_at?: string
           version_active?: string | null
         }
@@ -1176,11 +1499,13 @@ export type Database = {
           contenu?: string
           created_at?: string
           id?: string
+          numero?: string | null
           numero_article?: string
           ordre?: number | null
           parent_article_id?: string | null
           texte_id?: string
           titre?: string | null
+          titre_court?: string | null
           updated_at?: string
           version_active?: string | null
         }
@@ -1210,9 +1535,12 @@ export type Database = {
           id: string
           lien_officiel: string | null
           numero: string
+          reference_officielle: string | null
           resume: string | null
           statut: string
+          statut_vigueur: string | null
           titre: string
+          type: string | null
           type_texte: string
           updated_at: string
         }
@@ -1224,9 +1552,12 @@ export type Database = {
           id?: string
           lien_officiel?: string | null
           numero: string
+          reference_officielle?: string | null
           resume?: string | null
           statut?: string
+          statut_vigueur?: string | null
           titre: string
+          type?: string | null
           type_texte: string
           updated_at?: string
         }
@@ -1238,11 +1569,38 @@ export type Database = {
           id?: string
           lien_officiel?: string | null
           numero?: string
+          reference_officielle?: string | null
           resume?: string | null
           statut?: string
+          statut_vigueur?: string | null
           titre?: string
+          type?: string | null
           type_texte?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      types_equipement: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          libelle: string
+          periodicite_mois: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          libelle: string
+          periodicite_mois?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          libelle?: string
+          periodicite_mois?: number | null
         }
         Relationships: []
       }
@@ -1369,8 +1727,70 @@ export type Database = {
         }
         Relationships: []
       }
+      historique_controles: {
+        Row: {
+          created_at: string | null
+          date_controle: string | null
+          document_url: string | null
+          equipement_id: string | null
+          id: string | null
+          observations: string | null
+          organisme_controleur: string | null
+          prochain_controle: string | null
+          resultat: string | null
+          type_controle: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_controle?: string | null
+          document_url?: string | null
+          equipement_id?: string | null
+          id?: string | null
+          observations?: string | null
+          organisme_controleur?: string | null
+          prochain_controle?: string | null
+          resultat?: string | null
+          type_controle?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_controle?: string | null
+          document_url?: string | null
+          equipement_id?: string | null
+          id?: string | null
+          observations?: string | null
+          organisme_controleur?: string | null
+          prochain_controle?: string | null
+          resultat?: string | null
+          type_controle?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipements_controle_equipement_id_fkey"
+            columns: ["equipement_id"]
+            isOneToOne: false
+            referencedRelation: "equipements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      get_applicable_actes_for_site: {
+        Args: { p_site_id: string }
+        Returns: {
+          acte_id: string
+          date_publication: string
+          intitule: string
+          match_score: number
+          reference_officielle: string
+          sous_domaine_id: string
+          type_acte: string
+        }[]
+      }
       has_client_access: {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean
@@ -1385,6 +1805,19 @@ export type Database = {
       has_site_access: {
         Args: { _site_id: string; _user_id: string }
         Returns: boolean
+      }
+      search_actes_reglementaires: {
+        Args: { result_limit?: number; search_term: string }
+        Returns: {
+          date_publication: string
+          id: string
+          intitule: string
+          rank: number
+          reference_officielle: string
+          resume: string
+          statut_vigueur: string
+          type_acte: string
+        }[]
       }
     }
     Enums: {

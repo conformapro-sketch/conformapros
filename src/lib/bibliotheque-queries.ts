@@ -105,8 +105,8 @@ export const searchQueries = {
   async fullTextSearch(searchTerm: string, limit: number = 50) {
     const { data, error } = await supabase
       .rpc('search_actes_reglementaires', {
-        search_query: searchTerm,
-        limit_count: limit
+        search_term: searchTerm,
+        result_limit: limit
       });
     
     if (error) throw error;
@@ -119,7 +119,7 @@ export const applicableActesQueries = {
   async getApplicableActesForSite(siteId: string) {
     const { data, error } = await supabase
       .rpc('get_applicable_actes_for_site', {
-        site_id_param: siteId
+        p_site_id: siteId
       });
     
     if (error) throw error;

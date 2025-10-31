@@ -198,10 +198,11 @@ export const conformiteQueries = {
       .from('preuves')
       .insert([{
         conformite_id: data.conformite_id,
-        fichier_url: data.fichier_url,
-        type: data.type,
-        notes: data.notes,
-        ajoute_par: userId,
+        url_document: data.fichier_url,
+        type_document: data.type,
+        description: data.notes,
+        titre: data.type || 'Document',
+        uploaded_by: userId,
       }])
       .select()
       .single();
@@ -222,13 +223,13 @@ export const conformiteQueries = {
 
     const { data: article } = await supabase
       .from('textes_articles')
-      .select('numero, titre_court')
+      .select('numero_article, titre')
       .eq('id', applicabilite.article_id)
       .maybeSingle();
 
     const { data: texte } = await supabase
       .from('textes_reglementaires')
-      .select('reference_officielle')
+      .select('numero')
       .eq('id', applicabilite.texte_id)
       .maybeSingle();
 
@@ -238,10 +239,10 @@ export const conformiteQueries = {
       .from('actions_correctives')
       .insert([{
         conformite_id: conformiteId,
-        manquement: `Non-conformité détectée sur ${texte?.reference_officielle || 'texte'} - Article ${article?.numero || 'N/A'}`,
-        action: 'À définir',
-        statut: 'A_faire',
-        priorite: 'Haute',
+        manquement: `Non-conformité détectée sur ${texte?.numero || 'texte'} - Article ${article?.numero_article || 'N/A'}`,
+        titre: 'Action corrective à définir',
+        statut: 'a_faire',
+        priorite: 'moyenne',
         created_by: userId,
       }])
       .select()
