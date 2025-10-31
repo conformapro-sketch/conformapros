@@ -100,8 +100,11 @@ const menuItems: MenuItem[] = [
     subItems: [
       { title: "Clients", url: "/clients" },
       { title: "Sites", url: "/sites" },
-      { title: "Abonnement", url: "/abonnement", allowedRoles: BILLING_MANAGER_ROLES },
+      { title: "Utilisateurs client", url: "/clients/utilisateurs" },
+      { title: "Devis", url: "/devis", allowedRoles: BILLING_MANAGER_ROLES },
       { title: "Facture", url: "/facture", allowedRoles: BILLING_MANAGER_ROLES },
+      { title: "Facture avoir", url: "/facture-avoir", allowedRoles: BILLING_MANAGER_ROLES },
+      { title: "Abonnement", url: "/abonnement", allowedRoles: BILLING_MANAGER_ROLES },
     ],
   },
 ];
