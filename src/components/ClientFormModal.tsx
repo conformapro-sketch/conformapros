@@ -22,11 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Settings } from "lucide-react";
+import { Building2, Settings, User as UserIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { ClientUserFormModal } from "./ClientUserFormModal";
+import { fetchClientUsersPaginated, resetClientUserPassword, activateClientUser, deactivateClientUser, logAudit } from "@/lib/multi-tenant-queries";
 
 type ClientRow = Database["public"]["Tables"]["clients"]["Row"];
 
@@ -144,6 +148,62 @@ const createMutation = useMutation({
     "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
   ];
 
+  // Users tab state
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [searchUsers, setSearchUsers] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [siteFilter, setSiteFilter] = useState<string | undefined>(undefined);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
+  const { data: usersPage, isLoading: usersLoading } = useQuery({
+    queryKey: ["client-users", client?.id, searchUsers, roleFilter, statusFilter, siteFilter, page, pageSize],
+    queryFn: () => fetchClientUsersPaginated(client!.id, { search: searchUsers, role: roleFilter as any, site: siteFilter, status: statusFilter, page, pageSize }),
+    enabled: !!client?.id,
+  });
+
+  const users: any[] = usersPage?.data || [];
+  const totalCount: number = usersPage?.count || 0;
+
+  const handleEditUser = (user: any) => {
+    setEditingUser(user);
+    setShowUserModal(true);
+  };
+
+  const handleResetPassword = async (user: any) => {
+    if (!user?.email) return;
+    if (!confirm(`Réinitialiser le mot de passe pour ${user.email} ?`)) return;
+    try {
+      await resetClientUserPassword(user.email);
+      toast({ title: "Email de réinitialisation envoyé" });
+      await logAudit(null, client?.id || null, 'reset_password', { userId: user.id });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message || "Impossible de réinitialiser.", variant: 'destructive' });
+    }
+  };
+
+  const handleToggleActive = async (user: any) => {
+    if (!user?.id) return;
+    const willDeactivate = !!user.actif;
+    const confirmMsg = willDeactivate ? `Désactiver ${user.email} ?` : `Activer ${user.email} ?`;
+    if (!confirm(confirmMsg)) return;
+    try {
+      if (willDeactivate) {
+        await deactivateClientUser(user.id);
+        await logAudit(null, client?.id || null, 'deactivate_user', { userId: user.id });
+      } else {
+        await activateClientUser(user.id);
+        await logAudit(null, client?.id || null, 'activate_user', { userId: user.id });
+      }
+      queryClient.invalidateQueries({ queryKey: ["client-users", client?.id] });
+      toast({ title: willDeactivate ? "Utilisateur désactivé" : "Utilisateur activé" });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message || "Impossible de changer le statut.", variant: 'destructive' });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={client ? "max-w-5xl max-h-[90vh] overflow-y-auto" : "max-w-md"}>
@@ -214,7 +274,7 @@ const createMutation = useMutation({
           ) : (
             // Full edit form with tabs
             <Tabs defaultValue="identification" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="identification">
                   <Building2 className="h-4 w-4 mr-2" />
                   Identification & Adresse
@@ -222,6 +282,10 @@ const createMutation = useMutation({
                 <TabsTrigger value="configuration">
                   <Settings className="h-4 w-4 mr-2" />
                   Configuration
+                </TabsTrigger>
+                <TabsTrigger value="utilisateurs">
+                  <UserIcon className="h-4 w-4 mr-2" />
+                  Utilisateurs
                 </TabsTrigger>
               </TabsList>
 
@@ -394,6 +458,40 @@ const createMutation = useMutation({
                   </div>
                 )}
               </TabsContent>
+
+              <TabsContent value="utilisateurs" className="space-y-6 mt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">Utilisateurs du client</h3>
+                  <div className="flex items-center gap-2">
+                    <Input placeholder="Rechercher..." value={""} onChange={() => {}} />
+                    <Button variant="outline" size="sm" onClick={() => setShowUserModal(true)}>
+                      Ajouter un utilisateur
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  {/* Users table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th className="text-left p-2">Nom</th>
+                          <th className="text-left p-2">Email</th>
+                          <th className="text-left p-2">Rôles</th>
+                          <th className="text-left p-2">Sites</th>
+                          <th className="text-left p-2">Statut</th>
+                          <th className="text-left p-2">Dernier accès</th>
+                          <th className="text-left p-2">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Placeholder rows; real data loaded below */}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </TabsContent>
             </Tabs>
           )}
 
@@ -410,6 +508,18 @@ const createMutation = useMutation({
             </Button>
           </div>
         </form>
+        {/* Client User modal/drawer for add/edit */}
+        {client?.id && (
+          <ClientUserFormModal
+            open={showUserModal}
+            onOpenChange={(open) => {
+              setShowUserModal(open);
+              if (!open) setEditingUser(null);
+            }}
+            clientId={client.id}
+            user={editingUser}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

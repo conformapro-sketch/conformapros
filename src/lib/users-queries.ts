@@ -20,6 +20,26 @@ export const usersQueries = {
     return data;
   },
 
+  // Get Conforma Pro internal team members (no client association)
+  getConformaTeam: async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(`
+        *,
+        roles (
+          id,
+          nom,
+          description,
+          permissions
+        )
+      `)
+      .is('client_id', null)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
   // Get user by ID
   getById: async (id: string) => {
     const { data, error } = await supabase

@@ -15,7 +15,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { inviteClientUser, updateClientUserAccess, fetchSitesByClient } from "@/lib/multi-tenant-queries";
+import { inviteClientUser, fetchSitesByClient, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, Mail, User as UserIcon, Shield, Building2 } from "lucide-react";
 import { useState } from "react";
@@ -77,86 +77,57 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
   const selectedRole = watch("role");
   const selectedSiteIds = watch("siteIds");
 
-  const inviteMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
-      return await inviteClientUser(
+      const result = await inviteClientUser(
         data.email,
         data.fullName,
         data.role,
         clientId,
         data.siteIds
       );
+
+      if (user?.id && (user.actif ?? true) !== data.actif) {
+        await toggleUtilisateurActif(user.id, data.actif);
+      }
+
+      return result;
     },
-    onSuccess: (result) => {
-      if (result.action === 'invite_needed') {
-        // Show manual invite flow
+    onSuccess: (result: any) => {
+      if (result?.action === 'invite_needed') {
         setPendingInvite(result);
         setShowInviteFlow(true);
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["client-users", clientId] });
-        toast({
-          title: user ? "Accès mis à jour" : "Invitation envoyée",
-          description: user ? "Les accès ont été mis à jour avec succès." : "Invitation envoyée et accès aux sites configuré.",
-        });
-        reset();
-        onOpenChange(false);
+        return;
       }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de créer l'utilisateur.",
-        variant: "destructive",
-      });
-    },
-  });
 
-  const updateMutation = useMutation({
-    mutationFn: async (data: UserFormData) => {
-      if (!user?.id) throw new Error("User ID manquant");
-      await updateClientUserAccess(user.id, data.role, clientId, data.siteIds);
-      
-      // Update actif status
-      await supabase
-        .from("profiles")
-        .update({ actif: data.actif })
-        .eq("id", user.id);
-    },
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["client-users", clientId] });
       toast({
-        title: "Accès mis à jour",
-        description: "Les accès ont été mis à jour avec succès.",
+        title: user ? "Acces mis a jour" : "Invitation envoyee",
+        description: user ? "Les acces ont ete mis a jour avec succes." : "Invitation envoyee et acces aux sites configures.",
       });
+      reset();
       onOpenChange(false);
     },
     onError: (error: any) => {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de mettre à jour l'utilisateur.",
+        description: error?.message || "Impossible de sauvegarder l'utilisateur.",
         variant: "destructive",
       });
     },
   });
-
   const onSubmit = (data: UserFormData) => {
     // Validate: at least 1 site for non-admin_client roles
     if (data.role !== 'admin_client' && data.siteIds.length === 0) {
       toast({
-        title: "Sites requis",
-        description: "Au moins un site doit être sélectionné pour ce rôle.",
-        variant: "destructive",
+        title: 'Sites requis',
+        description: 'Au moins un site doit etre selectionne pour ce role.',
+        variant: 'destructive',
       });
       return;
     }
-
-    if (user) {
-      updateMutation.mutate(data);
-    } else {
-      inviteMutation.mutate(data);
-    }
+    saveMutation.mutate(data);
   };
-
   const handleManualInvite = async () => {
     if (!pendingInvite) return;
 
@@ -405,7 +376,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
             </Button>
             <Button 
               type="submit" 
-              disabled={inviteMutation.isPending || updateMutation.isPending}
+              disabled={saveMutation.isPending}
             >
               {user ? "Mettre à jour" : "Inviter l'utilisateur"}
             </Button>
@@ -415,3 +386,13 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     </Dialog>
   );
 }
+
+
+
+
+
+
+
+
+
+

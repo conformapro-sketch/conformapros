@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+﻿import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface AuthContextType {
@@ -9,8 +8,14 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   userRole: string | null;
+  userRoles: string[];
+  tenantId: string | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, metadata: { nom: string; prenom: string }) => Promise<{ error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    metadata: { nom: string; prenom: string },
+  ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -21,82 +26,109 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+
+  const fetchUserAccessContext = async (userId: string) => {
+    try {
+      const [rolesResponse, profileResponse] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase
+          .from("profiles")
+          .select("tenant_id")
+          .eq("id", userId)
+          .maybeSingle(),
+      ]);
+
+      const { data: roleData, error: roleError } = rolesResponse;
+      const { data: profileData, error: profileError } = profileResponse;
+
+      if (roleError) {
+        console.error("Error fetching user role:", roleError);
+        setUserRole(null);
+        setUserRoles([]);
+      } else {
+        const roles = (roleData ?? [])
+          .map((entry) =>
+            typeof entry?.role === "string" ? entry.role : null,
+          )
+          .filter((role): role is string => !!role);
+        setUserRoles(roles);
+        setUserRole(roles[0] ?? null);
+      }
+
+      if (profileError) {
+        console.error("Error fetching tenant context:", profileError);
+        setTenantId(null);
+      } else {
+        setTenantId(profileData?.tenant_id ?? null);
+      }
+    } catch (err) {
+      console.error("Error fetching user access context:", err);
+      setUserRole(null);
+      setUserRoles([]);
+      setTenantId(null);
+    }
+  };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Fetch user role after auth state changes
-        if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id);
-          }, 0);
-        } else {
-          setUserRole(null);
-        }
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserRole(session.user.id);
+      if (nextSession?.user) {
+        setTimeout(() => {
+          fetchUserAccessContext(nextSession.user.id);
+        }, 0);
+      } else {
+        setUserRole(null);
+        setUserRoles([]);
+        setTenantId(null);
       }
-      
+    });
+
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+
+      if (initialSession?.user) {
+        fetchUserAccessContext(initialSession.user.id);
+      } else {
+        setUserRole(null);
+        setUserRoles([]);
+        setTenantId(null);
+      }
+
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .single();
-
-      if (error) {
-        console.error("Error fetching user role:", error);
-        setUserRole(null);
-      } else {
-        setUserRole(data?.role || null);
-      }
-    } catch (err) {
-      console.error("Error in fetchUserRole:", err);
-      setUserRole(null);
-    }
-  };
-
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
+
     if (error) {
       toast.error("Erreur de connexion", {
         description: error.message,
       });
     }
-    
+
     return { error };
   };
 
   const signUp = async (
     email: string,
     password: string,
-    metadata: { nom: string; prenom: string }
+    metadata: { nom: string; prenom: string },
   ) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -105,20 +137,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data: metadata,
       },
     });
-    
+
     if (error) {
       toast.error("Erreur d'inscription", {
         description: error.message,
       });
     }
-    
+
     return { error };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
     setUserRole(null);
-    toast.success("Déconnexion réussie");
+    setUserRoles([]);
+    setTenantId(null);
+    toast.success("Deconnexion reussie");
   };
 
   return (
@@ -128,6 +162,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         loading,
         userRole,
+        userRoles,
+        tenantId,
         signIn,
         signUp,
         signOut,
@@ -145,3 +181,4 @@ export function useAuth() {
   }
   return context;
 }
+

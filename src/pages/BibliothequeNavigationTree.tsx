@@ -122,7 +122,7 @@ export default function BibliothequeNavigationTree() {
             <Search className="h-4 w-4 mr-2" />
             Recherche intelligente
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate("/veille/bibliotheque/tableau-de-bord")}>
+          <Button variant="outline" size="sm" onClick={() => navigate("/veille/bibliotheque/dashbord")}>
             <BarChart3 className="h-4 w-4 mr-2" />
             Tableau de bord
           </Button>

@@ -1,0 +1,108 @@
+-- Migration: batch 2 - client, site, user, and medical tables
+CREATE TABLE public.clients (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    nom_legal text,
+    is_active boolean NOT NULL DEFAULT true,
+    tenant_id uuid NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    abonnement_type text,
+    adresse_siege text,
+    billing_address text,
+    billing_email text,
+    billing_mode text,
+    billing_notes text,
+    billing_phone text,
+    code_postal text,
+    contacts jsonb,
+    contrat_sla text,
+    couleur_primaire text,
+    couleur_secondaire text,
+    currency text,
+    delegation text,
+    email text,
+    gouvernorat text,
+    localite text,
+    logo_url text,
+    matricule_fiscal text,
+    matricule_fiscale text,
+    nature text,
+    notes text,
+    payment_terms text,
+    primary_contact_id uuid,
+    rne_rc text,
+    secteur text,
+    site_web text,
+    statut text,
+    telephone text,
+    ville text
+);
+
+CREATE TABLE public.sites (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id uuid NOT NULL REFERENCES public.clients(id),
+    name text NOT NULL,
+    nom_site text,
+    is_active boolean NOT NULL DEFAULT true,
+    tenant_id uuid NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.profiles (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    nom text,
+    prenom text,
+    email text,
+    client_id uuid REFERENCES public.clients(id),
+    site_id uuid REFERENCES public.sites(id),
+    tenant_id uuid NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    actif boolean,
+    avatar_url text,
+    fonction text,
+    role_id uuid,
+    telephone text
+);
+
+CREATE TABLE public.employes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id uuid NOT NULL REFERENCES public.clients(id),
+    site_id uuid REFERENCES public.sites(id),
+    nom text NOT NULL,
+    prenom text NOT NULL,
+    matricule text NOT NULL,
+    aptitude_medicale text,
+    created_at timestamptz DEFAULT now(),
+    date_embauche date,
+    date_naissance date,
+    poste text,
+    risques_exposition text[],
+    statut_emploi text,
+    updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.med_visites (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id uuid NOT NULL REFERENCES public.clients(id),
+    employe_id uuid NOT NULL REFERENCES public.employes(id),
+    site_id uuid REFERENCES public.sites(id),
+    created_at timestamptz DEFAULT now(),
+    created_by uuid,
+    date_planifiee date NOT NULL,
+    date_realisee date,
+    medecin_nom text,
+    medecin_organisme text,
+    motif text,
+    prochaine_echeance date,
+    restrictions text,
+    resultat_aptitude text,
+    sms_flags text[],
+    statut_visite text,
+    type_visite text,
+    updated_at timestamptz DEFAULT now(),
+    updated_by uuid,
+    validite_jusqua date
+);

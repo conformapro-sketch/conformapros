@@ -1,6 +1,24 @@
-import { LayoutDashboard, FileText, ClipboardCheck, AlertTriangle, ShieldCheck, GraduationCap, HardHat, Users, FileCheck, BookOpen, Menu, Building2, Factory, Library, ChevronDown, FolderOpen, Settings, UserCog, Shield, Stethoscope } from "lucide-react";
-import { NavLink } from "react-router-dom";
-import { useState } from "react";
+import {
+  LayoutDashboard,
+  FileText,
+  ClipboardCheck,
+  AlertTriangle,
+  ShieldCheck,
+  GraduationCap,
+  HardHat,
+  Users,
+  FileCheck,
+  Menu,
+  Library,
+  ChevronDown,
+  FolderOpen,
+  Settings,
+  UserCog,
+  Shield,
+  Stethoscope,
+} from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect, useMemo, type ComponentType } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -22,33 +40,45 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import conformaProLogo from "@/assets/conforma-pro-logo.png";
+import { useAuth } from "@/contexts/AuthContext";
+
+const BILLING_MANAGER_ROLES = ["super_admin", "admin_global", "billing_manager"];
+const CLIENT_MODULE_TITLE = "Gestion des clients";
+const BIBLIOTHEQUE_TITLE = "Bibliothèque réglementaire";
 
 interface SubMenuItem {
   title: string;
   url: string;
+  allowedRoles?: string[];
 }
 
 interface MenuItem {
   title: string;
   url?: string;
-  icon: any;
+  icon: ComponentType<{ className?: string }>;
   subItems?: SubMenuItem[];
 }
 
 const menuItems: MenuItem[] = [
   { title: "Tableau de bord", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Clients", url: "/clients", icon: Building2 },
-  { title: "Sites", url: "/sites", icon: Factory },
-  { title: "📚 Bibliothèque réglementaire", url: "/bibliotheque", icon: Library },
-  { 
-    title: "Veille réglementaire", 
-    url: "/veille", 
+  {
+    title: BIBLIOTHEQUE_TITLE,
+    icon: Library,
+    subItems: [
+      { title: "Tableau de bord", url: "/veille/bibliotheque/dashbord" },
+      { title: "Domaines", url: "/veille/bibliotheque/domain" },
+      { title: "Textes & articles", url: "/veille/bibliotheque/" },
+      { title: "Recherche intelligente", url: "/veille/bibliotheque/recherche" },
+    ],
+  },
+  {
+    title: "Veille réglementaire",
+    url: "/veille",
     icon: FileText,
     subItems: [
-      { title: "Domaines", url: "/veille/domaines" },
-      { title: "Évaluation de conformité", url: "/veille/conformite" },
-      { title: "Plan d'action", url: "/veille/actions" }
-    ]
+      { title: "Evaluation de la conformite", url: "/veille/evaluation" },
+      { title: "Plan d'action", url: "/veille/actions" },
+    ],
   },
   { title: "Dossier réglementaire", url: "/dossier", icon: FileCheck },
   { title: "Contrôles techniques", url: "/controles", icon: ClipboardCheck },
@@ -59,6 +89,16 @@ const menuItems: MenuItem[] = [
   { title: "EPI & Équipements", url: "/epi", icon: HardHat },
   { title: "Prestataires", url: "/prestataires", icon: Users },
   { title: "Permis de travail", url: "/permis", icon: FileCheck },
+  {
+    title: CLIENT_MODULE_TITLE,
+    icon: FolderOpen,
+    subItems: [
+      { title: "Clients", url: "/clients" },
+      { title: "Sites", url: "/sites" },
+      { title: "Abonnement", url: "/abonnement", allowedRoles: BILLING_MANAGER_ROLES },
+      { title: "Facture", url: "/facture", allowedRoles: BILLING_MANAGER_ROLES },
+    ],
+  },
 ];
 
 const administrationItems: MenuItem[] = [
@@ -70,22 +110,72 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [openItems, setOpenItems] = useState<string[]>([]);
+  const location = useLocation();
+  const { userRoles, userRole } = useAuth();
+
+  const effectiveRoles = userRoles.length > 0 ? userRoles : userRole ? [userRole] : [];
+
+  const navigationItems = useMemo(() => {
+    return menuItems.map((item) => {
+      if (!item.subItems) {
+        return item;
+      }
+
+      const filteredSubItems = item.subItems.filter((subItem) => {
+        if (!subItem.allowedRoles || subItem.allowedRoles.length === 0) {
+          return true;
+        }
+        return effectiveRoles.some((role) => subItem.allowedRoles?.includes(role));
+      });
+
+      return { ...item, subItems: filteredSubItems };
+    });
+  }, [effectiveRoles]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/veille/bibliotheque")) {
+      setOpenItems((prev) =>
+        prev.includes(BIBLIOTHEQUE_TITLE) ? prev : [...prev, BIBLIOTHEQUE_TITLE],
+      );
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const clientModule = navigationItems.find(
+      (item) => item.title === CLIENT_MODULE_TITLE && item.subItems && item.subItems.length > 0,
+    );
+
+    if (!clientModule?.subItems) {
+      return;
+    }
+
+    const matchesClientRoute = clientModule.subItems.some((subItem) => {
+      const base = subItem.url;
+      return location.pathname === base || location.pathname.startsWith(`${base}/`);
+    });
+
+    if (matchesClientRoute) {
+      setOpenItems((prev) =>
+        prev.includes(CLIENT_MODULE_TITLE) ? prev : [...prev, CLIENT_MODULE_TITLE],
+      );
+    }
+  }, [location.pathname, navigationItems]);
 
   const toggleItem = (title: string) => {
     setOpenItems((prev) =>
-      prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]
+      prev.includes(title) ? prev.filter((entry) => entry !== title) : [...prev, title],
     );
   };
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
-      <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+      <div className="flex items-center justify-between border-b border-sidebar-border p-4">
         {!isCollapsed ? (
           <div className="flex items-center gap-2">
             <img src={conformaProLogo} alt="Conforma Pro" className="h-8 w-auto" />
           </div>
         ) : (
-          <div className="flex items-center justify-center w-full">
+          <div className="flex w-full items-center justify-center">
             <img src={conformaProLogo} alt="Conforma Pro" className="h-6 w-6 object-contain" />
           </div>
         )}
@@ -101,75 +191,86 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <Collapsible
-                  key={item.title}
-                  open={openItems.includes(item.title)}
-                  onOpenChange={() => toggleItem(item.title)}
-                >
-                  <SidebarMenuItem>
-                    {item.subItems && item.subItems.length > 0 ? (
-                      <>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton>
+              {navigationItems.map((item) => {
+                const subItems = item.subItems ?? [];
+                const hasSubItems = item.subItems !== undefined;
+                const isOpen = openItems.includes(item.title);
+
+                return (
+                  <Collapsible
+                    key={item.title}
+                    open={isOpen}
+                    onOpenChange={() => toggleItem(item.title)}
+                  >
+                    <SidebarMenuItem>
+                      {hasSubItems ? (
+                        <>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton aria-expanded={isOpen}>
+                              <item.icon className="h-4 w-4" />
+                              {!isCollapsed && (
+                                <>
+                                  <span>{item.title}</span>
+                                  <ChevronDown
+                                    aria-hidden="true"
+                                    className={`ml-auto h-4 w-4 transition-transform ${
+                                      isOpen ? "rotate-180" : ""
+                                    }`}
+                                  />
+                                </>
+                              )}
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          {!isCollapsed && (
+                            <CollapsibleContent>
+                              <SidebarMenuSub>
+                                {subItems.map((subItem) => (
+                                  <SidebarMenuSubItem key={subItem.url}>
+                                    <SidebarMenuSubButton asChild>
+                                      <NavLink
+                                        to={subItem.url}
+                                        className={({ isActive }) =>
+                                          isActive
+                                            ? "border-l-2 border-primary bg-sidebar-accent pl-2 font-medium text-sidebar-primary"
+                                            : "hover:bg-sidebar-accent/50"
+                                        }
+                                      >
+                                        <span>{subItem.title}</span>
+                                      </NavLink>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          )}
+                        </>
+                      ) : (
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={item.url!}
+                            end
+                            className={({ isActive }) =>
+                              isActive
+                                ? "bg-sidebar-accent font-medium text-sidebar-primary"
+                                : "hover:bg-sidebar-accent/50"
+                            }
+                          >
                             <item.icon className="h-4 w-4" />
-                            {!isCollapsed && (
-                              <>
-                                <span>{item.title}</span>
-                                <ChevronDown className="ml-auto h-4 w-4 transition-transform" />
-                              </>
-                            )}
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        {!isCollapsed && (
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              {item.subItems.map((subItem) => (
-                                <SidebarMenuSubItem key={subItem.url}>
-                                  <SidebarMenuSubButton asChild>
-                                    <NavLink
-                                      to={subItem.url}
-                                      className={({ isActive }) =>
-                                        isActive
-                                          ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                                          : "hover:bg-sidebar-accent/50"
-                                      }
-                                    >
-                                      <span>{subItem.title}</span>
-                                    </NavLink>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        )}
-                      </>
-                    ) : (
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url!}
-                          end
-                          className={({ isActive }) =>
-                            isActive
-                              ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                              : "hover:bg-sidebar-accent/50"
-                          }
-                        >
-                          <item.icon className="h-4 w-4" />
-                          {!isCollapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                </Collapsible>
-              ))}
+                            {!isCollapsed && <span>{item.title}</span>}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      )}
+                    </SidebarMenuItem>
+                  </Collapsible>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel>
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="mr-2 h-4 w-4" />
             {!isCollapsed && "Administration"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -181,7 +282,7 @@ export function AppSidebar() {
                       to={item.url!}
                       className={({ isActive }) =>
                         isActive
-                          ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                          ? "bg-sidebar-accent font-medium text-sidebar-primary"
                           : "hover:bg-sidebar-accent/50"
                       }
                     >
@@ -195,7 +296,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
     </Sidebar>
   );
 }

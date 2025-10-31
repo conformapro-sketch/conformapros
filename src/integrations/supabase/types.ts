@@ -1682,6 +1682,7 @@ export type Database = {
           prenom: string | null
           role_id: string | null
           site_id: string | null
+          tenant_id: string
           telephone: string | null
           updated_at: string
         }
@@ -1697,6 +1698,7 @@ export type Database = {
           prenom?: string | null
           role_id?: string | null
           site_id?: string | null
+          tenant_id?: string
           telephone?: string | null
           updated_at?: string
         }
@@ -1712,6 +1714,7 @@ export type Database = {
           prenom?: string | null
           role_id?: string | null
           site_id?: string | null
+          tenant_id?: string
           telephone?: string | null
           updated_at?: string
         }
@@ -1735,6 +1738,13 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1805,6 +1815,76 @@ export type Database = {
           },
         ]
       }
+      regulatory_applicability_rules: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          label: string
+          payload: Json
+          tags: string[]
+          tenant_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          label: string
+          payload?: Json
+          tags?: string[]
+          tenant_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          label?: string
+          payload?: Json
+          tags?: string[]
+          tenant_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_applicability_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_applicability_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_applicability_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roles: {
         Row: {
           actif: boolean | null
@@ -1834,6 +1914,427 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      site_article_actions: {
+        Row: {
+          article_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          echeance: string | null
+          id: string
+          priorite: Database["public"]["Enums"]["priorite"] | null
+          responsable_id: string | null
+          responsable_nom: string | null
+          site_id: string
+          status_id: string
+          statut: Database["public"]["Enums"]["statut_action"] | null
+          tenant_id: string
+          titre: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          article_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          echeance?: string | null
+          id?: string
+          priorite?: Database["public"]["Enums"]["priorite"] | null
+          responsable_id?: string | null
+          responsable_nom?: string | null
+          site_id?: string
+          status_id: string
+          statut?: Database["public"]["Enums"]["statut_action"] | null
+          tenant_id?: string
+          titre: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          echeance?: string | null
+          id?: string
+          priorite?: Database["public"]["Enums"]["priorite"] | null
+          responsable_id?: string | null
+          responsable_nom?: string | null
+          site_id?: string
+          status_id?: string
+          statut?: Database["public"]["Enums"]["statut_action"] | null
+          tenant_id?: string
+          titre?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_article_actions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_actions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_actions_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_actions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_actions_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "site_article_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_actions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_actions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_article_proofs: {
+        Row: {
+          article_id: string
+          commentaire: string | null
+          created_at: string
+          created_by: string | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          metadata: Json
+          proof_type: Database["public"]["Enums"]["regulatory_proof_type"]
+          resource_url: string
+          site_id: string
+          status_id: string
+          storage_bucket: string | null
+          storage_path: string | null
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          article_id?: string
+          commentaire?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          metadata?: Json
+          proof_type: Database["public"]["Enums"]["regulatory_proof_type"]
+          resource_url: string
+          site_id?: string
+          status_id: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          article_id?: string
+          commentaire?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          metadata?: Json
+          proof_type?: Database["public"]["Enums"]["regulatory_proof_type"]
+          resource_url?: string
+          site_id?: string
+          status_id?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_article_proofs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_proofs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_proofs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_proofs_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "site_article_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_proofs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_proofs_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_article_saved_views: {
+        Row: {
+          created_at: string
+          description: string | null
+          filters: Json
+          id: string
+          is_default: boolean
+          name: string
+          owner_id: string
+          scope: Database["public"]["Enums"]["regulatory_saved_view_scope"]
+          shared_with: Json
+          site_id: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          name: string
+          owner_id: string
+          scope?: Database["public"]["Enums"]["regulatory_saved_view_scope"]
+          shared_with?: Json
+          site_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          name?: string
+          owner_id?: string
+          scope?: Database["public"]["Enums"]["regulatory_saved_view_scope"]
+          shared_with?: Json
+          site_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_article_saved_views_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_saved_views_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_saved_views_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_article_status: {
+        Row: {
+          applicabilite: Database["public"]["Enums"]["regulatory_applicability"]
+          article_id: string
+          client_id: string
+          commentaire: string | null
+          created_at: string
+          created_by: string | null
+          etat: Database["public"]["Enums"]["etat_conformite"]
+          external_proof_url: string | null
+          id: string
+          impact_level: string | null
+          impact_score: number | null
+          is_locked: boolean
+          last_suggestion_id: string | null
+          locked_at: string | null
+          locked_by: string | null
+          motif_commentaire: string | null
+          motif_non_applicable: Database["public"]["Enums"]["regulatory_non_applicable_reason"] | null
+          preuve_urls: string[]
+          preuves_metadata: Json
+          site_id: string
+          suggestion_payload: Json
+          tenant_id: string
+          texte_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          applicabilite?: Database["public"]["Enums"]["regulatory_applicability"]
+          article_id: string
+          client_id?: string
+          commentaire?: string | null
+          created_at?: string
+          created_by?: string | null
+          etat?: Database["public"]["Enums"]["etat_conformite"]
+          external_proof_url?: string | null
+          id?: string
+          impact_level?: string | null
+          impact_score?: number | null
+          is_locked?: boolean
+          last_suggestion_id?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          motif_commentaire?: string | null
+          motif_non_applicable?: Database["public"]["Enums"]["regulatory_non_applicable_reason"] | null
+          preuve_urls?: string[]
+          preuves_metadata?: Json
+          site_id: string
+          suggestion_payload?: Json
+          tenant_id?: string
+          texte_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          applicabilite?: Database["public"]["Enums"]["regulatory_applicability"]
+          article_id?: string
+          client_id?: string
+          commentaire?: string | null
+          created_at?: string
+          created_by?: string | null
+          etat?: Database["public"]["Enums"]["etat_conformite"]
+          external_proof_url?: string | null
+          id?: string
+          impact_level?: string | null
+          impact_score?: number | null
+          is_locked?: boolean
+          last_suggestion_id?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          motif_commentaire?: string | null
+          motif_non_applicable?: Database["public"]["Enums"]["regulatory_non_applicable_reason"] | null
+          preuve_urls?: string[]
+          preuves_metadata?: Json
+          site_id?: string
+          suggestion_payload?: Json
+          tenant_id?: string
+          texte_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_article_status_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_status_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_status_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_status_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_status_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_status_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_status_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_article_status_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_modules: {
         Row: {
@@ -2965,9 +3466,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      regulatory_articles: {
+        Row: {
+          article_reference: string | null
+          date_publication_jort: string | null
+          domaines: string[]
+          id: string
+          impact: string | null
+          mots_cles: string[] | null
+          reference: string | null
+          reference_officielle: string | null
+          source: string | null
+          source_type: string | null
+          sous_domaines: string[]
+          statut_vigueur: Database["public"]["Enums"]["statut_vigueur"] | null
+          texte_id: string
+          texte_titre: string | null
+          texte_updated_at: string | null
+          titre: string | null
+          version_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      bulk_update_site_article_status: {
+        Args: {
+          p_changes: Json
+          p_status_ids: string[]
+        }
+        Returns: Database["public"]["Tables"]["site_article_status"]["Row"][]
+      }
+      create_site_article_action: {
+        Args: {
+          p_description?: string | null
+          p_echeance?: string | null
+          p_priorite?: Database["public"]["Enums"]["priorite"]
+          p_responsable_id?: string | null
+          p_responsable_nom?: string | null
+          p_statut?: Database["public"]["Enums"]["statut_action"]
+          p_status_id: string
+          p_titre: string
+        }
+        Returns: Database["public"]["Tables"]["site_article_actions"]["Row"]
+      }
       fix_duplicate_site_names: {
         Args: never
         Returns: {
@@ -2988,6 +3530,12 @@ export type Database = {
           details: Json
           fixed_count: number
         }[]
+      }
+      ensure_site_article_status_rows: {
+        Args: {
+          p_site_id: string
+        }
+        Returns: number
       }
       get_applicable_actes_for_site: {
         Args: { site_id_param: string }
@@ -3062,6 +3610,16 @@ export type Database = {
         | "RH"
         | "Hygiène"
         | "Autres"
+      regulatory_applicability: "APPLICABLE" | "NON_APPLICABLE"
+      regulatory_non_applicable_reason:
+        | "HORS_ACTIVITE"
+        | "NON_PRESENT_SUR_SITE"
+        | "VOLUME_SEUIL_NON_ATTEINT"
+        | "NON_CLASSE"
+        | "PROJET"
+        | "AUTRE"
+      regulatory_proof_type: "FILE" | "EXTERNAL_LINK"
+      regulatory_saved_view_scope: "user" | "team" | "tenant"
       etat_conformite: "Conforme" | "Partiel" | "Non_conforme" | "Non_evalue"
       gouvernorat:
         | "Ariana"
@@ -3119,18 +3677,7 @@ export type Database = {
         | "REPORTEE"
         | "ANNULEE"
         | "NO_SHOW"
-      type_acte:
-        | "loi"
-        | "loi_org"
-        | "code"
-        | "decret_gouv"
-        | "decret_pres"
-        | "decret_loi"
-        | "arrete"
-        | "arrete_conjoint"
-        | "circulaire"
-        | "decision"
-        | "rectificatif"
+      type_acte:`n        | "loi"`n        | "decret"`n        | "arrete"`n        | "circulaire"
       type_document_medical:
         | "CONVOCATION"
         | "AVIS_APTITUDE"
@@ -3300,6 +3847,17 @@ export const Constants = {
         "Hygiène",
         "Autres",
       ],
+      regulatory_applicability: ["APPLICABLE", "NON_APPLICABLE"],
+      regulatory_non_applicable_reason: [
+        "HORS_ACTIVITE",
+        "NON_PRESENT_SUR_SITE",
+        "VOLUME_SEUIL_NON_ATTEINT",
+        "NON_CLASSE",
+        "PROJET",
+        "AUTRE",
+      ],
+      regulatory_proof_type: ["FILE", "EXTERNAL_LINK"],
+      regulatory_saved_view_scope: ["user", "team", "tenant"],
       etat_conformite: ["Conforme", "Partiel", "Non_conforme", "Non_evalue"],
       gouvernorat: [
         "Ariana",
@@ -3363,16 +3921,9 @@ export const Constants = {
       ],
       type_acte: [
         "loi",
-        "loi_org",
-        "code",
-        "decret_gouv",
-        "decret_pres",
-        "decret_loi",
+        "decret",
         "arrete",
-        "arrete_conjoint",
         "circulaire",
-        "decision",
-        "rectificatif",
       ],
       type_document_medical: [
         "CONVOCATION",
@@ -3400,6 +3951,8 @@ export const Constants = {
     },
   },
 } as const
+
+
 
 
 

@@ -8,6 +8,12 @@ import { FileText, BookOpen, CheckCircle2, XCircle, BarChart3, PieChart, Calenda
 import { BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--muted))'];
+const TYPE_LABELS: Record<string, string> = {
+  loi: "Loi",
+  decret: "Decret",
+  arrete: "Arrete",
+  circulaire: "Circulaire"
+};
 
 export default function BibliothequeTableauDeBord() {
   const [yearFilter, setYearFilter] = useState<string>("all");
@@ -19,8 +25,8 @@ export default function BibliothequeTableauDeBord() {
     queryKey: ['textes_stats'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('textes_reglementaires')
-        .select('*, textes_reglementaires_domaines(domaine_id)')
+        .from('actes_reglementaires')
+        .select('*, actes_reglementaires_domaines(domaine_id)')
         .is('deleted_at', null);
       if (error) throw error;
       return data || [];
@@ -59,7 +65,7 @@ export default function BibliothequeTableauDeBord() {
       const yearMatch = yearFilter === "all" || texte.annee?.toString() === yearFilter;
       const autoriteMatch = autoriteFilter === "all" || texte.autorite === autoriteFilter;
       const domaineMatch = domaineFilter === "all" || 
-        (texte.textes_reglementaires_domaines || []).some((d: any) => d.domaine_id === domaineFilter);
+        (texte.actes_reglementaires_domaines || []).some((d: any) => d.domaine_id === domaineFilter);
       return yearMatch && autoriteMatch && domaineMatch;
     });
   }, [textes, yearFilter, autoriteFilter, domaineFilter]);
@@ -80,7 +86,7 @@ export default function BibliothequeTableauDeBord() {
     const totalTextes = filteredTextes.length;
     
     const textesByType = filteredTextes.reduce((acc, t) => {
-      acc[t.type] = (acc[t.type] || 0) + 1;
+      acc[t.type_acte] = (acc[t.type_acte] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
@@ -97,7 +103,7 @@ export default function BibliothequeTableauDeBord() {
       totalTextes,
       totalArticles: articles.length,
       lois: textesByType['loi'] || 0,
-      decrets: (textesByType['decret_gouv'] || 0) + (textesByType['decret_presidentiel'] || 0),
+      decrets: textesByType['decret'] || 0,
       arretes: textesByType['arrete'] || 0,
       circulaires: textesByType['circulaire'] || 0,
       textesByType,
@@ -109,7 +115,7 @@ export default function BibliothequeTableauDeBord() {
   // Prepare chart data
   const barChartData = useMemo(() => {
     return Object.entries(stats.textesByType).map(([type, count]) => ({
-      type: type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      type: TYPE_LABELS[type] || (type.charAt(0).toUpperCase() + type.slice(1)),
       count
     }));
   }, [stats.textesByType]);
@@ -361,3 +367,8 @@ export default function BibliothequeTableauDeBord() {
     </div>
   );
 }
+
+
+
+
+

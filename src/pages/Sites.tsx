@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, Plus, Search, Factory, Users, Pencil, Trash2, FileText, Building2, Settings, Filter } from "lucide-react";
+import { MapPin, Plus, Search, Factory, Users, Pencil, Trash2, FileText, Building2, Settings, Filter, FileDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSites, deleteSite, fetchClients, listSiteModules, listGouvernorats } from "@/lib/multi-tenant-queries";
@@ -22,22 +22,22 @@ import { Database } from "@/integrations/supabase/types";
 type SiteRow = Database["public"]["Tables"]["sites"]["Row"];
 
 const CLASSIFICATIONS = [
-  "1ère catégorie",
-  "2ème catégorie", 
-  "3ème catégorie",
+  "1Ã¨re catÃ©gorie",
+  "2Ã¨me catÃ©gorie", 
+  "3Ã¨me catÃ©gorie",
   "ERP",
   "EOP",
-  "Non classé",
+  "Non classÃ©",
 ];
 
 const SECTEURS = [
   "Chimique",
   "Pharmaceutique",
   "Agroalimentaire",
-  "Pétrolière",
+  "PÃ©troliÃ¨re",
   "Logistique",
   "Tertiaire",
-  "Énergie",
+  "Ã‰nergie",
   "Autre",
 ];
 
@@ -104,7 +104,7 @@ export default function Sites() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sites"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: "Site supprimé avec succès" });
+      toast({ title: "Site supprimÃ© avec succÃ¨s" });
       setDeletingId(null);
     },
     onError: (error: any) => {
@@ -149,15 +149,139 @@ export default function Sites() {
     }
   };
 
-  const handleExportPDF = () => {
-    toast({ title: "Export PDF en cours...", description: "Fonctionnalité à venir" });
+  const handleExportCsv = () => {
+    if (filteredSites.length === 0) {
+      toast({
+        title: "Export CSV",
+        description: "Aucun site ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const escapeValue = (value: string | number | null | undefined) =>
+      `"${String(value ?? "").replace(/"/g, )}"`;
+
+    const headers = [
+      "Nom",
+      "Code",
+      "Client",
+      "Gouvernorat",
+      "Secteur",
+      "Classification",
+      "Effectif",
+      "Responsable",
+      "Niveau de risque",
+    ].join(";");
+
+    const rows = filteredSites.map((site) => {
+      const clientName = (site as any)?.clients?.nom_legal ?? "";
+      return [
+        escapeValue(site.nom_site),
+        escapeValue(site.code_site),
+        escapeValue(clientName),
+        escapeValue(site.gouvernorat),
+        escapeValue(site.secteur_activite),
+        escapeValue(site.classification),
+        escapeValue(site.effectif ?? ""),
+        escapeValue(site.responsable_site ?? ""),
+        escapeValue(site.niveau_risque ?? ""),
+      ].join(";");
+    });
+
+    const csvContent = [headers, ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `sites_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
+  const handleExportPdf = () => {
+    if (filteredSites.length === 0) {
+      toast({
+        title: "Export PDF",
+        description: "Aucun site ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({
+        title: "Export PDF",
+        description: "Impossible d'ouvrir la fenêtre d'impression.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const tableRows = filteredSites
+      .map((site) => {
+        const clientName = (site as any)?.clients?.nom_legal ?? "";
+        return `<tr>
+          <td>${site.nom_site ?? ""}</td>
+          <td>${site.code_site ?? ""}</td>
+          <td>${clientName}</td>
+          <td>${site.gouvernorat ?? ""}</td>
+          <td>${site.secteur_activite ?? ""}</td>
+          <td>${site.classification ?? ""}</td>
+          <td>${site.effectif ?? ""}</td>
+          <td>${site.responsable_site ?? ""}</td>
+          <td>${site.niveau_risque ?? ""}</td>
+        </tr>`;
+      })
+      .join("");
+
+    printWindow.document.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Export sites</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; }
+    h1 { font-size: 20px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+    th { background-color: #f7f7f7; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Sites (${new Date().toLocaleDateString()})</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Code</th>
+        <th>Client</th>
+        <th>Gouvernorat</th>
+        <th>Secteur</th>
+        <th>Classification</th>
+        <th>Effectif</th>
+        <th>Responsable</th>
+        <th>Niveau de risque</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+</body>
+</html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
   const getRisqueBadgeVariant = (risque: string | null) => {
     if (!risque) return "default";
     switch (risque.toLowerCase()) {
       case "critique":
-      case "élevé":
+      case "Ã©levÃ©":
         return "destructive";
       case "moyen":
         return "secondary";
@@ -167,7 +291,7 @@ export default function Sites() {
   };
 
   const totalEffectif = sites?.reduce((sum, site) => sum + (site.effectif || 0), 0) || 0;
-  const highRiskSites = sites?.filter(s => s.niveau_risque && ["Critique", "Élevé"].includes(s.niveau_risque)).length || 0;
+  const highRiskSites = sites?.filter(s => s.niveau_risque && ["Critique", "Ã‰levÃ©"].includes(s.niveau_risque)).length || 0;
 
   return (
     <div className="space-y-6">
@@ -176,15 +300,19 @@ export default function Sites() {
         <div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Gestion des Sites</h1>
           <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            Gérez tous les sites et établissements
+            GÃ©rez tous les sites et Ã©tablissements
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportPDF}>
-            <FileText className="h-4 w-4 mr-2" />
-            Exporter
+        <div className="flex flex-wrap gap-2 justify-end">
+          <Button variant="outline" onClick={handleExportCsv}>
+            <FileDown className="h-4 w-4 mr-2" />
+            Export CSV
           </Button>
-          <Button 
+          <Button variant="outline" onClick={handleExportPdf}>
+            <FileText className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
+          <Button
             className="bg-gradient-primary shadow-medium"
             onClick={() => {
               setEditingSite(undefined);
@@ -203,7 +331,7 @@ export default function Sites() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom, code, gouvernorat, délégation, localité..."
+              placeholder="Rechercher par nom, code, gouvernorat, dÃ©lÃ©gation, localitÃ©..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -303,7 +431,7 @@ export default function Sites() {
               className="text-xs"
             >
               <Filter className="h-3 w-3 mr-1" />
-              Réinitialiser les filtres
+              RÃ©initialiser les filtres
             </Button>
           )}
         </CardContent>
@@ -325,13 +453,13 @@ export default function Sites() {
         </Card>
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardDescription>Sites à risque élevé</CardDescription>
+            <CardDescription>Sites Ã  risque Ã©levÃ©</CardDescription>
             <CardTitle className="text-3xl text-destructive">{highRiskSites}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardDescription>Résultats filtrés</CardDescription>
+            <CardDescription>RÃ©sultats filtrÃ©s</CardDescription>
             <CardTitle className="text-3xl">{filteredSites.length}</CardTitle>
           </CardHeader>
         </Card>
@@ -358,7 +486,7 @@ export default function Sites() {
                       </Badge>
                       {site.est_siege && (
                         <Badge variant="default" className="text-xs">
-                          Siège
+                          SiÃ¨ge
                         </Badge>
                       )}
                       {site.niveau_risque && (
@@ -397,7 +525,7 @@ export default function Sites() {
                     {site.effectif !== null && (
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{site.effectif} employés</span>
+                        <span className="text-muted-foreground">{site.effectif} employÃ©s</span>
                       </div>
                     )}
                   </div>
@@ -410,7 +538,7 @@ export default function Sites() {
                           {[site.localite, site.delegation, site.gouvernorat]
                             .filter(Boolean)
                             .join(", ")}
-                          {site.code_postal && ` · ${site.code_postal}`}
+                          {site.code_postal && ` Â· ${site.code_postal}`}
                         </span>
                       </div>
                     </div>
@@ -457,8 +585,8 @@ export default function Sites() {
             <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">
               {searchQuery || filterClient !== "all" || filterGouvernorat !== "all" 
-                ? "Aucun site ne correspond aux critères de recherche" 
-                : "Aucun site enregistré"}
+                ? "Aucun site ne correspond aux critÃ¨res de recherche" 
+                : "Aucun site enregistrÃ©"}
             </p>
             {!searchQuery && filterClient === "all" && filterGouvernorat === "all" && (
               <Button 
@@ -468,7 +596,7 @@ export default function Sites() {
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Créer le premier site
+                CrÃ©er le premier site
               </Button>
             )}
           </CardContent>
@@ -489,7 +617,7 @@ export default function Sites() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce site ? Cette action est irréversible.
+              ÃŠtes-vous sÃ»r de vouloir supprimer ce site ? Cette action est irrÃ©versible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

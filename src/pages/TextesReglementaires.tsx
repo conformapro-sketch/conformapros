@@ -15,16 +15,9 @@ import * as XLSX from 'xlsx';
 
 const TYPE_LABELS: Record<string, string> = {
   loi: "Loi",
-  loi_org: "Loi organique",
-  code: "Code",
-  decret_gouv: "Décret gouvernemental",
-  decret_pres: "Décret présidentiel",
-  decret_loi: "Décret-loi",
-  arrete: "Arrêté",
-  arrete_conjoint: "Arrêté conjoint",
-  circulaire: "Circulaire",
-  decision: "Décision",
-  rectificatif: "Rectificatif"
+  decret: "Decret",
+  arrete: "Arrete",
+  circulaire: "Circulaire"
 };
 
 export default function TextesReglementaires() {
@@ -526,3 +519,4 @@ export default function TextesReglementaires() {
     </div>
   );
 }
+

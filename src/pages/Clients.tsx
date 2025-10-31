@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Search, MapPin, Factory, Eye, Pencil, Trash2, FileText, AlertTriangle } from "lucide-react";
+import { Building2, Plus, Search, MapPin, Factory, Eye, Pencil, Trash2, FileText, AlertTriangle, FileDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClients, fetchSites, deleteClient } from "@/lib/multi-tenant-queries";
@@ -47,7 +47,7 @@ export default function Clients() {
     mutationFn: deleteClient,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: "Client supprimé avec succès" });
+      toast({ title: "Client supprimÃ© avec succÃ¨s" });
       setDeletingId(null);
     },
     onError: (error: any) => {
@@ -92,18 +92,146 @@ export default function Clients() {
   };
 
   const handleViewSites = (client: ClientRow) => {
-    setSelectedClient({ 
-      id: client.id, 
+    setSelectedClient({
+      id: client.id,
       name: client.nom_legal,
-      color: client.couleur_primaire || undefined
+      color: client.couleur_primaire || undefined,
     });
     setSitesDrawerOpen(true);
   };
 
-  const handleExportPDF = () => {
-    toast({ title: "Export PDF en cours...", description: "Fonctionnalité à venir" });
+  const billingModeLabels: Record<string, string> = {
+    client: "Client",
+    site: "Site",
+    hybrid: "Hybride",
   };
 
+  const handleExportCsv = () => {
+    if (filteredClients.length === 0) {
+      toast({
+        title: "Export CSV",
+        description: "Aucun client ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const escapeValue = (value: string | number | null | undefined) =>
+      `"${String(value ?? "").replace(/"/g, )}"`;
+
+    const headers = [
+      "Nom",
+      "Matricule fiscale",
+      "RNE / RC",
+      "Secteur",
+      "Gouvernorat",
+      "Sites",
+      "Mode de facturation",
+      "Statut",
+    ].join(";");
+
+    const rows = filteredClients.map((client) => {
+      const siteCount = getSitesCount(client.id);
+      const billingMode = billingModeLabels[client.billing_mode ?? "client"] ?? "Client";
+      return [
+        escapeValue(client.nom_legal || client.name || ""),
+        escapeValue(client.matricule_fiscal),
+        escapeValue(client.rne_rc),
+        escapeValue(client.secteur),
+        escapeValue(client.gouvernorat),
+        escapeValue(siteCount),
+        escapeValue(billingMode),
+        escapeValue(client.statut ?? "actif"),
+      ].join(";");
+    });
+
+    const csvContent = [headers, ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `clients_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPdf = () => {
+    if (filteredClients.length === 0) {
+      toast({
+        title: "Export PDF",
+        description: "Aucun client ne correspond aux filtres actuels.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({
+        title: "Export PDF",
+        description: "Impossible d'ouvrir la fenêtre d'impression.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const tableRows = filteredClients
+      .map((client) => {
+        const siteCount = getSitesCount(client.id);
+        const billingMode = billingModeLabels[client.billing_mode ?? "client"] ?? "Client";
+        return `<tr>
+          <td>${client.nom_legal ?? client.name ?? ""}</td>
+          <td>${client.matricule_fiscal ?? ""}</td>
+          <td>${client.rne_rc ?? ""}</td>
+          <td>${client.secteur ?? ""}</td>
+          <td>${client.gouvernorat ?? ""}</td>
+          <td>${siteCount}</td>
+          <td>${billingMode}</td>
+          <td>${client.statut ?? "actif"}</td>
+        </tr>`;
+      })
+      .join("");
+
+    printWindow.document.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Export clients</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; }
+    h1 { font-size: 20px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+    th { background-color: #f7f7f7; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Clients (${new Date().toLocaleDateString()})</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Matricule fiscale</th>
+        <th>RNE / RC</th>
+        <th>Secteur</th>
+        <th>Gouvernorat</th>
+        <th>Sites</th>
+        <th>Mode de facturation</th>
+        <th>Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+</body>
+</html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
   const activeClients = clients?.filter(c => c.statut === "actif").length || 0;
   const totalSites = allSites?.length || 0;
 
@@ -114,17 +242,21 @@ export default function Clients() {
         <div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Gestion des Clients</h1>
           <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            Gérez vos clients et leurs sites
+            GÃ©rez vos clients et leurs sites
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 justify-end">
           <Button variant="outline" onClick={() => setIntegrityCheckerOpen(true)}>
             <AlertTriangle className="h-4 w-4 mr-2" />
             Vérifier l'intégrité
           </Button>
-          <Button variant="outline" onClick={handleExportPDF}>
+          <Button variant="outline" onClick={handleExportCsv}>
+            <FileDown className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button variant="outline" onClick={handleExportPdf}>
             <FileText className="h-4 w-4 mr-2" />
-            Exporter
+            Export PDF
           </Button>
           <Button 
             className="bg-gradient-primary shadow-medium"
@@ -160,19 +292,19 @@ export default function Clients() {
                 <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
                   <SelectItem value="all">Tous les gouvernorats</SelectItem>
                   <SelectItem value="Ariana">Ariana</SelectItem>
-                  <SelectItem value="Béja">Béja</SelectItem>
+                  <SelectItem value="BÃ©ja">BÃ©ja</SelectItem>
                   <SelectItem value="Ben Arous">Ben Arous</SelectItem>
                   <SelectItem value="Bizerte">Bizerte</SelectItem>
-                  <SelectItem value="Gabès">Gabès</SelectItem>
+                  <SelectItem value="GabÃ¨s">GabÃ¨s</SelectItem>
                   <SelectItem value="Gafsa">Gafsa</SelectItem>
                   <SelectItem value="Jendouba">Jendouba</SelectItem>
                   <SelectItem value="Kairouan">Kairouan</SelectItem>
                   <SelectItem value="Kasserine">Kasserine</SelectItem>
-                  <SelectItem value="Kébili">Kébili</SelectItem>
+                  <SelectItem value="KÃ©bili">KÃ©bili</SelectItem>
                   <SelectItem value="Le Kef">Le Kef</SelectItem>
                   <SelectItem value="Mahdia">Mahdia</SelectItem>
                   <SelectItem value="La Manouba">La Manouba</SelectItem>
-                  <SelectItem value="Médenine">Médenine</SelectItem>
+                  <SelectItem value="MÃ©denine">MÃ©denine</SelectItem>
                   <SelectItem value="Monastir">Monastir</SelectItem>
                   <SelectItem value="Nabeul">Nabeul</SelectItem>
                   <SelectItem value="Sfax">Sfax</SelectItem>
@@ -206,7 +338,7 @@ export default function Clients() {
                   <SelectItem value="all">Tous les statuts</SelectItem>
                   <SelectItem value="actif">Actif</SelectItem>
                   <SelectItem value="suspendu">Suspendu</SelectItem>
-                  <SelectItem value="archivé">Archivé</SelectItem>
+                  <SelectItem value="archivÃ©">ArchivÃ©</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -236,7 +368,7 @@ export default function Clients() {
         </Card>
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardDescription>Résultats filtrés</CardDescription>
+            <CardDescription>RÃ©sultats filtrÃ©s</CardDescription>
             <CardTitle className="text-3xl">{filteredClients.length}</CardTitle>
           </CardHeader>
         </Card>
@@ -271,7 +403,7 @@ export default function Clients() {
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg truncate">{client.nom_legal}</CardTitle>
                         <CardDescription className="text-xs mt-1">
-                          {client.rne_rc || client.matricule_fiscal || "Pas de référence"}
+                          {client.rne_rc || client.matricule_fiscal || "Pas de rÃ©fÃ©rence"}
                         </CardDescription>
                       </div>
                     </div>
@@ -343,7 +475,7 @@ export default function Clients() {
             <p className="text-muted-foreground mb-4">
               {searchQuery || statutFilter !== "all" || secteurFilter !== "all" || gouvernoratFilter !== "all"
                 ? "Aucun client ne correspond aux filtres" 
-                : "Aucun client enregistré"}
+                : "Aucun client enregistrÃ©"}
             </p>
             {!searchQuery && statutFilter === "all" && secteurFilter === "all" && gouvernoratFilter === "all" && (
               <Button 
@@ -353,7 +485,7 @@ export default function Clients() {
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Créer le premier client
+                CrÃ©er le premier client
               </Button>
             )}
           </CardContent>
@@ -389,7 +521,7 @@ export default function Clients() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce client ? Tous les sites associés seront également supprimés. Cette action est irréversible.
+              ÃŠtes-vous sÃ»r de vouloir supprimer ce client ? Tous les sites associÃ©s seront Ã©galement supprimÃ©s. Cette action est irrÃ©versible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

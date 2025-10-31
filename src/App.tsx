@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import TopNavBar from "@/components/TopNavBar";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Login from "./pages/Login";
@@ -14,6 +15,8 @@ import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import Sites from "./pages/Sites";
 import SiteDetail from "./pages/SiteDetail";
+import Abonnement from "./pages/Abonnement";
+import Facture from "./pages/Facture";
 import VeilleReglementaire from "./pages/VeilleReglementaire";
 import BibliothequeTextes from "./pages/BibliothequeTextes";
 import BibliothequeReglementaire from "./pages/BibliothequeReglementaire";
@@ -24,7 +27,7 @@ import BibliothequeArticleVersions from "./pages/BibliothequeArticleVersions";
 import BibliothequeTableauDeBord from "./pages/BibliothequeTableauDeBord";
 import BibliothequeRechercheIntelligente from "./pages/BibliothequeRechercheIntelligente";
 import ArticleVersions from "./pages/ArticleVersions";
-import ConformiteEvaluation from "./pages/ConformiteEvaluation";
+import VeilleEvaluation from "./pages/VeilleEvaluation";
 import PlanAction from "./pages/PlanAction";
 import DomainesPage from "./pages/DomainesPage";
 import GestionArticles from "./pages/GestionArticles";
@@ -78,13 +81,31 @@ const App = () => (
                   <SidebarProvider>
                     <div className="flex min-h-screen w-full bg-background">
                       <AppSidebar />
-                      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+                      <div className="flex flex-1 flex-col">
+                        <TopNavBar />
+                        <main className="flex-1 overflow-y-auto px-4 pb-8 pt-24 sm:px-6 lg:px-8">
                         <Routes>
                           <Route path="/dashboard" element={<Dashboard />} />
                           <Route path="/clients" element={<Clients />} />
                           <Route path="/clients/:id" element={<ClientDetail />} />
                           <Route path="/sites" element={<Sites />} />
                           <Route path="/sites/:id" element={<SiteDetail />} />
+                          <Route
+                            path="/abonnement"
+                            element={
+                              <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
+                                <Abonnement />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/facture"
+                            element={
+                              <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
+                                <Facture />
+                              </ProtectedRoute>
+                            }
+                          />
                           <Route path="/actes" element={<TextesReglementaires />} />
                           <Route path="/actes/nouveau" element={<TexteForm />} />
                           <Route path="/actes/:id" element={<TexteDetail />} />
@@ -96,7 +117,8 @@ const App = () => (
                           <Route path="/textes/:id" element={<TexteDetail />} />
                           <Route path="/textes/:id/editer" element={<TexteForm />} />
                           <Route path="/bibliotheque" element={<BibliothequeNavigationTree />} />
-                          <Route path="/bibliotheque/tableau-de-bord" element={<BibliothequeTableauDeBord />} />
+                          {/* legacy tableau-de-bord -> new dashbord path (client-side redirect) */}
+                          <Route path="/bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
                           <Route path="/bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
                           <Route path="/bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
                           <Route path="/bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
@@ -106,11 +128,16 @@ const App = () => (
                           <Route path="/veille/bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
                           <Route path="/veille/bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
                           <Route path="/veille/bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
-                          <Route path="/veille/bibliotheque/tableau-de-bord" element={<BibliothequeTableauDeBord />} />
+                          {/* keep new canonical path /veille/bibliotheque/dashbord and redirect old one */}
+                          <Route path="/veille/bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
+                          <Route path="/veille/bibliotheque/dashbord" element={<BibliothequeTableauDeBord />} />
                           <Route path="/veille/bibliotheque/recherche" element={<BibliothequeRechercheIntelligente />} />
-                          <Route path="/veille/conformite" element={<ConformiteEvaluation />} />
+                          <Route path="/veille/evaluation" element={<VeilleEvaluation />} />
+                          <Route path="/veille/conformite" element={<Navigate to="/veille/evaluation" replace />} />
                           <Route path="/veille/actions" element={<PlanAction />} />
-                          <Route path="/veille/domaines" element={<DomainesPage />} />
+                          {/* Domaines moved under Bibliothèque: add new route and redirect old one */}
+                          <Route path="/veille/domaines" element={<Navigate to="/veille/bibliotheque/domain" replace />} />
+                          <Route path="/veille/bibliotheque/domain" element={<DomainesPage />} />
                           <Route path="/veille/textes/:id/articles" element={<GestionArticles />} />
                           <Route path="/utilisateurs" element={<GestionUtilisateurs />} />
                           <Route path="/roles" element={<GestionRoles />} />
@@ -129,6 +156,7 @@ const App = () => (
                         </Routes>
                       </main>
                     </div>
+                  </div>
                   </SidebarProvider>
                 </ProtectedRoute>
               }

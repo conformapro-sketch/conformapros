@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+﻿import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, loading, userRole } = useAuth();
+  const { user, loading, userRole, userRoles } = useAuth();
 
   if (loading) {
     return (
@@ -21,15 +21,17 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/login" replace />;
   }
 
-  // Check role-based access if roles are specified
   if (allowedRoles && allowedRoles.length > 0) {
-    if (!userRole || !allowedRoles.includes(userRole)) {
+    const effectiveRoles = userRoles.length > 0 ? userRoles : (userRole ? [userRole] : []);
+    const hasAccess = effectiveRoles.some((role) => allowedRoles.includes(role));
+
+    if (!hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-screen p-4">
           <div className="text-center space-y-4">
-            <h1 className="text-2xl font-bold text-destructive">Accès refusé</h1>
+            <h1 className="text-2xl font-bold text-destructive">Acces refuse</h1>
             <p className="text-muted-foreground">
-              Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+              Vous n'avez pas les permissions necessaires pour acceder a cette page.
             </p>
           </div>
         </div>

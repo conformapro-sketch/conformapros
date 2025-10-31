@@ -40,12 +40,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Edit, Trash2, Key, CheckCircle, XCircle, Search } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserPlus, Edit, Trash2, Key, CheckCircle, XCircle, Search, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function GestionUtilisateurs() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userRole } = useAuth();
+  const canManageTeam = userRole === "admin_global";
   const [searchTerm, setSearchTerm] = useState("");
   const [userDialog, setUserDialog] = useState<{
     open: boolean;
@@ -71,16 +74,29 @@ export default function GestionUtilisateurs() {
     telephone: "",
   });
 
+  if (!canManageTeam) {
+    return (
+      <Card className="shadow-soft">
+        <CardContent className="py-12 text-center space-y-3 text-muted-foreground">
+          <Shield className="mx-auto h-10 w-10" />
+          <p>Seuls les administrateurs Conforma Pro peuvent gerer cette equipe.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Fetch users
   const { data: users, isLoading } = useQuery({
     queryKey: ["users"],
     queryFn: usersQueries.getAll,
+    enabled: canManageTeam,
   });
 
   // Fetch roles
   const { data: roles } = useQuery({
     queryKey: ["roles"],
     queryFn: rolesQueries.getAll,
+    enabled: canManageTeam,
   });
 
   // Fetch clients
@@ -493,3 +509,8 @@ export default function GestionUtilisateurs() {
     </div>
   );
 }
+
+
+
+
+
