@@ -1187,7 +1187,7 @@ export default function VeilleEvaluation() {
               <SelectValue placeholder="Sélectionner un site" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tous les sites</SelectItem>
+              <SelectItem value="all">Tous les sites</SelectItem>
               {sites.map((site) => (
                 <SelectItem key={site.id} value={site.id}>
                   {site.nom_site}
@@ -1224,7 +1224,7 @@ export default function VeilleEvaluation() {
                 <SelectValue placeholder="Vues enregistrees" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Pas de vue</SelectItem>
+                <SelectItem value="none">Pas de vue</SelectItem>
                 {savedViewsList.map((view) => (
                   <SelectItem key={view.id} value={view.id}>
                     {view.name}
@@ -1313,7 +1313,7 @@ export default function VeilleEvaluation() {
                 <SelectValue placeholder="Domaine" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les domaines</SelectItem>
+                <SelectItem value="all">Tous les domaines</SelectItem>
                 {domaines.map((domaine) => (
                   <SelectItem key={domaine.id} value={domaine.id}>
                     {domaine.libelle}
@@ -1337,7 +1337,7 @@ export default function VeilleEvaluation() {
                 <SelectValue placeholder="Sous-domaine" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les sous-domaines</SelectItem>
+                <SelectItem value="all">Tous les sous-domaines</SelectItem>
                 {sousDomaines.map((sousDomaine) => (
                   <SelectItem key={sousDomaine.id} value={sousDomaine.id}>
                     {sousDomaine.libelle}
@@ -1360,7 +1360,7 @@ export default function VeilleEvaluation() {
                 <SelectValue placeholder="Applicabilité" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Toutes</SelectItem>
+                <SelectItem value="all">Toutes</SelectItem>
                 {APPLICABILITY_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -1383,7 +1383,7 @@ export default function VeilleEvaluation() {
                 <SelectValue placeholder="État de conformité" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les états</SelectItem>
+                <SelectItem value="all">Tous les états</SelectItem>
                 {STATE_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -1415,7 +1415,7 @@ export default function VeilleEvaluation() {
                       <SelectValue placeholder="Motif (Non applicable)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tous les motifs</SelectItem>
+                      <SelectItem value="all">Tous les motifs</SelectItem>
                       {MOTIF_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -1438,7 +1438,7 @@ export default function VeilleEvaluation() {
                       <SelectValue placeholder="Présence de preuve" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Toutes</SelectItem>
+                      <SelectItem value="all">Toutes</SelectItem>
                       {PROOF_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -1461,7 +1461,7 @@ export default function VeilleEvaluation() {
                       <SelectValue placeholder="Source du texte" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Toutes les sources</SelectItem>
+                      <SelectItem value="all">Toutes les sources</SelectItem>
                       <SelectItem value="LOI">Loi</SelectItem>
                       <SelectItem value="DECRET">Décret</SelectItem>
                       <SelectItem value="ARRETE">Arrêté</SelectItem>
@@ -1483,7 +1483,7 @@ export default function VeilleEvaluation() {
                       <SelectValue placeholder="Mise à jour" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Toute période</SelectItem>
+                      <SelectItem value="all">Toute période</SelectItem>
                       {UPDATED_WITHIN_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={String(option.value)}>
                           {option.label}

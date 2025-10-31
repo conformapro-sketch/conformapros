@@ -289,7 +289,7 @@ export function InvoiceFormDrawer({ open, onOpenChange }: InvoiceFormDrawerProps
                   <SelectValue placeholder="Tous les sites" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border max-h-64">
-                  <SelectItem value="">Tous les sites / Client</SelectItem>
+                  <SelectItem value="all">Tous les sites / Client</SelectItem>
                   {sites.map((site) => (
                     <SelectItem key={site.id} value={site.id}>
                       {site.nom_site || site.name}
@@ -310,7 +310,7 @@ export function InvoiceFormDrawer({ open, onOpenChange }: InvoiceFormDrawerProps
                   <SelectValue placeholder="Optionnel" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border max-h-64">
-                  <SelectItem value="">Sans abonnement</SelectItem>
+                  <SelectItem value="none">Sans abonnement</SelectItem>
                   {subscriptions.map((subscription) => (
                     <SelectItem key={subscription.id} value={subscription.id}>
                       {subscription.plans?.label ?? "Abonnement"}

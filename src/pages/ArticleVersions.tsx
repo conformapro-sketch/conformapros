@@ -334,7 +334,7 @@ export default function ArticleVersions() {
                     <SelectValue placeholder="Sélectionner une version" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucune</SelectItem>
+                    <SelectItem value="none">Aucune</SelectItem>
                     {versions?.map((v) => (
                       <SelectItem key={v.id} value={v.id}>
                         {v.version_label}
