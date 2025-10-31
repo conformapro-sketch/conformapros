@@ -56,6 +56,8 @@ import EnvironnementDechets from "./pages/EnvironnementDechets";
 import EnvironnementSurveillance from "./pages/EnvironnementSurveillance";
 import EnvironnementPointsLimites from "./pages/EnvironnementPointsLimites";
 import EnvironnementPrestataires from "./pages/EnvironnementPrestataires";
+import EmployeeSanteFiche from "./pages/EmployeeSanteFiche";
+import VisitesMedicalesPlanification from "./pages/VisitesMedicalesPlanification";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 
@@ -193,8 +195,12 @@ const App = () => (
               <Route path="/environnement/surveillance" element={<EnvironnementSurveillance />} />
               <Route path="/environnement/points-limites" element={<EnvironnementPointsLimites />} />
               <Route path="/environnement/prestataires" element={<EnvironnementPrestataires />} />
-                          <Route path="/visites-medicales" element={<VisitesMedicales />} />
-                          <Route path="/epi" element={<ComingSoon title="EPI & Équipements" description="Registre des équipements de protection individuelle et dotations" />} />
+              
+              <Route path="/visites-medicales" element={<VisitesMedicales />} />
+              <Route path="/visites-medicales/planning" element={<VisitesMedicalesPlanification />} />
+              <Route path="/visites-medicales/employe/:employeeId" element={<EmployeeSanteFiche />} />
+              
+              <Route path="/epi" element={<ComingSoon title="EPI & Équipements" description="Registre des équipements de protection individuelle et dotations" />} />
                           <Route path="/prestataires" element={<ComingSoon title="Prestataires & Sous-traitants" description="Gestion des contrats et conformité des prestataires externes" />} />
                           <Route path="/permis" element={<ComingSoon title="Permis de travail" description="Système électronique de permis de travail et accès visiteurs" />} />
                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
