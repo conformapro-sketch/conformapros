@@ -289,6 +289,7 @@ export type Database = {
           date_echeance: string | null
           description: string | null
           id: string
+          incident_id: string | null
           manquement: string | null
           priorite: string
           responsable_id: string | null
@@ -304,6 +305,7 @@ export type Database = {
           date_echeance?: string | null
           description?: string | null
           id?: string
+          incident_id?: string | null
           manquement?: string | null
           priorite?: string
           responsable_id?: string | null
@@ -319,6 +321,7 @@ export type Database = {
           date_echeance?: string | null
           description?: string | null
           id?: string
+          incident_id?: string | null
           manquement?: string | null
           priorite?: string
           responsable_id?: string | null
@@ -332,6 +335,13 @@ export type Database = {
             columns: ["conformite_id"]
             isOneToOne: false
             referencedRelation: "conformite"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actions_correctives_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
             referencedColumns: ["id"]
           },
         ]
@@ -1248,6 +1258,249 @@ export type Database = {
           pays?: string | null
         }
         Relationships: []
+      }
+      incident_causes: {
+        Row: {
+          created_at: string
+          id: string
+          incident_id: string
+          niveau: number
+          question: string
+          reponse: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          incident_id: string
+          niveau: number
+          question: string
+          reponse: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          incident_id?: string
+          niveau?: number
+          question?: string
+          reponse?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_causes_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_photos: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string
+          id: string
+          incident_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          incident_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          incident_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_photos_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incidents: {
+        Row: {
+          analyse_causes: string | null
+          arret_travail: boolean | null
+          atelier: string | null
+          batiment: string | null
+          categorie: string | null
+          circonstances: string | null
+          created_at: string
+          created_by: string | null
+          date_cloture: string | null
+          date_incident: string
+          date_validation: string | null
+          declarant_fonction: string | null
+          declarant_id: string | null
+          declarant_nom: string | null
+          description: string
+          est_recurrent: boolean | null
+          facteur_environnemental: boolean | null
+          facteur_humain: boolean | null
+          facteur_materiel: boolean | null
+          facteur_organisationnel: boolean | null
+          gravite: string
+          heure_incident: string | null
+          hospitalisation: boolean | null
+          id: string
+          jours_arret: number | null
+          mesures_correctives: string | null
+          numero_incident: string
+          personne_impliquee_id: string | null
+          personne_impliquee_nom: string | null
+          responsable_suivi_id: string | null
+          site_id: string
+          statut: string
+          type_incident: string
+          updated_at: string
+          validateur_id: string | null
+          zone: string | null
+        }
+        Insert: {
+          analyse_causes?: string | null
+          arret_travail?: boolean | null
+          atelier?: string | null
+          batiment?: string | null
+          categorie?: string | null
+          circonstances?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_cloture?: string | null
+          date_incident: string
+          date_validation?: string | null
+          declarant_fonction?: string | null
+          declarant_id?: string | null
+          declarant_nom?: string | null
+          description: string
+          est_recurrent?: boolean | null
+          facteur_environnemental?: boolean | null
+          facteur_humain?: boolean | null
+          facteur_materiel?: boolean | null
+          facteur_organisationnel?: boolean | null
+          gravite: string
+          heure_incident?: string | null
+          hospitalisation?: boolean | null
+          id?: string
+          jours_arret?: number | null
+          mesures_correctives?: string | null
+          numero_incident: string
+          personne_impliquee_id?: string | null
+          personne_impliquee_nom?: string | null
+          responsable_suivi_id?: string | null
+          site_id: string
+          statut?: string
+          type_incident: string
+          updated_at?: string
+          validateur_id?: string | null
+          zone?: string | null
+        }
+        Update: {
+          analyse_causes?: string | null
+          arret_travail?: boolean | null
+          atelier?: string | null
+          batiment?: string | null
+          categorie?: string | null
+          circonstances?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_cloture?: string | null
+          date_incident?: string
+          date_validation?: string | null
+          declarant_fonction?: string | null
+          declarant_id?: string | null
+          declarant_nom?: string | null
+          description?: string
+          est_recurrent?: boolean | null
+          facteur_environnemental?: boolean | null
+          facteur_humain?: boolean | null
+          facteur_materiel?: boolean | null
+          facteur_organisationnel?: boolean | null
+          gravite?: string
+          heure_incident?: string | null
+          hospitalisation?: boolean | null
+          id?: string
+          jours_arret?: number | null
+          mesures_correctives?: string | null
+          numero_incident?: string
+          personne_impliquee_id?: string | null
+          personne_impliquee_nom?: string | null
+          responsable_suivi_id?: string | null
+          site_id?: string
+          statut?: string
+          type_incident?: string
+          updated_at?: string
+          validateur_id?: string | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incidents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_declarant_id_fkey"
+            columns: ["declarant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_personne_impliquee_id_fkey"
+            columns: ["personne_impliquee_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_responsable_suivi_id_fkey"
+            columns: ["responsable_suivi_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_validateur_id_fkey"
+            columns: ["validateur_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       med_documents: {
         Row: {
