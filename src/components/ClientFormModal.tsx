@@ -22,15 +22,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Settings, User as UserIcon } from "lucide-react";
+import { Building2, Settings, User as UserIcon, Upload, Palette } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ClientUserFormModal } from "./ClientUserFormModal";
 import { fetchClientUsersPaginated, resetClientUserPassword, activateClientUser, deactivateClientUser, logAudit } from "@/lib/multi-tenant-queries";
+import { supabase } from "@/integrations/supabase/client";
 
 type ClientRow = Database["public"]["Tables"]["clients"]["Row"];
 
@@ -48,6 +49,8 @@ const clientSchema = z.object({
   code_postal: z.string().optional(),
   statut: z.string().optional(),
   notes: z.string().optional(),
+  logo_url: z.string().optional(),
+  couleur_primaire: z.string().optional(),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -149,7 +152,6 @@ const createMutation = useMutation({
     "Sousse", "Tataouine", "Tozeur", "Tunis", "Zaghouan"
   ];
 
-  // Users tab state
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [searchUsers, setSearchUsers] = useState("");
@@ -158,6 +160,8 @@ const createMutation = useMutation({
   const [siteFilter, setSiteFilter] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: usersPage, isLoading: usersLoading } = useQuery({
     queryKey: ["client-users", client?.id, searchUsers, roleFilter, statusFilter, siteFilter, page, pageSize],
@@ -202,6 +206,66 @@ const createMutation = useMutation({
       toast({ title: willDeactivate ? "Utilisateur désactivé" : "Utilisateur activé" });
     } catch (err: any) {
       toast({ title: "Erreur", description: err.message || "Impossible de changer le statut.", variant: 'destructive' });
+    }
+  };
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner une image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Erreur",
+        description: "L'image ne doit pas dépasser 2 Mo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('client-logos')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('client-logos')
+        .getPublicUrl(fileName);
+
+      setValue('logo_url', publicUrl);
+      
+      toast({
+        title: "Logo téléchargé",
+        description: "Le logo a été téléchargé avec succès",
+      });
+    } catch (error: any) {
+      console.error('Logo upload error:', error);
+      toast({
+        title: "Erreur de téléchargement",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -275,14 +339,18 @@ const createMutation = useMutation({
           ) : (
             // Full edit form with tabs
             <Tabs defaultValue="identification" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="identification">
                   <Building2 className="h-4 w-4 mr-2" />
-                  Identification & Adresse
+                  Identification
+                </TabsTrigger>
+                <TabsTrigger value="branding">
+                  <Palette className="h-4 w-4 mr-2" />
+                  Branding
                 </TabsTrigger>
                 <TabsTrigger value="configuration">
                   <Settings className="h-4 w-4 mr-2" />
-                  Configuration
+                  Sites
                 </TabsTrigger>
                 <TabsTrigger value="utilisateurs">
                   <UserIcon className="h-4 w-4 mr-2" />
@@ -407,6 +475,86 @@ const createMutation = useMutation({
                         {...register("code_postal")} 
                         placeholder="Ex: 2046"
                       />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="branding" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Logo et identité visuelle</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Logo de l'entreprise</Label>
+                      <div className="mt-2 flex items-center gap-4">
+                        {client?.logo_url && (
+                          <div className="flex-shrink-0">
+                            <img
+                              src={client.logo_url}
+                              alt="Logo client"
+                              className="h-20 w-20 object-contain rounded-lg border border-border"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleLogoUpload}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={uploading}
+                          >
+                            {uploading ? (
+                              <>
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                                Téléchargement...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                {client?.logo_url ? 'Changer le logo' : 'Télécharger un logo'}
+                              </>
+                            )}
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Format: PNG, JPG, SVG. Taille max: 2 Mo
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="couleur_primaire">Couleur primaire de la marque</Label>
+                      <div className="flex gap-2 items-center mt-2">
+                        <Input
+                          id="couleur_primaire"
+                          type="color"
+                          {...register("couleur_primaire")}
+                          defaultValue={client?.couleur_primaire || "#3b82f6"}
+                          className="w-20 h-10 p-1 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          {...register("couleur_primaire")}
+                          placeholder="#3b82f6"
+                          className="flex-1"
+                          maxLength={7}
+                        />
+                        <div
+                          className="w-10 h-10 rounded-md border border-border"
+                          style={{ backgroundColor: client?.couleur_primaire || "#3b82f6" }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Cette couleur sera utilisée pour personnaliser l'interface du client
+                      </p>
                     </div>
                   </div>
                 </div>

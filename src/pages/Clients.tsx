@@ -394,12 +394,18 @@ export default function Clients() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3 flex-1">
-                      <div 
-                        className="h-12 w-12 rounded-lg flex items-center justify-center"
-                        style={{ backgroundColor: `${brandColor}20` }}
-                      >
-                        <Building2 className="h-6 w-6" style={{ color: brandColor }} />
-                      </div>
+                      {client.logo_url ? (
+                        <div className="h-12 w-12 rounded-lg flex items-center justify-center bg-background border border-border overflow-hidden">
+                          <img src={client.logo_url} alt={client.nom_legal} className="h-full w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div 
+                          className="h-12 w-12 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${brandColor}20` }}
+                        >
+                          <Building2 className="h-6 w-6" style={{ color: brandColor }} />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg truncate">{client.nom_legal}</CardTitle>
                         <CardDescription className="text-xs mt-1">

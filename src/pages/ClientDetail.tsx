@@ -116,9 +116,15 @@ export default function ClientDetail() {
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10">
-              <Building2 className="h-8 w-8 text-primary" />
-            </div>
+            {client?.logo_url ? (
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-background border border-border overflow-hidden">
+                <img src={client.logo_url} alt={client.nom_legal} className="h-full w-full object-contain" />
+              </div>
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10">
+                <Building2 className="h-8 w-8 text-primary" />
+              </div>
+            )}
             <div>
               <h1 className="text-3xl font-semibold">{client.nom_legal}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
