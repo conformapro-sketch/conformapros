@@ -65,6 +65,128 @@ export type Database = {
           },
         ]
       }
+      actes_annexes: {
+        Row: {
+          acte_id: string
+          created_at: string
+          file_url: string
+          id: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          acte_id: string
+          created_at?: string
+          file_url: string
+          id?: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          acte_id?: string
+          created_at?: string
+          file_url?: string
+          id?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actes_annexes_acte_id_fkey"
+            columns: ["acte_id"]
+            isOneToOne: false
+            referencedRelation: "actes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      actes_applicabilite_mapping: {
+        Row: {
+          acte_id: string
+          created_at: string
+          id: string
+          match_score: number | null
+          sous_domaine_id: string
+        }
+        Insert: {
+          acte_id: string
+          created_at?: string
+          id?: string
+          match_score?: number | null
+          sous_domaine_id: string
+        }
+        Update: {
+          acte_id?: string
+          created_at?: string
+          id?: string
+          match_score?: number | null
+          sous_domaine_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actes_applicabilite_mapping_acte_id_fkey"
+            columns: ["acte_id"]
+            isOneToOne: false
+            referencedRelation: "actes_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actes_applicabilite_mapping_sous_domaine_id_fkey"
+            columns: ["sous_domaine_id"]
+            isOneToOne: false
+            referencedRelation: "sous_domaines_application"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      actes_reglementaires: {
+        Row: {
+          created_at: string
+          date_abrogation: string | null
+          date_effet: string | null
+          date_publication: string | null
+          id: string
+          intitule: string
+          lien_officiel: string | null
+          reference_officielle: string
+          resume: string | null
+          statut_vigueur: string | null
+          texte_integral: string | null
+          type_acte: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_abrogation?: string | null
+          date_effet?: string | null
+          date_publication?: string | null
+          id?: string
+          intitule: string
+          lien_officiel?: string | null
+          reference_officielle: string
+          resume?: string | null
+          statut_vigueur?: string | null
+          texte_integral?: string | null
+          type_acte: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_abrogation?: string | null
+          date_effet?: string | null
+          date_publication?: string | null
+          id?: string
+          intitule?: string
+          lien_officiel?: string | null
+          reference_officielle?: string
+          resume?: string | null
+          statut_vigueur?: string | null
+          texte_integral?: string | null
+          type_acte?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       article_versions: {
         Row: {
           article_id: string
@@ -177,9 +299,12 @@ export type Database = {
           email: string | null
           id: string
           logo_url: string | null
+          matricule_fiscale: string | null
           nom: string
+          nom_legal: string | null
           pays: string | null
           siret: string | null
+          statut: string | null
           telephone: string | null
           updated_at: string
           ville: string | null
@@ -191,9 +316,12 @@ export type Database = {
           email?: string | null
           id?: string
           logo_url?: string | null
+          matricule_fiscale?: string | null
           nom: string
+          nom_legal?: string | null
           pays?: string | null
           siret?: string | null
+          statut?: string | null
           telephone?: string | null
           updated_at?: string
           ville?: string | null
@@ -205,9 +333,12 @@ export type Database = {
           email?: string | null
           id?: string
           logo_url?: string | null
+          matricule_fiscale?: string | null
           nom?: string
+          nom_legal?: string | null
           pays?: string | null
           siret?: string | null
+          statut?: string | null
           telephone?: string | null
           updated_at?: string
           ville?: string | null
@@ -216,6 +347,7 @@ export type Database = {
       }
       domaines_reglementaires: {
         Row: {
+          actif: boolean | null
           code: string
           couleur: string | null
           created_at: string
@@ -225,6 +357,7 @@ export type Database = {
           libelle: string
         }
         Insert: {
+          actif?: boolean | null
           code: string
           couleur?: string | null
           created_at?: string
@@ -234,6 +367,7 @@ export type Database = {
           libelle: string
         }
         Update: {
+          actif?: boolean | null
           code?: string
           couleur?: string | null
           created_at?: string
@@ -251,11 +385,13 @@ export type Database = {
           date_embauche: string | null
           email: string | null
           id: string
+          matricule: string | null
           nom: string
           numero_securite_sociale: string | null
           poste: string | null
           prenom: string
           site_id: string | null
+          statut_emploi: string | null
           telephone: string | null
           updated_at: string
         }
@@ -265,11 +401,13 @@ export type Database = {
           date_embauche?: string | null
           email?: string | null
           id?: string
+          matricule?: string | null
           nom: string
           numero_securite_sociale?: string | null
           poste?: string | null
           prenom: string
           site_id?: string | null
+          statut_emploi?: string | null
           telephone?: string | null
           updated_at?: string
         }
@@ -279,11 +417,13 @@ export type Database = {
           date_embauche?: string | null
           email?: string | null
           id?: string
+          matricule?: string | null
           nom?: string
           numero_securite_sociale?: string | null
           poste?: string | null
           prenom?: string
           site_id?: string | null
+          statut_emploi?: string | null
           telephone?: string | null
           updated_at?: string
         }
@@ -297,6 +437,71 @@ export type Database = {
           },
           {
             foreignKeyName: "employes_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipements: {
+        Row: {
+          created_at: string
+          date_mise_service: string | null
+          derniere_verification: string | null
+          id: string
+          localisation: string | null
+          marque: string | null
+          modele: string | null
+          nom: string
+          numero_serie: string | null
+          observations: string | null
+          periodicite_mois: number | null
+          prochaine_verification: string | null
+          site_id: string
+          statut: string | null
+          type_equipement: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_mise_service?: string | null
+          derniere_verification?: string | null
+          id?: string
+          localisation?: string | null
+          marque?: string | null
+          modele?: string | null
+          nom: string
+          numero_serie?: string | null
+          observations?: string | null
+          periodicite_mois?: number | null
+          prochaine_verification?: string | null
+          site_id: string
+          statut?: string | null
+          type_equipement: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_mise_service?: string | null
+          derniere_verification?: string | null
+          id?: string
+          localisation?: string | null
+          marque?: string | null
+          modele?: string | null
+          nom?: string
+          numero_serie?: string | null
+          observations?: string | null
+          periodicite_mois?: number | null
+          prochaine_verification?: string | null
+          site_id?: string
+          statut?: string | null
+          type_equipement?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipements_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
@@ -350,6 +555,230 @@ export type Database = {
             columns: ["abonnement_id"]
             isOneToOne: false
             referencedRelation: "abonnements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      med_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string | null
+          id: string
+          titre: string
+          type_doc: string | null
+          type_document: string
+          uploaded_by: string | null
+          url_document: string
+          visite_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          id?: string
+          titre: string
+          type_doc?: string | null
+          type_document: string
+          uploaded_by?: string | null
+          url_document: string
+          visite_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          id?: string
+          titre?: string
+          type_doc?: string | null
+          type_document?: string
+          uploaded_by?: string | null
+          url_document?: string
+          visite_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "med_documents_visite_id_fkey"
+            columns: ["visite_id"]
+            isOneToOne: false
+            referencedRelation: "med_visites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      med_notes_confidentielles: {
+        Row: {
+          contenu: string
+          contre_indications: string | null
+          created_at: string
+          created_by: string | null
+          examens_realises: string | null
+          id: string
+          observations: string | null
+          propositions_amenagement: string | null
+          updated_at: string
+          updated_by: string | null
+          visite_id: string
+        }
+        Insert: {
+          contenu: string
+          contre_indications?: string | null
+          created_at?: string
+          created_by?: string | null
+          examens_realises?: string | null
+          id?: string
+          observations?: string | null
+          propositions_amenagement?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          visite_id: string
+        }
+        Update: {
+          contenu?: string
+          contre_indications?: string | null
+          created_at?: string
+          created_by?: string | null
+          examens_realises?: string | null
+          id?: string
+          observations?: string | null
+          propositions_amenagement?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          visite_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "med_notes_confidentielles_visite_id_fkey"
+            columns: ["visite_id"]
+            isOneToOne: true
+            referencedRelation: "med_visites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      med_periodicite_rules: {
+        Row: {
+          actif: boolean | null
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          libelle: string
+          periodicite_mois: number
+        }
+        Insert: {
+          actif?: boolean | null
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          libelle: string
+          periodicite_mois: number
+        }
+        Update: {
+          actif?: boolean | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          libelle?: string
+          periodicite_mois?: number
+        }
+        Relationships: []
+      }
+      med_visites: {
+        Row: {
+          client_id: string | null
+          commentaires: string | null
+          created_at: string
+          created_by: string | null
+          date_planifiee: string
+          date_realisee: string | null
+          employe_id: string
+          id: string
+          medecin_nom: string | null
+          medecin_organisme: string | null
+          medecin_travail: string | null
+          motif: string | null
+          prochaine_echeance: string | null
+          restrictions: string | null
+          resultat_aptitude: string | null
+          site_id: string | null
+          sms_flags: Json | null
+          statut_visite: string
+          type_visite: string
+          updated_at: string
+          updated_by: string | null
+          validite_jusqua: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          commentaires?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_planifiee: string
+          date_realisee?: string | null
+          employe_id: string
+          id?: string
+          medecin_nom?: string | null
+          medecin_organisme?: string | null
+          medecin_travail?: string | null
+          motif?: string | null
+          prochaine_echeance?: string | null
+          restrictions?: string | null
+          resultat_aptitude?: string | null
+          site_id?: string | null
+          sms_flags?: Json | null
+          statut_visite?: string
+          type_visite: string
+          updated_at?: string
+          updated_by?: string | null
+          validite_jusqua?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          commentaires?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_planifiee?: string
+          date_realisee?: string | null
+          employe_id?: string
+          id?: string
+          medecin_nom?: string | null
+          medecin_organisme?: string | null
+          medecin_travail?: string | null
+          motif?: string | null
+          prochaine_echeance?: string | null
+          restrictions?: string | null
+          resultat_aptitude?: string | null
+          site_id?: string | null
+          sms_flags?: Json | null
+          statut_visite?: string
+          type_visite?: string
+          updated_at?: string
+          updated_by?: string | null
+          validite_jusqua?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "med_visites_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "med_visites_employe_id_fkey"
+            columns: ["employe_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "med_visites_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
@@ -425,6 +854,7 @@ export type Database = {
           nom: string | null
           prenom: string | null
           telephone: string | null
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -434,6 +864,7 @@ export type Database = {
           nom?: string | null
           prenom?: string | null
           telephone?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -443,6 +874,7 @@ export type Database = {
           nom?: string | null
           prenom?: string | null
           telephone?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -559,15 +991,22 @@ export type Database = {
       }
       sites: {
         Row: {
+          activite: string | null
           adresse: string
+          classification: string | null
           client_id: string
           code_postal: string
+          code_site: string | null
           created_at: string
+          effectif: number | null
           email: string | null
+          gouvernorat: string | null
           id: string
           latitude: number | null
           longitude: number | null
+          matricule_fiscale: string | null
           nom: string
+          nom_site: string | null
           nombre_employes: number | null
           pays: string | null
           surface: number | null
@@ -576,15 +1015,22 @@ export type Database = {
           ville: string
         }
         Insert: {
+          activite?: string | null
           adresse: string
+          classification?: string | null
           client_id: string
           code_postal: string
+          code_site?: string | null
           created_at?: string
+          effectif?: number | null
           email?: string | null
+          gouvernorat?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
+          matricule_fiscale?: string | null
           nom: string
+          nom_site?: string | null
           nombre_employes?: number | null
           pays?: string | null
           surface?: number | null
@@ -593,15 +1039,22 @@ export type Database = {
           ville: string
         }
         Update: {
+          activite?: string | null
           adresse?: string
+          classification?: string | null
           client_id?: string
           code_postal?: string
+          code_site?: string | null
           created_at?: string
+          effectif?: number | null
           email?: string | null
+          gouvernorat?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
+          matricule_fiscale?: string | null
           nom?: string
+          nom_site?: string | null
           nombre_employes?: number | null
           pays?: string | null
           surface?: number | null
@@ -645,6 +1098,13 @@ export type Database = {
           libelle?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sous_domaines_application_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_application"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sous_domaines_application_domaine_id_fkey"
             columns: ["domaine_id"]
@@ -879,7 +1339,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      domaines_application: {
+        Row: {
+          code: string | null
+          couleur: string | null
+          created_at: string | null
+          description: string | null
+          icone: string | null
+          id: string | null
+          libelle: string | null
+        }
+        Insert: {
+          code?: string | null
+          couleur?: string | null
+          created_at?: string | null
+          description?: string | null
+          icone?: string | null
+          id?: string | null
+          libelle?: string | null
+        }
+        Update: {
+          code?: string | null
+          couleur?: string | null
+          created_at?: string | null
+          description?: string | null
+          icone?: string | null
+          id?: string | null
+          libelle?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_client_access: {
