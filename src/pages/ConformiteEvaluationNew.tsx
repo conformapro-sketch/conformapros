@@ -391,10 +391,13 @@ const evaluationDataQueries = {
 export default function ConformiteEvaluationNew() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isTeamUser, getClientId } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // State
+  const [selectedClient, setSelectedClient] = useState<string>(
+    isTeamUser() ? '' : (getClientId() || '')
+  );
   const [selectedSite, setSelectedSite] = useState<string>(
     searchParams.get('siteId') || ''
   );
@@ -411,10 +414,31 @@ export default function ConformiteEvaluationNew() {
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
   // Queries
-  const { data: sites = [] } = useQuery({
+  const { data: clients = [] } = useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, nom, nom_legal')
+        .eq('is_active', true)
+        .order('nom');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isTeamUser(),
+  });
+
+  const { data: allSites = [] } = useQuery({
     queryKey: ['sites'],
     queryFn: fetchSites,
   });
+
+  const sites = useMemo(() => {
+    if (isTeamUser() && selectedClient) {
+      return allSites.filter(site => site.client_id === selectedClient);
+    }
+    return allSites;
+  }, [allSites, isTeamUser, selectedClient]);
 
   const { data: domaines = [] } = useQuery({
     queryKey: ['domaines'],
@@ -707,10 +731,38 @@ export default function ConformiteEvaluationNew() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+            {isTeamUser() && (
+              <div>
+                <Label>Client</Label>
+                <Select 
+                  value={selectedClient} 
+                  onValueChange={(value) => {
+                    setSelectedClient(value);
+                    setSelectedSite('');
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.nom || client.nom_legal}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             <div>
               <Label>Site</Label>
-              <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <Select 
+                value={selectedSite} 
+                onValueChange={setSelectedSite}
+                disabled={isTeamUser() && !selectedClient}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un site" />
                 </SelectTrigger>

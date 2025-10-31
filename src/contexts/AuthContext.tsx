@@ -23,6 +23,9 @@ interface AuthContextType {
   // Helper functions
   hasPermission: (module: string, action: string) => boolean;
   hasRole: (roleName: string) => boolean;
+  isTeamUser: () => boolean;
+  isClientUser: () => boolean;
+  getClientId: () => string | null;
   
   // Auth functions
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -226,6 +229,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return result;
   };
 
+  const isTeamUser = (): boolean => {
+    return primaryRole?.type === 'team';
+  };
+
+  const isClientUser = (): boolean => {
+    return primaryRole?.type === 'client';
+  };
+
+  const getClientId = (): string | null => {
+    return isClientUser() ? tenantId : null;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -240,6 +255,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tenantId,
         hasPermission,
         hasRole,
+        isTeamUser,
+        isClientUser,
+        getClientId,
         signIn,
         signUp,
         signOut,

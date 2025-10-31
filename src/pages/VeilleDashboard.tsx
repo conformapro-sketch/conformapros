@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { fetchSites } from "@/lib/multi-tenant-queries";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -70,13 +71,39 @@ const COLORS = {
 
 export default function VeilleDashboard() {
   const navigate = useNavigate();
+  const { isTeamUser, getClientId } = useAuth();
+  const [selectedClient, setSelectedClient] = useState<string>(
+    isTeamUser() ? "all" : (getClientId() || "all")
+  );
   const [selectedSite, setSelectedSite] = useState<string>("all");
 
-  // Fetch sites
-  const { data: sites = [] } = useQuery({
+  // Fetch clients (only for team users)
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, nom, nom_legal")
+        .eq("is_active", true)
+        .order("nom");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isTeamUser(),
+  });
+
+  // Fetch sites (filtered by client for team users)
+  const { data: allSites = [] } = useQuery({
     queryKey: ["sites"],
     queryFn: fetchSites,
   });
+
+  const sites = useMemo(() => {
+    if (isTeamUser() && selectedClient && selectedClient !== "all") {
+      return allSites.filter(site => site.client_id === selectedClient);
+    }
+    return allSites;
+  }, [allSites, isTeamUser, selectedClient]);
 
   // Fetch dashboard stats
   const { data: stats, isLoading } = useQuery({
@@ -244,19 +271,42 @@ export default function VeilleDashboard() {
             Vue d'ensemble de la conformité réglementaire par site
           </p>
         </div>
-        <Select value={selectedSite} onValueChange={setSelectedSite}>
-          <SelectTrigger className="w-[250px]">
-            <SelectValue placeholder="Sélectionner un site" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les sites</SelectItem>
-            {sites.map((site) => (
-              <SelectItem key={site.id} value={site.id}>
-                {site.nom_site}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          {isTeamUser() && (
+            <Select 
+              value={selectedClient} 
+              onValueChange={(value) => {
+                setSelectedClient(value);
+                setSelectedSite("all");
+              }}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Client" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les clients</SelectItem>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.nom || client.nom_legal}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={selectedSite} onValueChange={setSelectedSite}>
+            <SelectTrigger className="w-[250px]">
+              <SelectValue placeholder="Sélectionner un site" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les sites</SelectItem>
+              {sites.map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.nom_site}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Global KPIs */}

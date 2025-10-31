@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { fetchSites } from "@/lib/multi-tenant-queries";
 import { fetchDomaines } from "@/lib/domaines-queries";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,8 +70,12 @@ interface ArticleRow {
 export default function VeilleApplicabilite() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { isTeamUser, getClientId } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [selectedClient, setSelectedClient] = useState<string>(
+    isTeamUser() ? "" : (getClientId() || "")
+  );
   const [selectedSite, setSelectedSite] = useState<string>(searchParams.get("siteId") || "");
   const [filters, setFilters] = useState({
     domaine: searchParams.get("domaine") || "all",
@@ -84,11 +89,33 @@ export default function VeilleApplicabilite() {
   const [bulkJustification, setBulkJustification] = useState("");
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
 
-  // Fetch sites
-  const { data: sites = [] } = useQuery({
+  // Fetch clients (only for team users)
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, nom, nom_legal")
+        .eq("is_active", true)
+        .order("nom");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isTeamUser(),
+  });
+
+  // Fetch sites (filtered by client for team users)
+  const { data: allSites = [] } = useQuery({
     queryKey: ["sites"],
     queryFn: fetchSites,
   });
+
+  const sites = useMemo(() => {
+    if (isTeamUser() && selectedClient) {
+      return allSites.filter(site => site.client_id === selectedClient);
+    }
+    return allSites;
+  }, [allSites, isTeamUser, selectedClient]);
 
   // Fetch domaines
   const { data: domaines = [] } = useQuery({
@@ -326,9 +353,36 @@ export default function VeilleApplicabilite() {
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+              {isTeamUser() && (
+                <div className="flex-1 space-y-2">
+                  <Label>Client</Label>
+                  <Select 
+                    value={selectedClient} 
+                    onValueChange={(value) => {
+                      setSelectedClient(value);
+                      setSelectedSite("");
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.nom || client.nom_legal}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex-1 space-y-2">
                 <Label>Site</Label>
-                <Select value={selectedSite} onValueChange={setSelectedSite}>
+                <Select 
+                  value={selectedSite} 
+                  onValueChange={setSelectedSite}
+                  disabled={isTeamUser() && !selectedClient}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un site" />
                   </SelectTrigger>
