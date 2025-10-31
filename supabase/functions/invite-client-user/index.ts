@@ -201,6 +201,20 @@ Deno.serve(async (req) => {
     // Skip role assignment for client users
     console.log('invite-client-user: Client user created/updated', { userId, clientId, is_client_admin })
 
+    // Delete existing access_scopes for this user to handle updates
+    if (userExists) {
+      console.log('invite-client-user: Deleting existing access scopes for user', userId)
+      const { error: deleteError } = await supabaseAdmin
+        .from('access_scopes')
+        .delete()
+        .eq('user_id', userId)
+      
+      if (deleteError) {
+        console.error('invite-client-user: Failed to delete existing access scopes', deleteError)
+        // Continue anyway, insert will handle conflicts
+      }
+    }
+
     // Create access_scopes for specified sites
     if (siteIds && siteIds.length > 0) {
       console.log('invite-client-user: Creating access scopes', { userId, siteIds, tenantId: finalTenantId })
@@ -215,9 +229,7 @@ Deno.serve(async (req) => {
 
       const { data: scopeData, error: scopeError } = await supabaseAdmin
         .from('access_scopes')
-        .upsert(accessScopes, {
-          onConflict: 'user_id,site_id'
-        })
+        .insert(accessScopes)
         .select()
 
       if (scopeError) {

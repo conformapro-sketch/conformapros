@@ -82,7 +82,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: user ? {
-      client_id: user.tenant_id || "",
+      client_id: user.client_id || "",
       email: user.email || "",
       fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
       is_client_admin: user.is_client_admin || false,
@@ -135,9 +135,12 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       queryClient.invalidateQueries({ queryKey: ["client-users", selectedClientId] });
       queryClient.invalidateQueries({ queryKey: ["client-users", clientId] });
       queryClient.invalidateQueries({ queryKey: ["all-client-users"], exact: false });
+      const isUpdate = result.data?.action === 'updated';
       toast({
         title: "Succès",
-        description: result.data?.message || "Utilisateur invité avec succès",
+        description: isUpdate 
+          ? "Utilisateur mis à jour avec succès" 
+          : (result.data?.message || "Utilisateur invité avec succès"),
       });
       reset();
       onOpenChange(false);
