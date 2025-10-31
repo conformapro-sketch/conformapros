@@ -156,6 +156,7 @@ const App = () => (
                           />
                           <Route path="/roles" element={<GestionRoles />} />
                           <Route path="/client-users" element={<ClientUsers />} />
+                          <Route path="/clients/:clientId/users" element={<ClientUsers />} />
                           <Route path="/dossier" element={<DossierReglementaire />} />
                           <Route path="/controles" element={<ControlesTechniques />} />
                           <Route path="/incidents" element={<Incidents />} />

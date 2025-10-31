@@ -19,14 +19,17 @@ import {
   Pencil, 
   UserX, 
   Mail,
-  Filter
+  Filter,
+  Settings
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClientUsers, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
 import { ClientUserFormModal } from "@/components/ClientUserFormModal";
+import { UserPermissionDrawer } from "@/components/UserPermissionDrawer";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useEffect } from "react";
+import { useParams } from "react-router-dom";
 import {
   Tooltip,
   TooltipContent,
@@ -45,32 +48,40 @@ import {
 export default function ClientUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { clientId: urlClientId } = useParams<{ clientId: string }>();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [userFormOpen, setUserFormOpen] = useState(false);
+  const [permissionDrawerOpen, setPermissionDrawerOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(undefined);
+  const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<any>(null);
   const [currentClientId, setCurrentClientId] = useState<string>("");
 
-  // Get current user's client_id
+  // Get client ID from URL or current user's profile
   useEffect(() => {
-    const fetchUserClient = async () => {
+    const fetchClientId = async () => {
+      if (urlClientId) {
+        setCurrentClientId(urlClientId);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("client_id")
+        .select("tenant_id")
         .eq("id", user.id)
         .single();
 
-      if (profile?.client_id) {
-        setCurrentClientId(profile.client_id);
+      if (profile?.tenant_id) {
+        setCurrentClientId(profile.tenant_id);
       }
     };
-    fetchUserClient();
-  }, []);
+    fetchClientId();
+  }, [urlClientId]);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["client-users", currentClientId],
@@ -358,6 +369,17 @@ export default function ClientUsers() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => {
+                                setSelectedUserForPermissions(user);
+                                setPermissionDrawerOpen(true);
+                              }}
+                              title="Gérer les permissions"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEdit(user)}
                               title="Modifier l'accès"
                             >
@@ -421,6 +443,13 @@ export default function ClientUsers() {
         }}
         clientId={currentClientId}
         user={editingUser}
+      />
+
+      <UserPermissionDrawer
+        open={permissionDrawerOpen}
+        onOpenChange={setPermissionDrawerOpen}
+        user={selectedUserForPermissions}
+        clientId={currentClientId}
       />
     </div>
   );
