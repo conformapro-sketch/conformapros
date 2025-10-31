@@ -408,6 +408,68 @@ export const fetchUtilisateursByClient = async (clientId: string) => {
   return data;
 };
 
+export const fetchAllClientUsers = async (filters?: {
+  search?: string;
+  clientId?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}) => {
+  const page = filters?.page || 1;
+  const pageSize = filters?.pageSize || 20;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("profiles")
+    .select(`
+      *,
+      user_roles!left(
+        role_uuid,
+        roles(name, id, type)
+      ),
+      access_scopes(
+        site_id,
+        read_only,
+        sites(nom_site, client_id)
+      ),
+      clients!tenant_id(
+        id,
+        nom,
+        nom_legal
+      )
+    `, { count: 'exact' })
+    .not("tenant_id", "is", null);
+
+  if (filters?.search) {
+    query = query.or(`nom.ilike.%${filters.search}%,prenom.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+  }
+
+  if (filters?.clientId) {
+    query = query.eq("tenant_id", filters.clientId);
+  }
+
+  if (filters?.status === "actif") {
+    query = query.eq("actif", true);
+  } else if (filters?.status === "inactif") {
+    query = query.eq("actif", false);
+  }
+
+  const { data, error, count } = await query
+    .order("nom")
+    .range(from, to);
+
+  if (error) throw error;
+  
+  return {
+    data: data || [],
+    count: count || 0,
+    page,
+    pageSize,
+    totalPages: Math.ceil((count || 0) / pageSize),
+  };
+};
+
 export const fetchUtilisateurById = async (utilisateurId: string) => {
   const { data, error } = await supabase
     .from("profiles")

@@ -44,6 +44,7 @@ import GestionUtilisateurs from "./pages/GestionUtilisateurs";
 import GestionRoles from "./pages/GestionRoles";
 import RoleManager from "./pages/RoleManager";
 import ClientUsers from "./pages/ClientUsers";
+import AllClientUsers from "./pages/AllClientUsers";
 import VisitesMedicales from "./pages/VisitesMedicales";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
@@ -92,6 +93,16 @@ const App = () => (
                           <Route path="/dashboard" element={<Dashboard />} />
                           <Route path="/clients" element={<Clients />} />
                           <Route path="/clients/:id" element={<ClientDetail />} />
+                          <Route 
+                            path="/clients/utilisateurs" 
+                            element={
+                              <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                                <AllClientUsers />
+                              </ProtectedRoute>
+                            } 
+                          />
+                          <Route path="/client-users" element={<ClientUsers />} />
+                          <Route path="/clients/:clientId/users" element={<ClientUsers />} />
                           <Route path="/sites" element={<Sites />} />
                           <Route path="/sites/:id" element={<SiteDetail />} />
                           <Route
