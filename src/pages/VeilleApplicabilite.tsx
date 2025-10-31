@@ -73,9 +73,9 @@ export default function VeilleApplicabilite() {
 
   const [selectedSite, setSelectedSite] = useState<string>(searchParams.get("siteId") || "");
   const [filters, setFilters] = useState({
-    domaine: searchParams.get("domaine") || "",
-    texte: searchParams.get("texte") || "",
-    applicabilite: searchParams.get("applicabilite") || "",
+    domaine: searchParams.get("domaine") || "all",
+    texte: searchParams.get("texte") || "all",
+    applicabilite: searchParams.get("applicabilite") || "all",
   });
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -104,7 +104,7 @@ export default function VeilleApplicabilite() {
         .from("textes_reglementaires")
         .select("id, titre, reference_officielle, type");
 
-      if (filters.domaine) {
+      if (filters.domaine && filters.domaine !== "all") {
         const { data: texteIds } = await supabase
           .from("textes_reglementaires_domaines")
           .select("texte_id")
@@ -151,7 +151,7 @@ export default function VeilleApplicabilite() {
         )
         .order("numero");
 
-      if (filters.texte) {
+      if (filters.texte && filters.texte !== "all") {
         articlesQuery = articlesQuery.eq("texte_id", filters.texte);
       }
 
@@ -190,7 +190,7 @@ export default function VeilleApplicabilite() {
       // Apply filters
       let filtered = rows;
 
-      if (filters.applicabilite) {
+      if (filters.applicabilite && filters.applicabilite !== "all") {
         filtered = filtered.filter((r) => r.applicabilite === filters.applicabilite);
       }
 
@@ -375,13 +375,13 @@ export default function VeilleApplicabilite() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Select
                     value={filters.domaine}
-                    onValueChange={(v) => setFilters({ ...filters, domaine: v, texte: "" })}
+                    onValueChange={(v) => setFilters({ ...filters, domaine: v, texte: "all" })}
                   >
                     <SelectTrigger className="sm:w-[200px]">
                       <SelectValue placeholder="Domaine" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tous les domaines</SelectItem>
+                      <SelectItem value="all">Tous les domaines</SelectItem>
                       {domaines.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.libelle}
@@ -398,7 +398,7 @@ export default function VeilleApplicabilite() {
                       <SelectValue placeholder="Texte réglementaire" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tous les textes</SelectItem>
+                      <SelectItem value="all">Tous les textes</SelectItem>
                       {textes.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.reference_officielle} - {t.titre?.substring(0, 40)}
@@ -415,7 +415,7 @@ export default function VeilleApplicabilite() {
                       <SelectValue placeholder="Applicabilité" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tous</SelectItem>
+                      <SelectItem value="all">Tous</SelectItem>
                       <SelectItem value="obligatoire">Obligatoire</SelectItem>
                       <SelectItem value="recommande">Recommandé</SelectItem>
                       <SelectItem value="non_applicable">Non applicable</SelectItem>
@@ -424,7 +424,7 @@ export default function VeilleApplicabilite() {
 
                   <Button
                     variant="outline"
-                    onClick={() => setFilters({ domaine: "", texte: "", applicabilite: "" })}
+                    onClick={() => setFilters({ domaine: "all", texte: "all", applicabilite: "all" })}
                   >
                     <Undo className="h-4 w-4 mr-2" />
                     Réinitialiser
