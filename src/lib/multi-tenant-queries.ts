@@ -433,7 +433,7 @@ export const fetchAllClientUsers = async (filters?: {
         read_only,
         sites(nom_site, client_id)
       ),
-      clients!tenant_id(
+      clients!profiles_managed_client_id_fkey(
         id,
         nom,
         nom_legal
@@ -446,7 +446,7 @@ export const fetchAllClientUsers = async (filters?: {
   }
 
   if (filters?.clientId) {
-    query = query.eq("tenant_id", filters.clientId);
+    query = query.eq("managed_client_id", filters.clientId);
   }
 
   if (filters?.status === "actif") {

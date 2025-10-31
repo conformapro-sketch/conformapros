@@ -468,7 +468,7 @@ export default function AllClientUsers() {
         open={permissionDrawerOpen}
         onOpenChange={setPermissionDrawerOpen}
         user={selectedUserForPermissions}
-        clientId={selectedUserForPermissions?.tenant_id || ""}
+        clientId={selectedUserForPermissions?.managed_client_id || ""}
       />
     </div>
   );

@@ -108,21 +108,24 @@ Deno.serve(async (req) => {
       console.log('invite-client-user: User already exists', userExists.id)
       userId = userExists.id
 
-      // Update profile with tenant_id and client info
+      // Upsert profile to handle case where auth user exists but profile doesn't
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
-        .update({ 
+        .upsert({ 
+          id: userId,
+          email,
           tenant_id: finalTenantId,
           managed_client_id: clientId,
           is_client_admin: is_client_admin || false,
           nom,
           prenom,
           telephone: telephone || null
+        }, {
+          onConflict: 'id'
         })
-        .eq('id', userId)
 
       if (profileError) {
-        console.error('invite-client-user: Failed to update profile', profileError)
+        console.error('invite-client-user: Failed to upsert profile', profileError)
       }
     } else {
       // Create new user with auto-generated password
