@@ -1038,6 +1038,193 @@ export type Database = {
           },
         ]
       }
+      formation_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string
+          formation_id: string
+          id: string
+          titre: string
+          type_document: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url: string
+          formation_id: string
+          id?: string
+          titre: string
+          type_document: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string
+          formation_id?: string
+          id?: string
+          titre?: string
+          type_document?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_documents_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formation_participants: {
+        Row: {
+          certificat_numero: string | null
+          certificat_url: string | null
+          commentaire: string | null
+          created_at: string
+          date_certificat: string | null
+          employe_id: string
+          formation_id: string
+          id: string
+          note: number | null
+          present: boolean | null
+          reussite: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          certificat_numero?: string | null
+          certificat_url?: string | null
+          commentaire?: string | null
+          created_at?: string
+          date_certificat?: string | null
+          employe_id: string
+          formation_id: string
+          id?: string
+          note?: number | null
+          present?: boolean | null
+          reussite?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          certificat_numero?: string | null
+          certificat_url?: string | null
+          commentaire?: string | null
+          created_at?: string
+          date_certificat?: string | null
+          employe_id?: string
+          formation_id?: string
+          id?: string
+          note?: number | null
+          present?: boolean | null
+          reussite?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formation_participants_employe_id_fkey"
+            columns: ["employe_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "formation_participants_formation_id_fkey"
+            columns: ["formation_id"]
+            isOneToOne: false
+            referencedRelation: "formations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_prevue: string | null
+          date_realisee: string | null
+          domaine: string
+          duree_heures: number | null
+          formateur_contact: string | null
+          formateur_email: string | null
+          formateur_nom: string | null
+          id: string
+          intitule: string
+          lieu: string | null
+          objectif: string | null
+          organisme_formation: string | null
+          prochaine_echeance: string | null
+          reference: string
+          site_id: string
+          statut: string
+          type_formation: string
+          updated_at: string
+          validite_mois: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_prevue?: string | null
+          date_realisee?: string | null
+          domaine: string
+          duree_heures?: number | null
+          formateur_contact?: string | null
+          formateur_email?: string | null
+          formateur_nom?: string | null
+          id?: string
+          intitule: string
+          lieu?: string | null
+          objectif?: string | null
+          organisme_formation?: string | null
+          prochaine_echeance?: string | null
+          reference: string
+          site_id: string
+          statut?: string
+          type_formation?: string
+          updated_at?: string
+          validite_mois?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_prevue?: string | null
+          date_realisee?: string | null
+          domaine?: string
+          duree_heures?: number | null
+          formateur_contact?: string | null
+          formateur_email?: string | null
+          formateur_nom?: string | null
+          id?: string
+          intitule?: string
+          lieu?: string | null
+          objectif?: string | null
+          organisme_formation?: string | null
+          prochaine_echeance?: string | null
+          reference?: string
+          site_id?: string
+          statut?: string
+          type_formation?: string
+          updated_at?: string
+          validite_mois?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gouvernorats: {
         Row: {
           code: string | null
