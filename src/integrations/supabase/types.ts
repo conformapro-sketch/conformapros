@@ -1186,6 +1186,36 @@ export type Database = {
           },
         ]
       }
+      modules_systeme: {
+        Row: {
+          actif: boolean | null
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          libelle: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean | null
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          libelle: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean | null
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          libelle?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       organismes_controle: {
         Row: {
           actif: boolean | null
@@ -1585,6 +1615,100 @@ export type Database = {
           },
           {
             foreignKeyName: "site_article_status_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_modules: {
+        Row: {
+          created_at: string
+          enabled: boolean | null
+          enabled_at: string | null
+          enabled_by: string | null
+          id: string
+          module_id: string
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean | null
+          enabled_at?: string | null
+          enabled_by?: string | null
+          id?: string
+          module_id: string
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean | null
+          enabled_at?: string | null
+          enabled_by?: string | null
+          id?: string
+          module_id?: string
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules_systeme"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_modules_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_veille_domaines: {
+        Row: {
+          created_at: string
+          domaine_id: string
+          enabled: boolean | null
+          id: string
+          site_id: string
+        }
+        Insert: {
+          created_at?: string
+          domaine_id: string
+          enabled?: boolean | null
+          id?: string
+          site_id: string
+        }
+        Update: {
+          created_at?: string
+          domaine_id?: string
+          enabled?: boolean | null
+          id?: string
+          site_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_veille_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_veille_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_veille_domaines_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
