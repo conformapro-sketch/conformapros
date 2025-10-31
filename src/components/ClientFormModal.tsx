@@ -160,7 +160,7 @@ const createMutation = useMutation({
 
   const { data: usersPage, isLoading: usersLoading } = useQuery({
     queryKey: ["client-users", client?.id, searchUsers, roleFilter, statusFilter, siteFilter, page, pageSize],
-    queryFn: () => fetchClientUsersPaginated(client!.id, { search: searchUsers, role: roleFilter as any, site: siteFilter, status: statusFilter, page, pageSize }),
+    queryFn: () => fetchClientUsersPaginated(client!.id, { search: searchUsers, role: roleFilter as any, site: siteFilter, status: statusFilter as any, page, pageSize }),
     enabled: !!client?.id,
   });
 

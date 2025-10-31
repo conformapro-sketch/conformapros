@@ -104,7 +104,7 @@ export function ClientUserManagementSection({ clientId, clientName }: ClientUser
         search: search || undefined,
         role: roleFilter !== "all" ? roleFilter : undefined,
         site: siteFilter !== "all" ? siteFilter : undefined,
-        status: statusFilter !== "all" ? statusFilter : undefined,
+        status: statusFilter !== "all" ? (statusFilter as any) : undefined,
         page,
         pageSize,
       }),

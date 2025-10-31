@@ -553,7 +553,7 @@ export default function Facture() {
         onOpenChange={handleCloseDetails}
         onStatusChange={handleStatusChange}
         onRecordPayment={async (invoiceId, values) => {
-          await handleRecordPayment(invoiceId, values);
+          await handleRecordPayment(invoiceId, values as any);
         }}
         isStatusUpdating={statusMutation.isPending}
         isRecordingPayment={paymentMutation.isPending}

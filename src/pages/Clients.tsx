@@ -117,7 +117,7 @@ export default function Clients() {
     }
 
     const escapeValue = (value: string | number | null | undefined) =>
-      `"${String(value ?? "").replace(/"/g, )}"`;
+      `"${String(value ?? "").replace(/"/g, '""')}"`;
 
     const headers = [
       "Nom",

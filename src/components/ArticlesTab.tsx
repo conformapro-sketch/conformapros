@@ -213,7 +213,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
     return (
       articlesSousDomainesData
         ?.filter((asd) => asd.article_id === articleId)
-        .map((asd) => asd.sous_domaines_application?.libelle)
+        .map((asd) => (asd.sous_domaines_application as any)?.libelle)
         .filter(Boolean) || []
     );
   };

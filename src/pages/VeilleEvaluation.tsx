@@ -477,7 +477,7 @@ export default function VeilleEvaluation() {
         },
       }),
     enabled: Boolean(selectedSite),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
   });
 
   const updateStatusMutation = useMutation({
@@ -720,8 +720,8 @@ export default function VeilleEvaluation() {
       }),
   });
 
-  const records = evaluationQuery.data?.data ?? [];
-  const total = evaluationQuery.data?.count ?? 0;
+  const records = (evaluationQuery.data as any)?.data ?? [];
+  const total = (evaluationQuery.data as any)?.count ?? 0;
   const totalPages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
   const recordsById = useMemo(() => {
     const map = new Map<string, EvaluationRecord>();
@@ -882,7 +882,7 @@ export default function VeilleEvaluation() {
           };
 
           if (suggestion.value === "NON_APPLICABLE") {
-            const motif = suggestion.motif ?? record.status.motif_non_applicable ?? null;
+            const motif = (suggestion as any).motif ?? record.status.motif_non_applicable ?? null;
             if (!motif) {
               toast({
                 title: "Suggestion incomplète",
@@ -894,7 +894,7 @@ export default function VeilleEvaluation() {
             changes.motif_non_applicable = motif;
 
             const commentSource =
-              suggestion.commentaire ?? record.status.motif_commentaire ?? "";
+              (suggestion as any).commentaire ?? record.status.motif_commentaire ?? "";
             const trimmedComment = commentSource?.trim?.() ?? "";
             if (motif === "AUTRE" && trimmedComment.length === 0) {
               toast({
@@ -1263,10 +1263,10 @@ export default function VeilleEvaluation() {
                   <Button
                     onClick={handleSaveCurrentView}
                     disabled={
-                      createSavedViewMutation.isLoading || savedViewName.trim().length === 0
+                      createSavedViewMutation.isPending || savedViewName.trim().length === 0
                     }
                   >
-                    {createSavedViewMutation.isLoading ? "Enregistrement..." : "Enregistrer"}
+                    {createSavedViewMutation.isPending ? "Enregistrement..." : "Enregistrer"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -1711,6 +1711,13 @@ export default function VeilleEvaluation() {
         }
         onDeleteProof={(proofId) => deleteProofMutation.mutate(proofId)}
         onCreateAction={handleCreateAction}
+        onApplySuggestion={handleApplySuggestion}
+        onIgnoreSuggestion={handleIgnoreSuggestion}
+        onOpenProof={(proof) => {
+          window.open(proof.file_url || proof.external_url || "", "_blank");
+        }}
+        isCreatingAction={createActionMutation.isPending}
+        isUploadingProof={uploadProofMutation.isPending}
       />
     </div>
   );

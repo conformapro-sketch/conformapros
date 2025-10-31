@@ -416,7 +416,7 @@ export default function ConformiteEvaluation() {
                   filteredData?.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
-                        {item.sites?.nom_site}
+                        {(item.sites as any)?.nom_site}
                       </TableCell>
                       <TableCell>
                         {item.textes_reglementaires?.reference_officielle}
