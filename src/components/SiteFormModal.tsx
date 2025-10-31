@@ -43,22 +43,25 @@ import { LocationPicker } from "@/components/LocationPicker";
 type SiteRow = Database["public"]["Tables"]["sites"]["Row"];
 
 const siteSchema = z.object({
+  // Required fields only
   client_id: z.string().min(1, "Le client est requis"),
   nom_site: z.string().min(1, "Le nom du site est requis"),
   code_site: z.string().min(1, "Le code site est requis"),
-  classification: z.string().min(1, "La classification est requise"),
-  secteur_activite: z.string().min(1, "Le secteur d'activité est requis"),
+  
+  // All other fields are optional
+  classification: z.string().optional(),
+  secteur_activite: z.string().optional(),
   est_siege: z.boolean().default(false),
   adresse: z.string().optional(),
-  gouvernorat: z.string().min(1, "Le gouvernorat est requis"),
-  delegation: z.string().min(1, "La délégation est requise"),
+  gouvernorat: z.string().optional(),
+  delegation: z.string().optional(),
   localite: z.string().optional(),
   code_postal: z.string().optional(),
   ville: z.string().optional(),
   coordonnees_gps_lat: z.coerce.number().optional().nullable(),
   coordonnees_gps_lng: z.coerce.number().optional().nullable(),
-  effectif: z.coerce.number().int().min(0, "L'effectif doit être ≥ 0"),
-  superficie: z.coerce.number().min(0, "La superficie doit être ≥ 0").optional().nullable(),
+  effectif: z.coerce.number().int().min(0).optional().nullable(),
+  superficie: z.coerce.number().min(0).optional().nullable(),
   activite: z.string().optional(),
 });
 
@@ -247,14 +250,14 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
           localite: "",
           code_postal: "",
           ville: "",
-          effectif: 0,
+          effectif: null,
           superficie: null,
           activite: "",
           coordonnees_gps_lat: null,
           coordonnees_gps_lng: null,
         });
       }
-      setActiveTab("general");
+      setActiveTab("essentiels");
     }
   }, [open, site, clientId, reset]);
 
@@ -265,22 +268,24 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
         client_id: data.client_id,
         nom_site: data.nom_site.trim(),
         code_site: data.code_site.trim(),
-        classification: data.classification,
-        secteur_activite: data.secteur_activite,
         est_siege: data.est_siege || false,
-        adresse: data.adresse?.trim() || null,
-        gouvernorat: data.gouvernorat,
-        delegation: data.delegation,
-        effectif: data.effectif || 0,
         equipements_critiques: equipements,
       };
 
       // Add optional fields only if they have values
+      if (data.classification?.trim()) cleanData.classification = data.classification.trim();
+      if (data.secteur_activite?.trim()) cleanData.secteur_activite = data.secteur_activite.trim();
+      if (data.adresse?.trim()) cleanData.adresse = data.adresse.trim();
+      if (data.gouvernorat?.trim()) cleanData.gouvernorat = data.gouvernorat.trim();
+      if (data.delegation?.trim()) cleanData.delegation = data.delegation.trim();
+      if (data.localite?.trim()) cleanData.localite = data.localite.trim();
+      if (data.ville?.trim()) cleanData.ville = data.ville.trim();
+      if (data.code_postal?.trim()) cleanData.code_postal = data.code_postal.trim();
       if (data.coordonnees_gps_lat) cleanData.coordonnees_gps_lat = data.coordonnees_gps_lat;
       if (data.coordonnees_gps_lng) cleanData.coordonnees_gps_lng = data.coordonnees_gps_lng;
       if (data.superficie) cleanData.superficie = data.superficie;
       if (data.activite?.trim()) cleanData.activite = data.activite.trim();
-      if (data.code_postal?.trim()) cleanData.code_postal = data.code_postal.trim();
+      if (data.effectif !== null && data.effectif !== undefined) cleanData.effectif = data.effectif;
 
       return createSite(cleanData);
     },
@@ -309,22 +314,24 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       const cleanData: any = {
         nom_site: data.nom_site.trim(),
         code_site: data.code_site.trim(),
-        classification: data.classification,
-        secteur_activite: data.secteur_activite,
         est_siege: data.est_siege || false,
-        adresse: data.adresse?.trim() || null,
-        gouvernorat: data.gouvernorat,
-        delegation: data.delegation,
-        effectif: data.effectif || 0,
         equipements_critiques: equipements,
       };
 
       // Add optional fields only if they have values
+      if (data.classification?.trim()) cleanData.classification = data.classification.trim();
+      if (data.secteur_activite?.trim()) cleanData.secteur_activite = data.secteur_activite.trim();
+      if (data.adresse?.trim()) cleanData.adresse = data.adresse.trim();
+      if (data.gouvernorat?.trim()) cleanData.gouvernorat = data.gouvernorat.trim();
+      if (data.delegation?.trim()) cleanData.delegation = data.delegation.trim();
+      if (data.localite?.trim()) cleanData.localite = data.localite.trim();
+      if (data.ville?.trim()) cleanData.ville = data.ville.trim();
+      if (data.code_postal?.trim()) cleanData.code_postal = data.code_postal.trim();
       if (data.coordonnees_gps_lat) cleanData.coordonnees_gps_lat = data.coordonnees_gps_lat;
       if (data.coordonnees_gps_lng) cleanData.coordonnees_gps_lng = data.coordonnees_gps_lng;
       if (data.superficie) cleanData.superficie = data.superficie;
       if (data.activite?.trim()) cleanData.activite = data.activite.trim();
-      if (data.code_postal?.trim()) cleanData.code_postal = data.code_postal.trim();
+      if (data.effectif !== null && data.effectif !== undefined) cleanData.effectif = data.effectif;
 
       return updateSite(id, cleanData);
     },
@@ -455,18 +462,21 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
           </div>
         )}
 
+        <p className="text-sm text-muted-foreground mb-4">
+          Les champs marqués d'un <span className="text-destructive">*</span> sont obligatoires
+        </p>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="general">Général</TabsTrigger>
-            <TabsTrigger value="adresse">Adresse</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="essentiels">Informations essentielles</TabsTrigger>
             <TabsTrigger value="activite">Activité</TabsTrigger>
             <TabsTrigger value="equipements">Équipements</TabsTrigger>
             {site && <TabsTrigger value="modules">Modules</TabsTrigger>}
           </TabsList>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
-            {/* Tab 1: Général */}
-            <TabsContent value="general" className="space-y-4">
+            {/* Tab 1: Informations essentielles */}
+            <TabsContent value="essentiels" className="space-y-4">
               {!site && !clientId && (
                 <div>
                   <Label htmlFor="client_id">Client *</Label>
@@ -512,7 +522,7 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                 </div>
 
                 <div>
-                  <Label htmlFor="classification">Classification *</Label>
+                  <Label htmlFor="classification">Classification</Label>
                   <Controller
                     name="classification"
                     control={control}
@@ -531,13 +541,10 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                       </Select>
                     )}
                   />
-                  {errors.classification && (
-                    <p className="text-sm text-destructive mt-1">{errors.classification.message}</p>
-                  )}
                 </div>
 
                 <div>
-                  <Label htmlFor="secteur_activite">Secteur d'activité *</Label>
+                  <Label htmlFor="secteur_activite">Secteur d'activité</Label>
                   <Controller
                     name="secteur_activite"
                     control={control}
@@ -556,9 +563,87 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                       </Select>
                     )}
                   />
-                  {errors.secteur_activite && (
-                    <p className="text-sm text-destructive mt-1">{errors.secteur_activite.message}</p>
-                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="adresse">Adresse</Label>
+                <Textarea id="adresse" {...register("adresse")} rows={2} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="gouvernorat">Gouvernorat</Label>
+                  <Controller
+                    name="gouvernorat"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleGouvernoratChange(value);
+                        }}
+                        value={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
+                          {gouvernorats.map((gov: any) => (
+                            <SelectItem key={gov.id} value={gov.nom}>
+                              {gov.nom}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="delegation">Délégation</Label>
+                  <Controller
+                    name="delegation"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleDelegationChange(value);
+                        }}
+                        value={field.value}
+                        disabled={!selectedGouvernoratId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
+                          {delegations.map((deleg: any) => (
+                            <SelectItem key={deleg.id} value={deleg.nom}>
+                              {deleg.nom}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="ville">Ville</Label>
+                  <Input id="ville" {...register("ville")} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="code_postal">Code postal</Label>
+                  <Input id="code_postal" {...register("code_postal")} />
+                </div>
+
+                <div>
+                  <Label htmlFor="localite">Localité</Label>
+                  <Input id="localite" {...register("localite")} />
                 </div>
               </div>
 
@@ -583,104 +668,17 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
               </div>
             </TabsContent>
 
-            {/* Tab 2: Adresse */}
-            <TabsContent value="adresse" className="space-y-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="adresse">Adresse</Label>
-                  <Textarea id="adresse" {...register("adresse")} rows={2} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="gouvernorat">Gouvernorat *</Label>
-                    <Controller
-                      name="gouvernorat"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            handleGouvernoratChange(value);
-                          }}
-                          value={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                            {gouvernorats.map((gov: any) => (
-                              <SelectItem key={gov.id} value={gov.nom}>
-                                {gov.nom}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.gouvernorat && (
-                      <p className="text-sm text-destructive mt-1">{errors.gouvernorat.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="delegation">Délégation *</Label>
-                    <Controller
-                      name="delegation"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            handleDelegationChange(value);
-                          }}
-                          value={field.value}
-                          disabled={!selectedGouvernoratId}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner..." />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                            {delegations.map((deleg: any) => (
-                              <SelectItem key={deleg.id} value={deleg.nom}>
-                                {deleg.nom}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.delegation && (
-                      <p className="text-sm text-destructive mt-1">{errors.delegation.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <LocationPicker
-                  lat={watch("coordonnees_gps_lat")}
-                  lng={watch("coordonnees_gps_lng")}
-                  onLocationChange={(lat, lng) => {
-                    setValue("coordonnees_gps_lat", lat);
-                    setValue("coordonnees_gps_lng", lng);
-                  }}
-                />
-              </div>
-            </TabsContent>
-
-            {/* Tab 3: Activité & Risques */}
+            {/* Tab 2: Activité */}
             <TabsContent value="activite" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="effectif">Effectif *</Label>
+                  <Label htmlFor="effectif">Effectif</Label>
                   <Input
                     id="effectif"
                     type="number"
                     min="0"
                     {...register("effectif")}
                   />
-                  {errors.effectif && (
-                    <p className="text-sm text-destructive mt-1">{errors.effectif.message}</p>
-                  )}
                 </div>
 
                 <div>
@@ -692,9 +690,6 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                     step="0.01"
                     {...register("superficie")}
                   />
-                  {errors.superficie && (
-                    <p className="text-sm text-destructive mt-1">{errors.superficie.message}</p>
-                  )}
                 </div>
               </div>
 
@@ -707,9 +702,18 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                   placeholder="Décrivez les activités principales du site..."
                 />
               </div>
+
+              <LocationPicker
+                lat={watch("coordonnees_gps_lat")}
+                lng={watch("coordonnees_gps_lng")}
+                onLocationChange={(lat, lng) => {
+                  setValue("coordonnees_gps_lat", lat);
+                  setValue("coordonnees_gps_lng", lng);
+                }}
+              />
             </TabsContent>
 
-            {/* Tab 4: Équipements critiques */}
+            {/* Tab 3: Équipements critiques */}
             <TabsContent value="equipements" className="space-y-4">
               <div className="bg-muted/50 p-4 rounded-lg mb-4">
                 <p className="text-sm text-muted-foreground flex items-start gap-2">

@@ -1539,75 +1539,105 @@ export type Database = {
       sites: {
         Row: {
           activite: string | null
-          adresse: string
+          adresse: string | null
           classification: string | null
           client_id: string
-          code_postal: string
-          code_site: string | null
+          code_postal: string | null
+          code_site: string
+          coordonnees_gps_lat: number | null
+          coordonnees_gps_lng: number | null
           created_at: string
+          delegation: string | null
           effectif: number | null
           email: string | null
+          equipements_critiques: Json | null
+          est_siege: boolean | null
           gouvernorat: string | null
           id: string
           latitude: number | null
+          localite: string | null
           longitude: number | null
           matricule_fiscale: string | null
+          niveau_risque: string | null
           nom: string
-          nom_site: string | null
+          nom_site: string
           nombre_employes: number | null
           pays: string | null
+          responsable_site: string | null
+          secteur_activite: string | null
+          superficie: number | null
           surface: number | null
           telephone: string | null
           updated_at: string
-          ville: string
+          ville: string | null
         }
         Insert: {
           activite?: string | null
-          adresse: string
+          adresse?: string | null
           classification?: string | null
           client_id: string
-          code_postal: string
-          code_site?: string | null
+          code_postal?: string | null
+          code_site: string
+          coordonnees_gps_lat?: number | null
+          coordonnees_gps_lng?: number | null
           created_at?: string
+          delegation?: string | null
           effectif?: number | null
           email?: string | null
+          equipements_critiques?: Json | null
+          est_siege?: boolean | null
           gouvernorat?: string | null
           id?: string
           latitude?: number | null
+          localite?: string | null
           longitude?: number | null
           matricule_fiscale?: string | null
+          niveau_risque?: string | null
           nom: string
-          nom_site?: string | null
+          nom_site: string
           nombre_employes?: number | null
           pays?: string | null
+          responsable_site?: string | null
+          secteur_activite?: string | null
+          superficie?: number | null
           surface?: number | null
           telephone?: string | null
           updated_at?: string
-          ville: string
+          ville?: string | null
         }
         Update: {
           activite?: string | null
-          adresse?: string
+          adresse?: string | null
           classification?: string | null
           client_id?: string
-          code_postal?: string
-          code_site?: string | null
+          code_postal?: string | null
+          code_site?: string
+          coordonnees_gps_lat?: number | null
+          coordonnees_gps_lng?: number | null
           created_at?: string
+          delegation?: string | null
           effectif?: number | null
           email?: string | null
+          equipements_critiques?: Json | null
+          est_siege?: boolean | null
           gouvernorat?: string | null
           id?: string
           latitude?: number | null
+          localite?: string | null
           longitude?: number | null
           matricule_fiscale?: string | null
+          niveau_risque?: string | null
           nom?: string
-          nom_site?: string | null
+          nom_site?: string
           nombre_employes?: number | null
           pays?: string | null
+          responsable_site?: string | null
+          secteur_activite?: string | null
+          superficie?: number | null
           surface?: number | null
           telephone?: string | null
           updated_at?: string
-          ville?: string
+          ville?: string | null
         }
         Relationships: [
           {

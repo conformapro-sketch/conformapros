@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Search, MapPin, Factory, Eye, Pencil, Trash2, FileText, AlertTriangle, FileDown } from "lucide-react";
+import { Building2, Plus, Search, MapPin, Factory, Eye, Pencil, Trash2, FileText, AlertTriangle, FileDown, Grid3x3, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClients, fetchSites, deleteClient } from "@/lib/multi-tenant-queries";
@@ -13,6 +13,9 @@ import { SitesDrawer } from "@/components/SitesDrawer";
 import { IntegrityCheckerModal } from "@/components/IntegrityCheckerModal";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 import type { Database } from "@/types/db";
 
 type ClientRow = Database["public"]["Tables"]["clients"]["Row"];
@@ -32,6 +35,9 @@ export default function Clients() {
   const [selectedClient, setSelectedClient] = useState<{ id: string; name: string; color?: string } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [integrityCheckerOpen, setIntegrityCheckerOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('clients-view-mode') as 'grid' | 'list') || 'grid';
+  });
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ["clients"],
@@ -98,6 +104,11 @@ export default function Clients() {
       color: client.couleur_primaire || undefined,
     });
     setSitesDrawerOpen(true);
+  };
+
+  const toggleViewMode = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('clients-view-mode', mode);
   };
 
   const billingModeLabels: Record<string, string> = {
@@ -275,14 +286,32 @@ export default function Clients() {
       <Card className="shadow-soft">
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par nom, MF ou RNE..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par nom, MF ou RNE..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex items-center gap-2 border-l pl-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => toggleViewMode('grid')}
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => toggleViewMode('list')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <Select value={gouvernoratFilter} onValueChange={setGouvernoratFilter}>
@@ -375,13 +404,98 @@ export default function Clients() {
       </div>
 
       {/* Clients list */}
-      {/* Clients list */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : filteredClients.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        viewMode === 'list' ? (
+          <Card className="shadow-soft overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Référence</TableHead>
+                  <TableHead>Secteur</TableHead>
+                  <TableHead>Gouvernorat</TableHead>
+                  <TableHead className="text-center">Sites</TableHead>
+                  <TableHead className="text-center">Statut</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredClients.map((client) => {
+                  const brandColor = client.couleur_primaire || "#0066CC";
+                  const sitesCount = getSitesCount(client.id);
+                  
+                  return (
+                    <TableRow key={client.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/clients/${client.id}`)}>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {client.logo_url ? (
+                          <div className="h-10 w-10 rounded flex items-center justify-center bg-background border border-border overflow-hidden">
+                            <img src={client.logo_url} alt={client.nom_legal} className="h-full w-full object-contain" />
+                          </div>
+                        ) : (
+                          <div 
+                            className="h-10 w-10 rounded flex items-center justify-center"
+                            style={{ backgroundColor: `${brandColor}20` }}
+                          >
+                            <Building2 className="h-5 w-5" style={{ color: brandColor }} />
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">{client.nom_legal}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {client.rne_rc || client.matricule_fiscale || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">{client.secteur || "—"}</TableCell>
+                      <TableCell className="text-sm">{client.gouvernorat || "—"}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="font-mono">
+                          {sitesCount}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={client.statut === "actif" ? "default" : "secondary"}>
+                          {client.statut || "actif"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="z-50">
+                            <DropdownMenuItem onClick={() => navigate(`/clients/${client.id}`)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Voir détails
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(client)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewSites(client)}>
+                              <Building2 className="h-4 w-4 mr-2" />
+                              Voir sites ({sitesCount})
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(client.id)} className="text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredClients.map((client) => {
             const brandColor = client.couleur_primaire || "#0066CC";
             const sitesCount = getSitesCount(client.id);
@@ -473,7 +587,8 @@ export default function Clients() {
               </Card>
             );
           })}
-        </div>
+          </div>
+        )
       ) : (
         <Card className="shadow-soft">
           <CardContent className="py-12 text-center">
