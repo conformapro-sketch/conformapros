@@ -47,6 +47,10 @@ import ClientUsers from "./pages/ClientUsers";
 import AllClientUsers from "./pages/AllClientUsers";
 import VisitesMedicales from "./pages/VisitesMedicales";
 import Formations from "./pages/Formations";
+import FormationsDashboard from "./pages/FormationsDashboard";
+import FormationsPlanning from "./pages/FormationsPlanning";
+import FormationsParticipants from "./pages/FormationsParticipants";
+import FormationsDocuments from "./pages/FormationsDocuments";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 
@@ -173,7 +177,11 @@ const App = () => (
                           <Route path="/controles" element={<ControlesTechniques />} />
                           <Route path="/incidents" element={<Incidents />} />
                           <Route path="/audits" element={<ComingSoon title="Audits & Inspections" description="Gestion des audits, inspections et checklists de conformité" />} />
-                          <Route path="/formations" element={<Formations />} />
+              <Route path="/formations" element={<Formations />} />
+              <Route path="/formations/dashboard" element={<FormationsDashboard />} />
+              <Route path="/formations/planning" element={<FormationsPlanning />} />
+              <Route path="/formations/participants" element={<FormationsParticipants />} />
+              <Route path="/formations/documents" element={<FormationsDocuments />} />
                           <Route path="/visites-medicales" element={<VisitesMedicales />} />
                           <Route path="/epi" element={<ComingSoon title="EPI & Équipements" description="Registre des équipements de protection individuelle et dotations" />} />
                           <Route path="/prestataires" element={<ComingSoon title="Prestataires & Sous-traitants" description="Gestion des contrats et conformité des prestataires externes" />} />

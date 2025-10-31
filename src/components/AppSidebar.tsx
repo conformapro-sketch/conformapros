@@ -89,7 +89,17 @@ const menuItems: MenuItem[] = [
   { title: "Contrôles techniques", url: "/controles", icon: ClipboardCheck },
   { title: "Incidents HSE", url: "/incidents", icon: AlertTriangle },
   { title: "Audits & Inspections", url: "/audits", icon: Search },
-  { title: "Formations", url: "/formations", icon: GraduationCap },
+  {
+    title: "Formations",
+    icon: GraduationCap,
+    subItems: [
+      { title: "Tableau de bord", url: "/formations/dashboard" },
+      { title: "Registre des formations", url: "/formations" },
+      { title: "Planification", url: "/formations/planning" },
+      { title: "Participants", url: "/formations/participants" },
+      { title: "Certificats & Documents", url: "/formations/documents" },
+    ],
+  },
   { title: "Visites médicales", url: "/visites-medicales", icon: Stethoscope },
   { title: "EPI & Équipements", url: "/epi", icon: HardHat },
   { title: "Prestataires", url: "/prestataires", icon: Users },
@@ -140,17 +150,20 @@ export function AppSidebar() {
     });
   }, [effectiveRoles]);
 
+  // Open Veille submenu when on veille routes
   useEffect(() => {
-    if (location.pathname.startsWith("/veille/bibliotheque")) {
+    if (location.pathname.startsWith("/veille")) {
       setOpenItems((prev) =>
-        prev.includes(BIBLIOTHEQUE_TITLE) ? prev : [...prev, BIBLIOTHEQUE_TITLE],
+        prev.includes("Veille Réglementaire") ? prev : [...prev, "Veille Réglementaire"],
       );
     }
-    
-    // Open Veille réglementaire submenu when on veille routes
-    if (location.pathname.startsWith("/veille") && !location.pathname.startsWith("/veille/bibliotheque")) {
+  }, [location.pathname]);
+
+  // Open Formations submenu when on formations routes
+  useEffect(() => {
+    if (location.pathname.startsWith("/formations")) {
       setOpenItems((prev) =>
-        prev.includes("Veille réglementaire") ? prev : [...prev, "Veille réglementaire"],
+        prev.includes("Formations") ? prev : [...prev, "Formations"],
       );
     }
   }, [location.pathname]);
