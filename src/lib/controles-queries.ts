@@ -4,6 +4,9 @@ import type { Database } from "@/types/db";
 type EquipementControle = Database["public"]["Tables"]["equipements_controle"]["Row"];
 type EquipementControleInsert = Database["public"]["Tables"]["equipements_controle"]["Insert"];
 type EquipementControleUpdate = Database["public"]["Tables"]["equipements_controle"]["Update"];
+type Equipement = Database["public"]["Tables"]["equipements"]["Row"];
+type EquipementInsert = Database["public"]["Tables"]["equipements"]["Insert"];
+type EquipementUpdate = Database["public"]["Tables"]["equipements"]["Update"];
 type HistoriqueControle = Database["public"]["Tables"]["historique_controles"]["Row"];
 type HistoriqueControleInsert = Database["public"]["Tables"]["historique_controles"]["Insert"];
 type TypeEquipement = Database["public"]["Tables"]["types_equipement"]["Row"];
@@ -202,4 +205,65 @@ export const fetchUpcomingControls = async (limit = 10) => {
 
   if (error) throw error;
   return data;
+};
+
+// ==================== EQUIPEMENTS INVENTORY ====================
+
+export const fetchEquipementsInventory = async () => {
+  const { data, error } = await supabase
+    .from("equipements")
+    .select(`
+      *,
+      site:sites(id, nom_site, client_id)
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+};
+
+export const fetchEquipementInventoryById = async (id: string) => {
+  const { data, error } = await supabase
+    .from("equipements")
+    .select(`
+      *,
+      site:sites(id, nom_site, client_id)
+    `)
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const createEquipementInventory = async (equipement: EquipementInsert) => {
+  const { data, error } = await supabase
+    .from("equipements")
+    .insert(equipement)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateEquipementInventory = async (id: string, updates: EquipementUpdate) => {
+  const { data, error } = await supabase
+    .from("equipements")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const deleteEquipementInventory = async (id: string) => {
+  const { error } = await supabase
+    .from("equipements")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
 };

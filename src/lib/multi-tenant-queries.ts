@@ -221,8 +221,8 @@ export const fetchSiteById = async (siteId: string) => {
 export const createSite = async (site: SiteInsert) => {
   const payload: SiteInsert = {
     ...site,
-    name: site.name ?? site.nom_site ?? `Site ${new Date().getTime()}`,
-    is_billable: site.is_billable ?? true,
+    nom: site.nom_site ?? site.nom ?? "",
+    nom_site: site.nom_site ?? site.nom ?? "",
     is_active: site.is_active ?? true,
   };
 
@@ -246,6 +246,13 @@ export const createSite = async (site: SiteInsert) => {
 
 export const updateSite = async (siteId: string, updates: SiteUpdate) => {
   const safeUpdates = withTenantGuard(updates);
+  
+  // Sync nom with nom_site if either changes
+  if (safeUpdates.nom_site && !safeUpdates.nom) {
+    safeUpdates.nom = safeUpdates.nom_site;
+  } else if (safeUpdates.nom && !safeUpdates.nom_site) {
+    safeUpdates.nom_site = safeUpdates.nom;
+  }
 
   const { data, error } = await supabase
     .from("sites")
