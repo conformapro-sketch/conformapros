@@ -162,7 +162,8 @@ export interface ChangelogEntry {
   id: string;
   acte_id: string;
   type_changement: "ajout" | "modification" | "abrogation";
-  resume: string;
+  description: string;
   date_changement: string;
+  version?: number;
   created_at: string;
 }

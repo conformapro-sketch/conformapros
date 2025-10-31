@@ -24,11 +24,13 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
+import { changelogQueries } from "@/lib/actes-queries";
 import { toast } from "sonner";
 import { useState } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { ArticleVersionModal } from "@/components/ArticleVersionModal";
 import { ArticleVersionComparison } from "@/components/ArticleVersionComparison";
+import { TimelineChangelog } from "@/components/TimelineChangelog";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize-html";
 
 export default function BibliothequeTexteDetail() {
@@ -73,6 +75,13 @@ export default function BibliothequeTexteDetail() {
       return map;
     },
     enabled: !!id && expandedArticles.length > 0,
+  });
+
+  // Fetch changelog for this act
+  const { data: changelogEntries = [] } = useQuery({
+    queryKey: ["changelog", id],
+    queryFn: () => changelogQueries.getByActeId(id!),
+    enabled: !!id,
   });
 
   // Show error toast if query fails
@@ -283,6 +292,7 @@ export default function BibliothequeTexteDetail() {
       <Tabs defaultValue="articles" className="space-y-4">
         <TabsList>
           <TabsTrigger value="articles">Articles ({articles?.length || 0})</TabsTrigger>
+          <TabsTrigger value="changelog">Historique ({changelogEntries?.length || 0})</TabsTrigger>
           <TabsTrigger value="info">Informations</TabsTrigger>
         </TabsList>
 
@@ -505,6 +515,20 @@ export default function BibliothequeTexteDetail() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="changelog" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Historique des modifications</CardTitle>
+              <CardDescription>
+                Suivi chronologique des changements apportés à ce texte réglementaire
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TimelineChangelog entries={changelogEntries} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="info">

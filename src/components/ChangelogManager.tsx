@@ -23,7 +23,7 @@ export function ChangelogManager({ acteId }: ChangelogManagerProps) {
   
   const [formData, setFormData] = useState<Partial<ChangelogEntry>>({
     type_changement: "modification",
-    resume: "",
+    description: "",
     date_changement: new Date().toISOString().split("T")[0],
   });
 
@@ -44,7 +44,7 @@ export function ChangelogManager({ acteId }: ChangelogManagerProps) {
       setShowForm(false);
       setFormData({
         type_changement: "modification",
-        resume: "",
+        description: "",
         date_changement: new Date().toISOString().split("T")[0],
       });
     },
@@ -77,7 +77,7 @@ export function ChangelogManager({ acteId }: ChangelogManagerProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.resume || !formData.date_changement) {
+    if (!formData.description || !formData.date_changement) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs requis",
@@ -159,12 +159,12 @@ export function ChangelogManager({ acteId }: ChangelogManagerProps) {
               </div>
 
               <div>
-                <Label htmlFor="resume">Résumé du changement *</Label>
+                <Label htmlFor="description">Résumé du changement *</Label>
                 <Textarea
-                  id="resume"
+                  id="description"
                   placeholder="Décrivez brièvement le changement apporté..."
-                  value={formData.resume}
-                  onChange={(e) => setFormData({ ...formData, resume: e.target.value })}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
                   required
                 />
@@ -204,7 +204,7 @@ export function ChangelogManager({ acteId }: ChangelogManagerProps) {
                           })}
                         </div>
                       </div>
-                      <p className="text-foreground">{entry.resume}</p>
+                      <p className="text-foreground">{entry.description}</p>
                     </div>
                     <Button
                       variant="ghost"

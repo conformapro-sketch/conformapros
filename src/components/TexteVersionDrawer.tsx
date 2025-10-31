@@ -102,8 +102,8 @@ export function TexteVersionDrawer({ open, onOpenChange, acteId, currentVersion 
                         </span>
                       </div>
 
-                      {entry.resume && (
-                        <p className="text-sm text-foreground mb-2">{entry.resume}</p>
+                      {entry.description && (
+                        <p className="text-sm text-foreground mb-2">{entry.description}</p>
                       )}
 
                       <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">

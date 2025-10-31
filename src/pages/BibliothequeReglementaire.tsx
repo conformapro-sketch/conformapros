@@ -37,6 +37,13 @@ const TYPE_LABELS = {
   circulaire: "Circulaire",
 };
 
+const TYPE_ICONS = {
+  loi: "⚖️",
+  arrete: "📋",
+  decret: "📜",
+  circulaire: "📄",
+};
+
 export default function BibliothequeReglementaire() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -505,6 +512,7 @@ export default function BibliothequeReglementaire() {
                           >
                             <TableCell>
                               <Badge variant="outline" className="text-xs font-medium">
+                                <span className="mr-1.5">{TYPE_ICONS[texte.type_acte as keyof typeof TYPE_ICONS]}</span>
                                 {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS]}
                               </Badge>
                             </TableCell>
