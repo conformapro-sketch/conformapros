@@ -113,7 +113,7 @@ export const MedicalVisitFormDrawer = ({
         prochaine_echeance: visit.prochaine_echeance || "",
         medecin_nom: visit.medecin_nom || "",
         medecin_organisme: visit.medecin_organisme || "",
-        sms_flags: Array.isArray(visit.sms_flags) ? visit.sms_flags : [],
+        sms_flags: Array.isArray(visit.sms_flags) ? (visit.sms_flags as string[]) : [],
       });
     }
   }, [visit, form]);
