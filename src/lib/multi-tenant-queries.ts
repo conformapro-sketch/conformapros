@@ -116,8 +116,8 @@ export const createClient = async (client: ClientInsert) => {
   const payload: ClientInsert = {
     ...client,
     tenant_id: tenantId,
-    name: client.name ?? client.nom_legal ?? `Client ${new Date().getTime()}`,
-    nom_legal: client.nom_legal ?? client.name ?? "",
+    nom: client.nom ?? client.nom_legal ?? `Client ${new Date().getTime()}`,
+    nom_legal: client.nom_legal ?? client.nom ?? "",
     billing_mode: client.billing_mode ?? "client",
     currency: client.currency ?? "TND",
     is_active: client.is_active ?? true,
@@ -146,6 +146,13 @@ export const updateClient = async (
   updates: ClientUpdate
 ) => {
   const safeUpdates = withTenantGuard(updates);
+  
+  // Keep nom and nom_legal in sync
+  if (safeUpdates.nom_legal && !safeUpdates.nom) {
+    safeUpdates.nom = safeUpdates.nom_legal;
+  } else if (safeUpdates.nom && !safeUpdates.nom_legal) {
+    safeUpdates.nom_legal = safeUpdates.nom;
+  }
 
   const { data, error } = await supabase
     .from("clients")
