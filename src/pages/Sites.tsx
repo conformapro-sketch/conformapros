@@ -22,22 +22,22 @@ import type { Database } from "@/types/db";
 type SiteRow = Database["public"]["Tables"]["sites"]["Row"];
 
 const CLASSIFICATIONS = [
-  "1Ã¨re catÃ©gorie",
-  "2Ã¨me catÃ©gorie", 
-  "3Ã¨me catÃ©gorie",
+  "1ère catégorie",
+  "2ème catégorie", 
+  "3ème catégorie",
   "ERP",
   "EOP",
-  "Non classÃ©",
+  "Non classé",
 ];
 
 const SECTEURS = [
   "Chimique",
   "Pharmaceutique",
   "Agroalimentaire",
-  "PÃ©troliÃ¨re",
+  "Pétrolière",
   "Logistique",
   "Tertiaire",
-  "Ã‰nergie",
+  "Énergie",
   "Autre",
 ];
 
@@ -104,7 +104,7 @@ export default function Sites() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sites"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: "Site supprimÃ© avec succÃ¨s" });
+      toast({ title: "Site supprimé avec succès" });
       setDeletingId(null);
     },
     onError: (error: any) => {
@@ -281,7 +281,7 @@ export default function Sites() {
     if (!risque) return "default";
     switch (risque.toLowerCase()) {
       case "critique":
-      case "Ã©levÃ©":
+      case "élevé":
         return "destructive";
       case "moyen":
         return "secondary";
@@ -291,7 +291,7 @@ export default function Sites() {
   };
 
   const totalEffectif = sites?.reduce((sum, site) => sum + (site.effectif || 0), 0) || 0;
-  const highRiskSites = sites?.filter(s => s.niveau_risque && ["Critique", "Ã‰levÃ©"].includes(s.niveau_risque)).length || 0;
+  const highRiskSites = sites?.filter(s => s.niveau_risque && ["Critique", "Élevé"].includes(s.niveau_risque)).length || 0;
 
   return (
     <div className="space-y-6">
@@ -300,7 +300,7 @@ export default function Sites() {
         <div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Gestion des Sites</h1>
           <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            GÃ©rez tous les sites et Ã©tablissements
+            Gérez tous les sites et établissements
           </p>
         </div>
         <div className="flex flex-wrap gap-2 justify-end">
@@ -331,7 +331,7 @@ export default function Sites() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom, code, gouvernorat, dÃ©lÃ©gation, localitÃ©..."
+              placeholder="Rechercher par nom, code, gouvernorat, délégation, localité..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -431,7 +431,7 @@ export default function Sites() {
               className="text-xs"
             >
               <Filter className="h-3 w-3 mr-1" />
-              RÃ©initialiser les filtres
+              Réinitialiser les filtres
             </Button>
           )}
         </CardContent>
@@ -459,7 +459,7 @@ export default function Sites() {
         </Card>
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardDescription>RÃ©sultats filtrÃ©s</CardDescription>
+            <CardDescription>Résultats filtrés</CardDescription>
             <CardTitle className="text-3xl">{filteredSites.length}</CardTitle>
           </CardHeader>
         </Card>
@@ -525,7 +525,7 @@ export default function Sites() {
                     {site.effectif !== null && (
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{site.effectif} employÃ©s</span>
+                        <span className="text-muted-foreground">{site.effectif} employés</span>
                       </div>
                     )}
                   </div>
@@ -585,8 +585,8 @@ export default function Sites() {
             <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">
               {searchQuery || filterClient !== "all" || filterGouvernorat !== "all" 
-                ? "Aucun site ne correspond aux critÃ¨res de recherche" 
-                : "Aucun site enregistrÃ©"}
+                ? "Aucun site ne correspond aux critères de recherche" 
+                : "Aucun site enregistré"}
             </p>
             {!searchQuery && filterClient === "all" && filterGouvernorat === "all" && (
               <Button 
@@ -596,7 +596,7 @@ export default function Sites() {
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                CrÃ©er le premier site
+                Créer le premier site
               </Button>
             )}
           </CardContent>
@@ -617,7 +617,7 @@ export default function Sites() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              ÃŠtes-vous sÃ»r de vouloir supprimer ce site ? Cette action est irrÃ©versible.
+              Êtes-vous sûr de vouloir supprimer ce site ? Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

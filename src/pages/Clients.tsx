@@ -53,7 +53,7 @@ export default function Clients() {
     mutationFn: deleteClient,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: "Client supprimÃ© avec succÃ¨s" });
+      toast({ title: "Client supprimé avec succès" });
       setDeletingId(null);
     },
     onError: (error: any) => {
@@ -253,7 +253,7 @@ export default function Clients() {
         <div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Gestion des Clients</h1>
           <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            GÃ©rez vos clients et leurs sites
+            Gérez vos clients et leurs sites
           </p>
         </div>
         <div className="flex flex-wrap gap-2 justify-end">
@@ -321,19 +321,19 @@ export default function Clients() {
                 <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
                   <SelectItem value="all">Tous les gouvernorats</SelectItem>
                   <SelectItem value="Ariana">Ariana</SelectItem>
-                  <SelectItem value="BÃ©ja">BÃ©ja</SelectItem>
+                  <SelectItem value="Béja">Béja</SelectItem>
                   <SelectItem value="Ben Arous">Ben Arous</SelectItem>
                   <SelectItem value="Bizerte">Bizerte</SelectItem>
-                  <SelectItem value="GabÃ¨s">GabÃ¨s</SelectItem>
+                  <SelectItem value="Gabès">Gabès</SelectItem>
                   <SelectItem value="Gafsa">Gafsa</SelectItem>
                   <SelectItem value="Jendouba">Jendouba</SelectItem>
                   <SelectItem value="Kairouan">Kairouan</SelectItem>
                   <SelectItem value="Kasserine">Kasserine</SelectItem>
-                  <SelectItem value="KÃ©bili">KÃ©bili</SelectItem>
+                  <SelectItem value="Kébili">Kébili</SelectItem>
                   <SelectItem value="Le Kef">Le Kef</SelectItem>
                   <SelectItem value="Mahdia">Mahdia</SelectItem>
                   <SelectItem value="La Manouba">La Manouba</SelectItem>
-                  <SelectItem value="MÃ©denine">MÃ©denine</SelectItem>
+                  <SelectItem value="Médenine">Médenine</SelectItem>
                   <SelectItem value="Monastir">Monastir</SelectItem>
                   <SelectItem value="Nabeul">Nabeul</SelectItem>
                   <SelectItem value="Sfax">Sfax</SelectItem>
@@ -367,7 +367,7 @@ export default function Clients() {
                   <SelectItem value="all">Tous les statuts</SelectItem>
                   <SelectItem value="actif">Actif</SelectItem>
                   <SelectItem value="suspendu">Suspendu</SelectItem>
-                  <SelectItem value="archivÃ©">ArchivÃ©</SelectItem>
+                  <SelectItem value="archivé">Archivé</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -397,7 +397,7 @@ export default function Clients() {
         </Card>
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
-            <CardDescription>RÃ©sultats filtrÃ©s</CardDescription>
+            <CardDescription>Résultats filtrés</CardDescription>
             <CardTitle className="text-3xl">{filteredClients.length}</CardTitle>
           </CardHeader>
         </Card>
@@ -596,7 +596,7 @@ export default function Clients() {
             <p className="text-muted-foreground mb-4">
               {searchQuery || statutFilter !== "all" || secteurFilter !== "all" || gouvernoratFilter !== "all"
                 ? "Aucun client ne correspond aux filtres" 
-                : "Aucun client enregistrÃ©"}
+                : "Aucun client enregistré"}
             </p>
             {!searchQuery && statutFilter === "all" && secteurFilter === "all" && gouvernoratFilter === "all" && (
               <Button 
@@ -606,7 +606,7 @@ export default function Clients() {
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                CrÃ©er le premier client
+                Créer le premier client
               </Button>
             )}
           </CardContent>
@@ -642,7 +642,7 @@ export default function Clients() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              ÃŠtes-vous sÃ»r de vouloir supprimer ce client ? Tous les sites associÃ©s seront Ã©galement supprimÃ©s. Cette action est irrÃ©versible.
+              Êtes-vous sûr de vouloir supprimer ce client ? Tous les sites associés seront également supprimés. Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
