@@ -30,8 +30,8 @@ const STATUT_LABELS: Record<string, { label: string; className: string }> = {
 };
 
 // Highlight search terms in text
-const highlightText = (text: string, searchTerm: string) => {
-  if (!searchTerm.trim()) return text;
+const highlightText = (text: string | undefined | null, searchTerm: string) => {
+  if (!text || !searchTerm.trim()) return text || '';
   
   const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
   const parts = text.split(regex);
