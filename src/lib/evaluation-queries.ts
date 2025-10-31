@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { Database, Json } from "@/types/db";
 import { getCurrentTenantId, logAudit } from "@/lib/multi-tenant-queries";
 
@@ -359,19 +359,19 @@ export const evaluationQueries = {
     }
 
     if (filters?.applicability) {
-      query = query.eq("applicabilite", filters.applicability);
+      query = (query as any).eq("applicabilite", filters.applicability);
     }
 
     if (filters?.motif) {
-      query = query.eq("motif_non_applicable", filters.motif);
+      query = (query as any).eq("motif_non_applicable", filters.motif);
     }
 
     if (filters?.state) {
-      query = query.eq("etat", filters.state);
+      query = (query as any).eq("etat", filters.state);
     }
 
     if (filters?.impactLevel) {
-      query = query.eq("impact_level", filters.impactLevel);
+      query = (query as any).eq("impact_level", filters.impactLevel);
     }
 
     // Skip proof filtering for now - needs proper implementation

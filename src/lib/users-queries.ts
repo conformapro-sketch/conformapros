@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 export const usersQueries = {
   // Get all users with roles

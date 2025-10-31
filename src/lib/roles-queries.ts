@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { Role, RolePermission, UserRoleAssignment, RoleAuditLog } from "@/types/roles";
 
 export const rolesQueries = {

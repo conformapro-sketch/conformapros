@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { Database } from "@/types/db";
 
 type EtatConformite = Database['public']['Enums']['etat_conformite'];

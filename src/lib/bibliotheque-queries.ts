@@ -1,5 +1,5 @@
 // Extended queries for Bibliothèque Réglementaire module
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { ActeAnnexe, ApplicabiliteMapping } from "@/types/actes";
 
 // Annexes queries

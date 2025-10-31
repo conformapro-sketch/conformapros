@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { Database } from "@/types/db";
 
 type Json = Database["public"]["Tables"]["audit_logs"]["Insert"]["details"];
@@ -37,7 +37,7 @@ export const getCurrentTenantId = async (): Promise<string> => {
         throw new Error("Utilisateur non authentifié");
       }
 
-      const { data, error } = await supabase.rpc("get_user_tenant_id", {
+      const { data, error } = await (supabase as any).rpc("get_user_tenant_id", {
         _user_id: user.id,
       });
 
@@ -46,8 +46,8 @@ export const getCurrentTenantId = async (): Promise<string> => {
         throw error ?? new Error("Impossible de récupérer le tenant courant");
       }
 
-      cachedTenantId = data;
-      return data;
+      cachedTenantId = data as string;
+      return data as string;
     })();
   }
 
@@ -86,7 +86,7 @@ type ClientUpdate = Database["public"]["Tables"]["clients"]["Update"];
 export const fetchClients = async () => {
   const tenantId = await getCurrentTenantId();
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("clients")
     .select("*")
     .eq("tenant_id", tenantId)
