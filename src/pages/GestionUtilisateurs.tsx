@@ -371,21 +371,34 @@ export default function GestionUtilisateurs() {
             )}
             <div className="col-span-2">
               <Label>Rôle *</Label>
-                  <Select
-                    value={formData.role_uuid}
-                    onValueChange={(value) => setFormData({ ...formData, role_uuid: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un rôle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles?.map((role) => (
-                        <SelectItem key={role.id} value={role.id}>
-                          {role.name} {role.description && `- ${role.description}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {editingUser?.user_roles?.[0]?.roles?.name === 'Super Admin' ? (
+                <>
+                  <div className="flex items-center gap-2 p-3 border rounded-md bg-accent/10">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Super Admin</span>
+                    <Badge variant="secondary">Protégé</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Le rôle Super Admin ne peut pas être modifié pour préserver la sécurité du système
+                  </p>
+                </>
+              ) : (
+                <Select
+                  value={formData.role_uuid}
+                  onValueChange={(value) => setFormData({ ...formData, role_uuid: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un rôle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles?.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name} {role.description && `- ${role.description}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="col-span-2">
               <Label>Téléphone</Label>

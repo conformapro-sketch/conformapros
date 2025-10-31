@@ -40,11 +40,18 @@ export const usersQueries = {
           )
         )
       `)
-      .eq('user_roles.roles.type', 'team')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
+    
+    // Filter for team users in JavaScript, not SQL
+    const teamUsers = data.filter(user => {
+      // Include users with no role OR users with team roles
+      if (!user.user_roles || user.user_roles.length === 0) return true;
+      return user.user_roles.some(ur => ur.roles?.type === 'team');
+    });
+    
+    return teamUsers;
   },
 
   getById: async (id: string) => {

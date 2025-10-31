@@ -23,6 +23,7 @@ interface AuthContextType {
   // Helper functions
   hasPermission: (module: string, action: string) => boolean;
   hasRole: (roleName: string) => boolean;
+  isSuperAdmin: () => boolean;
   isTeamUser: () => boolean;
   isClientUser: () => boolean;
   getClientId: () => string | null;
@@ -229,6 +230,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return result;
   };
 
+  const isSuperAdmin = (): boolean => {
+    if (loading) return false;
+    return primaryRole?.name === 'Super Admin';
+  };
+
   const isTeamUser = (): boolean => {
     return primaryRole?.type === 'team';
   };
@@ -255,6 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tenantId,
         hasPermission,
         hasRole,
+        isSuperAdmin,
         isTeamUser,
         isClientUser,
         getClientId,

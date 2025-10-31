@@ -213,7 +213,10 @@ export function RoleTable({ roles, isLoading, onEdit, type }: RoleTableProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(role)}>
+                    <DropdownMenuItem 
+                      onClick={() => onEdit(role)}
+                      disabled={role.name === 'Super Admin'}
+                    >
                       <Edit className="mr-2 h-4 w-4" />
                       Modifier
                     </DropdownMenuItem>

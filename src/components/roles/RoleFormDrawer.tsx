@@ -184,12 +184,21 @@ export function RoleFormDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        {role?.is_system && (
+        {role?.name === 'Super Admin' && (
+          <Alert className="mt-4 border-primary/50 bg-primary/10">
+            <Shield className="h-4 w-4 text-primary" />
+            <AlertDescription>
+              <strong>Rôle Super Admin protégé</strong> - Ce rôle ne peut pas être modifié, renommé, archivé ou supprimé. 
+              Il dispose de tous les privilèges système et est essentiel au fonctionnement de l'application.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {role?.is_system && role?.name !== 'Super Admin' && (
           <Alert className="mt-4">
             <Shield className="h-4 w-4" />
             <AlertDescription>
-              Ce rôle système ne peut pas être supprimé et dispose de tous les privilèges.
-              Seules certaines modifications sont autorisées.
+              Ce rôle système dispose de privilèges étendus.
             </AlertDescription>
           </Alert>
         )}
@@ -214,7 +223,7 @@ export function RoleFormDrawer({
                         <Input 
                           {...field} 
                           placeholder="Ex: Gestionnaire de site" 
-                          disabled={role?.is_system}
+                          disabled={role?.name === 'Super Admin'}
                         />
                       </FormControl>
                       <FormMessage />
