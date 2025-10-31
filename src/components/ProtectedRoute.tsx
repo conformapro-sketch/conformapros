@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, userRole, userRoles } = useAuth();
 
-  if (loading) {
+  if (loading || (user && !userRole && userRoles.length === 0)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
