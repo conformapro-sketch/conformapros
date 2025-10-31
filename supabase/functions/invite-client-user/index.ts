@@ -121,14 +121,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Upsert profile to handle case where auth user exists but profile doesn't
+      // Upsert client_users to handle case where auth user exists but profile doesn't
       const { error: profileError } = await supabaseAdmin
-        .from('profiles')
+        .from('client_users')
         .upsert({ 
           id: userId,
           email,
           tenant_id: finalTenantId,
-          managed_client_id: clientId,
+          client_id: clientId,
           is_client_admin: is_client_admin || false,
           nom,
           prenom,
@@ -164,9 +164,9 @@ Deno.serve(async (req) => {
       userId = newUser.user.id
       console.log('invite-client-user: Created new user', userId)
 
-      // Create profile
+      // Create client_users entry
       const { error: profileError } = await supabaseAdmin
-        .from('profiles')
+        .from('client_users')
         .insert({
           id: userId,
           email,
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
           prenom,
           telephone: telephone || null,
           tenant_id: finalTenantId,
-          managed_client_id: clientId,
+          client_id: clientId,
           is_client_admin: is_client_admin || false,
           actif: true
         })

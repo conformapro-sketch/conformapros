@@ -50,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
 
   const fetchUserAccessContext = async (userId: string) => {
     setLoading(true);
@@ -96,12 +97,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set primary role (first one, prioritized by type)
       const primary = roles[0] || null;
 
-      // Get tenant_id from profile
+      // Get tenant_id from profile or client_users
       const { data: profile } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+
+      let userClientId: string | null = null;
+      if (primary?.type === 'client') {
+        // For client users, fetch client_id from client_users table
+        const { data: clientUser } = await supabase
+          .from('client_users')
+          .select('client_id')
+          .eq('id', userId)
+          .maybeSingle();
+        userClientId = clientUser?.client_id || null;
+      }
 
       // Update state
       setPrimaryRole(primary);
@@ -110,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole(primary?.name || null);
       setUserRoles(roles.map(r => r.name));
       setTenantId(profile?.tenant_id || null);
+      setClientId(userClientId);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching user access context:", err);
@@ -119,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole(null);
       setUserRoles([]);
       setTenantId(null);
+      setClientId(null);
       setLoading(false);
     }
   };
@@ -141,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserRole(null);
         setUserRoles([]);
         setTenantId(null);
+        setClientId(null);
       }
     });
 
@@ -157,6 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserRole(null);
         setUserRoles([]);
         setTenantId(null);
+        setClientId(null);
         setLoading(false);
       }
     });
@@ -212,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserRole(null);
     setUserRoles([]);
     setTenantId(null);
+    setClientId(null);
     toast.success("Deconnexion reussie");
   };
 
@@ -244,7 +261,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getClientId = (): string | null => {
-    return isClientUser() ? tenantId : null;
+    return clientId;
   };
 
   return (

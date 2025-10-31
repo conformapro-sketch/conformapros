@@ -98,8 +98,8 @@ export default function TopNavBar({
     queryFn: async () => {
       if (!authUser?.id) return null;
       const { data, error } = await supabase
-        .from("profiles")
-        .select("managed_client_id, clients!profiles_managed_client_id_fkey(logo_url, nom)")
+        .from("client_users")
+        .select("client_id, clients!client_users_client_id_fkey(logo_url, nom)")
         .eq("id", authUser.id)
         .single();
       if (error) return null;

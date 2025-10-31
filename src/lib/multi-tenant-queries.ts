@@ -478,7 +478,7 @@ export const updateUtilisateur = async (utilisateurId: string, updates: ProfileU
 
 export const toggleUtilisateurActif = async (utilisateurId: string, actif: boolean) => {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("client_users")
     .update({ actif })
     .eq("id", utilisateurId)
     .select()
