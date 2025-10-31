@@ -6,11 +6,11 @@ export const usersQueries = {
       .from('profiles')
       .select(`
         *,
-        user_roles!inner(
+        user_roles(
           id,
           role_uuid,
           client_id,
-          roles!inner(
+          roles(
             id,
             name,
             description,
@@ -29,10 +29,10 @@ export const usersQueries = {
       .from('profiles')
       .select(`
         *,
-        user_roles!inner(
+        user_roles(
           id,
           role_uuid,
-          roles!inner(
+          roles(
             id,
             name,
             description,
