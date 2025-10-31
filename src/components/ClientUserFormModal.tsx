@@ -15,12 +15,13 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { inviteClientUser, fetchSitesByClient, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
+import { inviteClientUser, fetchSitesByClient, toggleUtilisateurActif, fetchAllClients } from "@/lib/multi-tenant-queries";
 import { useToast } from "@/hooks/use-toast";
 import { Building2 } from "lucide-react";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 const userSchema = z.object({
+  client_id: z.string().min(1, "Le client est requis"),
   email: z.string().trim().email("Email invalide").min(1, "L'email est requis"),
   fullName: z.string().trim().min(1, "Le nom complet est requis").max(100, "Le nom doit faire moins de 100 caractères"),
   is_client_admin: z.boolean().default(false),
@@ -33,7 +34,7 @@ type UserFormData = z.infer<typeof userSchema>;
 interface ClientUserFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  clientId: string;
+  clientId?: string; // Optional - can be pre-selected or chosen in form
   user?: any; // Existing user for editing
 }
 
@@ -41,11 +42,11 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch sites for this client
-  const { data: sites = [] } = useQuery({
-    queryKey: ["sites", clientId],
-    queryFn: () => fetchSitesByClient(clientId),
-    enabled: !!clientId,
+  // Fetch all clients (for selection)
+  const { data: clients = [] } = useQuery({
+    queryKey: ["all-clients"],
+    queryFn: fetchAllClients,
+    enabled: !user, // Only fetch when creating new user
   });
 
   // Check if current user is super admin
@@ -77,19 +78,29 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: user ? {
+      client_id: user.tenant_id || "",
       email: user.email || "",
       fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
       is_client_admin: user.is_client_admin || false,
       siteIds: user.access_scopes?.map((as: any) => as.site_id) || [],
       actif: user.actif ?? true,
     } : {
+      client_id: clientId || "",
       actif: true,
       siteIds: [],
       is_client_admin: false,
     },
   });
 
+  const selectedClientId = watch("client_id");
   const selectedSiteIds = watch("siteIds");
+
+  // Fetch sites for the selected client
+  const { data: sites = [] } = useQuery({
+    queryKey: ["sites", selectedClientId],
+    queryFn: () => fetchSitesByClient(selectedClientId),
+    enabled: !!selectedClientId,
+  });
 
   const saveMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
@@ -97,7 +108,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
         data.email,
         data.fullName,
         data.siteIds,
-        clientId,
+        data.client_id,
         data.is_client_admin
       );
 
@@ -112,6 +123,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       return result;
     },
     onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ["client-users", selectedClientId] });
       queryClient.invalidateQueries({ queryKey: ["client-users", clientId] });
       toast({
         title: "Succès",
@@ -148,6 +160,34 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Client Selection (only for new users) */}
+          {!user && (
+            <div>
+              <Label htmlFor="client_id">Client * <span className="text-xs text-muted-foreground">(obligatoire)</span></Label>
+              <Controller
+                name="client_id"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange} disabled={!!clientId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un client..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients?.map((client: any) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.nom} {client.nom_legal && `(${client.nom_legal})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.client_id && (
+                <p className="text-sm text-destructive mt-1">{errors.client_id.message}</p>
+              )}
+            </div>
+          )}
+
           {/* Email */}
           <div>
             <Label htmlFor="email">Email *</Label>
@@ -213,48 +253,58 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
               <Label>Sites autorisés</Label>
             </div>
 
-            <div className="space-y-3 bg-muted/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-              {sites.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun site disponible</p>
-              ) : (
-                <Controller
-                  name="siteIds"
-                  control={control}
-                  render={({ field }) => (
-                    <>
-                      {sites.map((site: any) => (
-                        <div key={site.id} className="flex items-center gap-3 py-2">
-                          <Checkbox
-                            id={`site-${site.id}`}
-                            checked={field.value.includes(site.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                field.onChange([...field.value, site.id]);
-                              } else {
-                                field.onChange(field.value.filter((id: string) => id !== site.id));
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={`site-${site.id}`}
-                            className="flex-1 cursor-pointer text-sm font-medium"
-                          >
-                            {site.nom_site}
-                            <span className="text-muted-foreground ml-2">({site.code_site})</span>
-                          </label>
-                        </div>
-                      ))}
-                    </>
+            {!selectedClientId ? (
+              <div className="bg-muted/30 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">
+                  Veuillez d'abord sélectionner un client pour voir les sites disponibles
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3 bg-muted/30 rounded-lg p-4 max-h-60 overflow-y-auto">
+                  {sites.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucun site disponible pour ce client</p>
+                  ) : (
+                    <Controller
+                      name="siteIds"
+                      control={control}
+                      render={({ field }) => (
+                        <>
+                          {sites.map((site: any) => (
+                            <div key={site.id} className="flex items-center gap-3 py-2">
+                              <Checkbox
+                                id={`site-${site.id}`}
+                                checked={field.value.includes(site.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    field.onChange([...field.value, site.id]);
+                                  } else {
+                                    field.onChange(field.value.filter((id: string) => id !== site.id));
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`site-${site.id}`}
+                                className="flex-1 cursor-pointer text-sm font-medium"
+                              >
+                                {site.nom_site}
+                                <span className="text-muted-foreground ml-2">({site.code_site})</span>
+                              </label>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    />
                   )}
-                />
-              )}
-            </div>
-            {errors.siteIds && (
-              <p className="text-sm text-destructive mt-1">{errors.siteIds.message}</p>
+                </div>
+                {errors.siteIds && (
+                  <p className="text-sm text-destructive mt-1">{errors.siteIds.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-2">
+                  {selectedSiteIds.length} site(s) sélectionné(s)
+                </p>
+              </>
             )}
-            <p className="text-xs text-muted-foreground mt-2">
-              {selectedSiteIds.length} site(s) sélectionné(s)
-            </p>
           </div>
 
           {/* Actif */}

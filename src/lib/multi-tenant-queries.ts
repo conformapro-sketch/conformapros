@@ -1134,6 +1134,17 @@ export const updateClientUserAccess = async (
     .upsert(scopes);
 };
 
+export const fetchAllClients = async () => {
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, nom, nom_legal, is_active")
+    .eq("is_active", true)
+    .order("nom");
+  
+  if (error) throw error;
+  return data;
+};
+
 export const fetchClientUsers = async (clientId: string) => {
   const { data, error } = await supabase
     .from("profiles")
