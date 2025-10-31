@@ -110,7 +110,7 @@ const menuItems: MenuItem[] = [
 ];
 
 const administrationItems: MenuItem[] = [
-  { title: "Gestion des utilisateurs", url: "/utilisateurs", icon: UserCog },
+  { title: "Gestion du staff", url: "/utilisateurs", icon: UserCog },
   { title: "Gestion des rôles", url: "/roles", icon: Shield },
 ];
 
