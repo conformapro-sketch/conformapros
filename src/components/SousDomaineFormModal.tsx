@@ -129,7 +129,7 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
                 <SelectValue placeholder="Sélectionner un domaine" />
               </SelectTrigger>
               <SelectContent className="bg-background border border-border z-50">
-                {domaines?.filter((d) => (d as any).actif ?? true).map((domaine) => (
+                {domaines?.filter((d) => (d as any).actif ?? true).map((domaine: any) => (
                   <SelectItem key={domaine.id} value={domaine.id}>
                     {domaine.libelle}
                   </SelectItem>

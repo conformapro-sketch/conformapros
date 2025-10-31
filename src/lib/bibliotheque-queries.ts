@@ -71,11 +71,11 @@ export const annexesQueries = {
 export const applicabiliteMappingQueries = {
   async getByActeId(acteId: string) {
     const { data, error } = await supabase
-      .from("actes_applicabilite_mapping")
+      .from("actes_applicabilite_mapping" as any)
       .select("*")
       .eq("acte_id", acteId);
     if (error) throw error;
-    return data as ApplicabiliteMapping[];
+    return (data as any) || [];
   },
 
   async createBulk(acteId: string, mappings: Array<Omit<ApplicabiliteMapping, 'id' | 'acte_id' | 'created_at'>>) {
@@ -85,8 +85,8 @@ export const applicabiliteMappingQueries = {
     }));
 
     const { error } = await supabase
-      .from("actes_applicabilite_mapping")
-      .insert(records);
+      .from("actes_applicabilite_mapping" as any)
+      .insert(records as any);
     
     if (error) throw error;
   },
@@ -209,15 +209,14 @@ export const versioningHelpers = {
 
     // Log in changelog
     const { error: logError } = await supabase
-      .from('changelog_reglementaire')
+      .from('changelog_reglementaire' as any)
       .insert([{
         acte_id: acteId,
         type_changement: 'version_update',
         date_changement: new Date().toISOString(),
-        version_anterieure: currentActe.version || 1,
-        nouvelle_version: newVersion,
-        resume: changeReason,
-      }]);
+        version: newVersion,
+        description: changeReason,
+      }] as any);
 
     if (logError) throw logError;
 

@@ -1,19 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/types/db";
 
-type DomaineRow = Database["public"]["Tables"]["domaines_application"]["Row"];
-type DomaineInsert = Database["public"]["Tables"]["domaines_application"]["Insert"];
-type DomaineUpdate = Database["public"]["Tables"]["domaines_application"]["Update"];
-
-type SousDomaineRow = Database["public"]["Tables"]["sous_domaines_application"]["Row"];
-type SousDomaineInsert = Database["public"]["Tables"]["sous_domaines_application"]["Insert"];
-type SousDomaineUpdate = Database["public"]["Tables"]["sous_domaines_application"]["Update"];
+// Using any types temporarily until types.ts regenerates
+type DomaineRow = any;
+type DomaineInsert = any;
+type DomaineUpdate = any;
+type SousDomaineRow = any;
+type SousDomaineInsert = any;
+type SousDomaineUpdate = any;
 
 // ==================== DOMAINES ====================
 
 export const fetchDomaines = async () => {
   const { data, error } = await supabase
-    .from("domaines_application")
+    .from("domaines_reglementaires" as any)
     .select("*")
     .is("deleted_at", null)
     .order("libelle");
@@ -24,7 +23,7 @@ export const fetchDomaines = async () => {
 
 export const fetchDomaineById = async (domaineId: string) => {
   const { data, error } = await supabase
-    .from("domaines_application")
+    .from("domaines_reglementaires" as any)
     .select("*")
     .eq("id", domaineId)
     .is("deleted_at", null)
@@ -36,7 +35,7 @@ export const fetchDomaineById = async (domaineId: string) => {
 
 export const createDomaine = async (domaine: DomaineInsert) => {
   const { data, error } = await supabase
-    .from("domaines_application")
+    .from("domaines_reglementaires" as any)
     .insert(domaine)
     .select()
     .single();
@@ -47,7 +46,7 @@ export const createDomaine = async (domaine: DomaineInsert) => {
 
 export const updateDomaine = async (domaineId: string, updates: DomaineUpdate) => {
   const { data, error } = await supabase
-    .from("domaines_application")
+    .from("domaines_reglementaires" as any)
     .update(updates)
     .eq("id", domaineId)
     .select()
@@ -59,7 +58,7 @@ export const updateDomaine = async (domaineId: string, updates: DomaineUpdate) =
 
 export const softDeleteDomaine = async (domaineId: string) => {
   const { data, error } = await supabase
-    .from("domaines_application")
+    .from("domaines_reglementaires" as any)
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", domaineId)
     .select()
@@ -71,7 +70,7 @@ export const softDeleteDomaine = async (domaineId: string) => {
 
 export const toggleDomaineActif = async (domaineId: string, actif: boolean) => {
   const { data, error } = await supabase
-    .from("domaines_application")
+    .from("domaines_reglementaires" as any)
     .update({ actif })
     .eq("id", domaineId)
     .select()
@@ -85,8 +84,8 @@ export const toggleDomaineActif = async (domaineId: string, actif: boolean) => {
 
 export const fetchSousDomaines = async () => {
   const { data, error } = await supabase
-    .from("sous_domaines_application")
-    .select("*, domaines_application(libelle)")
+    .from("sous_domaines_application" as any)
+    .select("*, domaines_reglementaires(libelle)")
     .is("deleted_at", null)
     .order("ordre");
   
@@ -96,7 +95,7 @@ export const fetchSousDomaines = async () => {
 
 export const fetchSousDomainesByDomaine = async (domaineId: string) => {
   const { data, error } = await supabase
-    .from("sous_domaines_application")
+    .from("sous_domaines_application" as any)
     .select("*")
     .eq("domaine_id", domaineId)
     .is("deleted_at", null)
@@ -108,8 +107,8 @@ export const fetchSousDomainesByDomaine = async (domaineId: string) => {
 
 export const fetchSousDomaineById = async (sousDomaineId: string) => {
   const { data, error } = await supabase
-    .from("sous_domaines_application")
-    .select("*, domaines_application(libelle)")
+    .from("sous_domaines_application" as any)
+    .select("*, domaines_reglementaires(libelle)")
     .eq("id", sousDomaineId)
     .is("deleted_at", null)
     .single();
@@ -120,7 +119,7 @@ export const fetchSousDomaineById = async (sousDomaineId: string) => {
 
 export const createSousDomaine = async (sousDomaine: SousDomaineInsert) => {
   const { data, error } = await supabase
-    .from("sous_domaines_application")
+    .from("sous_domaines_application" as any)
     .insert(sousDomaine)
     .select()
     .single();
@@ -131,7 +130,7 @@ export const createSousDomaine = async (sousDomaine: SousDomaineInsert) => {
 
 export const updateSousDomaine = async (sousDomaineId: string, updates: SousDomaineUpdate) => {
   const { data, error } = await supabase
-    .from("sous_domaines_application")
+    .from("sous_domaines_application" as any)
     .update(updates)
     .eq("id", sousDomaineId)
     .select()
@@ -143,7 +142,7 @@ export const updateSousDomaine = async (sousDomaineId: string, updates: SousDoma
 
 export const softDeleteSousDomaine = async (sousDomaineId: string) => {
   const { data, error } = await supabase
-    .from("sous_domaines_application")
+    .from("sous_domaines_application" as any)
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", sousDomaineId)
     .select()
@@ -155,7 +154,7 @@ export const softDeleteSousDomaine = async (sousDomaineId: string) => {
 
 export const toggleSousDomaineActif = async (sousDomaineId: string, actif: boolean) => {
   const { data, error } = await supabase
-    .from("sous_domaines_application")
+    .from("sous_domaines_application" as any)
     .update({ actif })
     .eq("id", sousDomaineId)
     .select()

@@ -190,6 +190,49 @@ export type Database = {
         }
         Relationships: []
       }
+      actes_reglementaires_domaines: {
+        Row: {
+          acte_id: string
+          created_at: string | null
+          domaine_id: string
+          id: string
+        }
+        Insert: {
+          acte_id: string
+          created_at?: string | null
+          domaine_id: string
+          id?: string
+        }
+        Update: {
+          acte_id?: string
+          created_at?: string | null
+          domaine_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actes_reglementaires_domaines_acte_id_fkey"
+            columns: ["acte_id"]
+            isOneToOne: false
+            referencedRelation: "actes_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actes_reglementaires_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "actes_reglementaires_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       actions_correctives: {
         Row: {
           conformite_id: string

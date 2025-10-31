@@ -113,7 +113,8 @@ export const conformiteQueries = {
 
     if (filters?.domaineId && filters.domaineId !== 'all') {
       filteredData = filteredData?.filter(item => 
-        item.textes_reglementaires?.textes_reglementaires_domaines?.some(
+        Array.isArray((item.textes_reglementaires as any)?.textes_reglementaires_domaines) &&
+        (item.textes_reglementaires as any).textes_reglementaires_domaines.some(
           (d: any) => d.domaine_id === filters.domaineId
         )
       );
@@ -121,7 +122,8 @@ export const conformiteQueries = {
     
     if (filters?.sousDomaineId && filters.sousDomaineId !== 'all') {
       filteredData = filteredData?.filter(item => 
-        item.textes_reglementaires?.textes_reglementaires_sous_domaines?.some(
+        Array.isArray((item.textes_reglementaires as any)?.textes_reglementaires_sous_domaines) &&
+        (item.textes_reglementaires as any).textes_reglementaires_sous_domaines.some(
           (sd: any) => sd.sous_domaine_id === filters.sousDomaineId
         )
       );
