@@ -3,21 +3,17 @@ import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 export interface TexteReglementaire {
   id: string;
-  type: 'LOI' | 'ARRETE' | 'DECRET' | 'CIRCULAIRE';
-  code_id?: string;
+  type_acte: 'loi' | 'arrete' | 'decret' | 'circulaire';
   reference_officielle: string;
-  titre: string;
-  autorite?: string;
-  date_signature?: string;
+  intitule: string;
+  autorite_emettrice?: string;
   date_publication?: string;
   statut_vigueur: 'en_vigueur' | 'abroge' | 'suspendu' | 'modifie';
   resume?: string;
-  fichier_pdf_url?: string;
+  lien_officiel?: string;
   annee?: number;
   created_at: string;
   updated_at: string;
-  deleted_at?: string;
-  created_by?: string;
 }
 
 export interface Code {
@@ -33,10 +29,8 @@ export interface Code {
 export const domainesQueries = {
   async getActive() {
     const { data, error } = await supabase
-      .from("domaines_application")
+      .from("domaines_reglementaires")
       .select("*")
-      .eq("actif", true)
-      .is("deleted_at", null)
       .order("libelle");
     if (error) throw error;
     return data || [];
@@ -47,16 +41,13 @@ export const sousDomainesQueries = {
   async getActive(domaineId?: string) {
     let query = supabase
       .from("sous_domaines_application")
-      .select("*")
-      .eq("actif", true)
-      .is("deleted_at", null)
-      .order("ordre");
+      .select("*");
     
     if (domaineId) {
       query = query.eq("domaine_id", domaineId);
     }
     
-    const { data, error } = await query;
+    const { data, error } = await query.order("libelle");
     if (error) throw error;
     return data || [];
   },
@@ -76,25 +67,24 @@ export const textesReglementairesQueries = {
     const pageSize = filters?.pageSize || 10;
     const searchTerm = filters?.searchTerm?.trim() || "";
 
-    // Search in textes
+    // Search in actes
     let textesQuery = supabase
-      .from("textes_reglementaires")
+      .from("actes_reglementaires")
       .select(`
         *,
-        domaines:textes_reglementaires_domaines(
-          domaine:domaines_application(id, libelle)
+        domaines:actes_reglementaires_domaines(
+          domaine:domaines_reglementaires(id, libelle)
         )
-      `)
-      .is("deleted_at", null);
+      `);
 
     if (searchTerm) {
       textesQuery = textesQuery.or(
-        `titre.ilike.%${searchTerm}%,reference_officielle.ilike.%${searchTerm}%,resume.ilike.%${searchTerm}%,autorite.ilike.%${searchTerm}%`
+        `intitule.ilike.%${searchTerm}%,reference_officielle.ilike.%${searchTerm}%,resume.ilike.%${searchTerm}%,autorite_emettrice.ilike.%${searchTerm}%`
       );
     }
 
     if (filters?.typeFilter && filters.typeFilter !== "all") {
-      textesQuery = textesQuery.eq("type", filters.typeFilter as any);
+      textesQuery = textesQuery.eq("type_acte", filters.typeFilter as any);
     }
 
     if (filters?.statutFilter && filters.statutFilter !== "all") {
@@ -110,23 +100,22 @@ export const textesReglementairesQueries = {
       .from("textes_articles")
       .select(`
         *,
-        texte:textes_reglementaires!inner(
-          id, titre, reference_officielle, type, statut_vigueur, date_publication, annee,
-          domaines:textes_reglementaires_domaines(
-            domaine:domaines_application(id, libelle)
+        texte:actes_reglementaires!textes_articles_texte_id_fkey(
+          id, intitule, reference_officielle, type_acte, statut_vigueur, date_publication, annee,
+          domaines:actes_reglementaires_domaines(
+            domaine:domaines_reglementaires(id, libelle)
           )
         )
-      `)
-      .is("texte.deleted_at", null);
+      `);
 
     if (searchTerm) {
       articlesQuery = articlesQuery.or(
-        `numero.ilike.%${searchTerm}%,titre_court.ilike.%${searchTerm}%,contenu.ilike.%${searchTerm}%,reference.ilike.%${searchTerm}%`
+        `numero_article.ilike.%${searchTerm}%,titre.ilike.%${searchTerm}%,contenu.ilike.%${searchTerm}%`
       );
     }
 
     if (filters?.typeFilter && filters.typeFilter !== "all") {
-      articlesQuery = articlesQuery.eq("texte.type", filters.typeFilter as any);
+      articlesQuery = articlesQuery.eq("texte.type_acte", filters.typeFilter as any);
     }
 
     if (filters?.statutFilter && filters.statutFilter !== "all") {
@@ -182,19 +171,14 @@ export const textesReglementairesQueries = {
     const to = from + pageSize - 1;
 
     let query = supabase
-      .from("textes_reglementaires")
+      .from("actes_reglementaires")
       .select(`
         *,
-        code:codes(titre),
         articles:textes_articles(count),
-        domaines:textes_reglementaires_domaines(
-          domaine:domaines_application(id, libelle)
-        ),
-        sous_domaines:textes_reglementaires_sous_domaines(
-          sous_domaine:sous_domaines_application(id, libelle)
+        domaines:actes_reglementaires_domaines(
+          domaine:domaines_reglementaires(id, libelle)
         )
-      `, { count: "exact" })
-      .is("deleted_at", null);
+      `, { count: "exact" });
 
     if (filters?.searchTerm) {
       query = query.or(
@@ -214,8 +198,29 @@ export const textesReglementairesQueries = {
       query = query.eq("annee", parseInt(filters.anneeFilter));
     }
 
+    if (filters?.typeFilter && filters.typeFilter !== "all") {
+      query = query.eq("type_acte", filters.typeFilter);
+    }
+
+    if (filters?.statutFilter && filters.statutFilter !== "all") {
+      query = query.eq("statut_vigueur", filters.statutFilter);
+    }
+
+    if (filters?.anneeFilter && filters.anneeFilter !== "all") {
+      query = query.eq("annee", parseInt(filters.anneeFilter));
+    }
+
     if (filters?.domaineFilter && filters.domaineFilter !== "all") {
-      query = query.contains("domaines", [{ domaine: { id: filters.domaineFilter } }]);
+      // Filter by domain through junction table - this needs a different approach
+      const { data: actesWithDomain } = await supabase
+        .from("actes_reglementaires_domaines")
+        .select("acte_id")
+        .eq("domaine_id", filters.domaineFilter);
+      
+      if (actesWithDomain && actesWithDomain.length > 0) {
+        const acteIds = actesWithDomain.map(a => a.acte_id);
+        query = query.in("id", acteIds);
+      }
     }
 
     const sortBy = filters?.sortBy || "date_publication";
@@ -238,28 +243,23 @@ export const textesReglementairesQueries = {
 
   async getById(id: string) {
     const { data, error } = await supabase
-      .from("textes_reglementaires")
+      .from("actes_reglementaires")
       .select(`
         *,
-        code:codes(*),
         articles:textes_articles(*),
-        domaines:textes_reglementaires_domaines(
-          domaine:domaines_application(*)
-        ),
-        sous_domaines:textes_reglementaires_sous_domaines(
-          sous_domaine:sous_domaines_application(*)
+        domaines:actes_reglementaires_domaines(
+          domaine:domaines_reglementaires(*)
         )
       `)
       .eq("id", id)
-      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw error;
     return data;
   },
 
-  async create(texte: Partial<TexteReglementaire>, domaineIds?: string[], sousDomaineIds?: string[]) {
+  async create(texte: Partial<TexteReglementaire>, domaineIds?: string[]) {
     const { data, error } = await supabase
-      .from("textes_reglementaires")
+      .from("actes_reglementaires")
       .insert([texte as any])
       .select()
       .single();
@@ -268,27 +268,18 @@ export const textesReglementairesQueries = {
     // Link domaines
     if (domaineIds && domaineIds.length > 0) {
       const relations = domaineIds.map(domaineId => ({
-        texte_id: data.id,
+        acte_id: data.id,
         domaine_id: domaineId,
       }));
-      await supabase.from("textes_reglementaires_domaines").insert(relations);
-    }
-
-    // Link sous-domaines
-    if (sousDomaineIds && sousDomaineIds.length > 0) {
-      const relations = sousDomaineIds.map(sousDomaineId => ({
-        texte_id: data.id,
-        sous_domaine_id: sousDomaineId,
-      }));
-      await supabase.from("textes_reglementaires_sous_domaines").insert(relations);
+      await supabase.from("actes_reglementaires_domaines").insert(relations);
     }
 
     return data;
   },
 
-  async update(id: string, texte: Partial<TexteReglementaire>, domaineIds?: string[], sousDomaineIds?: string[]) {
+  async update(id: string, texte: Partial<TexteReglementaire>, domaineIds?: string[]) {
     const { data, error } = await supabase
-      .from("textes_reglementaires")
+      .from("actes_reglementaires")
       .update(texte as any)
       .eq("id", id)
       .select()
@@ -297,25 +288,13 @@ export const textesReglementairesQueries = {
 
     // Update domaines
     if (domaineIds !== undefined) {
-      await supabase.from("textes_reglementaires_domaines").delete().eq("texte_id", id);
+      await supabase.from("actes_reglementaires_domaines").delete().eq("acte_id", id);
       if (domaineIds.length > 0) {
         const relations = domaineIds.map(domaineId => ({
-          texte_id: id,
+          acte_id: id,
           domaine_id: domaineId,
         }));
-        await supabase.from("textes_reglementaires_domaines").insert(relations);
-      }
-    }
-
-    // Update sous-domaines
-    if (sousDomaineIds !== undefined) {
-      await supabase.from("textes_reglementaires_sous_domaines").delete().eq("texte_id", id);
-      if (sousDomaineIds.length > 0) {
-        const relations = sousDomaineIds.map(sousDomaineId => ({
-          texte_id: id,
-          sous_domaine_id: sousDomaineId,
-        }));
-        await supabase.from("textes_reglementaires_sous_domaines").insert(relations);
+        await supabase.from("actes_reglementaires_domaines").insert(relations);
       }
     }
 
@@ -324,8 +303,8 @@ export const textesReglementairesQueries = {
 
   async softDelete(id: string) {
     const { error } = await supabase
-      .from("textes_reglementaires")
-      .update({ deleted_at: new Date().toISOString() })
+      .from("actes_reglementaires")
+      .delete()
       .eq("id", id);
     if (error) throw error;
   },

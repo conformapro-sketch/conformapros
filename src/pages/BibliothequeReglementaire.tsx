@@ -31,10 +31,10 @@ import { ImportCSVDialog } from "@/components/ImportCSVDialog";
 import * as XLSX from 'xlsx';
 
 const TYPE_LABELS = {
-  LOI: "Loi",
-  ARRETE: "Arrêté",
-  DECRET: "Décret",
-  CIRCULAIRE: "Circulaire",
+  loi: "Loi",
+  arrete: "Arrêté",
+  decret: "Décret",
+  circulaire: "Circulaire",
 };
 
 export default function BibliothequeReglementaire() {
@@ -160,10 +160,10 @@ export default function BibliothequeReglementaire() {
 
   const handleExportExcel = () => {
     const exportData = textes.map((t: any) => ({
-      Type: TYPE_LABELS[t.type as keyof typeof TYPE_LABELS],
+      Type: TYPE_LABELS[t.type_acte as keyof typeof TYPE_LABELS],
       Référence: t.reference_officielle,
-      Titre: t.titre,
-      Autorité: t.autorite || "",
+      Titre: t.intitule,
+      Autorité: t.autorite_emettrice || "",
       "Date de publication": t.date_publication || "",
       Statut: getStatutBadge(t.statut_vigueur).label,
       "Nombre d'articles": t.articles?.[0]?.count || 0,
@@ -505,7 +505,7 @@ export default function BibliothequeReglementaire() {
                           >
                             <TableCell>
                               <Badge variant="outline" className="text-xs font-medium">
-                                {TYPE_LABELS[texte.type as keyof typeof TYPE_LABELS]}
+                                {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS]}
                               </Badge>
                             </TableCell>
                             <TableCell className="font-semibold text-sm">
@@ -514,7 +514,7 @@ export default function BibliothequeReglementaire() {
                             <TableCell>
                               <div className="max-w-md">
                                 <div className="font-medium text-foreground line-clamp-2 mb-1">
-                                  {texte.titre}
+                                  {texte.intitule}
                                 </div>
                                 {texte.resume && (
                                   <div className="text-xs text-muted-foreground line-clamp-1">
@@ -524,7 +524,7 @@ export default function BibliothequeReglementaire() {
                               </div>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {texte.autorite || "—"}
+                              {texte.autorite_emettrice || "—"}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                               {texte.date_publication

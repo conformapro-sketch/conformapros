@@ -141,6 +141,8 @@ export type Database = {
       }
       actes_reglementaires: {
         Row: {
+          annee: number | null
+          autorite_emettrice: string | null
           created_at: string
           date_abrogation: string | null
           date_effet: string | null
@@ -157,6 +159,8 @@ export type Database = {
           version: number | null
         }
         Insert: {
+          annee?: number | null
+          autorite_emettrice?: string | null
           created_at?: string
           date_abrogation?: string | null
           date_effet?: string | null
@@ -173,6 +177,8 @@ export type Database = {
           version?: number | null
         }
         Update: {
+          annee?: number | null
+          autorite_emettrice?: string | null
           created_at?: string
           date_abrogation?: string | null
           date_effet?: string | null
@@ -1708,7 +1714,7 @@ export type Database = {
             foreignKeyName: "textes_articles_texte_id_fkey"
             columns: ["texte_id"]
             isOneToOne: false
-            referencedRelation: "textes_reglementaires"
+            referencedRelation: "actes_reglementaires"
             referencedColumns: ["id"]
           },
         ]
