@@ -1,15 +1,29 @@
-﻿import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { toast } from "sonner";
+import { Role, RolePermission } from "@/types/roles";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  
+  // New role system
+  primaryRole: Role | null;
+  allRoles: Role[];
+  permissions: RolePermission[];
+  
+  // Backward compatibility
   userRole: string | null;
   userRoles: string[];
   tenantId: string | null;
+  
+  // Helper functions
+  hasPermission: (module: string, action: string) => boolean;
+  hasRole: (roleName: string) => boolean;
+  
+  // Auth functions
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (
     email: string,
@@ -25,44 +39,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [primaryRole, setPrimaryRole] = useState<Role | null>(null);
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<RolePermission[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [tenantId, setTenantId] = useState<string | null>(null);
 
   const fetchUserAccessContext = async (userId: string) => {
     try {
-      const [rolesResponse, profileResponse] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId),
-        supabase
-          .from("profiles")
-          .select("tenant_id")
-          .eq("id", userId)
-          .maybeSingle(),
-      ]);
+      // Fetch user roles with full role details and permissions
+      const { data: userRolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select(`
+          role_uuid,
+          client_id,
+          site_scope,
+          roles!inner(
+            id,
+            name,
+            description,
+            type,
+            is_system,
+            tenant_id,
+            role_permissions(
+              id,
+              module,
+              action,
+              decision,
+              scope
+            )
+          )
+        `)
+        .eq('user_id', userId);
 
-      const { data: roleData, error: roleError } = rolesResponse;
-      const { data: profileData, error: profileError } = profileResponse;
+      if (rolesError) throw rolesError;
 
-      if (roleError) {
-        console.error("Error fetching user role:", roleError);
-        setUserRole(null);
-        setUserRoles([]);
-      } else {
-        const roles = (roleData ?? [])
-          .map((entry) => entry.role as string)
-          .filter((r) => !!r);
-        setUserRoles(roles as string[]);
-        setUserRole((roles as string[])[0] ?? null);
-      }
+      // Extract roles and permissions
+      const roles: Role[] = userRolesData?.map((ur: any) => ({
+        ...ur.roles,
+        user_count: 0,
+        created_at: ur.roles.created_at,
+        updated_at: ur.roles.updated_at,
+      })) || [];
 
-      if (profileError) {
-        console.error("Error fetching tenant context:", profileError);
-        setTenantId(null);
-      } else {
-        setTenantId(profileData?.tenant_id ?? null);
-      }
+      const allPermissions: RolePermission[] = userRolesData?.flatMap((ur: any) => 
+        ur.roles.role_permissions || []
+      ) || [];
+
+      // Set primary role (first one, prioritized by type)
+      const primary = roles[0] || null;
+
+      // Get tenant_id from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', userId)
+        .single();
+
+      // Update state
+      setPrimaryRole(primary);
+      setAllRoles(roles);
+      setPermissions(allPermissions);
+      setUserRole(primary?.name || null);
+      setUserRoles(roles.map(r => r.name));
+      setTenantId(profile?.tenant_id || null);
     } catch (err) {
       console.error("Error fetching user access context:", err);
+      setPrimaryRole(null);
+      setAllRoles([]);
+      setPermissions([]);
       setUserRole(null);
       setUserRoles([]);
       setTenantId(null);
@@ -81,6 +127,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fetchUserAccessContext(nextSession.user.id);
         }, 0);
       } else {
+        setPrimaryRole(null);
+        setAllRoles([]);
+        setPermissions([]);
         setUserRole(null);
         setUserRoles([]);
         setTenantId(null);
@@ -94,6 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (initialSession?.user) {
         fetchUserAccessContext(initialSession.user.id);
       } else {
+        setPrimaryRole(null);
+        setAllRoles([]);
+        setPermissions([]);
         setUserRole(null);
         setUserRoles([]);
         setTenantId(null);
@@ -147,10 +199,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setPrimaryRole(null);
+    setAllRoles([]);
+    setPermissions([]);
     setUserRole(null);
     setUserRoles([]);
     setTenantId(null);
     toast.success("Deconnexion reussie");
+  };
+
+  const hasPermission = (module: string, action: string): boolean => {
+    return permissions.some(
+      p => p.module === module && p.action === action && p.decision === 'allow'
+    );
+  };
+
+  const hasRole = (roleName: string): boolean => {
+    return allRoles.some(r => r.name === roleName);
   };
 
   return (
@@ -159,9 +224,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         loading,
+        primaryRole,
+        allRoles,
+        permissions,
         userRole,
         userRoles,
         tenantId,
+        hasPermission,
+        hasRole,
         signIn,
         signUp,
         signOut,
@@ -179,4 +249,3 @@ export function useAuth() {
   }
   return context;
 }
-

@@ -22,10 +22,8 @@ import { Building2 } from "lucide-react";
 const userSchema = z.object({
   email: z.string().trim().email("Email invalide").min(1, "L'email est requis"),
   fullName: z.string().trim().min(1, "Le nom complet est requis").max(100, "Le nom doit faire moins de 100 caractères"),
-  role: z.enum(["admin_client", "gestionnaire_hse", "chef_site", "lecteur"], {
-    required_error: "Le rôle est requis",
-  }),
-  siteIds: z.array(z.string()).min(1, "Au moins un site doit être sélectionné"),
+  role_uuid: z.string().min(1, "Le rôle est requis"),
+  siteIds: z.array(z.string()).default([]),
   actif: z.boolean().default(true),
 });
 
@@ -49,6 +47,22 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     enabled: !!clientId,
   });
 
+  const { data: roles } = useQuery({
+    queryKey: ['roles', 'client', clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*')
+        .eq('type', 'client')
+        .or(`tenant_id.eq.${clientId},tenant_id.is.null`)
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId,
+  });
+
   const {
     register,
     handleSubmit,
@@ -61,16 +75,17 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     defaultValues: user ? {
       email: user.email || "",
       fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
-      role: user.user_roles?.[0]?.role || "lecteur",
+      role_uuid: user.user_roles?.[0]?.role_uuid || '',
       siteIds: user.access_scopes?.map((as: any) => as.site_id) || [],
       actif: user.actif ?? true,
     } : {
       actif: true,
       siteIds: [],
+      role_uuid: '',
     },
   });
 
-  const selectedRole = watch("role");
+  const selectedRole = watch("role_uuid");
   const selectedSiteIds = watch("siteIds");
 
   const saveMutation = useMutation({
@@ -78,7 +93,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       const result = await inviteClientUser(
         data.email,
         data.fullName,
-        data.role,
+        data.role_uuid,
         clientId,
         data.siteIds
       );
@@ -111,11 +126,13 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     },
   });
   const onSubmit = (data: UserFormData) => {
-    // Validate: at least 1 site for non-admin_client roles
-    if (data.role !== 'admin_client' && data.siteIds.length === 0) {
+    const selectedRole = roles?.find(r => r.id === data.role_uuid);
+    const requiresSites = selectedRole?.name !== 'Admin' && selectedRole?.name !== 'Owner';
+    
+    if (requiresSites && data.siteIds.length === 0) {
       toast({
         title: 'Sites requis',
-        description: 'Au moins un site doit etre selectionne pour ce role.',
+        description: 'Au moins un site doit être sélectionné pour ce rôle.',
         variant: 'destructive',
       });
       return;
@@ -168,9 +185,9 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
 
           {/* Role */}
           <div>
-            <Label htmlFor="role">Rôle *</Label>
+            <Label htmlFor="role_uuid">Rôle *</Label>
             <Controller
-              name="role"
+              name="role_uuid"
               control={control}
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
@@ -178,16 +195,17 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
                     <SelectValue placeholder="Sélectionner un rôle..." />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
-                    <SelectItem value="admin_client">{roleLabels.admin_client}</SelectItem>
-                    <SelectItem value="gestionnaire_hse">{roleLabels.gestionnaire_hse}</SelectItem>
-                    <SelectItem value="chef_site">{roleLabels.chef_site}</SelectItem>
-                    <SelectItem value="lecteur">{roleLabels.lecteur}</SelectItem>
+                    {roles?.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name} {role.description && `- ${role.description}`}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}
             />
-            {errors.role && (
-              <p className="text-sm text-destructive mt-1">{errors.role.message}</p>
+            {errors.role_uuid && (
+              <p className="text-sm text-destructive mt-1">{errors.role_uuid.message}</p>
             )}
           </div>
 
@@ -198,7 +216,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
               <Label>Sites autorisés *</Label>
             </div>
             
-            {selectedRole === 'admin_client' && (
+            {roles?.find(r => r.id === selectedRole)?.name === 'Admin' && (
               <div className="bg-muted/50 border border-border rounded-lg p-3 mb-3">
                 <p className="text-sm text-muted-foreground">
                   Les administrateurs client ont accès à tous les sites par défaut.

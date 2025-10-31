@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { usersQueries, rolesQueries } from "@/lib/users-queries";
+import { usersQueries } from "@/lib/users-queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,171 +27,120 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { UserPlus, Edit, Trash2, Key, CheckCircle, XCircle, Search, Shield } from "lucide-react";
+import { UserPlus, Edit, Key, CheckCircle, XCircle, Search, Shield } from "lucide-react";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 export default function GestionUtilisateurs() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { userRole } = useAuth();
-  const canManageTeam = userRole === "admin_global";
+  const { hasRole } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [userDialog, setUserDialog] = useState<{
-    open: boolean;
-    mode: 'create' | 'edit';
-    userId?: string;
-  }>({ open: false, mode: 'create' });
+  const [open, setOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
   
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    userId?: string;
-    userName?: string;
-  }>({ open: false });
-
   const [formData, setFormData] = useState({
-    nom: "",
-    prenom: "",
     email: "",
     password: "",
-    role_id: "",
-    client_id: "",
-    site_id: "",
-    fonction: "",
+    nom: "",
+    prenom: "",
+    role_uuid: "",
     telephone: "",
   });
 
-  if (!canManageTeam) {
+  // Check if user has Super Admin role
+  if (!hasRole('Super Admin')) {
     return (
-      <Card className="shadow-soft">
-        <CardContent className="py-12 text-center space-y-3 text-muted-foreground">
-          <Shield className="mx-auto h-10 w-10" />
-          <p>Seuls les administrateurs Conforma Pro peuvent gerer cette equipe.</p>
-        </CardContent>
-      </Card>
+      <div className="container mx-auto p-6">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-destructive mb-2">
+            Accès restreint
+          </h2>
+          <p className="text-muted-foreground">
+            Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+            Seuls les Super Admins peuvent gérer les utilisateurs internes.
+          </p>
+        </div>
+      </div>
     );
   }
 
-  // Fetch users
+  // Fetch internal team users
   const { data: users, isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: usersQueries.getAll,
-    enabled: canManageTeam,
+    queryKey: ['users', 'team'],
+    queryFn: usersQueries.getConformaTeam,
   });
 
-  // Fetch roles
+  // Fetch team roles
   const { data: roles } = useQuery({
-    queryKey: ["roles"],
-    queryFn: rolesQueries.getAll,
-    enabled: canManageTeam,
-  });
-
-  // Fetch clients
-  const { data: clients } = useQuery({
-    queryKey: ["clients"],
+    queryKey: ['roles', 'team'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("clients")
-        .select("id, nom_legal")
-        .order("nom_legal");
+        .from('roles')
+        .select('*')
+        .eq('type', 'team')
+        .order('name');
+      
       if (error) throw error;
       return data;
     },
   });
 
-  // Fetch sites
-  const { data: sites } = useQuery({
-    queryKey: ["sites", formData.client_id],
-    queryFn: async () => {
-      if (!formData.client_id) return [];
-      const { data, error } = await supabase
-        .from("sites")
-        .select("id, nom_site")
-        .eq("client_id", formData.client_id)
-        .order("nom_site");
-      if (error) throw error;
-      return data;
+  const createMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      if (!userData.role_uuid) {
+        throw new Error('Role is required');
+      }
+      return usersQueries.create(userData);
     },
-    enabled: !!formData.client_id,
-  });
-
-  // Create user mutation
-  const createUserMutation = useMutation({
-    mutationFn: usersQueries.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast({
-        title: "Utilisateur créé",
-        description: "L'utilisateur a été créé avec succès.",
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Utilisateur créé avec succès');
+      setOpen(false);
+      setFormData({
+        email: '',
+        password: '',
+        nom: '',
+        prenom: '',
+        role_uuid: '',
+        telephone: '',
       });
-      setUserDialog({ open: false, mode: 'create' });
-      resetForm();
     },
     onError: (error: any) => {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de créer l'utilisateur.",
-        variant: "destructive",
-      });
+      console.error('Error creating user:', error);
+      toast.error(error?.message || 'Erreur lors de la création de l\'utilisateur');
     },
   });
 
-  // Update user mutation
-  const updateUserMutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       usersQueries.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast({
-        title: "Utilisateur modifié",
-        description: "L'utilisateur a été modifié avec succès.",
-      });
-      setUserDialog({ open: false, mode: 'create' });
-      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Utilisateur modifié avec succès');
+      setOpen(false);
+      setEditingUser(null);
     },
     onError: (error: any) => {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de modifier l'utilisateur.",
-        variant: "destructive",
-      });
+      toast.error('Erreur lors de la modification');
     },
   });
 
-  // Toggle active mutation
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, actif }: { id: string; actif: boolean }) =>
       usersQueries.toggleActive(id, actif),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      toast({
-        title: "Statut modifié",
-        description: "Le statut de l'utilisateur a été modifié.",
-      });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Statut modifié');
     },
   });
 
-  // Reset password mutation
   const resetPasswordMutation = useMutation({
     mutationFn: usersQueries.resetPassword,
     onSuccess: () => {
-      toast({
-        title: "Email envoyé",
-        description: "Un email de réinitialisation a été envoyé à l'utilisateur.",
-      });
+      toast.success('Email de réinitialisation envoyé');
     },
   });
 
@@ -201,52 +150,30 @@ export default function GestionUtilisateurs() {
     return (
       user.nom?.toLowerCase().includes(search) ||
       user.prenom?.toLowerCase().includes(search) ||
-      user.email?.toLowerCase().includes(search) ||
-      user.roles?.nom?.toLowerCase().includes(search)
+      user.email?.toLowerCase().includes(search)
     );
   });
 
-  const handleOpenDialog = async (mode: 'create' | 'edit', userId?: string) => {
-    if (mode === 'edit' && userId) {
-      const user = users?.find(u => u.id === userId);
-      if (user) {
-        setFormData({
-          nom: user.nom || "",
-          prenom: user.prenom || "",
-          email: user.email || "",
-          password: "",
-          role_id: user.role_id || "",
-          client_id: user.client_id || "",
-          site_id: user.site_id || "",
-          fonction: user.fonction || "",
-          telephone: user.telephone || "",
-        });
-      }
-    }
-    setUserDialog({ open: true, mode, userId });
-  };
-
   const handleSubmit = () => {
-    if (userDialog.mode === 'create') {
-      createUserMutation.mutate(formData);
-    } else if (userDialog.userId) {
+    if (editingUser) {
       const { password, ...updateData } = formData;
-      updateUserMutation.mutate({ id: userDialog.userId, data: updateData });
+      updateMutation.mutate({ id: editingUser.id, data: updateData });
+    } else {
+      createMutation.mutate(formData);
     }
   };
 
-  const resetForm = () => {
+  const handleEdit = (user: any) => {
+    setEditingUser(user);
     setFormData({
-      nom: "",
-      prenom: "",
-      email: "",
-      password: "",
-      role_id: "",
-      client_id: "",
-      site_id: "",
-      fonction: "",
-      telephone: "",
+      email: user.email || '',
+      password: '',
+      nom: user.nom || '',
+      prenom: user.prenom || '',
+      role_uuid: user.user_roles?.[0]?.role_uuid || '',
+      telephone: user.telephone || '',
     });
+    setOpen(true);
   };
 
   return (
@@ -255,10 +182,21 @@ export default function GestionUtilisateurs() {
         <div>
           <h1 className="text-3xl font-bold">Gestion des utilisateurs</h1>
           <p className="text-muted-foreground mt-1">
-            Gérez les utilisateurs et leurs rôles
+            Gérez les utilisateurs internes Conforma Pro
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog('create')}>
+        <Button onClick={() => {
+          setEditingUser(null);
+          setFormData({
+            email: '',
+            password: '',
+            nom: '',
+            prenom: '',
+            role_uuid: '',
+            telephone: '',
+          });
+          setOpen(true);
+        }}>
           <UserPlus className="w-4 h-4 mr-2" />
           Nouvel utilisateur
         </Button>
@@ -270,7 +208,7 @@ export default function GestionUtilisateurs() {
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom, email ou rôle..."
+              placeholder="Rechercher par nom ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9"
@@ -286,50 +224,52 @@ export default function GestionUtilisateurs() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Site</TableHead>
-                  <TableHead>Fonction</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Rôle</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Téléphone</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Chargement...
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Aucun utilisateur trouvé
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredUsers?.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.prenom} {user.nom}
-                      </TableCell>
+                      <TableCell>{user.nom} {user.prenom}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{user.roles?.nom || "Aucun rôle"}</Badge>
+                        <Badge variant="outline">
+                          {user.user_roles?.[0]?.roles?.name || 'Aucun'}
+                        </Badge>
                       </TableCell>
-                      <TableCell>{user.client_id || "-"}</TableCell>
-                      <TableCell>{user.site_id || "-"}</TableCell>
-                      <TableCell>{user.fonction || "-"}</TableCell>
                       <TableCell>
-                        {user.actif ? (
+                        <Badge variant="secondary">
+                          {user.user_roles?.[0]?.roles?.type || '-'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{user.telephone || '-'}</TableCell>
+                      <TableCell>
+                        {user.actif !== false ? (
                           <Badge className="bg-success text-success-foreground">
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Actif
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-muted-foreground">
+                          <Badge variant="outline">
                             <XCircle className="w-3 h-3 mr-1" />
                             Inactif
                           </Badge>
@@ -339,7 +279,7 @@ export default function GestionUtilisateurs() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleOpenDialog('edit', user.id)}
+                          onClick={() => handleEdit(user)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -348,15 +288,15 @@ export default function GestionUtilisateurs() {
                           variant="outline"
                           onClick={() => toggleActiveMutation.mutate({ 
                             id: user.id, 
-                            actif: !user.actif 
+                            actif: user.actif === false 
                           })}
                         >
-                          {user.actif ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                          {user.actif !== false ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => user.email && resetPasswordMutation.mutate(user.email)}
+                          onClick={() => resetPasswordMutation.mutate(user.email)}
                         >
                           <Key className="w-4 h-4" />
                         </Button>
@@ -371,23 +311,20 @@ export default function GestionUtilisateurs() {
       </Card>
 
       {/* User Dialog */}
-      <Dialog open={userDialog.open} onOpenChange={(open) => {
-        setUserDialog({ ...userDialog, open });
-        if (!open) resetForm();
-      }}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {userDialog.mode === 'create' ? 'Créer un utilisateur' : 'Modifier l\'utilisateur'}
+              {editingUser ? 'Modifier l\'utilisateur' : 'Créer un utilisateur'}
             </DialogTitle>
             <DialogDescription>
-              Remplissez les informations de l'utilisateur
+              Remplissez les informations de l'utilisateur interne
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Prénom</Label>
+              <Label>Prénom *</Label>
               <Input
                 value={formData.prenom}
                 onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
@@ -395,7 +332,7 @@ export default function GestionUtilisateurs() {
               />
             </div>
             <div>
-              <Label>Nom</Label>
+              <Label>Nom *</Label>
               <Input
                 value={formData.nom}
                 onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
@@ -403,18 +340,18 @@ export default function GestionUtilisateurs() {
               />
             </div>
             <div className="col-span-2">
-              <Label>Email</Label>
+              <Label>Email *</Label>
               <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="jean.dupont@example.com"
-                disabled={userDialog.mode === 'edit'}
+                placeholder="jean.dupont@conformapro.tn"
+                disabled={!!editingUser}
               />
             </div>
-            {userDialog.mode === 'create' && (
+            {!editingUser && (
               <div className="col-span-2">
-                <Label>Mot de passe</Label>
+                <Label>Mot de passe *</Label>
                 <Input
                   type="password"
                   value={formData.password}
@@ -424,69 +361,24 @@ export default function GestionUtilisateurs() {
               </div>
             )}
             <div className="col-span-2">
-              <Label>Rôle</Label>
-              <Select
-                value={formData.role_id}
-                onValueChange={(value) => setFormData({ ...formData, role_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un rôle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles?.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Rôle *</Label>
+                  <Select
+                    value={formData.role_uuid}
+                    onValueChange={(value) => setFormData({ ...formData, role_uuid: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un rôle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles?.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name} {role.description && `- ${role.description}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
             </div>
-            <div>
-              <Label>Client</Label>
-              <Select
-                value={formData.client_id}
-                onValueChange={(value) => setFormData({ ...formData, client_id: value, site_id: "" })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients?.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom_legal}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Site</Label>
-              <Select
-                value={formData.site_id}
-                onValueChange={(value) => setFormData({ ...formData, site_id: value })}
-                disabled={!formData.client_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sites?.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.nom_site}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Fonction</Label>
-              <Input
-                value={formData.fonction}
-                onChange={(e) => setFormData({ ...formData, fonction: e.target.value })}
-                placeholder="Responsable HSE"
-              />
-            </div>
-            <div>
+            <div className="col-span-2">
               <Label>Téléphone</Label>
               <Input
                 value={formData.telephone}
@@ -497,11 +389,11 @@ export default function GestionUtilisateurs() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUserDialog({ ...userDialog, open: false })}>
+            <Button variant="outline" onClick={() => setOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSubmit}>
-              {userDialog.mode === 'create' ? 'Créer' : 'Modifier'}
+            <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+              {editingUser ? 'Mettre à jour' : 'Créer'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -509,8 +401,3 @@ export default function GestionUtilisateurs() {
     </div>
   );
 }
-
-
-
-
-

@@ -1,56 +1,66 @@
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 export const usersQueries = {
-  // Get all users with roles
   getAll: async () => {
     const { data, error } = await supabase
       .from('profiles')
       .select(`
         *,
-        roles (
+        user_roles!inner(
           id,
-          nom,
-          description,
-          permissions
+          role_uuid,
+          client_id,
+          roles!inner(
+            id,
+            name,
+            description,
+            type
+          )
         )
       `)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data;
   },
 
-  // Get Conforma Pro internal team members (no client association)
   getConformaTeam: async () => {
     const { data, error } = await supabase
       .from('profiles')
       .select(`
         *,
-        roles (
+        user_roles!inner(
           id,
-          nom,
-          description,
-          permissions
+          role_uuid,
+          roles!inner(
+            id,
+            name,
+            description,
+            type
+          )
         )
       `)
-      .is('client_id', null)
+      .eq('user_roles.roles.type', 'team')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data;
   },
 
-  // Get user by ID
   getById: async (id: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select(`
         *,
-        roles (
+        user_roles!inner(
           id,
-          nom,
-          description,
-          permissions
+          role_uuid,
+          roles!inner(
+            id,
+            name,
+            description,
+            type
+          )
         )
       `)
       .eq('id', id)
@@ -60,17 +70,15 @@ export const usersQueries = {
     return data;
   },
 
-  // Create user
   create: async (userData: {
     email: string;
     password: string;
     nom?: string;
     prenom?: string;
-    role_id?: string;
-    client_id?: string;
-    site_id?: string;
+    role_uuid: string;
+    telephone?: string;
   }) => {
-    // Create auth user
+    // 1. Create auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
@@ -79,37 +87,42 @@ export const usersQueries = {
           nom: userData.nom,
           prenom: userData.prenom,
         },
+        emailRedirectTo: `${window.location.origin}/`,
       },
     });
 
     if (authError) throw authError;
     if (!authData.user) throw new Error('User creation failed');
 
-    // Update profile with additional data
+    // 2. Update profile
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
-        role_id: userData.role_id,
-        client_id: userData.client_id,
-        site_id: userData.site_id,
+        nom: userData.nom,
+        prenom: userData.prenom,
+        telephone: userData.telephone,
       })
       .eq('id', authData.user.id);
 
     if (profileError) throw profileError;
 
+    // 3. Create user_roles record
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .insert({
+        user_id: authData.user.id,
+        role_uuid: userData.role_uuid,
+      });
+
+    if (roleError) throw roleError;
+
     return authData.user;
   },
 
-  // Update user
   update: async (id: string, userData: {
     nom?: string;
     prenom?: string;
     email?: string;
-    role_id?: string;
-    actif?: boolean;
-    client_id?: string;
-    site_id?: string;
-    fonction?: string;
     telephone?: string;
   }) => {
     const { data, error } = await supabase
@@ -123,12 +136,20 @@ export const usersQueries = {
     return data;
   },
 
-  // Toggle user active status
-  toggleActive: async (id: string, actif: boolean) => {
+  updateRole: async (userId: string, roleUuid: string) => {
+    // Delete old role assignments
+    await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+
+    // Insert new role
     const { data, error } = await supabase
-      .from('profiles')
-      .update({ actif })
-      .eq('id', id)
+      .from('user_roles')
+      .insert({
+        user_id: userId,
+        role_uuid: roleUuid,
+      })
       .select()
       .single();
     
@@ -136,7 +157,15 @@ export const usersQueries = {
     return data;
   },
 
-  // Reset password (admin function)
+  toggleActive: async (id: string, actif: boolean) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ actif })
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
   resetPassword: async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
@@ -147,18 +176,16 @@ export const usersQueries = {
 };
 
 export const rolesQueries = {
-  // Get all roles
   getAll: async () => {
     const { data, error } = await supabase
       .from('roles')
       .select('*')
-      .order('nom');
+      .order('name');
     
     if (error) throw error;
     return data;
   },
 
-  // Get role by ID
   getById: async (id: string) => {
     const { data, error } = await supabase
       .from('roles')
@@ -170,9 +197,8 @@ export const rolesQueries = {
     return data;
   },
 
-  // Create role
   create: async (roleData: {
-    nom: string;
+    name: string;
     description?: string;
     permissions: Record<string, string[]>;
   }) => {
@@ -186,12 +212,11 @@ export const rolesQueries = {
     return data;
   },
 
-  // Update role
   update: async (id: string, roleData: {
-    nom?: string;
+    name?: string;
     description?: string;
     permissions?: Record<string, string[]>;
-    actif?: boolean;
+    archived_at?: string | null;
   }) => {
     const { data, error } = await supabase
       .from('roles')
@@ -204,7 +229,6 @@ export const rolesQueries = {
     return data;
   },
 
-  // Delete role
   delete: async (id: string) => {
     const { error } = await supabase
       .from('roles')
