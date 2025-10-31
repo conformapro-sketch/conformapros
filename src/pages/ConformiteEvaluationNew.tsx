@@ -169,11 +169,11 @@ const evaluationDataQueries = {
     const [articlesResult, textesResult] = await Promise.all([
       supabase.from('textes_articles').select('*').in('id', articleIds),
       supabase
-        .from('textes_reglementaires')
+        .from('actes_reglementaires')
         .select(`
           *,
-          textes_reglementaires_domaines (
-            domaines_application (id, code, libelle)
+          actes_reglementaires_domaines (
+            domaine:domaines_reglementaires (id, code, libelle)
           )
         `)
         .in('id', texteIds),
@@ -196,8 +196,8 @@ const evaluationDataQueries = {
         }
       }
 
-      const domaines = texte?.textes_reglementaires_domaines
-        ?.map((d: any) => d.domaines_application)
+      const domaines = texte?.actes_reglementaires_domaines
+        ?.map((d: any) => d.domaine)
         .filter(Boolean) || [];
 
       return {
@@ -424,16 +424,16 @@ export default function ConformiteEvaluationNew() {
   const { data: textes = [] } = useQuery({
     queryKey: ['textes', filters.domaine],
     queryFn: async () => {
-      let query = supabase.from('textes_reglementaires').select('id, titre, reference_officielle');
+      let query = supabase.from('actes_reglementaires').select('id, intitule, reference_officielle');
       
       if (filters.domaine) {
         const { data: texteIds } = await supabase
-          .from('textes_reglementaires_domaines')
-          .select('texte_id')
+          .from('actes_reglementaires_domaines')
+          .select('acte_id')
           .eq('domaine_id', filters.domaine);
         
         if (texteIds && texteIds.length > 0) {
-          query = query.in('id', texteIds.map(t => t.texte_id));
+          query = query.in('id', texteIds.map(t => t.acte_id));
         }
       }
       

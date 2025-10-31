@@ -182,12 +182,12 @@ export const textesReglementairesQueries = {
 
     if (filters?.searchTerm) {
       query = query.or(
-        `titre.ilike.%${filters.searchTerm}%,reference_officielle.ilike.%${filters.searchTerm}%,autorite.ilike.%${filters.searchTerm}%,resume.ilike.%${filters.searchTerm}%`
+        `intitule.ilike.%${filters.searchTerm}%,reference_officielle.ilike.%${filters.searchTerm}%,autorite_emettrice.ilike.%${filters.searchTerm}%,resume.ilike.%${filters.searchTerm}%`
       );
     }
 
     if (filters?.typeFilter && filters.typeFilter !== "all") {
-      query = query.eq("type", filters.typeFilter as any);
+      query = query.eq("type_acte", filters.typeFilter as any);
     }
 
     if (filters?.statutFilter && filters.statutFilter !== "all") {
@@ -376,7 +376,7 @@ export const textesArticlesQueries = {
   async getById(id: string) {
     const { data, error } = await supabase
       .from("textes_articles")
-      .select("*, textes_reglementaires(reference_officielle, titre)")
+      .select("*, actes_reglementaires(reference_officielle, intitule)")
       .eq("id", id)
       .maybeSingle();
     if (error) throw error;

@@ -101,19 +101,19 @@ export default function VeilleApplicabilite() {
     queryKey: ["textes-applicabilite", filters.domaine],
     queryFn: async () => {
       let query = supabase
-        .from("textes_reglementaires")
-        .select("id, titre, reference_officielle, type");
+        .from("actes_reglementaires")
+        .select("id, intitule, reference_officielle, type_acte");
 
       if (filters.domaine && filters.domaine !== "all") {
         const { data: texteIds } = await supabase
-          .from("textes_reglementaires_domaines")
-          .select("texte_id")
+          .from("actes_reglementaires_domaines")
+          .select("acte_id")
           .eq("domaine_id", filters.domaine);
 
         if (texteIds && texteIds.length > 0) {
           query = query.in(
             "id",
-            texteIds.map((t) => t.texte_id)
+            texteIds.map((t) => t.acte_id)
           );
         }
       }
@@ -141,11 +141,11 @@ export default function VeilleApplicabilite() {
           titre_court,
           contenu,
           texte_id,
-          textes_reglementaires (
+          actes_reglementaires (
             id,
             reference_officielle,
-            titre,
-            type
+            intitule,
+            type_acte
           )
         `
         )
@@ -168,7 +168,7 @@ export default function VeilleApplicabilite() {
       const rows: ArticleRow[] =
         articlesData?.map((article) => {
           const status = statusData?.find((s) => s.article_id === article.id);
-          const texte = article.textes_reglementaires as any;
+          const texte = article.actes_reglementaires as any;
 
           return {
             id: status?.id || `new_${article.id}`,
@@ -178,7 +178,7 @@ export default function VeilleApplicabilite() {
             article_contenu: article.contenu,
             texte_id: article.texte_id,
             texte_reference: texte?.reference_officielle,
-            texte_titre: texte?.titre,
+            texte_titre: texte?.intitule,
             site_id: selectedSite,
             applicabilite: status?.applicabilite || "obligatoire",
             motif_non_applicable: status?.motif_non_applicable,
