@@ -28,6 +28,7 @@ import BibliothequeTableauDeBord from "./pages/BibliothequeTableauDeBord";
 import BibliothequeRechercheIntelligente from "./pages/BibliothequeRechercheIntelligente";
 import ArticleVersions from "./pages/ArticleVersions";
 import VeilleEvaluation from "./pages/VeilleEvaluation";
+import ConformiteEvaluationNew from "./pages/ConformiteEvaluationNew";
 import PlanAction from "./pages/PlanAction";
 import DomainesPage from "./pages/DomainesPage";
 import GestionArticles from "./pages/GestionArticles";
@@ -133,7 +134,8 @@ const App = () => (
                           <Route path="/veille/bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
                           <Route path="/veille/bibliotheque/dashbord" element={<BibliothequeTableauDeBord />} />
                           <Route path="/veille/bibliotheque/recherche" element={<BibliothequeRechercheIntelligente />} />
-                          <Route path="/veille/evaluation" element={<VeilleEvaluation />} />
+                          <Route path="/veille/evaluation" element={<ConformiteEvaluationNew />} />
+                          <Route path="/veille/evaluation-advanced" element={<VeilleEvaluation />} />
                           <Route path="/veille/conformite" element={<Navigate to="/veille/evaluation" replace />} />
                           <Route path="/veille/actions" element={<PlanAction />} />
                           {/* Domaines moved under Bibliothèque: add new route and redirect old one */}
