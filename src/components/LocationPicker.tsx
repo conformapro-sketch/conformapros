@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { useState, useEffect, useRef } from "react";
+// Removed react-leaflet to avoid context runtime errors
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,6 @@ interface LocationPickerProps {
   onLocationChange: (lat: number, lng: number) => void;
 }
 
-function MapClickHandler({ onLocationChange }: { onLocationChange: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click: (e) => {
-      onLocationChange(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
 
 export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerProps) {
   const [position, setPosition] = useState<[number, number] | null>(
@@ -70,8 +62,63 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
     }
   };
 
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+
   const defaultCenter: [number, number] = [36.8, 10.2]; // Tunisia center
   const defaultZoom = 7;
+
+  // Initialize Leaflet map once
+  useEffect(() => {
+    if (mapRef.current || !mapContainerRef.current) return;
+
+    const initialCenter = position || defaultCenter;
+    const initialZoom = position ? 12 : defaultZoom;
+
+    const map = L.map(mapContainerRef.current).setView(initialCenter, initialZoom);
+    mapRef.current = map;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    map.on("click", (e: L.LeafletMouseEvent) => {
+      handleLocationChange(e.latlng.lat, e.latlng.lng);
+    });
+
+    return () => {
+      map.off();
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [mapContainerRef, position]);
+
+  // Keep marker and view in sync with position
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (position) {
+      if (!markerRef.current) {
+        markerRef.current = L.marker(position, { draggable: true }).addTo(map);
+        markerRef.current.on("dragend", (e: any) => {
+          const pos = (e.target as L.Marker).getLatLng();
+          handleLocationChange(pos.lat, pos.lng);
+        });
+      } else {
+        markerRef.current.setLatLng(position);
+      }
+      if (!map.getBounds().contains(L.latLng(position[0], position[1]))) {
+        map.setView(position, Math.max(map.getZoom(), 12));
+      }
+    } else if (markerRef.current) {
+      map.removeLayer(markerRef.current);
+      markerRef.current = null;
+      map.setView(defaultCenter, defaultZoom);
+    }
+  }, [position]);
+
 
   return (
     <div className="space-y-4">
@@ -101,30 +148,7 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
 
         {/* Interactive Map */}
         <div className="h-[300px] rounded-md overflow-hidden border mb-3">
-          <MapContainer
-            center={position || defaultCenter}
-            zoom={position ? 12 : defaultZoom}
-            style={{ height: "100%", width: "100%" }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <MapClickHandler onLocationChange={handleLocationChange} />
-            {position && (
-              <Marker
-                position={position}
-                draggable={true}
-                eventHandlers={{
-                  dragend: (e) => {
-                    const marker = e.target;
-                    const pos = marker.getLatLng();
-                    handleLocationChange(pos.lat, pos.lng);
-                  },
-                }}
-              />
-            )}
-          </MapContainer>
+          <div ref={mapContainerRef} style={{ height: "100%", width: "100%" }} />
         </div>
 
         {/* Coordinates display */}
