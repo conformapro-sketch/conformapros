@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Search, MapPin, Factory, Eye, Pencil, Trash2, FileText, AlertTriangle, FileDown, Grid3x3, List } from "lucide-react";
+import { Building2, Plus, Search, MapPin, Factory, Eye, Pencil, Trash2, FileText, AlertTriangle, FileDown, Grid3x3, List, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClients, fetchSites, deleteClient } from "@/lib/multi-tenant-queries";
@@ -481,6 +481,10 @@ export default function Clients() {
                               <Building2 className="h-4 w-4 mr-2" />
                               Voir sites ({sitesCount})
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/clients/${client.id}/users`)}>
+                              <Users className="h-4 w-4 mr-2" />
+                              Utilisateurs client
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDelete(client.id)} className="text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
                               Supprimer
@@ -562,6 +566,14 @@ export default function Clients() {
                           title="Voir les sites"
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/clients/${client.id}/users`)}
+                          title="Utilisateurs client"
+                        >
+                          <Users className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
