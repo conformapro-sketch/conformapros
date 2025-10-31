@@ -18,6 +18,7 @@ import {
   Stethoscope,
   Bell,
   BookOpen,
+  Leaf,
   Search,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -98,6 +99,17 @@ const menuItems: MenuItem[] = [
       { title: "Planification", url: "/formations/planning" },
       { title: "Participants", url: "/formations/participants" },
       { title: "Certificats & Documents", url: "/formations/documents" },
+    ],
+  },
+  {
+    title: "Environnement & Déchets",
+    icon: Leaf,
+    subItems: [
+      { title: "Tableau de bord", url: "/environnement/dashboard" },
+      { title: "Déchets", url: "/environnement/dechets" },
+      { title: "Surveillance", url: "/environnement/surveillance" },
+      { title: "Points & Limites", url: "/environnement/points-limites" },
+      { title: "Prestataires & Labo", url: "/environnement/prestataires" },
     ],
   },
   { title: "Visites médicales", url: "/visites-medicales", icon: Stethoscope },
