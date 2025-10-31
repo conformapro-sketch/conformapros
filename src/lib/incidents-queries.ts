@@ -175,7 +175,7 @@ export async function deleteIncidentPhoto(id: string) {
 export async function fetchIncidentStats(siteId?: string, startDate?: string, endDate?: string) {
   let query = supabase
     .from("incidents")
-    .select("id, type_incident, gravite, statut, date_incident");
+    .select("*");
 
   if (siteId) {
     query = query.eq("site_id", siteId);
@@ -192,29 +192,88 @@ export async function fetchIncidentStats(siteId?: string, startDate?: string, en
   const { data, error } = await query;
   if (error) throw error;
 
-  const total = data.length;
-  const en_cours = data.filter((i) => i.statut === "en_cours").length;
-  const clotures = data.filter((i) => i.statut === "cloture").length;
-  const majeurs = data.filter((i) => i.gravite === "majeure").length;
+  // Calculate average resolution time
+  const closedIncidents = data?.filter((i) => i.statut === "cloture" && i.date_cloture) || [];
+  const avgResolutionDays = closedIncidents.length > 0
+    ? closedIncidents.reduce((acc, incident) => {
+        const start = new Date(incident.date_incident).getTime();
+        const end = new Date(incident.date_cloture!).getTime();
+        return acc + (end - start) / (1000 * 60 * 60 * 24);
+      }, 0) / closedIncidents.length
+    : 0;
 
-  const byType = data.reduce((acc, i) => {
+  // Calculate monthly trend
+  const monthlyTrend: Record<string, number> = {};
+  data?.forEach((incident) => {
+    const month = new Date(incident.date_incident).toISOString().substring(0, 7);
+    monthlyTrend[month] = (monthlyTrend[month] || 0) + 1;
+  });
+
+  const total = data?.length || 0;
+  const en_cours = data?.filter((i) => i.statut === "en_cours").length || 0;
+  const clotures = data?.filter((i) => i.statut === "cloture").length || 0;
+  const majeurs = data?.filter((i) => i.gravite === "majeure").length || 0;
+  const recurrents = data?.filter((i) => i.est_recurrent === true).length || 0;
+
+  const byType = data?.reduce((acc, i) => {
     acc[i.type_incident] = (acc[i.type_incident] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, number>) || {};
 
-  const byGravite = data.reduce((acc, i) => {
+  const byGravite = data?.reduce((acc, i) => {
     acc[i.gravite] = (acc[i.gravite] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, number>) || {};
 
   return {
     total,
     en_cours,
     clotures,
     majeurs,
+    recurrents,
+    avgResolutionDays: Math.round(avgResolutionDays),
     byType,
     byGravite,
+    monthlyTrend: Object.entries(monthlyTrend)
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month)),
   };
+}
+
+// Fetch incident history
+export async function fetchIncidentHistory(incidentId: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from("incident_history")
+    .select(`
+      *,
+      profiles:modified_by(nom, prenom)
+    `)
+    .eq("incident_id", incidentId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Upload incident photo to storage
+export async function uploadIncidentPhoto(
+  file: File,
+  incidentId: string
+): Promise<string> {
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${incidentId}/${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("incident-photos")
+    .upload(fileName, file);
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabase.storage
+    .from("incident-photos")
+    .getPublicUrl(fileName);
+
+  return publicUrl;
 }
 
 // ============================================

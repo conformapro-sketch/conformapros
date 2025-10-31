@@ -1294,6 +1294,41 @@ export type Database = {
           },
         ]
       }
+      incident_history: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string
+          id: string
+          incident_id: string
+          modified_by: string | null
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string
+          id?: string
+          incident_id: string
+          modified_by?: string | null
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string
+          id?: string
+          incident_id?: string
+          modified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_history_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_photos: {
         Row: {
           created_at: string
