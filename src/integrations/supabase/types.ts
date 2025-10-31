@@ -2378,6 +2378,20 @@ export type Database = {
         }[]
       }
       get_client_user_count: { Args: { _client_id: string }; Returns: number }
+      get_conforma_team_users: {
+        Args: never
+        Returns: {
+          actif: boolean
+          created_at: string
+          email: string
+          id: string
+          nom: string
+          prenom: string
+          roles: Json
+          telephone: string
+          updated_at: string
+        }[]
+      }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_client_access: {
         Args: { _client_id: string; _user_id: string }

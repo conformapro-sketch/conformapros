@@ -77,10 +77,21 @@ export default function GestionUtilisateurs() {
   }
 
   // Fetch internal team users
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error: usersError } = useQuery({
     queryKey: ['users', 'team'],
     queryFn: usersQueries.getConformaTeam,
+    retry: false,
   });
+
+  // Show error toast if access is denied
+  if (usersError) {
+    const errorMessage = usersError instanceof Error ? usersError.message : 'Erreur lors du chargement';
+    if (errorMessage.includes('Not authorized')) {
+      toast.error('Accès refusé: seuls les Super Admins peuvent voir les utilisateurs internes');
+    } else {
+      toast.error(errorMessage);
+    }
+  }
 
   // Fetch team roles
   const { data: roles } = useQuery({

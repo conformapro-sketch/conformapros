@@ -26,34 +26,15 @@ export const usersQueries = {
 
   getConformaTeam: async () => {
     const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        *,
-        user_roles(
-          id,
-          role_uuid,
-          roles(
-            id,
-            name,
-            description,
-            type
-          )
-        )
-      `)
-      .order('created_at', { ascending: false });
+      .rpc('get_conforma_team_users');
 
     if (error) throw error;
     
-    // Filter for team users: exclude client users (those with managed_client_id)
-    const teamUsers = data.filter(user => {
-      // Exclude client users
-      if (user.managed_client_id) return false;
-      
-      // Include all internal ConformaPro users (no managed_client_id)
-      return true;
-    });
-    
-    return teamUsers;
+    // Map the roles JSONB array to the expected shape
+    return data.map(user => ({
+      ...user,
+      user_roles: Array.isArray(user.roles) ? user.roles : []
+    }));
   },
 
   getById: async (id: string) => {
