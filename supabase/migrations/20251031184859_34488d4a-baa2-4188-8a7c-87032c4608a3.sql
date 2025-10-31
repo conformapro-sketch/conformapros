@@ -1,0 +1,134 @@
+-- Drop and recreate get_all_client_users function to fix access_scopes error
+DROP FUNCTION IF EXISTS public.get_all_client_users(text, uuid, text, integer, integer);
+
+CREATE OR REPLACE FUNCTION public.get_all_client_users(
+  search_term TEXT DEFAULT NULL,
+  filter_client_id UUID DEFAULT NULL,
+  filter_status TEXT DEFAULT NULL,
+  page_num INTEGER DEFAULT 1,
+  page_size INTEGER DEFAULT 10
+)
+RETURNS TABLE (
+  id UUID,
+  email TEXT,
+  nom TEXT,
+  prenom TEXT,
+  telephone TEXT,
+  actif BOOLEAN,
+  is_client_admin BOOLEAN,
+  client_id UUID,
+  tenant_id UUID,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  client_data JSONB,
+  roles_data JSONB,
+  sites_data JSONB,
+  total_count BIGINT
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+DECLARE
+  offset_val INT;
+  is_super_admin BOOLEAN;
+  is_admin_global BOOLEAN;
+BEGIN
+  -- Authorization
+  SELECT has_role(auth.uid(), 'Super Admin') INTO is_super_admin;
+  SELECT has_role(auth.uid(), 'Admin Global') INTO is_admin_global;
+  
+  IF NOT (
+    is_super_admin OR
+    is_admin_global OR
+    (filter_client_id IS NOT NULL AND has_client_access(auth.uid(), filter_client_id))
+  ) THEN
+    RAISE EXCEPTION 'Not authorized to view client users';
+  END IF;
+
+  offset_val := (page_num - 1) * page_size;
+
+  RETURN QUERY
+  WITH filtered_users AS (
+    SELECT 
+      cu.id,
+      cu.email,
+      cu.nom,
+      cu.prenom,
+      cu.telephone,
+      cu.actif,
+      cu.is_client_admin,
+      cu.client_id,
+      cu.tenant_id,
+      cu.avatar_url,
+      cu.created_at,
+      cu.updated_at
+    FROM public.client_users cu
+    WHERE (search_term IS NULL OR (
+      cu.email ILIKE '%' || search_term || '%' OR
+      cu.nom ILIKE '%' || search_term || '%' OR
+      cu.prenom ILIKE '%' || search_term || '%'
+    ))
+    AND (filter_client_id IS NULL OR cu.client_id = filter_client_id)
+    AND (filter_status IS NULL OR 
+      (filter_status = 'actif' AND cu.actif = true) OR
+      (filter_status = 'inactif' AND cu.actif = false)
+    )
+    ORDER BY cu.created_at DESC
+  ),
+  total AS (
+    SELECT COUNT(*) as cnt FROM filtered_users
+  )
+  SELECT 
+    fu.id,
+    fu.email,
+    fu.nom,
+    fu.prenom,
+    fu.telephone,
+    fu.actif,
+    fu.is_client_admin,
+    fu.client_id,
+    fu.tenant_id,
+    fu.avatar_url,
+    fu.created_at,
+    fu.updated_at,
+    COALESCE(
+      jsonb_build_object(
+        'id', c.id,
+        'nom', c.nom,
+        'nom_legal', c.nom_legal,
+        'logo_url', c.logo_url
+      ),
+      '{}'::jsonb
+    ) as client_data,
+    COALESCE(
+      (
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'id', ur.id,
+            'role_uuid', ur.role_uuid,
+            'client_id', ur.client_id,
+            'roles', jsonb_build_object(
+              'id', r.id,
+              'name', r.name,
+              'description', r.description,
+              'type', r.type
+            )
+          )
+        )
+        FROM public.user_roles ur
+        LEFT JOIN public.roles r ON r.id = ur.role_uuid
+        WHERE ur.user_id = fu.id
+      ),
+      '[]'::jsonb
+    ) as roles_data,
+    '[]'::jsonb as sites_data,
+    (SELECT cnt FROM total) as total_count
+  FROM filtered_users fu
+  LEFT JOIN public.clients c ON c.id = fu.client_id
+  LIMIT page_size
+  OFFSET offset_val;
+END;
+$$;

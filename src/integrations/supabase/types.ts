@@ -2426,11 +2426,11 @@ export type Database = {
           actif: boolean
           avatar_url: string
           client_data: Json
+          client_id: string
           created_at: string
           email: string
           id: string
           is_client_admin: boolean
-          managed_client_id: string
           nom: string
           prenom: string
           roles_data: Json
