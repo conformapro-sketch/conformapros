@@ -727,14 +727,14 @@ export default function ConformiteEvaluationNew() {
             <div>
               <Label>Domaine</Label>
               <Select
-                value={filters.domaine}
-                onValueChange={v => setFilters({ ...filters, domaine: v, texte: '' })}
+                value={filters.domaine || "all"}
+                onValueChange={v => setFilters({ ...filters, domaine: v === 'all' ? '' : v, texte: '' })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Tous" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
                   {domaines.map(d => (
                     <SelectItem key={d.id} value={d.code}>
                       {d.libelle}
@@ -747,15 +747,15 @@ export default function ConformiteEvaluationNew() {
             <div>
               <Label>Texte</Label>
               <Select
-                value={filters.texte}
-                onValueChange={v => setFilters({ ...filters, texte: v })}
+                value={filters.texte || "all"}
+                onValueChange={v => setFilters({ ...filters, texte: v === 'all' ? '' : v })}
                 disabled={!filters.domaine}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Tous" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
                   {textes.map(t => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.reference_officielle || t.titre}
@@ -768,14 +768,14 @@ export default function ConformiteEvaluationNew() {
             <div>
               <Label>Applicabilité</Label>
               <Select
-                value={filters.applicabilite}
-                onValueChange={v => setFilters({ ...filters, applicabilite: v })}
+                value={filters.applicabilite || "all"}
+                onValueChange={v => setFilters({ ...filters, applicabilite: v === 'all' ? '' : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Tous" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
                   <SelectItem value="obligatoire">Applicable</SelectItem>
                   <SelectItem value="non_applicable">Non applicable</SelectItem>
                 </SelectContent>
@@ -785,14 +785,14 @@ export default function ConformiteEvaluationNew() {
             <div>
               <Label>Conformité</Label>
               <Select
-                value={filters.conformite}
-                onValueChange={v => setFilters({ ...filters, conformite: v })}
+                value={filters.conformite || "all"}
+                onValueChange={v => setFilters({ ...filters, conformite: v === 'all' ? '' : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Tous" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Tous</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
                   <SelectItem value="Conforme">Conforme</SelectItem>
                   <SelectItem value="Non_conforme">Non conforme</SelectItem>
                   <SelectItem value="Non_evalue">Non évalué</SelectItem>
