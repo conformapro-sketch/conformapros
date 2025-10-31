@@ -23,7 +23,7 @@ import { supabaseAny as supabase } from "@/lib/supabase-any";
 const userSchema = z.object({
   email: z.string().trim().email("Email invalide").min(1, "L'email est requis"),
   fullName: z.string().trim().min(1, "Le nom complet est requis").max(100, "Le nom doit faire moins de 100 caractères"),
-  role_uuid: z.string().min(1, "Le rôle est requis"),
+  is_client_admin: z.boolean().default(false),
   siteIds: z.array(z.string()).default([]),
   actif: z.boolean().default(true),
 });
@@ -48,21 +48,24 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     enabled: !!clientId,
   });
 
-  const { data: roles } = useQuery({
-    queryKey: ['roles', 'client', clientId],
+  // Check if current user is super admin
+  const { data: currentUserRole } = useQuery({
+    queryKey: ['current-user-role'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('roles')
-        .select('*')
-        .eq('type', 'client')
-        .or(`tenant_id.eq.${clientId},tenant_id.is.null`)
-        .order('name');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
       
-      if (error) throw error;
-      return data;
+      const { data } = await supabase
+        .from('user_roles')
+        .select('roles(name)')
+        .eq('user_id', user.id)
+        .single();
+      
+      return data?.roles?.name;
     },
-    enabled: !!clientId,
   });
+
+  const isSuperAdmin = currentUserRole === 'Super Admin';
 
   const {
     register,
@@ -76,17 +79,16 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     defaultValues: user ? {
       email: user.email || "",
       fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
-      role_uuid: user.user_roles?.[0]?.role_uuid || '',
+      is_client_admin: user.is_client_admin || false,
       siteIds: user.access_scopes?.map((as: any) => as.site_id) || [],
       actif: user.actif ?? true,
     } : {
       actif: true,
       siteIds: [],
-      role_uuid: '',
+      is_client_admin: false,
     },
   });
 
-  const selectedRole = watch("role_uuid");
   const selectedSiteIds = watch("siteIds");
 
   const saveMutation = useMutation({
@@ -94,9 +96,9 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       const result = await inviteClientUser(
         data.email,
         data.fullName,
-        data.role_uuid,
+        data.siteIds,
         clientId,
-        data.siteIds
+        data.is_client_admin
       );
 
       if (result.error) {
@@ -126,18 +128,8 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       });
     },
   });
+  
   const onSubmit = (data: UserFormData) => {
-    const selectedRole = roles?.find(r => r.id === data.role_uuid);
-    const requiresSites = selectedRole?.name !== 'Admin' && selectedRole?.name !== 'Owner';
-    
-    if (requiresSites && data.siteIds.length === 0) {
-      toast({
-        title: 'Sites requis',
-        description: 'Au moins un site doit être sélectionné pour ce rôle.',
-        variant: 'destructive',
-      });
-      return;
-    }
     saveMutation.mutate(data);
   };
 
@@ -184,46 +176,42 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
             )}
           </div>
 
-          {/* Role */}
-          <div>
-            <Label htmlFor="role_uuid">Rôle *</Label>
-            <Controller
-              name="role_uuid"
-              control={control}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un rôle..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border border-border z-50">
-                    {roles?.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.name} {role.description && `- ${role.description}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.role_uuid && (
-              <p className="text-sm text-destructive mt-1">{errors.role_uuid.message}</p>
-            )}
+          {/* Client Admin Toggle (Super Admin only) */}
+          {isSuperAdmin && (
+            <div className="flex items-center justify-between py-3 border border-border rounded-lg px-4">
+              <div>
+                <Label htmlFor="is_client_admin" className="cursor-pointer">Administrateur client</Label>
+                <p className="text-sm text-muted-foreground">
+                  Les admins peuvent gérer les utilisateurs de leur organisation
+                </p>
+              </div>
+              <Controller
+                name="is_client_admin"
+                control={control}
+                render={({ field }) => (
+                  <Switch
+                    id="is_client_admin"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
+          )}
+
+          {/* Info message about individual permissions */}
+          <div className="bg-muted/50 border border-border rounded-lg p-3">
+            <p className="text-sm text-muted-foreground">
+              Les permissions seront configurées individuellement après la création du compte.
+            </p>
           </div>
 
           {/* Sites autorisés */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Building2 className="h-5 w-5" />
-              <Label>Sites autorisés *</Label>
+              <Label>Sites autorisés</Label>
             </div>
-            
-            {roles?.find(r => r.id === selectedRole)?.name === 'Admin' && (
-              <div className="bg-muted/50 border border-border rounded-lg p-3 mb-3">
-                <p className="text-sm text-muted-foreground">
-                  Les administrateurs client ont accès à tous les sites par défaut.
-                </p>
-              </div>
-            )}
 
             <div className="space-y-3 bg-muted/30 rounded-lg p-4 max-h-60 overflow-y-auto">
               {sites.length === 0 ? (

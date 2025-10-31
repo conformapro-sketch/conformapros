@@ -89,6 +89,27 @@ export default function ClientUsers() {
     enabled: !!currentClientId,
   });
 
+  const { data: userStats } = useQuery({
+    queryKey: ['client-user-stats', currentClientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('max_users')
+        .eq('id', currentClientId)
+        .single();
+      
+      if (error) throw error;
+      
+      const current = users.filter(u => u.actif).length;
+      return {
+        current,
+        max: data.max_users || 10,
+        canAdd: current < (data.max_users || 10),
+      };
+    },
+    enabled: !!currentClientId && !!users,
+  });
+
   const toggleActiveMutation = useMutation({
     mutationFn: ({ userId, actif }: { userId: string; actif: boolean }) =>
       toggleUtilisateurActif(userId, actif),
@@ -121,6 +142,11 @@ export default function ClientUsers() {
       });
     },
   });
+
+  const handleOpenPermissions = (user: any) => {
+    setSelectedUserForPermissions(user);
+    setPermissionDrawerOpen(true);
+  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -298,9 +324,8 @@ export default function ClientUsers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
+                    <TableHead>Utilisateur</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Rôle</TableHead>
                     <TableHead>Sites autorisés</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead className="text-right">Actions</TableHead>

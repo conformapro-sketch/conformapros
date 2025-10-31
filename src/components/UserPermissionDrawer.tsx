@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Drawer,
   DrawerContent,
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionMatrix } from "@/components/roles/PermissionMatrix";
-import { supabaseAny as supabase } from "@/lib/supabase-any";
+import { fetchUserPermissions, saveUserPermissions } from "@/lib/multi-tenant-queries";
 import type { PermissionDecision, PermissionScope } from "@/types/roles";
 import { Loader2 } from "lucide-react";
 
@@ -45,101 +45,54 @@ export function UserPermissionDrawer({
   const [scope, setScope] = useState<PermissionScope>("tenant");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch user's current role and permissions
-  const { data: userRoleData, isLoading } = useQuery({
-    queryKey: ["user-role-permissions", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select(`
-          role_uuid,
-          roles!inner(
-            id,
-            name,
-            type,
-            role_permissions(
-              module,
-              action,
-              decision,
-              scope
-            )
-          )
-        `)
-        .eq("user_id", user.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id && open,
+  // Fetch user's individual permissions
+  const { data: userPermissions, isLoading } = useQuery({
+    queryKey: ["user-permissions", user?.id, clientId],
+    queryFn: () => fetchUserPermissions(user!.id, clientId),
+    enabled: !!user?.id && !!clientId && open,
   });
 
-  // Initialize permissions from user's role
+  // Initialize permissions from user's individual permissions
   useEffect(() => {
-    if (userRoleData?.roles?.role_permissions) {
-      const rolePerms = userRoleData.roles.role_permissions.map((p: any) => ({
+    if (userPermissions) {
+      const perms = userPermissions.map((p: any) => ({
         module: p.module,
         action: p.action,
         decision: p.decision as PermissionDecision,
       }));
-      setPermissions(rolePerms);
+      setPermissions(perms);
       
-      // Set scope based on first permission or default
-      if (rolePerms.length > 0 && userRoleData.roles.role_permissions[0]?.scope) {
-        setScope(userRoleData.roles.role_permissions[0].scope as PermissionScope);
+      if (perms.length > 0 && userPermissions[0]?.scope) {
+        setScope(userPermissions[0].scope as PermissionScope);
       }
     }
-  }, [userRoleData]);
+  }, [userPermissions]);
 
-  const savePermissions = async () => {
+  const savePermissionsHandler = async () => {
     if (!user?.id) return;
 
     setIsSaving(true);
     try {
-      // Get user's role
-      const roleId = userRoleData?.role_uuid;
-      if (!roleId) {
-        toast({
-          title: "Erreur",
-          description: "Aucun rôle trouvé pour cet utilisateur",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Delete existing permissions for this role
-      await supabase
-        .from("role_permissions")
-        .delete()
-        .eq("role_id", roleId);
-
-      // Insert new permissions
-      if (permissions.length > 0) {
-        const permissionsToInsert = permissions.map((p) => ({
-          role_id: roleId,
+      // Filter out 'inherit' decisions - only save explicit allow/deny
+      const explicitPermissions = permissions
+        .filter(p => p.decision !== 'inherit')
+        .map(p => ({
           module: p.module,
           action: p.action,
-          decision: p.decision,
+          decision: p.decision as 'allow' | 'deny',
           scope: scope,
         }));
-
-        const { error } = await supabase
-          .from("role_permissions")
-          .insert(permissionsToInsert);
-
-        if (error) throw error;
-      }
-
+      
+      await saveUserPermissions(user.id, clientId, explicitPermissions);
+      
       queryClient.invalidateQueries({ queryKey: ["client-users"] });
-      queryClient.invalidateQueries({ queryKey: ["user-role-permissions"] });
+      queryClient.invalidateQueries({ queryKey: ["user-permissions"] });
       
       toast({
         title: "Permissions mises à jour",
-        description: `Les permissions de ${user.prenom} ${user.nom} ont été modifiées avec succès.`,
+        description: `Les permissions de ${user.prenom} ${user.nom} ont été modifiées.`,
       });
-
+      
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error saving permissions:", error);
@@ -163,7 +116,7 @@ export function UserPermissionDrawer({
             Gérer les permissions de {user.prenom} {user.nom}
           </DrawerTitle>
           <DrawerDescription>
-            Configurez les permissions spécifiques pour cet utilisateur
+            Configurez les permissions individuelles pour cet utilisateur
           </DrawerDescription>
         </DrawerHeader>
 
@@ -185,7 +138,7 @@ export function UserPermissionDrawer({
         </div>
 
         <DrawerFooter>
-          <Button onClick={savePermissions} disabled={isSaving || isLoading}>
+          <Button onClick={savePermissionsHandler} disabled={isSaving || isLoading}>
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enregistrer les permissions
           </Button>

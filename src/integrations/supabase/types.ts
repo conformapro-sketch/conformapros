@@ -498,6 +498,8 @@ export type Database = {
           is_active: boolean | null
           logo_url: string | null
           matricule_fiscale: string | null
+          max_users: number | null
+          max_users_notes: string | null
           nom: string
           nom_legal: string | null
           notes: string | null
@@ -527,6 +529,8 @@ export type Database = {
           is_active?: boolean | null
           logo_url?: string | null
           matricule_fiscale?: string | null
+          max_users?: number | null
+          max_users_notes?: string | null
           nom: string
           nom_legal?: string | null
           notes?: string | null
@@ -556,6 +560,8 @@ export type Database = {
           is_active?: boolean | null
           logo_url?: string | null
           matricule_fiscale?: string | null
+          max_users?: number | null
+          max_users_notes?: string | null
           nom?: string
           nom_legal?: string | null
           notes?: string | null
@@ -1362,6 +1368,8 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_client_admin: boolean | null
+          managed_client_id: string | null
           nom: string | null
           prenom: string | null
           telephone: string | null
@@ -1373,6 +1381,8 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          is_client_admin?: boolean | null
+          managed_client_id?: string | null
           nom?: string | null
           prenom?: string | null
           telephone?: string | null
@@ -1384,13 +1394,23 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_client_admin?: boolean | null
+          managed_client_id?: string | null
           nom?: string | null
           prenom?: string | null
           telephone?: string | null
           tenant_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_managed_client_id_fkey"
+            columns: ["managed_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_audit_logs: {
         Row: {
@@ -2081,6 +2101,77 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          action: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          decision: Database["public"]["Enums"]["permission_decision"]
+          id: string
+          module: string
+          scope: Database["public"]["Enums"]["permission_scope"]
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          decision?: Database["public"]["Enums"]["permission_decision"]
+          id?: string
+          module: string
+          scope?: Database["public"]["Enums"]["permission_scope"]
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          decision?: Database["public"]["Enums"]["permission_decision"]
+          id?: string
+          module?: string
+          scope?: Database["public"]["Enums"]["permission_scope"]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           client_id: string | null
@@ -2266,6 +2357,14 @@ export type Database = {
       }
     }
     Functions: {
+      can_manage_client_user: {
+        Args: { _actor_id: string; _target_user_id: string }
+        Returns: boolean
+      }
+      check_client_user_limit: {
+        Args: { _client_id: string }
+        Returns: boolean
+      }
       get_applicable_actes_for_site: {
         Args: { p_site_id: string }
         Returns: {
@@ -2278,6 +2377,7 @@ export type Database = {
           type_acte: string
         }[]
       }
+      get_client_user_count: { Args: { _client_id: string }; Returns: number }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_client_access: {
         Args: { _client_id: string; _user_id: string }
@@ -2294,6 +2394,10 @@ export type Database = {
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
       has_site_access: {
         Args: { _site_id: string; _user_id: string }
+        Returns: boolean
+      }
+      has_user_permission: {
+        Args: { _action: string; _module: string; _user_id: string }
         Returns: boolean
       }
       search_actes_reglementaires: {

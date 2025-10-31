@@ -10,10 +10,10 @@ interface InviteUserRequest {
   nom: string
   prenom: string
   telephone?: string
-  role_uuid: string
   clientId: string
   siteIds?: string[]
   tenantId?: string
+  is_client_admin?: boolean
 }
 
 Deno.serve(async (req) => {
@@ -63,26 +63,13 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body: InviteUserRequest = await req.json()
-    const { email, nom, prenom, telephone, role_uuid, clientId, siteIds, tenantId } = body
+    const { email, nom, prenom, telephone, clientId, siteIds, tenantId, is_client_admin } = body
 
-    console.log('invite-client-user: Request data', { email, nom, prenom, role_uuid, clientId })
+    console.log('invite-client-user: Request data', { email, nom, prenom, clientId, is_client_admin })
 
     // Validate required fields
-    if (!email || !nom || !prenom || !role_uuid || !clientId) {
-      throw new Error('Missing required fields: email, nom, prenom, role_uuid, clientId')
-    }
-
-    // Validate that the role_uuid exists and is a client role
-    const { data: roleCheck, error: roleCheckError } = await supabaseClient
-      .from('roles')
-      .select('id, name, type')
-      .eq('id', role_uuid)
-      .eq('type', 'client')
-      .single()
-
-    if (roleCheckError || !roleCheck) {
-      console.error('invite-client-user: Invalid role_uuid', { role_uuid, error: roleCheckError })
-      throw new Error('Invalid role specified')
+    if (!email || !nom || !prenom || !clientId) {
+      throw new Error('Missing required fields: email, nom, prenom, clientId')
     }
 
     // Verify calling user has permission to invite users for this client
@@ -121,11 +108,13 @@ Deno.serve(async (req) => {
       console.log('invite-client-user: User already exists', userExists.id)
       userId = userExists.id
 
-      // Update profile with tenant_id if needed
+      // Update profile with tenant_id and client info
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({ 
           tenant_id: finalTenantId,
+          managed_client_id: clientId,
+          is_client_admin: is_client_admin || false,
           nom,
           prenom,
           telephone: telephone || null
@@ -167,7 +156,9 @@ Deno.serve(async (req) => {
           nom,
           prenom,
           telephone: telephone || null,
-          tenant_id: finalTenantId
+          tenant_id: finalTenantId,
+          managed_client_id: clientId,
+          is_client_admin: is_client_admin || false
         })
 
       if (profileError) {
@@ -186,23 +177,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Create or update user_role using role_uuid
-    const { error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .upsert({
-        user_id: userId,
-        role_uuid: role_uuid,
-        client_id: clientId
-      }, {
-        onConflict: 'user_id,client_id'
-      })
-
-    if (roleError) {
-      console.error('invite-client-user: Failed to assign role', roleError)
-      throw new Error(`Failed to assign role: ${roleError.message}`)
-    }
-
-    console.log('invite-client-user: Role assigned', { userId, role_uuid, clientId })
+    // Client users no longer use user_roles - they use individual permissions
+    // Skip role assignment for client users
+    console.log('invite-client-user: Client user created/updated', { userId, clientId, is_client_admin })
 
     // Create access_scopes for specified sites
     if (siteIds && siteIds.length > 0) {
@@ -240,8 +217,8 @@ Deno.serve(async (req) => {
           email,
           nom,
           prenom,
-          role_uuid,
           clientId,
+          is_client_admin: is_client_admin || false,
           siteIds: siteIds || [],
           tenantId: finalTenantId
         },

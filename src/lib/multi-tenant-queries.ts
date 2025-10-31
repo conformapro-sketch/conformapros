@@ -873,9 +873,9 @@ export const uploadProof = async (siteId: string, file: File, destinationPath?: 
 export const inviteClientUser = async (
   email: string,
   fullName: string,
-  roleUuid: string,
+  siteIds: string[],
   clientId: string,
-  siteIds: string[]
+  isClientAdmin: boolean = false
 ) => {
   try {
     // Parse name into nom and prenom
@@ -890,9 +890,9 @@ export const inviteClientUser = async (
         nom,
         prenom,
         telephone: null,
-        role_uuid: roleUuid,
         clientId,
-        siteIds: siteIds || []
+        siteIds: siteIds || [],
+        is_client_admin: isClientAdmin
       }
     });
 
@@ -917,6 +917,126 @@ export const inviteClientUser = async (
     console.error('Error in inviteClientUser:', error);
     return { data: null, error };
   }
+};
+
+// Toggle client admin status (Super Admin only)
+export const toggleClientAdmin = async (userId: string, isAdmin: boolean) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ is_client_admin: isAdmin })
+    .eq('id', userId)
+    .select()
+    .single();
+  
+  if (error) throw error;
+  
+  const actorId = await getCurrentUserId();
+  await logAudit(actorId, null, 'client_admin_toggled', {
+    user_id: userId,
+    is_admin: isAdmin,
+  });
+  
+  return data;
+};
+
+// Check if current user can manage target user
+export const canManageUser = async (targetUserId: string): Promise<boolean> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  
+  const { data, error } = await supabase.rpc('can_manage_client_user', {
+    _actor_id: user.id,
+    _target_user_id: targetUserId,
+  });
+  
+  if (error) {
+    console.error('Error checking user management permission:', error);
+    return false;
+  }
+  
+  return data === true;
+};
+
+// Fetch user permissions for a specific user
+export const fetchUserPermissions = async (userId: string, clientId: string) => {
+  const { data, error } = await supabase
+    .from('user_permissions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('client_id', clientId)
+    .order('module');
+  
+  if (error) throw error;
+  return data || [];
+};
+
+// Save user permissions
+export const saveUserPermissions = async (
+  userId: string,
+  clientId: string,
+  permissions: Array<{
+    module: string;
+    action: string;
+    decision: 'allow' | 'deny';
+    scope: 'global' | 'tenant' | 'site';
+  }>
+) => {
+  const actorId = await getCurrentUserId();
+  
+  // Delete existing permissions for this user
+  const { error: deleteError } = await supabase
+    .from('user_permissions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('client_id', clientId);
+  
+  if (deleteError) throw deleteError;
+  
+  // Insert new permissions
+  if (permissions.length > 0) {
+    const permissionsToInsert = permissions.map(p => ({
+      user_id: userId,
+      client_id: clientId,
+      module: p.module,
+      action: p.action,
+      decision: p.decision,
+      scope: p.scope,
+      created_by: actorId,
+    }));
+    
+    const { error: insertError } = await supabase
+      .from('user_permissions')
+      .insert(permissionsToInsert);
+    
+    if (insertError) throw insertError;
+  }
+  
+  await logAudit(actorId, clientId, 'user_permissions_updated', {
+    user_id: userId,
+    permissions_count: permissions.length,
+  });
+};
+
+// Get client user count and limit
+export const getClientUserStats = async (clientId: string) => {
+  const { data: client, error: clientError } = await supabase
+    .from('clients')
+    .select('max_users')
+    .eq('id', clientId)
+    .single();
+  
+  if (clientError) throw clientError;
+  
+  const { data: count, error: countError } = await supabase
+    .rpc('get_client_user_count', { _client_id: clientId });
+  
+  if (countError) throw countError;
+  
+  return {
+    current: count || 0,
+    max: client.max_users || 10,
+    canAdd: count < client.max_users,
+  };
 };
 
 export const createUserProfile = async (
