@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ExternalLink } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix for default marker icon in React Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
 
 interface LocationPickerProps {
   lat?: number | null;
@@ -10,28 +21,31 @@ interface LocationPickerProps {
   onLocationChange: (lat: number, lng: number) => void;
 }
 
+function MapClickHandler({ onLocationChange }: { onLocationChange: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click: (e) => {
+      onLocationChange(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
 export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerProps) {
-  const [latitude, setLatitude] = useState<string>(lat?.toString() || "");
-  const [longitude, setLongitude] = useState<string>(lng?.toString() || "");
+  const [position, setPosition] = useState<[number, number] | null>(
+    lat && lng ? [lat, lng] : null
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleLatChange = (value: string) => {
-    setLatitude(value);
-    const newLat = parseFloat(value);
-    const newLng = parseFloat(longitude);
-    if (!isNaN(newLat) && !isNaN(newLng)) {
-      onLocationChange(newLat, newLng);
+  useEffect(() => {
+    if (lat && lng) {
+      setPosition([lat, lng]);
     }
-  };
+  }, [lat, lng]);
 
-  const handleLngChange = (value: string) => {
-    setLongitude(value);
-    const newLat = parseFloat(latitude);
-    const newLng = parseFloat(value);
-    if (!isNaN(newLat) && !isNaN(newLng)) {
-      onLocationChange(newLat, newLng);
-    }
+  const handleLocationChange = (newLat: number, newLng: number) => {
+    setPosition([newLat, newLng]);
+    onLocationChange(newLat, newLng);
   };
 
   const handleSearch = async () => {
@@ -39,7 +53,6 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
     
     setIsSearching(true);
     try {
-      // Using Nominatim (OpenStreetMap) for geocoding - free and no API key required
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`
       );
@@ -48,9 +61,7 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
       if (data && data.length > 0) {
         const newLat = parseFloat(data[0].lat);
         const newLng = parseFloat(data[0].lon);
-        setLatitude(newLat.toFixed(6));
-        setLongitude(newLng.toFixed(6));
-        onLocationChange(newLat, newLng);
+        handleLocationChange(newLat, newLng);
       }
     } catch (error) {
       console.error("Erreur lors de la recherche:", error);
@@ -59,23 +70,8 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
     }
   };
 
-  const openInGoogleMaps = () => {
-    const lat = parseFloat(latitude);
-    const lng = parseFloat(longitude);
-    if (!isNaN(lat) && !isNaN(lng)) {
-      window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
-    }
-  };
-
-  const openInOpenStreetMap = () => {
-    const lat = parseFloat(latitude);
-    const lng = parseFloat(longitude);
-    if (!isNaN(lat) && !isNaN(lng)) {
-      window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=15`, '_blank');
-    }
-  };
-
-  const hasValidCoordinates = !isNaN(parseFloat(latitude)) && !isNaN(parseFloat(longitude));
+  const defaultCenter: [number, number] = [34.0, 9.0]; // Tunisia center
+  const defaultZoom = 7;
 
   return (
     <div className="space-y-4">
@@ -88,7 +84,7 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
         {/* Search box */}
         <div className="flex gap-2 mb-3">
           <Input
-            placeholder="Rechercher une adresse..."
+            placeholder="Rechercher une adresse en Tunisie..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -103,60 +99,51 @@ export function LocationPicker({ lat, lng, onLocationChange }: LocationPickerPro
           </Button>
         </div>
 
-        {/* Coordinates input */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="display_lat" className="text-xs">Latitude</Label>
-            <Input
-              id="display_lat"
-              type="number"
-              step="any"
-              value={latitude}
-              onChange={(e) => handleLatChange(e.target.value)}
-              placeholder="Ex: 36.8065"
+        {/* Interactive Map */}
+        <div className="h-[300px] rounded-md overflow-hidden border mb-3">
+          <MapContainer
+            center={position || defaultCenter}
+            zoom={position ? 12 : defaultZoom}
+            style={{ height: "100%", width: "100%" }}
+            key={position ? `${position[0]}-${position[1]}` : 'default'}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-          </div>
-          <div>
-            <Label htmlFor="display_lng" className="text-xs">Longitude</Label>
-            <Input
-              id="display_lng"
-              type="number"
-              step="any"
-              value={longitude}
-              onChange={(e) => handleLngChange(e.target.value)}
-              placeholder="Ex: 10.1815"
-            />
-          </div>
+            <MapClickHandler onLocationChange={handleLocationChange} />
+            {position && (
+              <Marker
+                position={position}
+                draggable={true}
+                eventHandlers={{
+                  dragend: (e) => {
+                    const marker = e.target;
+                    const pos = marker.getLatLng();
+                    handleLocationChange(pos.lat, pos.lng);
+                  },
+                }}
+              />
+            )}
+          </MapContainer>
         </div>
 
-        {/* View on map buttons */}
-        {hasValidCoordinates && (
-          <div className="flex gap-2 mt-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={openInGoogleMaps}
-              className="flex items-center gap-2"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Google Maps
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={openInOpenStreetMap}
-              className="flex items-center gap-2"
-            >
-              <ExternalLink className="h-3 w-3" />
-              OpenStreetMap
-            </Button>
+        {/* Coordinates display */}
+        {position && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Latitude</Label>
+              <p className="text-sm font-medium">{position[0].toFixed(6)}</p>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Longitude</Label>
+              <p className="text-sm font-medium">{position[1].toFixed(6)}</p>
+            </div>
           </div>
         )}
 
         <p className="text-xs text-muted-foreground mt-2">
-          Recherchez une adresse ou saisissez les coordonnées GPS manuellement
+          Cliquez sur la carte pour placer un marqueur ou faites-le glisser pour ajuster la position
         </p>
       </div>
     </div>

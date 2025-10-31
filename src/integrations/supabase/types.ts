@@ -633,6 +633,38 @@ export type Database = {
           },
         ]
       }
+      delegations: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          gouvernorat_id: string
+          id: string
+          nom: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          gouvernorat_id: string
+          id?: string
+          nom: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          gouvernorat_id?: string
+          id?: string
+          nom?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delegations_gouvernorat_id_fkey"
+            columns: ["gouvernorat_id"]
+            isOneToOne: false
+            referencedRelation: "gouvernorats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       domaines_reglementaires: {
         Row: {
           actif: boolean | null
@@ -905,6 +937,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gouvernorats: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          id: string
+          nom: string
+          pays: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          nom: string
+          pays?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          nom?: string
+          pays?: string | null
+        }
+        Relationships: []
       }
       med_documents: {
         Row: {

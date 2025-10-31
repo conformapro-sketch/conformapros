@@ -628,23 +628,11 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                     )}
                   />
                 </div>
-
-                <div>
-                  <Label htmlFor="ville">Ville</Label>
-                  <Input id="ville" {...register("ville")} />
-                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="code_postal">Code postal</Label>
-                  <Input id="code_postal" {...register("code_postal")} />
-                </div>
-
-                <div>
-                  <Label htmlFor="localite">Localité</Label>
-                  <Input id="localite" {...register("localite")} />
-                </div>
+              <div>
+                <Label htmlFor="code_postal">Code postal</Label>
+                <Input id="code_postal" {...register("code_postal")} />
               </div>
 
               <div className="flex items-center space-x-2 pt-2">
