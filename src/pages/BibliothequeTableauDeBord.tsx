@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -156,8 +156,8 @@ export default function BibliothequeTableauDeBord() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes les années</SelectItem>
-                  {uniqueYears.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  {uniqueYears.map((year: any) => (
+                    <SelectItem key={year} value={year.toString()}>{year as number}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -171,8 +171,8 @@ export default function BibliothequeTableauDeBord() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes les autorités</SelectItem>
-                  {uniqueAutorites.map(autorite => (
-                    <SelectItem key={autorite} value={autorite}>{autorite}</SelectItem>
+                  {uniqueAutorites.map((autorite: any) => (
+                    <SelectItem key={autorite} value={autorite as string}>{autorite as string}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

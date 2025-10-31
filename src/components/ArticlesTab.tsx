@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash2, GitBranch, Save, X, GitCompare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { articlesQueries, articleVersionsQueries } from "@/lib/actes-queries";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { Article } from "@/types/actes";
 import { ArticleVersionComparison } from "./ArticleVersionComparison";
 

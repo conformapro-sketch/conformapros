@@ -42,7 +42,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserPlus, Edit, Trash2, Key, CheckCircle, XCircle, Search, Shield } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 export default function GestionUtilisateurs() {
   const { toast } = useToast();

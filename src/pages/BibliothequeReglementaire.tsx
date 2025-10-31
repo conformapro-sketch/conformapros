@@ -110,7 +110,7 @@ export default function BibliothequeReglementaire() {
         .map((t: any) => t.annee)
         .filter((y): y is number => y !== null)
     )
-  ).sort((a, b) => b - a);
+  ).sort((a, b) => (b as number) - (a as number));
 
   const getStatutBadge = (statut: string) => {
     switch (statut) {
@@ -393,9 +393,9 @@ export default function BibliothequeReglementaire() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Toutes les années</SelectItem>
-                      {uniqueYears.map((year) => (
+                      {uniqueYears.map((year: any) => (
                         <SelectItem key={year} value={String(year)}>
-                          {year}
+                          {year as number}
                         </SelectItem>
                       ))}
                     </SelectContent>

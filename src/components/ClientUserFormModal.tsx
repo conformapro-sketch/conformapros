@@ -19,7 +19,7 @@ import { inviteClientUser, fetchSitesByClient, toggleUtilisateurActif } from "@/
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, Mail, User as UserIcon, Shield, Building2 } from "lucide-react";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 const userSchema = z.object({
   email: z.string().trim().email("Email invalide").min(1, "L'email est requis"),

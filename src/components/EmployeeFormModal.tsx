@@ -18,7 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Save, Plus, Pencil, Trash2 } from "lucide-react";
 import { createEmployee, updateEmployee, deleteEmployee, fetchEmployees } from "@/lib/medical-queries";
 import { useQuery as useSitesQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 

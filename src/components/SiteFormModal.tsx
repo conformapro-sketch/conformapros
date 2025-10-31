@@ -36,7 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Building2, Settings, AlertCircle, MapPin, Activity, Wrench } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useEffect, useState } from "react";
 import { LocationPicker } from "@/components/LocationPicker";
 

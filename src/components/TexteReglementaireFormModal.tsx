@@ -7,7 +7,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, domainesQueries } from "@/lib/textes-queries";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, FileText, X, Loader2 } from "lucide-react";
