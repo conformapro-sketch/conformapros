@@ -14,6 +14,8 @@ interface InviteUserRequest {
   siteIds?: string[]
   tenantId?: string
   is_client_admin?: boolean
+  password?: string
+  send_reset?: boolean
 }
 
 Deno.serve(async (req) => {
@@ -63,9 +65,9 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body: InviteUserRequest = await req.json()
-    const { email, nom, prenom, telephone, clientId, siteIds, tenantId, is_client_admin } = body
+    const { email, nom, prenom, telephone, clientId, siteIds, tenantId, is_client_admin, password, send_reset } = body
 
-    console.log('invite-client-user: Request data', { email, nom, prenom, clientId, is_client_admin })
+    console.log('invite-client-user: Request data', { email, nom, prenom, clientId, is_client_admin, hasPassword: !!password })
 
     // Validate required fields
     if (!email || !nom || !prenom || !clientId) {
@@ -108,6 +110,17 @@ Deno.serve(async (req) => {
       console.log('invite-client-user: User already exists', userExists.id)
       userId = userExists.id
 
+      // Update password if provided
+      if (password) {
+        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          { password }
+        )
+        if (passwordError) {
+          console.error('invite-client-user: Failed to update password', passwordError)
+        }
+      }
+
       // Upsert profile to handle case where auth user exists but profile doesn't
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
@@ -119,7 +132,8 @@ Deno.serve(async (req) => {
           is_client_admin: is_client_admin || false,
           nom,
           prenom,
-          telephone: telephone || null
+          telephone: telephone || null,
+          actif: true
         }, {
           onConflict: 'id'
         })
@@ -128,12 +142,12 @@ Deno.serve(async (req) => {
         console.error('invite-client-user: Failed to upsert profile', profileError)
       }
     } else {
-      // Create new user with auto-generated password
-      const tempPassword = crypto.randomUUID()
+      // Create new user with provided or auto-generated password
+      const userPassword = password || crypto.randomUUID()
       
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        password: tempPassword,
+        password: userPassword,
         email_confirm: true, // Auto-confirm email
         user_metadata: {
           nom,
@@ -161,7 +175,8 @@ Deno.serve(async (req) => {
           telephone: telephone || null,
           tenant_id: finalTenantId,
           managed_client_id: clientId,
-          is_client_admin: is_client_admin || false
+          is_client_admin: is_client_admin || false,
+          actif: true
         })
 
       if (profileError) {
@@ -169,14 +184,16 @@ Deno.serve(async (req) => {
         // Don't throw, user is already created
       }
 
-      // Send password reset email so user can set their own password
-      const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email
-      })
+      // Send password reset email if no password was set or if explicitly requested
+      if (!password || send_reset) {
+        const { error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'recovery',
+          email
+        })
 
-      if (resetError) {
-        console.error('invite-client-user: Failed to send reset email', resetError)
+        if (resetError) {
+          console.error('invite-client-user: Failed to send reset email', resetError)
+        }
       }
     }
 
@@ -208,9 +225,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Log audit trail
+    // Log audit trail to role_audit_logs
     const { error: auditError } = await supabaseAdmin
-      .from('audit_logs')
+      .from('role_audit_logs')
       .insert({
         user_id: callingUser.id,
         action: userExists ? 'user_updated' : 'user_invited',
@@ -223,7 +240,8 @@ Deno.serve(async (req) => {
           clientId,
           is_client_admin: is_client_admin || false,
           siteIds: siteIds || [],
-          tenantId: finalTenantId
+          tenantId: finalTenantId,
+          passwordSet: !!password
         },
         tenant_id: finalTenantId
       })
@@ -239,9 +257,11 @@ Deno.serve(async (req) => {
         success: true,
         userId,
         action: userExists ? 'updated' : 'created',
-        message: userExists 
-          ? 'User updated and assigned to client' 
-          : 'User invited successfully. They will receive an email to set their password.'
+        message: password
+          ? 'Utilisateur créé avec succès. Il peut se connecter avec le mot de passe défini.'
+          : userExists 
+            ? 'Utilisateur mis à jour et assigné au client' 
+            : 'Utilisateur invité avec succès. Il recevra un email pour définir son mot de passe.'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

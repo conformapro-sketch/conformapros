@@ -417,56 +417,31 @@ export const fetchAllClientUsers = async (filters?: {
 }) => {
   const page = filters?.page || 1;
   const pageSize = filters?.pageSize || 20;
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
 
-  let query = supabase
-    .from("profiles")
-    .select(`
-      *,
-      user_roles!left(
-        role_uuid,
-        roles(name, id, type)
-      ),
-      access_scopes(
-        site_id,
-        read_only,
-        sites(nom_site, client_id)
-      ),
-      clients!profiles_managed_client_id_fkey(
-        id,
-        nom,
-        nom_legal
-      )
-    `, { count: 'exact' })
-    .not("tenant_id", "is", null);
-
-  if (filters?.search) {
-    query = query.or(`nom.ilike.%${filters.search}%,prenom.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
-  }
-
-  if (filters?.clientId) {
-    query = query.eq("managed_client_id", filters.clientId);
-  }
-
-  if (filters?.status === "actif") {
-    query = query.eq("actif", true);
-  } else if (filters?.status === "inactif") {
-    query = query.eq("actif", false);
-  }
-
-  const { data, error, count } = await query
-    .order("nom")
-    .range(from, to);
+  const { data, error } = await supabase.rpc("get_all_client_users", {
+    search_term: filters?.search || null,
+    filter_client_id: filters?.clientId || null,
+    filter_status: filters?.status || null,
+    page_num: page,
+    page_size: pageSize,
+  });
 
   if (error) throw error;
-  
+
+  const results = data || [];
+  const totalCount = results[0]?.total_count || 0;
+
   return {
-    data: data || [],
-    count: count || 0,
+    data: results.map((row: any) => ({
+      ...row,
+      clients: row.client_data,
+      user_roles: row.roles_data,
+      access_scopes: row.sites_data,
+    })),
+    count: totalCount,
     page,
     pageSize,
-    totalPages: Math.ceil((count || 0) / pageSize),
+    totalPages: Math.ceil(totalCount / pageSize),
   };
 };
 
@@ -937,7 +912,9 @@ export const inviteClientUser = async (
   fullName: string,
   siteIds: string[],
   clientId: string,
-  isClientAdmin: boolean = false
+  isClientAdmin: boolean = false,
+  password?: string,
+  sendReset?: boolean
 ) => {
   try {
     // Parse name into nom and prenom
@@ -954,7 +931,9 @@ export const inviteClientUser = async (
         telephone: null,
         clientId,
         siteIds: siteIds || [],
-        is_client_admin: isClientAdmin
+        is_client_admin: isClientAdmin,
+        password: password || undefined,
+        send_reset: sendReset
       }
     });
 

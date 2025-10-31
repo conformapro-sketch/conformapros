@@ -27,7 +27,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllClientUsers, fetchClients, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
 import { ClientUserFormModal } from "@/components/ClientUserFormModal";
-import { UserPermissionDrawer } from "@/components/UserPermissionDrawer";
+import { ClientUserManagementDrawer } from "@/components/ClientUserManagementDrawer";
 import { useToast } from "@/hooks/use-toast";
 import {
   Tooltip,
@@ -464,11 +464,11 @@ export default function AllClientUsers() {
         user={editingUser}
       />
 
-      <UserPermissionDrawer
-        open={permissionDrawerOpen}
-        onOpenChange={setPermissionDrawerOpen}
-        user={selectedUserForPermissions}
-        clientId={selectedUserForPermissions?.managed_client_id || ""}
+      <ClientUserManagementDrawer
+        open={managementDrawerOpen}
+        onOpenChange={setManagementDrawerOpen}
+        user={selectedUser}
+        clientId={selectedUser?.managed_client_id || ""}
       />
     </div>
   );

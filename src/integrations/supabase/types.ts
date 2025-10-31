@@ -1365,6 +1365,7 @@ export type Database = {
       profiles: {
         Row: {
           actif: boolean
+          avatar_url: string | null
           created_at: string
           email: string
           id: string
@@ -1378,6 +1379,7 @@ export type Database = {
         }
         Insert: {
           actif?: boolean
+          avatar_url?: string | null
           created_at?: string
           email: string
           id: string
@@ -1391,6 +1393,7 @@ export type Database = {
         }
         Update: {
           actif?: boolean
+          avatar_url?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -2101,6 +2104,52 @@ export type Database = {
         }
         Relationships: []
       }
+      user_domain_scopes: {
+        Row: {
+          created_at: string
+          decision: Database["public"]["Enums"]["permission_decision"]
+          domaine_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: Database["public"]["Enums"]["permission_decision"]
+          domaine_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decision?: Database["public"]["Enums"]["permission_decision"]
+          domaine_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_domain_scopes_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_domain_scopes_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_domain_scopes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           action: string
@@ -2365,6 +2414,33 @@ export type Database = {
         Args: { _client_id: string }
         Returns: boolean
       }
+      get_all_client_users: {
+        Args: {
+          filter_client_id?: string
+          filter_status?: string
+          page_num?: number
+          page_size?: number
+          search_term?: string
+        }
+        Returns: {
+          actif: boolean
+          avatar_url: string
+          client_data: Json
+          created_at: string
+          email: string
+          id: string
+          is_client_admin: boolean
+          managed_client_id: string
+          nom: string
+          prenom: string
+          roles_data: Json
+          sites_data: Json
+          telephone: string
+          tenant_id: string
+          total_count: number
+          updated_at: string
+        }[]
+      }
       get_applicable_actes_for_site: {
         Args: { p_site_id: string }
         Returns: {
@@ -2426,6 +2502,10 @@ export type Database = {
           statut_vigueur: string
           type_acte: string
         }[]
+      }
+      set_user_domain_scopes: {
+        Args: { domaine_ids: string[]; target_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {

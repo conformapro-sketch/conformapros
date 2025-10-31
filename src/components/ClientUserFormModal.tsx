@@ -27,6 +27,10 @@ const userSchema = z.object({
   is_client_admin: z.boolean().default(false),
   siteIds: z.array(z.string()).default([]),
   actif: z.boolean().default(true),
+  password: z.string().optional().refine((val) => !val || val.length >= 8, {
+    message: "Le mot de passe doit contenir au moins 8 caractères"
+  }),
+  send_reset: z.boolean().default(true),
 });
 
 type UserFormData = z.infer<typeof userSchema>;
@@ -89,11 +93,14 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       actif: true,
       siteIds: [],
       is_client_admin: false,
+      password: "",
+      send_reset: true,
     },
   });
 
   const selectedClientId = watch("client_id");
   const selectedSiteIds = watch("siteIds");
+  const passwordValue = watch("password");
 
   // Fetch sites for the selected client
   const { data: sites = [] } = useQuery({
@@ -109,7 +116,9 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
         data.fullName,
         data.siteIds,
         data.client_id,
-        data.is_client_admin
+        data.is_client_admin,
+        data.password,
+        data.send_reset
       );
 
       if (result.error) {
@@ -216,6 +225,49 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
               <p className="text-sm text-destructive mt-1">{errors.fullName.message}</p>
             )}
           </div>
+
+          {/* Password fields - only for new users */}
+          {!user && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="password">Mot de passe (optionnel)</Label>
+                <Input 
+                  id="password" 
+                  type="password"
+                  {...register("password")} 
+                  placeholder="Minimum 8 caractères"
+                />
+                {errors.password && (
+                  <p className="text-sm text-destructive mt-1">{errors.password.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Si vous définissez un mot de passe, l'utilisateur pourra se connecter immédiatement.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
+                <div>
+                  <Label htmlFor="send_reset" className="cursor-pointer">
+                    Envoyer un email de réinitialisation
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    {passwordValue ? "L'utilisateur recevra un email pour changer son mot de passe" : "L'utilisateur recevra un email pour définir son mot de passe"}
+                  </p>
+                </div>
+                <Controller
+                  name="send_reset"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      id="send_reset"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Client Admin Toggle (Super Admin only) */}
           {isSuperAdmin && (
