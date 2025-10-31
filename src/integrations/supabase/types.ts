@@ -1900,7 +1900,6 @@ export type Database = {
           client_id: string | null
           created_at: string
           id: string
-          role: Database["public"]["Enums"]["app_role"]
           role_uuid: string | null
           site_scope: string[] | null
           user_id: string
@@ -1909,7 +1908,6 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
           role_uuid?: string | null
           site_scope?: string[] | null
           user_id: string
@@ -1918,7 +1916,6 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
           role_uuid?: string | null
           site_scope?: string[] | null
           user_id?: string
