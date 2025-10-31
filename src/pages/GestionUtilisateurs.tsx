@@ -137,14 +137,18 @@ export default function GestionUtilisateurs() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       usersQueries.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Utilisateur modifié avec succès');
-      setOpen(false);
-      setEditingUser(null);
-    },
     onError: (error: any) => {
-      toast.error('Erreur lors de la modification');
+      console.error('Error updating profile:', error);
+      toast.error('Erreur lors de la modification du profil');
+    },
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ userId, roleUuid }: { userId: string; roleUuid: string }) =>
+      usersQueries.updateRole(userId, roleUuid),
+    onError: (error: any) => {
+      console.error('Error updating role:', error);
+      toast.error('Erreur lors de la modification du rôle');
     },
   });
 
@@ -174,10 +178,35 @@ export default function GestionUtilisateurs() {
     );
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (editingUser) {
-      const { password, ...updateData } = formData;
-      updateMutation.mutate({ id: editingUser.id, data: updateData });
+      // Prevent changing Super Admin role (extra protection)
+      const currentRole = editingUser.user_roles?.[0]?.roles?.name;
+      if (currentRole === 'Super Admin' && formData.role_uuid !== editingUser.user_roles?.[0]?.role_uuid) {
+        toast.error('Impossible de modifier le rôle Super Admin');
+        return;
+      }
+      
+      const { password, role_uuid, ...profileData } = formData;
+      
+      try {
+        // Update profile
+        await updateMutation.mutateAsync({ id: editingUser.id, data: profileData });
+        
+        // Update role if changed
+        const currentRoleUuid = editingUser.user_roles?.[0]?.role_uuid;
+        if (role_uuid && role_uuid !== currentRoleUuid) {
+          await updateRoleMutation.mutateAsync({ userId: editingUser.id, roleUuid: role_uuid });
+        }
+        
+        toast.success('Utilisateur modifié avec succès');
+        queryClient.invalidateQueries({ queryKey: ['users'] });
+        setOpen(false);
+        setEditingUser(null);
+      } catch (error) {
+        console.error('Error updating user:', error);
+        // Errors are already handled by individual mutations
+      }
     } else {
       createMutation.mutate(formData);
     }
