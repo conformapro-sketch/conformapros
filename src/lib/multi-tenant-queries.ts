@@ -187,12 +187,9 @@ type SiteInsert = Database["public"]["Tables"]["sites"]["Insert"];
 type SiteUpdate = Database["public"]["Tables"]["sites"]["Update"];
 
 export const fetchSites = async () => {
-  const tenantId = await getCurrentTenantId();
-
   const { data, error } = await supabase
     .from("sites")
-    .select("*, clients(nom_legal)")
-    .eq("tenant_id", tenantId)
+    .select("*, clients!inner(nom_legal, tenant_id)")
     .order("nom_site");
   
   if (error) throw error;
@@ -200,13 +197,10 @@ export const fetchSites = async () => {
 };
 
 export const fetchSitesByClient = async (clientId: string) => {
-  const tenantId = await getCurrentTenantId();
-
   const { data, error } = await supabase
     .from("sites")
     .select("*")
     .eq("client_id", clientId)
-    .eq("tenant_id", tenantId)
     .order("nom_site");
   
   if (error) throw error;
@@ -214,13 +208,10 @@ export const fetchSitesByClient = async (clientId: string) => {
 };
 
 export const fetchSiteById = async (siteId: string) => {
-  const tenantId = await getCurrentTenantId();
-
   const { data, error } = await supabase
     .from("sites")
     .select("*, clients(nom_legal)")
     .eq("id", siteId)
-    .eq("tenant_id", tenantId)
     .single();
   
   if (error) throw error;
@@ -228,10 +219,8 @@ export const fetchSiteById = async (siteId: string) => {
 };
 
 export const createSite = async (site: SiteInsert) => {
-  const tenantId = await getCurrentTenantId();
   const payload: SiteInsert = {
     ...site,
-    tenant_id: tenantId,
     name: site.name ?? site.nom_site ?? `Site ${new Date().getTime()}`,
     is_billable: site.is_billable ?? true,
     is_active: site.is_active ?? true,

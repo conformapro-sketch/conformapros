@@ -485,56 +485,100 @@ export type Database = {
       clients: {
         Row: {
           adresse: string | null
+          adresse_siege: string | null
+          billing_mode: string | null
           code_postal: string | null
+          couleur_primaire: string | null
           created_at: string
+          currency: string | null
+          delegation: string | null
           email: string | null
+          gouvernorat: string | null
           id: string
+          is_active: boolean | null
           logo_url: string | null
           matricule_fiscale: string | null
           nom: string
           nom_legal: string | null
+          notes: string | null
           pays: string | null
+          rne_rc: string | null
+          secteur: string | null
           siret: string | null
+          site_web: string | null
           statut: string | null
           telephone: string | null
+          tenant_id: string | null
           updated_at: string
           ville: string | null
         }
         Insert: {
           adresse?: string | null
+          adresse_siege?: string | null
+          billing_mode?: string | null
           code_postal?: string | null
+          couleur_primaire?: string | null
           created_at?: string
+          currency?: string | null
+          delegation?: string | null
           email?: string | null
+          gouvernorat?: string | null
           id?: string
+          is_active?: boolean | null
           logo_url?: string | null
           matricule_fiscale?: string | null
           nom: string
           nom_legal?: string | null
+          notes?: string | null
           pays?: string | null
+          rne_rc?: string | null
+          secteur?: string | null
           siret?: string | null
+          site_web?: string | null
           statut?: string | null
           telephone?: string | null
+          tenant_id?: string | null
           updated_at?: string
           ville?: string | null
         }
         Update: {
           adresse?: string | null
+          adresse_siege?: string | null
+          billing_mode?: string | null
           code_postal?: string | null
+          couleur_primaire?: string | null
           created_at?: string
+          currency?: string | null
+          delegation?: string | null
           email?: string | null
+          gouvernorat?: string | null
           id?: string
+          is_active?: boolean | null
           logo_url?: string | null
           matricule_fiscale?: string | null
           nom?: string
           nom_legal?: string | null
+          notes?: string | null
           pays?: string | null
+          rne_rc?: string | null
+          secteur?: string | null
           siret?: string | null
+          site_web?: string | null
           statut?: string | null
           telephone?: string | null
+          tenant_id?: string | null
           updated_at?: string
           ville?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conformite: {
         Row: {
@@ -1656,6 +1700,27 @@ export type Database = {
         }
         Relationships: []
       }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          nom: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       textes_articles: {
         Row: {
           contenu: string
@@ -2000,6 +2065,7 @@ export type Database = {
           type_acte: string
         }[]
       }
+      get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_client_access: {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean

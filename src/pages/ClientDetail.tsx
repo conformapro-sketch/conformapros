@@ -158,7 +158,7 @@ export default function ClientDetail() {
               <CardContent className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-sm text-muted-foreground">Matricule fiscal</p>
-                  <p className="text-sm font-medium">{client.matricule_fiscal ?? "—"}</p>
+                  <p className="text-sm font-medium">{client.matricule_fiscale ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">RNE / RC</p>
@@ -171,6 +171,24 @@ export default function ClientDetail() {
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
                   <p className="text-sm font-medium">{client.email ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Site web</p>
+                  <p className="text-sm font-medium">
+                    {client.site_web ? (
+                      <a href={client.site_web} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        {client.site_web}
+                      </a>
+                    ) : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Mode de facturation</p>
+                  <p className="text-sm font-medium">
+                    {client.billing_mode === 'client' ? 'Client' : 
+                     client.billing_mode === 'site' ? 'Par site' : 
+                     client.billing_mode === 'hybrid' ? 'Hybride' : '—'}
+                  </p>
                 </div>
                 <div className="sm:col-span-2">
                   <p className="text-sm text-muted-foreground">Adresse du siège</p>

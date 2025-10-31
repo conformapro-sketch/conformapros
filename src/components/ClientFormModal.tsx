@@ -37,7 +37,7 @@ type ClientRow = Database["public"]["Tables"]["clients"]["Row"];
 const clientSchema = z.object({
   nom_legal: z.string().min(1, "Le nom légal est requis"),
   secteur: z.string().optional(),
-  matricule_fiscal: z.string().optional(),
+  matricule_fiscale: z.string().optional(),
   rne_rc: z.string().optional(),
   telephone: z.string().optional(),
   email: z.string().email("Format email invalide").optional().or(z.literal("")),
@@ -47,6 +47,7 @@ const clientSchema = z.object({
   delegation: z.string().optional(),
   code_postal: z.string().optional(),
   statut: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -319,8 +320,8 @@ const createMutation = useMutation({
                     </div>
 
                     <div>
-                      <Label htmlFor="matricule_fiscal">Matricule fiscal</Label>
-                      <Input id="matricule_fiscal" {...register("matricule_fiscal")} />
+                      <Label htmlFor="matricule_fiscale">Matricule fiscal</Label>
+                      <Input id="matricule_fiscale" {...register("matricule_fiscale")} />
                     </div>
 
                     <div>

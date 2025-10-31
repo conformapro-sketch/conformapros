@@ -66,7 +66,7 @@ export default function Clients() {
   const filteredClients = clients?.filter(client => {
     const matchesSearch = 
       client.nom_legal.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (client.matricule_fiscal && client.matricule_fiscal.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (client.matricule_fiscale && client.matricule_fiscale.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (client.rne_rc && client.rne_rc.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesStatut = statutFilter === "all" || client.statut === statutFilter;
@@ -134,8 +134,8 @@ export default function Clients() {
       const siteCount = getSitesCount(client.id);
       const billingMode = billingModeLabels[client.billing_mode ?? "client"] ?? "Client";
       return [
-        escapeValue(client.nom_legal || client.name || ""),
-        escapeValue(client.matricule_fiscal),
+        escapeValue(client.nom_legal || client.nom || ""),
+        escapeValue(client.matricule_fiscale),
         escapeValue(client.rne_rc),
         escapeValue(client.secteur),
         escapeValue(client.gouvernorat),
@@ -182,8 +182,8 @@ export default function Clients() {
         const siteCount = getSitesCount(client.id);
         const billingMode = billingModeLabels[client.billing_mode ?? "client"] ?? "Client";
         return `<tr>
-          <td>${client.nom_legal ?? client.name ?? ""}</td>
-          <td>${client.matricule_fiscal ?? ""}</td>
+          <td>${client.nom_legal ?? client.nom ?? ""}</td>
+          <td>${client.matricule_fiscale ?? ""}</td>
           <td>${client.rne_rc ?? ""}</td>
           <td>${client.secteur ?? ""}</td>
           <td>${client.gouvernorat ?? ""}</td>
@@ -403,7 +403,7 @@ export default function Clients() {
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg truncate">{client.nom_legal}</CardTitle>
                         <CardDescription className="text-xs mt-1">
-                          {client.rne_rc || client.matricule_fiscal || "Pas de rÃ©fÃ©rence"}
+                          {client.rne_rc || client.matricule_fiscale || "Pas de référence"}
                         </CardDescription>
                       </div>
                     </div>
