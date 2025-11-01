@@ -20,6 +20,7 @@ import {
   BookOpen,
   Leaf,
   Search,
+  Wrench,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo, type ComponentType } from "react";
@@ -98,6 +99,30 @@ const menuItems: MenuItem[] = [
       { title: "Analyse & Statistiques", url: "/incidents/analyse" },
       { title: "Incidents récurrents", url: "/incidents/recurrents" },
       { title: "Configuration", url: "/incidents/configuration" },
+    ],
+  },
+  {
+    title: "Équipements",
+    url: "/equipements",
+    icon: Wrench,
+    subItems: [
+      { title: "Tableau de bord", url: "/equipements/dashboard" },
+      { title: "Inventaire", url: "/equipements/inventaire" },
+      { title: "Contrôles techniques", url: "/controles" },
+      { title: "Maintenance", url: "/equipements/maintenance" },
+      { title: "Prestataires", url: "/equipements/prestataires" },
+    ],
+  },
+  {
+    title: "EPI",
+    url: "/epi",
+    icon: Shield,
+    subItems: [
+      { title: "Tableau de bord", url: "/epi/dashboard" },
+      { title: "Gestion du stock", url: "/epi/stock" },
+      { title: "Dotations employés", url: "/epi/dotations" },
+      { title: "Demandes EPI", url: "/epi/demandes" },
+      { title: "Base documentaire", url: "/epi/bibliotheque" },
     ],
   },
   { title: "Audits & Inspections", url: "/audits", icon: Search },

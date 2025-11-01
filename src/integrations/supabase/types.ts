@@ -877,11 +877,258 @@ export type Database = {
           },
         ]
       }
+      epi_articles: {
+        Row: {
+          code_article: string
+          created_at: string
+          date_attribution: string | null
+          date_mise_au_rebut: string | null
+          date_reception: string | null
+          employe_id: string | null
+          id: string
+          marque: string | null
+          modele: string | null
+          observations: string | null
+          site_id: string | null
+          statut: string | null
+          taille: string | null
+          type_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code_article: string
+          created_at?: string
+          date_attribution?: string | null
+          date_mise_au_rebut?: string | null
+          date_reception?: string | null
+          employe_id?: string | null
+          id?: string
+          marque?: string | null
+          modele?: string | null
+          observations?: string | null
+          site_id?: string | null
+          statut?: string | null
+          taille?: string | null
+          type_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code_article?: string
+          created_at?: string
+          date_attribution?: string | null
+          date_mise_au_rebut?: string | null
+          date_reception?: string | null
+          employe_id?: string | null
+          id?: string
+          marque?: string | null
+          modele?: string | null
+          observations?: string | null
+          site_id?: string | null
+          statut?: string | null
+          taille?: string | null
+          type_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epi_articles_employe_id_fkey"
+            columns: ["employe_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epi_articles_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epi_articles_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "epi_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epi_demandes: {
+        Row: {
+          created_at: string
+          date_demande: string | null
+          date_traitement: string | null
+          employe_id: string | null
+          id: string
+          motif: string | null
+          observations: string | null
+          quantite: number | null
+          site_id: string | null
+          statut: string | null
+          taille: string | null
+          traite_par: string | null
+          type_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_demande?: string | null
+          date_traitement?: string | null
+          employe_id?: string | null
+          id?: string
+          motif?: string | null
+          observations?: string | null
+          quantite?: number | null
+          site_id?: string | null
+          statut?: string | null
+          taille?: string | null
+          traite_par?: string | null
+          type_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_demande?: string | null
+          date_traitement?: string | null
+          employe_id?: string | null
+          id?: string
+          motif?: string | null
+          observations?: string | null
+          quantite?: number | null
+          site_id?: string | null
+          statut?: string | null
+          taille?: string | null
+          traite_par?: string | null
+          type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epi_demandes_employe_id_fkey"
+            columns: ["employe_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epi_demandes_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epi_demandes_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "epi_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epi_mouvements: {
+        Row: {
+          article_id: string | null
+          created_at: string
+          date_mouvement: string
+          effectue_par: string | null
+          employe_id: string | null
+          id: string
+          motif: string | null
+          quantite: number | null
+          type_mouvement: string
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string
+          date_mouvement?: string
+          effectue_par?: string | null
+          employe_id?: string | null
+          id?: string
+          motif?: string | null
+          quantite?: number | null
+          type_mouvement: string
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string
+          date_mouvement?: string
+          effectue_par?: string | null
+          employe_id?: string | null
+          id?: string
+          motif?: string | null
+          quantite?: number | null
+          type_mouvement?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epi_mouvements_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "epi_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epi_mouvements_employe_id_fkey"
+            columns: ["employe_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epi_types: {
+        Row: {
+          actif: boolean | null
+          categorie: string
+          code: string
+          created_at: string
+          description: string | null
+          duree_vie_moyenne_mois: number | null
+          fiche_technique_url: string | null
+          id: string
+          libelle: string
+          normes_certifications: Json | null
+          photo_url: string | null
+          specifications_techniques: Json | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean | null
+          categorie: string
+          code: string
+          created_at?: string
+          description?: string | null
+          duree_vie_moyenne_mois?: number | null
+          fiche_technique_url?: string | null
+          id?: string
+          libelle: string
+          normes_certifications?: Json | null
+          photo_url?: string | null
+          specifications_techniques?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean | null
+          categorie?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          duree_vie_moyenne_mois?: number | null
+          fiche_technique_url?: string | null
+          id?: string
+          libelle?: string
+          normes_certifications?: Json | null
+          photo_url?: string | null
+          specifications_techniques?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       equipements: {
         Row: {
+          cout_maintenance_annuel: number | null
           created_at: string
           date_mise_service: string | null
           derniere_verification: string | null
+          fichier_certificat_url: string | null
           id: string
           localisation: string | null
           marque: string | null
@@ -890,16 +1137,20 @@ export type Database = {
           numero_serie: string | null
           observations: string | null
           periodicite_mois: number | null
+          prestataire_id: string | null
           prochaine_verification: string | null
+          qr_code: string | null
           site_id: string
           statut: string | null
           type_equipement: string
           updated_at: string
         }
         Insert: {
+          cout_maintenance_annuel?: number | null
           created_at?: string
           date_mise_service?: string | null
           derniere_verification?: string | null
+          fichier_certificat_url?: string | null
           id?: string
           localisation?: string | null
           marque?: string | null
@@ -908,16 +1159,20 @@ export type Database = {
           numero_serie?: string | null
           observations?: string | null
           periodicite_mois?: number | null
+          prestataire_id?: string | null
           prochaine_verification?: string | null
+          qr_code?: string | null
           site_id: string
           statut?: string | null
           type_equipement: string
           updated_at?: string
         }
         Update: {
+          cout_maintenance_annuel?: number | null
           created_at?: string
           date_mise_service?: string | null
           derniere_verification?: string | null
+          fichier_certificat_url?: string | null
           id?: string
           localisation?: string | null
           marque?: string | null
@@ -926,7 +1181,9 @@ export type Database = {
           numero_serie?: string | null
           observations?: string | null
           periodicite_mois?: number | null
+          prestataire_id?: string | null
           prochaine_verification?: string | null
+          qr_code?: string | null
           site_id?: string
           statut?: string | null
           type_equipement?: string
@@ -2051,6 +2308,128 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prestataire_interventions: {
+        Row: {
+          commentaire: string | null
+          controle_id: string | null
+          cout: number | null
+          created_at: string
+          date_intervention: string
+          duree_heures: number | null
+          equipement_id: string | null
+          evaluation: number | null
+          id: string
+          prestataire_id: string | null
+          rapport_url: string | null
+          type_intervention: string
+        }
+        Insert: {
+          commentaire?: string | null
+          controle_id?: string | null
+          cout?: number | null
+          created_at?: string
+          date_intervention: string
+          duree_heures?: number | null
+          equipement_id?: string | null
+          evaluation?: number | null
+          id?: string
+          prestataire_id?: string | null
+          rapport_url?: string | null
+          type_intervention: string
+        }
+        Update: {
+          commentaire?: string | null
+          controle_id?: string | null
+          cout?: number | null
+          created_at?: string
+          date_intervention?: string
+          duree_heures?: number | null
+          equipement_id?: string | null
+          evaluation?: number | null
+          id?: string
+          prestataire_id?: string | null
+          rapport_url?: string | null
+          type_intervention?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prestataire_interventions_controle_id_fkey"
+            columns: ["controle_id"]
+            isOneToOne: false
+            referencedRelation: "equipements_controle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prestataire_interventions_controle_id_fkey"
+            columns: ["controle_id"]
+            isOneToOne: false
+            referencedRelation: "historique_controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prestataire_interventions_equipement_id_fkey"
+            columns: ["equipement_id"]
+            isOneToOne: false
+            referencedRelation: "equipements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prestataire_interventions_prestataire_id_fkey"
+            columns: ["prestataire_id"]
+            isOneToOne: false
+            referencedRelation: "prestataires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prestataires: {
+        Row: {
+          actif: boolean | null
+          adresse: string | null
+          certifications: Json | null
+          contact_email: string | null
+          contact_nom: string | null
+          contact_telephone: string | null
+          created_at: string
+          domaines_intervention: Json | null
+          evaluation_moyenne: number | null
+          id: string
+          nom: string
+          type_prestation: string | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean | null
+          adresse?: string | null
+          certifications?: Json | null
+          contact_email?: string | null
+          contact_nom?: string | null
+          contact_telephone?: string | null
+          created_at?: string
+          domaines_intervention?: Json | null
+          evaluation_moyenne?: number | null
+          id?: string
+          nom: string
+          type_prestation?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean | null
+          adresse?: string | null
+          certifications?: Json | null
+          contact_email?: string | null
+          contact_nom?: string | null
+          contact_telephone?: string | null
+          created_at?: string
+          domaines_intervention?: Json | null
+          evaluation_moyenne?: number | null
+          id?: string
+          nom?: string
+          type_prestation?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       preuves: {
         Row: {

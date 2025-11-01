@@ -20,9 +20,10 @@ const STATUT_EPI_LABELS = {
 
 interface EPITableProps {
   siteId?: string;
+  statusFilter?: string;
 }
 
-export default function EPITable({ siteId }: EPITableProps) {
+export default function EPITable({ siteId, statusFilter }: EPITableProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -31,8 +32,14 @@ export default function EPITable({ siteId }: EPITableProps) {
   const [articleToDelete, setArticleToDelete] = useState<string | null>(null);
 
   const { data: articles, isLoading } = useQuery({
-    queryKey: ["epi_articles", siteId],
-    queryFn: () => fetchEPIArticles(siteId),
+    queryKey: ["epi_articles", siteId, statusFilter],
+    queryFn: async () => {
+      const data = await fetchEPIArticles(siteId);
+      if (statusFilter) {
+        return data.filter((article: any) => article.statut === statusFilter);
+      }
+      return data;
+    },
   });
 
   const { data: stats } = useQuery({

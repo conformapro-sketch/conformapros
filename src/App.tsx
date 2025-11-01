@@ -41,6 +41,15 @@ import IncidentsDashboard from "./pages/IncidentsDashboard";
 import IncidentsAnalyse from "./pages/IncidentsAnalyse";
 import IncidentsRecurrents from "./pages/IncidentsRecurrents";
 import IncidentsConfiguration from "./pages/IncidentsConfiguration";
+import EPI from "./pages/EPI";
+import EPIDashboard from "./pages/EPIDashboard";
+import EPIDotations from "./pages/EPIDotations";
+import EPIDemandes from "./pages/EPIDemandes";
+import EPIBibliotheque from "./pages/EPIBibliotheque";
+import Equipements from "./pages/Equipements";
+import EquipementsDashboard from "./pages/EquipementsDashboard";
+import EquipementsMaintenance from "./pages/EquipementsMaintenance";
+import EquipementsPrestataires from "./pages/EquipementsPrestataires";
 import TextesReglementaires from "./pages/TextesReglementaires";
 import TexteDetail from "./pages/TexteDetail";
 import TexteForm from "./pages/TexteForm";
@@ -187,10 +196,25 @@ const App = () => (
                           <Route path="/dossier" element={<DossierReglementaire />} />
                           <Route path="/controles" element={<ControlesTechniques />} />
                           <Route path="/incidents" element={<Incidents />} />
-                          <Route path="/incidents/dashboard" element={<IncidentsDashboard />} />
-                          <Route path="/incidents/analyse" element={<IncidentsAnalyse />} />
-                          <Route path="/incidents/recurrents" element={<IncidentsRecurrents />} />
-                          <Route path="/incidents/configuration" element={<IncidentsConfiguration />} />
+            <Route path="/incidents/dashboard" element={<IncidentsDashboard />} />
+            <Route path="/incidents/analyse" element={<IncidentsAnalyse />} />
+            <Route path="/incidents/recurrents" element={<IncidentsRecurrents />} />
+            <Route path="/incidents/configuration" element={<IncidentsConfiguration />} />
+            
+            {/* EPI Routes */}
+            <Route path="/epi" element={<EPI />} />
+            <Route path="/epi/dashboard" element={<EPIDashboard />} />
+            <Route path="/epi/stock" element={<EPI />} />
+            <Route path="/epi/dotations" element={<EPIDotations />} />
+            <Route path="/epi/demandes" element={<EPIDemandes />} />
+            <Route path="/epi/bibliotheque" element={<EPIBibliotheque />} />
+            
+            {/* Equipements Routes */}
+            <Route path="/equipements" element={<Equipements />} />
+            <Route path="/equipements/dashboard" element={<EquipementsDashboard />} />
+            <Route path="/equipements/inventaire" element={<Equipements />} />
+            <Route path="/equipements/maintenance" element={<EquipementsMaintenance />} />
+            <Route path="/equipements/prestataires" element={<EquipementsPrestataires />} />
                           <Route path="/audits" element={<ComingSoon title="Audits & Inspections" description="Gestion des audits, inspections et checklists de conformité" />} />
               <Route path="/formations" element={<Formations />} />
               <Route path="/formations/dashboard" element={<FormationsDashboard />} />
