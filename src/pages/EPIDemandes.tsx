@@ -307,8 +307,16 @@ export default function EPIDemandes() {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      </div>
+        </CardContent>
+      </Card>
+
+      {selectedDemande && (
+        <EPIDemandeWorkflow
+          demande={selectedDemande}
+          open={isWorkflowOpen}
+          onOpenChange={setIsWorkflowOpen}
+        />
+      )}
+    </div>
   );
 }
