@@ -3,11 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import TopNavBar from "@/components/TopNavBar";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Layout } from "@/components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -113,172 +111,155 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<RootRedirect />} />
             
-            {/* Protected routes */}
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="flex min-h-screen w-full bg-background">
-                      <AppSidebar />
-                      <div className="flex flex-1 flex-col">
-                        <TopNavBar />
-                        <main className="flex-1 overflow-y-auto px-4 pb-8 pt-24 sm:px-6 lg:px-8">
-                        <Routes>
-                          <Route path="/dashboard" element={<Dashboard />} />
-                          <Route path="/profile" element={<UserProfile />} />
-                          <Route path="/clients" element={<Clients />} />
-                          <Route path="/clients/:id" element={<ClientDetail />} />
-                          <Route 
-                            path="/clients/utilisateurs" 
-                            element={
-                              <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
-                                <AllClientUsers />
-                              </ProtectedRoute>
-                            } 
-                          />
-                          <Route path="/client-users" element={<ClientUsers />} />
-                          <Route path="/clients/:clientId/users" element={<ClientUsers />} />
-                          <Route path="/sites" element={<Sites />} />
-                          <Route path="/sites/:id" element={<SiteDetail />} />
-                          <Route
-                            path="/abonnement"
-                            element={
-                              <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
-                                <Abonnement />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/facture"
-                            element={
-                              <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
-                                <Facture />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/devis"
-                            element={
-                              <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
-                                <Devis />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route
-                            path="/facture/avoir"
-                            element={
-                              <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
-                                <FactureAvoir />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route path="/actes" element={<TextesReglementaires />} />
-                          <Route path="/actes/nouveau" element={<TexteForm />} />
-                          <Route path="/actes/:id" element={<TexteDetail />} />
-                          <Route path="/actes/:id/editer" element={<TexteForm />} />
-                          <Route path="/actes/:acteId/articles/:articleId/versions" element={<ArticleVersions />} />
-                          {/* Legacy routes for backward compatibility */}
-                          <Route path="/textes" element={<TextesReglementaires />} />
-                          <Route path="/textes/nouveau" element={<TexteForm />} />
-                          <Route path="/textes/:id" element={<TexteDetail />} />
-                          <Route path="/textes/:id/editer" element={<TexteForm />} />
-                          <Route path="/bibliotheque" element={<BibliothequeNavigationTree />} />
-                          {/* legacy tableau-de-bord -> new dashbord path (client-side redirect) */}
-                          <Route path="/bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
-                          <Route path="/bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
-                          <Route path="/bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
-                          <Route path="/bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
-                          <Route path="/veille" element={<Navigate to="/veille/dashboard" replace />} />
-                          <Route path="/veille/dashboard" element={<VeilleDashboard />} />
-                          <Route path="/veille/applicabilite" element={<VeilleApplicabilite />} />
-                          <Route path="/veille/bibliotheque" element={<BibliothequeReglementaire />} />
-                          <Route path="/veille/bibliotheque-ancienne" element={<BibliothequeTextes />} />
-                          <Route path="/veille/bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
-                          <Route path="/veille/bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
-                          <Route path="/veille/bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
-                          {/* keep new canonical path /veille/bibliotheque/dashbord and redirect old one */}
-                          <Route path="/veille/bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
-                          <Route path="/veille/bibliotheque/dashbord" element={<BibliothequeTableauDeBord />} />
-                          <Route path="/veille/bibliotheque/recherche" element={<BibliothequeRechercheIntelligente />} />
-                          <Route path="/veille/evaluation" element={<ConformiteEvaluationNew />} />
-                          <Route path="/veille/evaluation-advanced" element={<VeilleEvaluation />} />
-                          <Route path="/veille/conformite" element={<Navigate to="/veille/evaluation" replace />} />
-                          <Route path="/veille/actions" element={<PlanAction />} />
-                          {/* Domaines moved under Bibliothèque: add new route and redirect old one */}
-                          <Route path="/veille/domaines" element={<Navigate to="/veille/bibliotheque/domain" replace />} />
-                          <Route path="/veille/bibliotheque/domain" element={<DomainesPage />} />
-                          <Route path="/veille/textes/:id/articles" element={<GestionArticles />} />
-                          <Route
-                            path="/utilisateurs"
-                            element={
-                              <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
-                                <GestionUtilisateurs />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route path="/roles" element={<GestionRoles />} />
-                          <Route path="/client-users" element={<ClientUsers />} />
-                          <Route path="/clients/:clientId/users" element={<ClientUsers />} />
-                          <Route path="/dossier" element={<DossierReglementaire />} />
-                          
-                          {/* Contrôles Routes */}
-                          <Route path="/controles" element={<Navigate to="/controles/dashboard" replace />} />
-                          <Route path="/controles/dashboard" element={<ControlesDashboard />} />
-                          <Route path="/controles/equipements" element={<ControlesEquipements />} />
-                          <Route path="/controles/planning" element={<ControlesPlanning />} />
-                          <Route path="/controles/historique" element={<ControlesHistorique />} />
-                          
-                          <Route path="/incidents" element={<Incidents />} />
-            <Route path="/incidents/dashboard" element={<IncidentsDashboard />} />
-            <Route path="/incidents/analyse" element={<IncidentsAnalyse />} />
-            <Route path="/incidents/recurrents" element={<IncidentsRecurrents />} />
-            <Route path="/incidents/configuration" element={<IncidentsConfiguration />} />
+            {/* Protected routes with Layout */}
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="clients" element={<Clients />} />
+              <Route path="clients/:id" element={<ClientDetail />} />
+              <Route 
+                path="clients/utilisateurs" 
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                    <AllClientUsers />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="client-users" element={<ClientUsers />} />
+              <Route path="clients/:clientId/users" element={<ClientUsers />} />
+              <Route path="sites" element={<Sites />} />
+              <Route path="sites/:id" element={<SiteDetail />} />
+              <Route
+                path="abonnement"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
+                    <Abonnement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="facture"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
+                    <Facture />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="devis"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
+                    <Devis />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="facture/avoir"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
+                    <FactureAvoir />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="actes" element={<TextesReglementaires />} />
+              <Route path="actes/nouveau" element={<TexteForm />} />
+              <Route path="actes/:id" element={<TexteDetail />} />
+              <Route path="actes/:id/editer" element={<TexteForm />} />
+              <Route path="actes/:acteId/articles/:articleId/versions" element={<ArticleVersions />} />
+              {/* Legacy routes for backward compatibility */}
+              <Route path="textes" element={<TextesReglementaires />} />
+              <Route path="textes/nouveau" element={<TexteForm />} />
+              <Route path="textes/:id" element={<TexteDetail />} />
+              <Route path="textes/:id/editer" element={<TexteForm />} />
+              <Route path="bibliotheque" element={<BibliothequeNavigationTree />} />
+              {/* legacy tableau-de-bord -> new dashbord path (client-side redirect) */}
+              <Route path="bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
+              <Route path="bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
+              <Route path="bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
+              <Route path="bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
+              <Route path="veille" element={<Navigate to="/veille/dashboard" replace />} />
+              <Route path="veille/dashboard" element={<VeilleDashboard />} />
+              <Route path="veille/applicabilite" element={<VeilleApplicabilite />} />
+              <Route path="veille/bibliotheque" element={<BibliothequeReglementaire />} />
+              <Route path="veille/bibliotheque-ancienne" element={<BibliothequeTextes />} />
+              <Route path="veille/bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
+              <Route path="veille/bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
+              <Route path="veille/bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
+              {/* keep new canonical path /veille/bibliotheque/dashbord and redirect old one */}
+              <Route path="veille/bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
+              <Route path="veille/bibliotheque/dashbord" element={<BibliothequeTableauDeBord />} />
+              <Route path="veille/bibliotheque/recherche" element={<BibliothequeRechercheIntelligente />} />
+              <Route path="veille/evaluation" element={<ConformiteEvaluationNew />} />
+              <Route path="veille/evaluation-advanced" element={<VeilleEvaluation />} />
+              <Route path="veille/conformite" element={<Navigate to="/veille/evaluation" replace />} />
+              <Route path="veille/actions" element={<PlanAction />} />
+              {/* Domaines moved under Bibliothèque: add new route and redirect old one */}
+              <Route path="veille/domaines" element={<Navigate to="/veille/bibliotheque/domain" replace />} />
+              <Route path="veille/bibliotheque/domain" element={<DomainesPage />} />
+              <Route path="veille/textes/:id/articles" element={<GestionArticles />} />
+              <Route
+                path="utilisateurs"
+                element={
+                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
+                    <GestionUtilisateurs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="roles" element={<GestionRoles />} />
+              <Route path="client-users" element={<ClientUsers />} />
+              <Route path="clients/:clientId/users" element={<ClientUsers />} />
+              <Route path="dossier" element={<DossierReglementaire />} />
+              
+              {/* Contrôles Routes */}
+              <Route path="controles" element={<Navigate to="/controles/dashboard" replace />} />
+              <Route path="controles/dashboard" element={<ControlesDashboard />} />
+              <Route path="controles/equipements" element={<ControlesEquipements />} />
+              <Route path="controles/planning" element={<ControlesPlanning />} />
+              <Route path="controles/historique" element={<ControlesHistorique />} />
+              
+              <Route path="incidents" element={<Incidents />} />
+              <Route path="incidents/dashboard" element={<IncidentsDashboard />} />
+              <Route path="incidents/analyse" element={<IncidentsAnalyse />} />
+              <Route path="incidents/recurrents" element={<IncidentsRecurrents />} />
+              <Route path="incidents/configuration" element={<IncidentsConfiguration />} />
+              
+              {/* EPI Routes */}
+              <Route path="epi" element={<EPI />} />
+              <Route path="epi/dashboard" element={<EPIDashboard />} />
+              <Route path="epi/stock" element={<EPI />} />
+              <Route path="epi/dotations" element={<EPIDotations />} />
+              <Route path="epi/demandes" element={<EPIDemandes />} />
+              <Route path="epi/bibliotheque" element={<EPIBibliotheque />} />
+              
+              {/* Equipements Routes */}
+              <Route path="equipements" element={<Equipements />} />
+              <Route path="equipements/dashboard" element={<EquipementsDashboard />} />
+              <Route path="equipements/inventaire" element={<Equipements />} />
+              <Route path="equipements/maintenance" element={<EquipementsMaintenance />} />
+              <Route path="equipements/prestataires" element={<EquipementsPrestataires />} />
+              <Route path="audits" element={<ComingSoon title="Audits & Inspections" description="Gestion des audits, inspections et checklists de conformité" />} />
+              <Route path="formations" element={<Formations />} />
+              <Route path="formations/dashboard" element={<FormationsDashboard />} />
+              <Route path="formations/planning" element={<FormationsPlanning />} />
+              <Route path="formations/participants" element={<FormationsParticipants />} />
+              <Route path="formations/documents" element={<FormationsDocuments />} />
+              
+              <Route path="environnement/dashboard" element={<EnvironnementDashboard />} />
+              <Route path="environnement/dechets" element={<EnvironnementDechets />} />
+              <Route path="environnement/surveillance" element={<EnvironnementSurveillance />} />
+              <Route path="environnement/points-limites" element={<EnvironnementPointsLimites />} />
+              <Route path="environnement/prestataires" element={<EnvironnementPrestataires />} />
+              
+              <Route path="visites-medicales" element={<VisitesMedicales />} />
+              <Route path="visites-medicales/planning" element={<VisitesMedicalesPlanification />} />
+              <Route path="visites-medicales/employe/:employeeId" element={<EmployeeSanteFiche />} />
+              
+              <Route path="prestataires" element={<ComingSoon title="Prestataires & Sous-traitants" description="Gestion des contrats et conformité des prestataires externes" />} />
+              <Route path="permis" element={<ComingSoon title="Permis de travail" description="Système électronique de permis de travail et accès visiteurs" />} />
+            </Route>
             
-            {/* EPI Routes */}
-            <Route path="/epi" element={<EPI />} />
-            <Route path="/epi/dashboard" element={<EPIDashboard />} />
-            <Route path="/epi/stock" element={<EPI />} />
-            <Route path="/epi/dotations" element={<EPIDotations />} />
-            <Route path="/epi/demandes" element={<EPIDemandes />} />
-            <Route path="/epi/bibliotheque" element={<EPIBibliotheque />} />
-            
-            {/* Equipements Routes */}
-            <Route path="/equipements" element={<Equipements />} />
-            <Route path="/equipements/dashboard" element={<EquipementsDashboard />} />
-            <Route path="/equipements/inventaire" element={<Equipements />} />
-            <Route path="/equipements/maintenance" element={<EquipementsMaintenance />} />
-            <Route path="/equipements/prestataires" element={<EquipementsPrestataires />} />
-                          <Route path="/audits" element={<ComingSoon title="Audits & Inspections" description="Gestion des audits, inspections et checklists de conformité" />} />
-              <Route path="/formations" element={<Formations />} />
-              <Route path="/formations/dashboard" element={<FormationsDashboard />} />
-              <Route path="/formations/planning" element={<FormationsPlanning />} />
-              <Route path="/formations/participants" element={<FormationsParticipants />} />
-              <Route path="/formations/documents" element={<FormationsDocuments />} />
-              
-              <Route path="/environnement/dashboard" element={<EnvironnementDashboard />} />
-              <Route path="/environnement/dechets" element={<EnvironnementDechets />} />
-              <Route path="/environnement/surveillance" element={<EnvironnementSurveillance />} />
-              <Route path="/environnement/points-limites" element={<EnvironnementPointsLimites />} />
-              <Route path="/environnement/prestataires" element={<EnvironnementPrestataires />} />
-              
-              <Route path="/visites-medicales" element={<VisitesMedicales />} />
-              <Route path="/visites-medicales/planning" element={<VisitesMedicalesPlanification />} />
-              <Route path="/visites-medicales/employe/:employeeId" element={<EmployeeSanteFiche />} />
-              
-              <Route path="/epi" element={<ComingSoon title="EPI & Équipements" description="Registre des équipements de protection individuelle et dotations" />} />
-                          <Route path="/prestataires" element={<ComingSoon title="Prestataires & Sous-traitants" description="Gestion des contrats et conformité des prestataires externes" />} />
-                          <Route path="/permis" element={<ComingSoon title="Permis de travail" description="Système électronique de permis de travail et accès visiteurs" />} />
-                          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </main>
-                    </div>
-                  </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
+            {/* Catch-all 404 */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>
