@@ -103,29 +103,48 @@ export default function UserProfile() {
     mutationFn: async (file: File) => {
       if (!user?.id) throw new Error("User not authenticated");
       
-      // Upload to Supabase Storage
+      // 1. Delete old avatar if exists
+      if (profile?.avatar_url) {
+        try {
+          const oldPath = profile.avatar_url.split('/').slice(-2).join('/');
+          await supabase.storage.from('avatars').remove([oldPath]);
+        } catch (error) {
+          console.warn("Could not delete old avatar:", error);
+        }
+      }
+      
+      // 2. Upload new avatar
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `avatar-${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { 
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw new Error(`Erreur d'upload: ${uploadError.message}`);
+      }
 
-      // Get public URL
+      // 3. Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Update profile with new avatar URL
+      // 4. Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        throw new Error(`Erreur de mise à jour: ${updateError.message}`);
+      }
 
       return publicUrl;
     },
@@ -136,6 +155,7 @@ export default function UserProfile() {
       setAvatarPreview(null);
     },
     onError: (error: any) => {
+      console.error("Avatar upload failed:", error);
       toast.error(error.message || "Erreur lors de l'upload de l'avatar");
     },
   });
@@ -144,19 +164,36 @@ export default function UserProfile() {
   const deleteAvatarMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("User not authenticated");
+      if (!profile?.avatar_url) throw new Error("No avatar to delete");
       
-      const { error } = await supabase
+      // 1. Delete from storage
+      try {
+        const filePath = profile.avatar_url.split('/').slice(-2).join('/');
+        const { error: storageError } = await supabase.storage
+          .from('avatars')
+          .remove([filePath]);
+        
+        if (storageError) {
+          console.warn("Storage deletion error:", storageError);
+        }
+      } catch (error) {
+        console.warn("Could not delete from storage:", error);
+      }
+      
+      // 2. Update profile (remove avatar_url)
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       toast.success("Avatar supprimé avec succès");
     },
     onError: (error: any) => {
+      console.error("Avatar deletion failed:", error);
       toast.error(error.message || "Erreur lors de la suppression de l'avatar");
     },
   });
@@ -171,9 +208,10 @@ export default function UserProfile() {
       return;
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error("Le fichier doit être une image");
+    // Validate file type with allowed MIME types
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Format non supporté. Utilisez JPG, PNG, WEBP ou GIF");
       return;
     }
 
@@ -255,19 +293,31 @@ export default function UserProfile() {
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
-              <label
-                htmlFor="avatar-upload"
-                className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-              >
-                <Camera className="h-6 w-6 text-white" />
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
-              </label>
+              
+              {/* Show loader during upload */}
+              {uploadAvatarMutation.isPending && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              )}
+              
+              {/* Upload overlay */}
+              {!uploadAvatarMutation.isPending && (
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                >
+                  <Camera className="h-6 w-6 text-white" />
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                    disabled={uploadAvatarMutation.isPending}
+                  />
+                </label>
+              )}
             </div>
 
             {/* User Info */}
