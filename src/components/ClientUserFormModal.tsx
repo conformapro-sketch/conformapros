@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,14 +85,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     reset,
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: user ? {
-      client_id: user.client_id || effectiveClientId || "",
-      email: user.email || "",
-      fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
-      is_client_admin: user.is_client_admin || false,
-      siteIds: user.access_scopes?.map((as: any) => as.site_id) || [],
-      actif: user.actif ?? true,
-    } : {
+    defaultValues: {
       client_id: effectiveClientId || "",
       actif: true,
       siteIds: [],
@@ -100,6 +94,37 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       send_reset: true,
     },
   });
+
+  // Reset form when user data changes or modal opens
+  React.useEffect(() => {
+    if (open) {
+      if (user) {
+        // Editing existing user - populate form with user data
+        reset({
+          client_id: user.client_id || effectiveClientId || "",
+          email: user.email || "",
+          fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
+          is_client_admin: user.is_client_admin || false,
+          siteIds: user.sites_data?.map((site: any) => site.id) || [],
+          actif: user.actif ?? true,
+          password: "",
+          send_reset: true,
+        });
+      } else {
+        // Creating new user - reset to empty form
+        reset({
+          client_id: effectiveClientId || "",
+          email: "",
+          fullName: "",
+          actif: true,
+          siteIds: [],
+          is_client_admin: false,
+          password: "",
+          send_reset: true,
+        });
+      }
+    }
+  }, [open, user, effectiveClientId, reset]);
 
   const selectedClientId = watch("client_id");
   const selectedSiteIds = watch("siteIds");
