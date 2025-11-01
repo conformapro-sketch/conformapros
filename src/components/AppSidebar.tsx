@@ -1,29 +1,13 @@
 import {
-  LayoutDashboard,
-  FileText,
-  ClipboardCheck,
-  AlertTriangle,
-  ShieldCheck,
-  GraduationCap,
-  HardHat,
-  Users,
-  FileCheck,
   Menu,
-  Library,
   ChevronDown,
-  FolderOpen,
   Settings,
   UserCog,
   Shield,
-  Stethoscope,
-  Bell,
-  BookOpen,
-  Leaf,
-  Search,
-  Wrench,
+  Loader2,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { useState, useEffect, useMemo, type ComponentType } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -46,122 +30,8 @@ import {
 } from "@/components/ui/collapsible";
 import conformaProLogo from "@/assets/conforma-pro-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
-
-const BILLING_MANAGER_ROLES = ["super_admin", "admin_global", "billing_manager"];
-const CLIENT_MODULE_TITLE = "Gestion des clients";
-const BIBLIOTHEQUE_TITLE = "Bibliothèque réglementaire";
-
-interface SubMenuItem {
-  title: string;
-  url: string;
-  allowedRoles?: string[];
-}
-
-interface MenuItem {
-  title: string;
-  url?: string;
-  icon: ComponentType<{ className?: string }>;
-  subItems?: SubMenuItem[];
-}
-
-const menuItems: MenuItem[] = [
-  { title: "Tableau de bord", url: "/dashboard", icon: LayoutDashboard },
-  {
-    title: BIBLIOTHEQUE_TITLE,
-    icon: Library,
-    subItems: [
-      { title: "Tableau de bord", url: "/veille/bibliotheque/dashbord" },
-      { title: "Domaines", url: "/veille/bibliotheque/domain" },
-      { title: "Textes & articles", url: "/veille/bibliotheque/" },
-      { title: "Recherche intelligente", url: "/veille/bibliotheque/recherche" },
-    ],
-  },
-  {
-    title: "Veille réglementaire",
-    icon: Bell,
-    subItems: [
-      { title: "Tableau de bord", url: "/veille/dashboard" },
-      { title: "Applicabilité", url: "/veille/applicabilite" },
-      { title: "Matrice d'applicabilité", url: "/veille/matrice" },
-      { title: "Évaluation conformité", url: "/veille/evaluation" },
-      { title: "Plan d'action", url: "/veille/actions" },
-    ],
-  },
-  { title: "Dossier réglementaire", url: "/dossier", icon: BookOpen },
-  { title: "Contrôles techniques", url: "/controles", icon: ClipboardCheck },
-  {
-    title: "Incidents HSE",
-    url: "/incidents",
-    icon: AlertTriangle,
-    subItems: [
-      { title: "Tableau de bord", url: "/incidents/dashboard" },
-      { title: "Liste des incidents", url: "/incidents" },
-      { title: "Analyse & Statistiques", url: "/incidents/analyse" },
-      { title: "Incidents récurrents", url: "/incidents/recurrents" },
-      { title: "Configuration", url: "/incidents/configuration" },
-    ],
-  },
-  {
-    title: "Équipements",
-    url: "/equipements",
-    icon: Wrench,
-    subItems: [
-      { title: "Tableau de bord", url: "/equipements/dashboard" },
-      { title: "Inventaire", url: "/equipements/inventaire" },
-      { title: "Contrôles techniques", url: "/controles" },
-      { title: "Maintenance", url: "/equipements/maintenance" },
-      { title: "Prestataires", url: "/equipements/prestataires" },
-    ],
-  },
-  {
-    title: "EPI",
-    url: "/epi",
-    icon: Shield,
-    subItems: [
-      { title: "Tableau de bord", url: "/epi/dashboard" },
-      { title: "Gestion du stock", url: "/epi/stock" },
-      { title: "Dotations employés", url: "/epi/dotations" },
-      { title: "Demandes EPI", url: "/epi/demandes" },
-      { title: "Base documentaire", url: "/epi/bibliotheque" },
-    ],
-  },
-  { title: "Audits & Inspections", url: "/audits", icon: Search },
-  {
-    title: "Formations",
-    icon: GraduationCap,
-    subItems: [
-      { title: "Tableau de bord", url: "/formations/dashboard" },
-      { title: "Registre des formations", url: "/formations" },
-      { title: "Planification", url: "/formations/planning" },
-      { title: "Participants", url: "/formations/participants" },
-      { title: "Certificats & Documents", url: "/formations/documents" },
-    ],
-  },
-  {
-    title: "Visites médicales",
-    icon: Stethoscope,
-    subItems: [
-      { title: "Liste des visites", url: "/visites-medicales" },
-      { title: "Planning", url: "/visites-medicales/planning" },
-    ],
-  },
-  { title: "EPI & Équipements", url: "/epi", icon: HardHat },
-  { title: "Prestataires", url: "/prestataires", icon: Users },
-  { title: "Permis de travail", url: "/permis", icon: FileCheck },
-  {
-    title: CLIENT_MODULE_TITLE,
-    icon: FolderOpen,
-    subItems: [
-      { title: "Clients", url: "/clients" },
-      { title: "Sites", url: "/sites" },
-      { title: "Utilisateurs client", url: "/clients/utilisateurs" },
-      { title: "Devis", url: "/devis", allowedRoles: BILLING_MANAGER_ROLES },
-      { title: "Facture", url: "/facture", allowedRoles: BILLING_MANAGER_ROLES },
-      { title: "Facture avoir", url: "/facture-avoir", allowedRoles: BILLING_MANAGER_ROLES },
-      { title: "Abonnement", url: "/abonnement", allowedRoles: BILLING_MANAGER_ROLES },
-    ],
-  },
-];
+import { useUserModules } from "@/hooks/useUserModules";
+import { buildNavigationFromModules, findActiveModule, type MenuItem } from "@/lib/module-navigation-map";
 
 const administrationItems: MenuItem[] = [
   { title: "Gestion du staff", url: "/utilisateurs", icon: UserCog },
@@ -173,63 +43,20 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const [openItems, setOpenItems] = useState<string[]>([]);
   const location = useLocation();
-  const { userRoles, userRole } = useAuth();
-
-  const effectiveRoles = userRoles.length > 0 ? userRoles : userRole ? [userRole] : [];
+  const { data: modules, isLoading } = useUserModules();
 
   const navigationItems = useMemo(() => {
-    return menuItems.map((item) => {
-      if (!item.subItems) {
-        return item;
-      }
+    if (!modules) return [];
+    return buildNavigationFromModules(modules);
+  }, [modules]);
 
-      const filteredSubItems = item.subItems.filter((subItem) => {
-        if (!subItem.allowedRoles || subItem.allowedRoles.length === 0) {
-          return true;
-        }
-        return effectiveRoles.some((role) => subItem.allowedRoles?.includes(role));
-      });
-
-      return { ...item, subItems: filteredSubItems };
-    });
-  }, [effectiveRoles]);
-
-  // Open Veille submenu when on veille routes
+  // Auto-open the submenu containing the active route
   useEffect(() => {
-    if (location.pathname.startsWith("/veille")) {
-      setOpenItems((prev) =>
-        prev.includes("Veille Réglementaire") ? prev : [...prev, "Veille Réglementaire"],
-      );
-    }
-  }, [location.pathname]);
-
-  // Open Formations submenu when on formations routes
-  useEffect(() => {
-    if (location.pathname.startsWith("/formations")) {
-      setOpenItems((prev) =>
-        prev.includes("Formations") ? prev : [...prev, "Formations"],
-      );
-    }
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const clientModule = navigationItems.find(
-      (item) => item.title === CLIENT_MODULE_TITLE && item.subItems && item.subItems.length > 0,
-    );
-
-    if (!clientModule?.subItems) {
-      return;
-    }
-
-    const matchesClientRoute = clientModule.subItems.some((subItem) => {
-      const base = subItem.url;
-      return location.pathname === base || location.pathname.startsWith(`${base}/`);
-    });
-
-    if (matchesClientRoute) {
-      setOpenItems((prev) =>
-        prev.includes(CLIENT_MODULE_TITLE) ? prev : [...prev, CLIENT_MODULE_TITLE],
-      );
+    const activeModule = findActiveModule(location.pathname, navigationItems);
+    
+    if (activeModule && !openItems.includes(activeModule)) {
+      // Close all other items and open only the active one
+      setOpenItems([activeModule]);
     }
   }, [location.pathname, navigationItems]);
 
@@ -262,8 +89,13 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => {
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <SidebarMenu>
+                {navigationItems.map((item) => {
                 const subItems = item.subItems ?? [];
                 const hasSubItems = item.subItems !== undefined;
                 const isOpen = openItems.includes(item.title);
@@ -334,9 +166,10 @@ export function AppSidebar() {
                       )}
                     </SidebarMenuItem>
                   </Collapsible>
-                );
-              })}
-            </SidebarMenu>
+                  );
+                })}
+              </SidebarMenu>
+            )}
           </SidebarGroupContent>
         </SidebarGroup>
 
