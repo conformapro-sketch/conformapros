@@ -55,7 +55,7 @@ const administrationItems: MenuItem[] = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [openItems, setOpenItems] = useState<string[]>([]);
   const location = useLocation();
@@ -153,7 +153,7 @@ export function AppSidebar() {
                               <HoverCardContent 
                                 side="right" 
                                 align="start"
-                                className="w-56 bg-sidebar-background border-sidebar-border shadow-strong ml-2"
+                                className="w-56 bg-popover text-popover-foreground border-2 border-sidebar-primary/20 shadow-strong ml-2"
                               >
                                 <div className="space-y-1">
                                   <h4 className="font-semibold text-sidebar-primary mb-2 flex items-center gap-2">
@@ -246,7 +246,7 @@ export function AppSidebar() {
                               <HoverCardContent 
                                 side="right" 
                                 align="center"
-                                className="w-auto bg-sidebar-background border-sidebar-border shadow-medium ml-2 px-3 py-2"
+                                className="w-auto bg-popover text-popover-foreground border-2 border-sidebar-primary/20 shadow-medium ml-2 px-3 py-2"
                               >
                                 <span className="text-sm font-medium text-sidebar-foreground">
                                   {item.title}
@@ -313,7 +313,7 @@ export function AppSidebar() {
                         <HoverCardContent 
                           side="right" 
                           align="center"
-                          className="w-auto bg-sidebar-background border-sidebar-border shadow-medium ml-2 px-3 py-2"
+                          className="w-auto bg-popover text-popover-foreground border-2 border-sidebar-primary/20 shadow-medium ml-2 px-3 py-2"
                         >
                           <span className="text-sm font-medium text-sidebar-foreground">
                             {item.title}
@@ -344,6 +344,17 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
+
+      {/* Bouton flottant pour réouvrir la sidebar en mode collapsed */}
+      {isCollapsed && (
+        <button
+          onClick={() => toggleSidebar()}
+          className="fixed bottom-4 left-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground shadow-strong hover:shadow-brand sidebar-hover"
+          aria-label="Ouvrir le menu"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      )}
     </Sidebar>
   );
 }
