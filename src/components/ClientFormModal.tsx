@@ -497,7 +497,7 @@ const createMutation = useMutation({
                             />
                           </div>
                         )}
-                        <div className="flex-1">
+                        <div className="flex-1 space-y-2">
                           <input
                             ref={fileInputRef}
                             type="file"
@@ -505,25 +505,37 @@ const createMutation = useMutation({
                             className="hidden"
                             onChange={handleLogoUpload}
                           />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                          >
-                            {uploading ? (
-                              <>
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
-                                Téléchargement...
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-4 w-4 mr-2" />
-                                {client?.logo_url ? 'Changer le logo' : 'Télécharger un logo'}
-                              </>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploading}
+                            >
+                              {uploading ? (
+                                <>
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                                  Téléchargement...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="h-4 w-4 mr-2" />
+                                  {client?.logo_url ? 'Changer le logo' : 'Télécharger un logo'}
+                                </>
+                              )}
+                            </Button>
+                            {client?.logo_url && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setValue("logo_url", "")}
+                              >
+                                Supprimer
+                              </Button>
                             )}
-                          </Button>
-                          <p className="text-xs text-muted-foreground mt-2">
+                          </div>
+                          <p className="text-xs text-muted-foreground">
                             Format: PNG, JPG, SVG. Taille max: 2 Mo
                           </p>
                         </div>
@@ -532,24 +544,26 @@ const createMutation = useMutation({
 
                     <div>
                       <Label htmlFor="couleur_primaire">Couleur primaire de la marque</Label>
-                      <div className="flex gap-2 items-center mt-2">
+                      <div className="flex gap-3 items-center mt-2">
+                        <div
+                          className="w-12 h-12 rounded-lg border-2 border-border shadow-sm transition-all"
+                          style={{ backgroundColor: client?.couleur_primaire || "#3b82f6" }}
+                        />
                         <Input
                           id="couleur_primaire"
                           type="color"
                           {...register("couleur_primaire")}
                           defaultValue={client?.couleur_primaire || "#3b82f6"}
-                          className="w-20 h-10 p-1 cursor-pointer"
+                          className="w-24 h-12 p-1 cursor-pointer"
                         />
                         <Input
                           type="text"
                           {...register("couleur_primaire")}
                           placeholder="#3b82f6"
-                          className="flex-1"
+                          defaultValue={client?.couleur_primaire || "#3b82f6"}
+                          className="flex-1 font-mono uppercase"
                           maxLength={7}
-                        />
-                        <div
-                          className="w-10 h-10 rounded-md border border-border"
-                          style={{ backgroundColor: client?.couleur_primaire || "#3b82f6" }}
+                          pattern="^#[0-9A-Fa-f]{6}$"
                         />
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
