@@ -347,7 +347,7 @@ export default function UserProfile() {
               {primaryRole && (
                 <Badge variant="secondary" className="w-fit">
                   <Shield className="h-3 w-3 mr-1" />
-                  {getRoleLabel(String(primaryRole))}
+                  {getRoleLabel(primaryRole.name)}
                 </Badge>
               )}
               {profile?.created_at && (
