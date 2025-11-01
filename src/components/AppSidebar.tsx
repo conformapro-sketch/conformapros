@@ -10,6 +10,7 @@ import {
   Receipt,
   FileCheck,
   Users,
+  ChevronRight,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
@@ -33,6 +34,11 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import conformaProLogo from "@/assets/conforma-pro-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserModules } from "@/hooks/useUserModules";
@@ -81,27 +87,38 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
-      <div className="flex items-center justify-between border-b border-sidebar-border p-4">
+    <Sidebar 
+      className={`sidebar-transition shadow-strong ${isCollapsed ? "w-16" : "w-64"}`} 
+      collapsible="icon"
+    >
+      <div className="flex items-center justify-between border-b border-sidebar-border p-4 sidebar-transition">
         {!isCollapsed ? (
-          <div className="flex items-center gap-2">
-            <img src={conformaProLogo} alt="Conforma Pro" className="h-8 w-auto" />
+          <div className="flex items-center gap-2 sidebar-transition">
+            <img 
+              src={conformaProLogo} 
+              alt="Conforma Pro" 
+              className="h-8 w-auto sidebar-transition" 
+            />
           </div>
         ) : (
           <div className="flex w-full items-center justify-center">
-            <img src={conformaProLogo} alt="Conforma Pro" className="h-6 w-6 object-contain" />
+            <img 
+              src={conformaProLogo} 
+              alt="Conforma Pro" 
+              className="h-8 w-8 object-contain sidebar-transition" 
+            />
           </div>
         )}
-        {!isCollapsed && (
-          <SidebarTrigger>
-            <Menu className="h-5 w-5" />
-          </SidebarTrigger>
-        )}
+        <SidebarTrigger className={`sidebar-hover ${isCollapsed ? "mx-auto" : ""}`}>
+          <Menu className="h-5 w-5" />
+        </SidebarTrigger>
       </div>
 
-      <SidebarContent>
+      <SidebarContent className="sidebar-scrollbar">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel className="sidebar-transition">
+            {!isCollapsed && "Navigation"}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             {isLoading ? (
               <div className="flex items-center justify-center p-8">
@@ -123,60 +140,138 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                       {hasSubItems ? (
                         <>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton aria-expanded={isOpen}>
-                              <item.icon className="h-4 w-4" />
-                              {!isCollapsed && (
-                                <>
+                          {isCollapsed ? (
+                            <HoverCard openDelay={100} closeDelay={100}>
+                              <HoverCardTrigger asChild>
+                                <SidebarMenuButton 
+                                  className="sidebar-hover justify-center"
+                                  aria-label={item.title}
+                                >
+                                  <item.icon className="h-6 w-6" />
+                                </SidebarMenuButton>
+                              </HoverCardTrigger>
+                              <HoverCardContent 
+                                side="right" 
+                                align="start"
+                                className="w-56 bg-sidebar-background border-sidebar-border shadow-strong ml-2"
+                              >
+                                <div className="space-y-1">
+                                  <h4 className="font-semibold text-sidebar-primary mb-2 flex items-center gap-2">
+                                    <item.icon className="h-4 w-4" />
+                                    {item.title}
+                                  </h4>
+                                  <div className="space-y-1">
+                                    {subItems.map((subItem) => (
+                                      <NavLink
+                                        key={subItem.url}
+                                        to={subItem.url}
+                                        className={({ isActive }) =>
+                                          `block px-3 py-2 text-sm rounded-md sidebar-hover ${
+                                            isActive
+                                              ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                                              : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                                          }`
+                                        }
+                                      >
+                                        {subItem.title}
+                                      </NavLink>
+                                    ))}
+                                  </div>
+                                </div>
+                              </HoverCardContent>
+                            </HoverCard>
+                          ) : (
+                            <>
+                              <CollapsibleTrigger asChild>
+                                <SidebarMenuButton 
+                                  aria-expanded={isOpen}
+                                  className="sidebar-hover"
+                                >
+                                  <item.icon className="h-5 w-5" />
                                   <span>{item.title}</span>
                                   <ChevronDown
                                     aria-hidden="true"
-                                    className={`ml-auto h-4 w-4 transition-transform ${
+                                    className={`ml-auto h-4 w-4 sidebar-transition ${
                                       isOpen ? "rotate-180" : ""
                                     }`}
                                   />
-                                </>
-                              )}
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          {!isCollapsed && (
-                            <CollapsibleContent>
-                              <SidebarMenuSub>
-                                {subItems.map((subItem) => (
-                                  <SidebarMenuSubItem key={subItem.url}>
-                                    <SidebarMenuSubButton asChild>
-                                      <NavLink
-                                        to={subItem.url}
-                                        className={({ isActive }) =>
-                                          isActive
-                                            ? "border-l-2 border-primary bg-sidebar-accent pl-2 font-medium text-sidebar-primary"
-                                            : "hover:bg-sidebar-accent/50"
-                                        }
-                                      >
-                                        <span>{subItem.title}</span>
-                                      </NavLink>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
+                                </SidebarMenuButton>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="sidebar-transition">
+                                <SidebarMenuSub>
+                                  {subItems.map((subItem) => (
+                                    <SidebarMenuSubItem key={subItem.url}>
+                                      <SidebarMenuSubButton asChild>
+                                        <NavLink
+                                          to={subItem.url}
+                                          className={({ isActive }) =>
+                                            `sidebar-hover ${
+                                              isActive
+                                                ? "border-l-2 border-primary bg-sidebar-accent pl-2 font-medium text-sidebar-primary"
+                                                : "hover:bg-sidebar-accent/50"
+                                            }`
+                                          }
+                                        >
+                                          <span>{subItem.title}</span>
+                                        </NavLink>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </>
                           )}
                         </>
                       ) : (
-                        <SidebarMenuButton asChild>
-                          <NavLink
-                            to={item.url!}
-                            end
-                            className={({ isActive }) =>
-                              isActive
-                                ? "bg-sidebar-accent font-medium text-sidebar-primary"
-                                : "hover:bg-sidebar-accent/50"
-                            }
-                          >
-                            <item.icon className="h-4 w-4" />
-                            {!isCollapsed && <span>{item.title}</span>}
-                          </NavLink>
-                        </SidebarMenuButton>
+                        <>
+                          {isCollapsed ? (
+                            <HoverCard openDelay={100} closeDelay={100}>
+                              <HoverCardTrigger asChild>
+                                <SidebarMenuButton asChild>
+                                  <NavLink
+                                    to={item.url!}
+                                    end
+                                    className={({ isActive }) =>
+                                      `sidebar-hover justify-center ${
+                                        isActive
+                                          ? "bg-sidebar-accent font-medium text-sidebar-primary"
+                                          : "hover:bg-sidebar-accent/50"
+                                      }`
+                                    }
+                                  >
+                                    <item.icon className="h-6 w-6" />
+                                  </NavLink>
+                                </SidebarMenuButton>
+                              </HoverCardTrigger>
+                              <HoverCardContent 
+                                side="right" 
+                                align="center"
+                                className="w-auto bg-sidebar-background border-sidebar-border shadow-medium ml-2 px-3 py-2"
+                              >
+                                <span className="text-sm font-medium text-sidebar-foreground">
+                                  {item.title}
+                                </span>
+                              </HoverCardContent>
+                            </HoverCard>
+                          ) : (
+                            <SidebarMenuButton asChild>
+                              <NavLink
+                                to={item.url!}
+                                end
+                                className={({ isActive }) =>
+                                  `sidebar-hover ${
+                                    isActive
+                                      ? "bg-sidebar-accent font-medium text-sidebar-primary"
+                                      : "hover:bg-sidebar-accent/50"
+                                  }`
+                                }
+                              >
+                                <item.icon className="h-5 w-5" />
+                                <span>{item.title}</span>
+                              </NavLink>
+                            </SidebarMenuButton>
+                          )}
+                        </>
                       )}
                     </SidebarMenuItem>
                   </Collapsible>
@@ -189,27 +284,59 @@ export function AppSidebar() {
 
         {(isSuperAdmin() || hasPermission('CLIENTS', 'view')) && (
           <SidebarGroup>
-            <SidebarGroupLabel>
-              <Settings className="mr-2 h-4 w-4" />
+            <SidebarGroupLabel className="sidebar-transition">
+              <Settings className={`${isCollapsed ? "h-5 w-5" : "mr-2 h-4 w-4"}`} />
               {!isCollapsed && "Gestion Client"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {administrationItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url!}
-                        className={({ isActive }) =>
-                          isActive
-                            ? "bg-sidebar-accent font-medium text-sidebar-primary"
-                            : "hover:bg-sidebar-accent/50"
-                        }
-                      >
-                        <item.icon className="h-4 w-4" />
-                        {!isCollapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
+                    {isCollapsed ? (
+                      <HoverCard openDelay={100} closeDelay={100}>
+                        <HoverCardTrigger asChild>
+                          <SidebarMenuButton asChild>
+                            <NavLink
+                              to={item.url!}
+                              className={({ isActive }) =>
+                                `sidebar-hover justify-center ${
+                                  isActive
+                                    ? "bg-sidebar-accent font-medium text-sidebar-primary"
+                                    : "hover:bg-sidebar-accent/50"
+                                }`
+                              }
+                            >
+                              <item.icon className="h-6 w-6" />
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </HoverCardTrigger>
+                        <HoverCardContent 
+                          side="right" 
+                          align="center"
+                          className="w-auto bg-sidebar-background border-sidebar-border shadow-medium ml-2 px-3 py-2"
+                        >
+                          <span className="text-sm font-medium text-sidebar-foreground">
+                            {item.title}
+                          </span>
+                        </HoverCardContent>
+                      </HoverCard>
+                    ) : (
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={item.url!}
+                          className={({ isActive }) =>
+                            `sidebar-hover ${
+                              isActive
+                                ? "bg-sidebar-accent font-medium text-sidebar-primary"
+                                : "hover:bg-sidebar-accent/50"
+                            }`
+                          }
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span>{item.title}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>

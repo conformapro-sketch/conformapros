@@ -123,3 +123,38 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
 }
+
+@layer utilities {
+  /* Custom scrollbar for sidebar */
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--sidebar-accent));
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--sidebar-primary) / 0.5);
+  }
+
+  /* Smooth transitions */
+  .sidebar-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Hover effects */
+  .sidebar-hover {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .sidebar-hover:hover {
+    @apply shadow-md translate-x-0.5;
+  }
+}
