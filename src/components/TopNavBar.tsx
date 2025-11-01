@@ -100,9 +100,25 @@ export default function TopNavBar({
       if (!authUser?.id) return null;
       const { data, error } = await supabase
         .from("client_users")
-        .select("client_id, clients!client_users_client_id_fkey(logo_url, nom)")
+        .select("client_id, avatar_url, clients!client_users_client_id_fkey(logo_url, nom)")
         .eq("id", authUser.id)
         .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!authUser?.id,
+  });
+
+  // Fetch avatar from profiles table (for team users)
+  const { data: teamProfile } = useQuery({
+    queryKey: ["team-profile-avatar", authUser?.id],
+    queryFn: async () => {
+      if (!authUser?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", authUser.id)
+        .maybeSingle();
       if (error) return null;
       return data;
     },
@@ -130,7 +146,11 @@ export default function TopNavBar({
   const fallbackName = authUser?.email ?? "Utilisateur";
   const resolvedName = (primaryName && primaryName.trim().length > 0 ? primaryName : fallbackName).trim();
   const resolvedRole = user?.role ?? primaryRole?.name ?? userRole ?? undefined;
-  const resolvedAvatarUrl = user?.avatarUrl ?? metaAvatar;
+  
+  // Priority: props → client DB → team DB → auth metadata
+  const clientAvatar = userProfile?.avatar_url;
+  const teamAvatar = teamProfile?.avatar_url;
+  const resolvedAvatarUrl = user?.avatarUrl ?? clientAvatar ?? teamAvatar ?? metaAvatar;
   const initials = resolvedName
     .replace(/\s+/g, " ")
     .trim()
