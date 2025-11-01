@@ -63,6 +63,7 @@ export const CLIENT_MODULES = [
   'epi',
   'prestataires',
   'permis',
+  'environnement',
   'rapports',
 ] as const;
 
@@ -106,6 +107,7 @@ export const MODULE_LABELS: Record<string, string> = {
   epi: 'EPI & Équipements',
   prestataires: 'Prestataires & Sous-traitants',
   permis: 'Permis de Travail',
+  environnement: 'Environnement',
   clients: 'Clients',
   sites: 'Sites',
   factures: 'Factures',
