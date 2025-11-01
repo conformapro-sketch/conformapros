@@ -674,7 +674,7 @@ export const toggleSiteModule = async (
 
 export const listDomaines = async () => {
   const { data, error } = await supabase
-    .from("domaines_application")
+    .from("domaines_reglementaires")
     .select("*")
     .eq("actif", true)
     .is("deleted_at", null)
@@ -689,7 +689,7 @@ export const listSiteVeilleDomaines = async (siteId: string) => {
     .from("site_veille_domaines")
     .select(`
       *,
-      domaines_application(code, libelle, description)
+      domaines_reglementaires(code, libelle, description)
     `)
     .eq("site_id", siteId);
   

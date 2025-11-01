@@ -753,7 +753,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                   
                   <Card className="p-4">
                     <div className="space-y-3">
-                      {modulesSysteme.map((module: any) => {
+                      {modulesSysteme
+                        .filter((module: any) => module.code !== 'CONFORMITE')
+                        .map((module: any) => {
                         const IconComponent = MODULE_ICONS[module.code] || Settings;
                         const isEnabled = isModuleEnabled(module.code);
                         const isVeilleDisabled = module.code === 'VEILLE' && !isBibliothequeEnabled && !isEnabled;
