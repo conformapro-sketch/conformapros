@@ -28,7 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ClientUserFormModal } from "./ClientUserFormModal";
 import { fetchClientUsersPaginated, resetClientUserPassword, activateClientUser, deactivateClientUser, logAudit } from "@/lib/multi-tenant-queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,10 +78,39 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
     formState: { errors },
     reset,
     setValue,
+    watch,
   } = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
     defaultValues: client || { statut: "actif" },
   });
+
+  // Reset form when modal opens or client changes
+  useEffect(() => {
+    if (open && client) {
+      reset({
+        nom_legal: client.nom_legal || "",
+        secteur: client.secteur || "",
+        matricule_fiscale: client.matricule_fiscale || "",
+        rne_rc: client.rne_rc || "",
+        telephone: client.telephone || "",
+        email: client.email || "",
+        site_web: client.site_web || "",
+        adresse_siege: client.adresse_siege || "",
+        gouvernorat: client.gouvernorat || "",
+        delegation: client.delegation || "",
+        code_postal: client.code_postal || "",
+        statut: client.statut || "actif",
+        notes: client.notes || "",
+        logo_url: client.logo_url || "",
+        couleur_primaire: client.couleur_primaire || "#3b82f6",
+      });
+    } else if (open && !client) {
+      reset({ statut: "actif" });
+    }
+  }, [open, client, reset]);
+
+  const logoUrl = watch('logo_url');
+  const couleurPrimaire = watch('couleur_primaire');
 
 const createMutation = useMutation({
     mutationFn: async (data: ClientFormData) => {
@@ -488,10 +517,10 @@ const createMutation = useMutation({
                     <div>
                       <Label>Logo de l'entreprise</Label>
                       <div className="mt-2 flex items-center gap-4">
-                        {client?.logo_url && (
+                        {logoUrl && (
                           <div className="flex-shrink-0">
                             <img
-                              src={client.logo_url}
+                              src={logoUrl}
                               alt="Logo client"
                               className="h-20 w-20 object-contain rounded-lg border border-border"
                             />
@@ -520,11 +549,11 @@ const createMutation = useMutation({
                               ) : (
                                 <>
                                   <Upload className="h-4 w-4 mr-2" />
-                                  {client?.logo_url ? 'Changer le logo' : 'Télécharger un logo'}
+                                  {logoUrl ? 'Changer le logo' : 'Télécharger un logo'}
                                 </>
                               )}
                             </Button>
-                            {client?.logo_url && (
+                            {logoUrl && (
                               <Button
                                 type="button"
                                 variant="destructive"
@@ -546,21 +575,20 @@ const createMutation = useMutation({
                       <Label htmlFor="couleur_primaire">Couleur primaire de la marque</Label>
                       <div className="flex gap-3 items-center mt-2">
                         <div
-                          className="w-12 h-12 rounded-lg border-2 border-border shadow-sm transition-all"
-                          style={{ backgroundColor: client?.couleur_primaire || "#3b82f6" }}
+                          className="w-12 h-12 rounded-lg border-2 border-border shadow-sm transition-all cursor-pointer"
+                          style={{ backgroundColor: couleurPrimaire || "#3b82f6" }}
+                          onClick={() => document.getElementById('couleur_primaire_input')?.click()}
                         />
                         <Input
-                          id="couleur_primaire"
+                          id="couleur_primaire_input"
                           type="color"
                           {...register("couleur_primaire")}
-                          defaultValue={client?.couleur_primaire || "#3b82f6"}
                           className="w-24 h-12 p-1 cursor-pointer"
                         />
                         <Input
                           type="text"
                           {...register("couleur_primaire")}
                           placeholder="#3b82f6"
-                          defaultValue={client?.couleur_primaire || "#3b82f6"}
                           className="flex-1 font-mono uppercase"
                           maxLength={7}
                           pattern="^#[0-9A-Fa-f]{6}$"

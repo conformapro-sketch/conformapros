@@ -18,7 +18,7 @@ import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { inviteClientUser, fetchSitesByClient, toggleUtilisateurActif, fetchAllClients } from "@/lib/multi-tenant-queries";
 import { useToast } from "@/hooks/use-toast";
-import { Building2 } from "lucide-react";
+import { Building2, Loader2 } from "lucide-react";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 const userSchema = z.object({
@@ -188,6 +188,26 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
   });
   
   const onSubmit = (data: UserFormData) => {
+    // Explicit validation before submission
+    if (!data.client_id) {
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez sélectionner un client avant de continuer",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.email || !data.email.includes('@')) {
+      toast({
+        title: "Erreur de validation",
+        description: "Veuillez saisir une adresse email valide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Submitting user data:', { ...data, password: data.password ? '[REDACTED]' : undefined });
     saveMutation.mutate(data);
   };
 
@@ -427,7 +447,14 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
               type="submit" 
               disabled={saveMutation.isPending}
             >
-              {user ? "Mettre à jour" : "Inviter l'utilisateur"}
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {user ? "Mise à jour..." : "Invitation..."}
+                </>
+              ) : (
+                user ? "Mettre à jour" : "Inviter l'utilisateur"
+              )}
             </Button>
           </div>
         </form>
