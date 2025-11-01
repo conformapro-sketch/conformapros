@@ -2,9 +2,13 @@ import {
   Menu,
   ChevronDown,
   Settings,
-  UserCog,
-  Shield,
   Loader2,
+  Building2,
+  MapPin,
+  Calendar,
+  FileText,
+  Receipt,
+  FileCheck,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
@@ -34,8 +38,12 @@ import { useUserModules } from "@/hooks/useUserModules";
 import { buildNavigationFromModules, findActiveModule, type MenuItem } from "@/lib/module-navigation-map";
 
 const administrationItems: MenuItem[] = [
-  { title: "Gestion du staff", url: "/utilisateurs", icon: UserCog },
-  { title: "Gestion des rôles", url: "/roles", icon: Shield },
+  { title: "Clients", url: "/clients", icon: Building2 },
+  { title: "Sites", url: "/sites", icon: MapPin },
+  { title: "Abonnements", url: "/abonnement", icon: Calendar },
+  { title: "Devis", url: "/devis", icon: FileText },
+  { title: "Factures", url: "/facture", icon: Receipt },
+  { title: "Factures d'avoir", url: "/facture/avoir", icon: FileCheck },
 ];
 
 export function AppSidebar() {
@@ -44,6 +52,7 @@ export function AppSidebar() {
   const [openItems, setOpenItems] = useState<string[]>([]);
   const location = useLocation();
   const { data: modules, isLoading } = useUserModules();
+  const { hasPermission, isSuperAdmin } = useAuth();
 
   const navigationItems = useMemo(() => {
     if (!modules) return [];
@@ -176,33 +185,35 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            <Settings className="mr-2 h-4 w-4" />
-            {!isCollapsed && "Administration"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {administrationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url!}
-                      className={({ isActive }) =>
-                        isActive
-                          ? "bg-sidebar-accent font-medium text-sidebar-primary"
-                          : "hover:bg-sidebar-accent/50"
-                      }
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {(isSuperAdmin() || hasPermission('CLIENTS', 'view')) && (
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Settings className="mr-2 h-4 w-4" />
+              {!isCollapsed && "Gestion Client"}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {administrationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url!}
+                        className={({ isActive }) =>
+                          isActive
+                            ? "bg-sidebar-accent font-medium text-sidebar-primary"
+                            : "hover:bg-sidebar-accent/50"
+                        }
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );

@@ -17,6 +17,8 @@ import Sites from "./pages/Sites";
 import SiteDetail from "./pages/SiteDetail";
 import Abonnement from "./pages/Abonnement";
 import Facture from "./pages/Facture";
+import Devis from "./pages/Devis";
+import FactureAvoir from "./pages/FactureAvoir";
 import VeilleReglementaire from "./pages/VeilleReglementaire";
 import VeilleDashboard from "./pages/VeilleDashboard";
 import VeilleApplicabilite from "./pages/VeilleApplicabilite";
@@ -146,6 +148,22 @@ const App = () => (
                             element={
                               <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
                                 <Facture />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/devis"
+                            element={
+                              <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
+                                <Devis />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/facture/avoir"
+                            element={
+                              <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
+                                <FactureAvoir />
                               </ProtectedRoute>
                             }
                           />

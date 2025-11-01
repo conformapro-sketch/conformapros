@@ -12,6 +12,8 @@ import {
   LogOut,
   User,
   ChevronDown,
+  Shield,
+  UserCog,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,7 +89,7 @@ export default function TopNavBar({
 }: TopNavBarProps) {
   const [prefs, setPrefs] = useState<ThemePrefs>(() => readPrefs());
   const { state, isMobile, toggleSidebar } = useSidebar();
-  const { user: authUser, userRole, primaryRole, signOut } = useAuth();
+  const { user: authUser, userRole, primaryRole, signOut, isTeamUser } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -268,35 +269,40 @@ export default function TopNavBar({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-foreground transition-colors hover:text-[#2FB200]"
-                  aria-label="Ouvrir les parametres"
-                >
-                  <SettingsIcon className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[360px] sm:w-[420px]">
-                <div className="space-y-4 py-4">
-                  <h3 className="text-lg font-semibold">Parametres</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Ajoutez ici vos raccourcis, preferences ou widgets rapides.
-                  </p>
-                  <div className="grid gap-3">
-                    <label className="text-sm font-medium">Option 1</label>
-                    <Input placeholder="Valeur" />
-                  </div>
-                  <div className="grid gap-3">
-                    <label className="text-sm font-medium">Option 2</label>
-                    <Input placeholder="Valeur" />
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+            {/* Settings - Visible uniquement pour le staff Conforma */}
+            {isTeamUser() && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-foreground transition-colors hover:text-[#2FB200]"
+                    aria-label="Gestion du staff Conforma"
+                  >
+                    <SettingsIcon className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" /> Conforma Pro
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/utilisateurs" className="cursor-pointer">
+                      <UserCog className="mr-2 h-4 w-4" />
+                      Gestion du staff
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/roles" className="cursor-pointer">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Gestion des rôles
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
