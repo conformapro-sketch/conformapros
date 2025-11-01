@@ -163,6 +163,18 @@ export const usersQueries = {
     
     if (error) throw error;
   },
+
+  updateAvatar: async (userId: string, avatarUrl: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
 };
 
 export const rolesQueries = {

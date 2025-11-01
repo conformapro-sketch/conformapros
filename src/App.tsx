@@ -82,6 +82,7 @@ import EmployeeSanteFiche from "./pages/EmployeeSanteFiche";
 import VisitesMedicalesPlanification from "./pages/VisitesMedicalesPlanification";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
+import UserProfile from "./pages/UserProfile";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,7 @@ const App = () => (
                         <main className="flex-1 overflow-y-auto px-4 pb-8 pt-24 sm:px-6 lg:px-8">
                         <Routes>
                           <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/profile" element={<UserProfile />} />
                           <Route path="/clients" element={<Clients />} />
                           <Route path="/clients/:id" element={<ClientDetail />} />
                           <Route 

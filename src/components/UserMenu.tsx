@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Shield, User as UserIcon, KeyRound } from "lucide-react";
+import { LogOut, User as UserIcon, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
@@ -65,6 +65,10 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate("/profile")}>
+          <UserIcon className="mr-2 h-4 w-4" />
+          <span>Mon profil</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setPasswordDialogOpen(true)}>
           <KeyRound className="mr-2 h-4 w-4" />
           <span>Changer le mot de passe</span>
