@@ -54,15 +54,18 @@ export function AppSidebar() {
   useEffect(() => {
     const activeModule = findActiveModule(location.pathname, navigationItems);
     
-    if (activeModule && !openItems.includes(activeModule)) {
-      // Close all other items and open only the active one
+    if (activeModule) {
+      // Always replace openItems with only the active module
       setOpenItems([activeModule]);
+    } else {
+      // If no active module, close all
+      setOpenItems([]);
     }
   }, [location.pathname, navigationItems]);
 
   const toggleItem = (title: string) => {
     setOpenItems((prev) =>
-      prev.includes(title) ? prev.filter((entry) => entry !== title) : [...prev, title],
+      prev.includes(title) ? [] : [title]
     );
   };
 
