@@ -3622,6 +3622,10 @@ export type Database = {
         Args: { _action: string; _module: string; _user_id: string }
         Returns: boolean
       }
+      is_user_client_admin: {
+        Args: { check_client_id: string; user_id: string }
+        Returns: boolean
+      }
       search_actes_reglementaires: {
         Args: { result_limit?: number; search_term: string }
         Returns: {
