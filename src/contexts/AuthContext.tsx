@@ -55,7 +55,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserAccessContext = async (userId: string) => {
     setLoading(true);
     try {
-      // Fetch user roles with full role details and permissions
+      // 1. Check if user is a client user first
+      const { data: clientUser, error: clientError } = await supabase
+        .from('client_users')
+        .select('id, client_id, is_client_admin, tenant_id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (clientError && clientError.code !== 'PGRST116') {
+        throw clientError;
+      }
+
+      // 2. If client user, create synthetic role based on is_client_admin
+      if (clientUser) {
+        const syntheticRole: Role = {
+          id: clientUser.is_client_admin ? 'client_admin_synthetic' : 'client_user_synthetic',
+          type: 'client',
+          name: clientUser.is_client_admin ? 'Administrateur Client' : 'Utilisateur Client',
+          description: clientUser.is_client_admin 
+            ? 'Administrateur avec accès complet aux données du client'
+            : 'Utilisateur avec accès limité aux données du client',
+          is_system: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          user_count: 0,
+        };
+
+        setPrimaryRole(syntheticRole);
+        setAllRoles([syntheticRole]);
+        setPermissions([]); // Client users don't use granular permissions
+        setUserRole(syntheticRole.name);
+        setUserRoles([syntheticRole.name]);
+        setTenantId(clientUser.tenant_id || null);
+        setClientId(clientUser.client_id);
+        setLoading(false);
+        return;
+      }
+
+      // 3. If not client user, use existing team user role system
       const { data: userRolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select(`
@@ -97,23 +134,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set primary role (first one, prioritized by type)
       const primary = roles[0] || null;
 
-      // Get tenant_id from profile or client_users
+      // Get tenant_id from profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('id', userId)
         .maybeSingle();
-
-      let userClientId: string | null = null;
-      if (primary?.type === 'client') {
-        // For client users, fetch client_id from client_users table
-        const { data: clientUser } = await supabase
-          .from('client_users')
-          .select('client_id')
-          .eq('id', userId)
-          .maybeSingle();
-        userClientId = clientUser?.client_id || null;
-      }
 
       // Update state
       setPrimaryRole(primary);
@@ -122,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole(primary?.name || null);
       setUserRoles(roles.map(r => r.name));
       setTenantId(profile?.tenant_id || null);
-      setClientId(userClientId);
+      setClientId(null); // Team users don't have client_id
       setLoading(false);
     } catch (err) {
       console.error("Error fetching user access context:", err);

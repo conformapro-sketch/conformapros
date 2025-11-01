@@ -245,10 +245,20 @@ export default function UserProfile() {
 
   const getRoleLabel = (role: string) => {
     const roleLabels: Record<string, string> = {
+      // Team roles
       super_admin: "Super Admin",
+      "Super Admin": "Super Admin",
       admin_global: "Admin Global",
+      "Admin Global": "Admin Global",
       gestionnaire_hse: "Gestionnaire HSE",
       chef_site: "Chef de Site",
+      "Manager HSE": "Manager HSE",
+      "Analyst": "Analyste",
+      "Viewer": "Visualiseur",
+      
+      // Client roles (synthetic)
+      "Administrateur Client": "Administrateur Client",
+      "Utilisateur Client": "Utilisateur Client",
     };
     return roleLabels[role] || role;
   };
@@ -526,8 +536,9 @@ export default function UserProfile() {
               <div className="flex flex-wrap gap-2 mt-2">
                 {allRoles.length > 0 ? (
                   allRoles.map((role, index) => (
-                    <Badge key={index} variant="secondary">
-                      {getRoleLabel(String(role))}
+                    <Badge key={index} variant="secondary" className="gap-1">
+                      <Shield className="h-3 w-3" />
+                      {getRoleLabel(role.name)}
                     </Badge>
                   ))
                 ) : (
