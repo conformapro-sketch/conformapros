@@ -69,10 +69,28 @@ export function UserPermissionDrawer({
   }, [userPermissions]);
 
   const savePermissionsHandler = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      toast({
+        title: "Erreur",
+        description: "Utilisateur non défini",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!clientId) {
+      toast({
+        title: "Erreur",
+        description: "Client non défini",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSaving(true);
     try {
+      console.log("Saving permissions for user:", user.id, "client:", clientId);
+      
       // Filter out 'inherit' decisions - only save explicit allow/deny
       const explicitPermissions = permissions
         .filter(p => p.decision !== 'inherit')
@@ -83,10 +101,13 @@ export function UserPermissionDrawer({
           scope: scope,
         }));
       
+      console.log("Explicit permissions to save:", explicitPermissions);
+      
       await saveUserPermissions(user.id, clientId, explicitPermissions);
       
       queryClient.invalidateQueries({ queryKey: ["client-users"] });
       queryClient.invalidateQueries({ queryKey: ["user-permissions"] });
+      queryClient.invalidateQueries({ queryKey: ["all-client-users"] });
       
       toast({
         title: "Permissions mises à jour",
@@ -108,6 +129,26 @@ export function UserPermissionDrawer({
 
   if (!user) return null;
 
+  if (!clientId) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader>
+            <DrawerTitle>Erreur</DrawerTitle>
+            <DrawerDescription>
+              Client non défini pour cet utilisateur
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Fermer
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[90vh]">
@@ -124,6 +165,7 @@ export function UserPermissionDrawer({
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-3 text-sm text-muted-foreground">Chargement des permissions...</span>
             </div>
           ) : (
             <PermissionMatrix

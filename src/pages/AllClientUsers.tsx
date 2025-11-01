@@ -481,13 +481,14 @@ export default function AllClientUsers() {
           if (!open) setEditingUser(undefined);
         }}
         user={editingUser}
+        clientId={editingUser?.client_id}
       />
 
       <ClientUserManagementDrawer
         open={managementDrawerOpen}
         onOpenChange={setManagementDrawerOpen}
         user={selectedUser}
-        clientId={selectedUser?.managed_client_id || ""}
+        clientId={selectedUser?.client_id || ""}
       />
     </div>
   );

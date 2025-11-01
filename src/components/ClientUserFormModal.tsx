@@ -46,6 +46,9 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Use provided clientId or fallback to user's client_id for editing
+  const effectiveClientId = clientId || user?.client_id;
+
   // Fetch all clients (for selection)
   const { data: clients = [] } = useQuery({
     queryKey: ["all-clients"],
@@ -82,14 +85,14 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: user ? {
-      client_id: user.client_id || "",
+      client_id: user.client_id || effectiveClientId || "",
       email: user.email || "",
       fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
       is_client_admin: user.is_client_admin || false,
       siteIds: user.access_scopes?.map((as: any) => as.site_id) || [],
       actif: user.actif ?? true,
     } : {
-      client_id: clientId || "",
+      client_id: effectiveClientId || "",
       actif: true,
       siteIds: [],
       is_client_admin: false,
@@ -111,6 +114,10 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
 
   const saveMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
+      if (!data.client_id) {
+        throw new Error("Veuillez sélectionner un client");
+      }
+
       const result = await inviteClientUser(
         data.email,
         data.fullName,
@@ -133,8 +140,9 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     },
     onSuccess: (result: any) => {
       queryClient.invalidateQueries({ queryKey: ["client-users", selectedClientId] });
-      queryClient.invalidateQueries({ queryKey: ["client-users", clientId] });
-      queryClient.invalidateQueries({ queryKey: ["all-client-users"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["client-users", effectiveClientId] });
+      queryClient.invalidateQueries({ queryKey: ["all-client-users"] });
+      queryClient.invalidateQueries({ queryKey: ["all-clients"] });
       const isUpdate = result.data?.action === 'updated';
       toast({
         title: "Succès",
