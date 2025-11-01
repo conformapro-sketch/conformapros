@@ -53,9 +53,14 @@ export function ClientUserManagementDrawer({
   const [siteScopes, setSiteScopes] = useState<Record<string, PermissionScope>>({});
 
   // Fetch user's sites with permission counts
-  const { data: userSites = [], isLoading: loadingSites } = useQuery({
+  const { data: userSites = [], isLoading: loadingSites, error: sitesError, refetch: refetchSites } = useQuery({
     queryKey: ["user-sites-permissions", user?.id],
-    queryFn: () => fetchUserSitesWithPermissions(user.id),
+    queryFn: async () => {
+      console.log('Fetching sites for user:', user.id);
+      const data = await fetchUserSitesWithPermissions(user.id);
+      console.log('Sites fetched:', data);
+      return data;
+    },
     enabled: !!user?.id && open,
   });
 
@@ -320,10 +325,25 @@ export function ClientUserManagementDrawer({
                 <div className="text-center py-8 text-muted-foreground">
                   Chargement des sites...
                 </div>
+              ) : sitesError ? (
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="text-center text-destructive">
+                      <p className="font-semibold">Erreur lors du chargement des sites</p>
+                      <p className="text-sm mt-2">{sitesError.message}</p>
+                    </div>
+                    <div className="flex justify-center">
+                      <Button onClick={() => refetchSites()} variant="outline">
+                        Réessayer
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ) : userSites.length === 0 ? (
                 <Card>
                   <CardContent className="pt-6 text-center text-muted-foreground">
-                    Cet utilisateur n'a accès à aucun site pour le moment.
+                    <p>Cet utilisateur n'a pas encore été assigné à des sites.</p>
+                    <p className="text-sm mt-2">Utilisez le formulaire d'édition pour lui donner accès à des sites.</p>
                   </CardContent>
                 </Card>
               ) : (

@@ -380,6 +380,12 @@ export default function AllClientUsers() {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
+                                console.log('Opening management drawer for user:', { 
+                                  id: user.id, 
+                                  email: user.email,
+                                  client_id: user.client_id,
+                                  sites: user.sites_data
+                                });
                                 setSelectedUser(user);
                                 setManagementDrawerOpen(true);
                               }}

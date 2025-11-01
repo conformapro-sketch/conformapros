@@ -251,7 +251,18 @@ Deno.serve(async (req) => {
       console.log('invite-client-user: No sites to assign')
     }
 
-    // Log audit trail to role_audit_logs
+    // Get admin user info for audit logging
+    const { data: adminUser, error: adminUserError } = await supabaseAdmin
+      .from('client_users')
+      .select('id, email, client_id, tenant_id')
+      .eq('id', callingUser.id)
+      .single()
+
+    if (adminUserError) {
+      console.error('invite-client-user: Failed to get admin user for audit', adminUserError)
+    }
+
+    // Log audit trail to role_audit_logs using actual tenant_id
     const { error: auditError } = await supabaseAdmin
       .from('role_audit_logs')
       .insert({
