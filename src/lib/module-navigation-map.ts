@@ -152,6 +152,25 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
   },
 };
 
+// Ordre d'affichage souhaité dans le menu
+const MODULE_DISPLAY_ORDER = [
+  'DASHBOARD',
+  'BIBLIOTHEQUE',
+  'VEILLE',
+  'DOSSIER',
+  'CONTROLES',
+  'INCIDENTS',
+  'EQUIPEMENTS',
+  'EPI',
+  'AUDITS',
+  'FORMATIONS',
+  'VISITES_MED',
+  'PERMIS',
+  'PRESTATAIRES',
+  'ENVIRONNEMENT',
+  'CLIENTS',
+];
+
 export const buildNavigationFromModules = (modules: ModuleSysteme[]): MenuItem[] => {
   if (!modules || modules.length === 0) return [];
 
@@ -171,7 +190,17 @@ export const buildNavigationFromModules = (modules: ModuleSysteme[]): MenuItem[]
     }
   });
 
-  return navigationItems;
+  // Trier les items selon l'ordre défini
+  return navigationItems.sort((a, b) => {
+    const indexA = MODULE_DISPLAY_ORDER.indexOf(a.code || '');
+    const indexB = MODULE_DISPLAY_ORDER.indexOf(b.code || '');
+    
+    // Si un module n'est pas dans la liste, le mettre à la fin
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    
+    return indexA - indexB;
+  });
 };
 
 // Helper to check if a route matches any subitem
