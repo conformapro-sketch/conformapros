@@ -41,7 +41,7 @@ import { buildNavigationFromModules, findActiveModule, type MenuItem } from "@/l
 const administrationItems: MenuItem[] = [
   { title: "Clients", url: "/clients", icon: Building2 },
   { title: "Sites", url: "/sites", icon: MapPin },
-  { title: "Utilisateurs client", url: "/all-client-users", icon: Users },
+  { title: "Utilisateurs client", url: "/clients/utilisateurs", icon: Users },
   { title: "Abonnements", url: "/abonnement", icon: Calendar },
   { title: "Devis", url: "/devis", icon: FileText },
   { title: "Factures", url: "/facture", icon: Receipt },
