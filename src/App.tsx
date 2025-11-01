@@ -111,10 +111,19 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<RootRedirect />} />
             
+            {/* Profile page - Full screen without navbar */}
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              } 
+            />
+            
             {/* Protected routes with Layout */}
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="profile" element={<UserProfile />} />
               <Route path="clients" element={<Clients />} />
               <Route path="clients/:id" element={<ClientDetail />} />
               <Route 

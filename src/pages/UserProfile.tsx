@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { usersQueries } from "@/lib/users-queries";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,8 @@ import {
   X,
   Building2,
   Calendar,
-  Key
+  Key,
+  ArrowLeft
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -43,6 +45,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function UserProfile() {
   const { user, primaryRole, allRoles } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -221,9 +224,27 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header Section */}
-      <Card>
+    <div className="min-h-screen bg-background">
+      {/* Top Bar with Return Button */}
+      <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center gap-4 px-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/dashboard")}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour au tableau de bord
+          </Button>
+          <h1 className="text-lg font-semibold">Mon Profil</h1>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="container mx-auto py-6 space-y-6 px-4">
+        {/* Header Section */}
+        <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             {/* Avatar */}
@@ -500,6 +521,7 @@ export default function UserProfile() {
       </Card>
 
       <ChangePasswordDialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen} />
+      </div>
     </div>
   );
 }
