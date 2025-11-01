@@ -38,6 +38,10 @@ import DomainesPage from "./pages/DomainesPage";
 import GestionArticles from "./pages/GestionArticles";
 import DossierReglementaire from "./pages/DossierReglementaire";
 import ControlesTechniques from "./pages/ControlesTechniques";
+import ControlesDashboard from "./pages/ControlesDashboard";
+import ControlesEquipements from "./pages/ControlesEquipements";
+import ControlesPlanning from "./pages/ControlesPlanning";
+import ControlesHistorique from "./pages/ControlesHistorique";
 import Incidents from "./pages/Incidents";
 import IncidentsDashboard from "./pages/IncidentsDashboard";
 import IncidentsAnalyse from "./pages/IncidentsAnalyse";
@@ -215,7 +219,14 @@ const App = () => (
                           <Route path="/client-users" element={<ClientUsers />} />
                           <Route path="/clients/:clientId/users" element={<ClientUsers />} />
                           <Route path="/dossier" element={<DossierReglementaire />} />
-                          <Route path="/controles" element={<ControlesTechniques />} />
+                          
+                          {/* Contrôles Routes */}
+                          <Route path="/controles" element={<Navigate to="/controles/dashboard" replace />} />
+                          <Route path="/controles/dashboard" element={<ControlesDashboard />} />
+                          <Route path="/controles/equipements" element={<ControlesEquipements />} />
+                          <Route path="/controles/planning" element={<ControlesPlanning />} />
+                          <Route path="/controles/historique" element={<ControlesHistorique />} />
+                          
                           <Route path="/incidents" element={<Incidents />} />
             <Route path="/incidents/dashboard" element={<IncidentsDashboard />} />
             <Route path="/incidents/analyse" element={<IncidentsAnalyse />} />

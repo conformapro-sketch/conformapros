@@ -61,7 +61,12 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
   },
   CONTROLES: {
     icon: ClipboardCheck,
-    url: "/controles",
+    subItems: [
+      { title: "Tableau de bord", url: "/controles/dashboard" },
+      { title: "Équipements", url: "/controles/equipements" },
+      { title: "Planning", url: "/controles/planning" },
+      { title: "Historique", url: "/controles/historique" },
+    ],
   },
   INCIDENTS: {
     icon: AlertTriangle,
