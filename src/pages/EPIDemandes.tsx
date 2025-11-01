@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Check, X } from "lucide-react";
+import { Plus, Check, X, Eye } from "lucide-react";
 import { format } from "date-fns";
+import { EPIDemandeWorkflow } from "@/components/epi/EPIDemandeWorkflow";
 
 const STATUT_LABELS: Record<string, { label: string; variant: any }> = {
   en_attente: { label: "En attente", variant: "secondary" },
@@ -23,6 +24,8 @@ const STATUT_LABELS: Record<string, { label: string; variant: any }> = {
 
 export default function EPIDemandes() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
+  const [selectedDemande, setSelectedDemande] = useState<any>(null);
   const [formData, setFormData] = useState({
     type_id: "",
     employe_id: "",
@@ -280,28 +283,18 @@ export default function EPIDemandes() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {demande.statut === "en_attente" && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              updateStatutMutation.mutate({ id: demande.id, statut: "approuvee" })
-                            }
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() =>
-                              updateStatutMutation.mutate({ id: demande.id, statut: "rejetee" })
-                            }
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedDemande(demande);
+                            setIsWorkflowOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
