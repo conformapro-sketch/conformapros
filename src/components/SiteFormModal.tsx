@@ -35,7 +35,11 @@ import type { Database } from "@/types/db";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Building2, Settings, AlertCircle, MapPin, Activity } from "lucide-react";
+import { 
+  Building2, Settings, AlertCircle, MapPin, Activity,
+  Library, Bell, ClipboardCheck, FileText, Shield, 
+  Users, Calendar, AlertTriangle, HardHat, Truck, Leaf, FolderOpen
+} from "lucide-react";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useEffect, useState } from "react";
 import { LocationPicker } from "@/components/LocationPicker";
@@ -93,6 +97,22 @@ const SECTEURS = [
   "Énergie",
   "Autre",
 ];
+
+const MODULE_ICONS: Record<string, any> = {
+  BIBLIOTHEQUE: Library,
+  VEILLE: Bell,
+  CONFORMITE: ClipboardCheck,
+  CONTROLES: ClipboardCheck,
+  INCIDENTS: AlertTriangle,
+  EPI: HardHat,
+  FORMATIONS: Users,
+  VISITES_MED: Calendar,
+  ENVIRONNEMENT: Leaf,
+  AUDITS: FileText,
+  DOSSIER: FolderOpen,
+  PRESTATAIRES: Truck,
+  PERMIS: Shield,
+};
 
 export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormModalProps) {
   const { toast } = useToast();
@@ -173,6 +193,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
 
   const veilleModule = siteModules.find((sm: any) => sm.modules_systeme?.code === 'VEILLE');
   const isVeilleEnabled = veilleModule?.enabled || false;
+  
+  const bibliothequeModule = siteModules.find((sm: any) => sm.modules_systeme?.code === 'BIBLIOTHEQUE');
+  const isBibliothequeEnabled = bibliothequeModule?.enabled || false;
 
   // Load gouvernorat for delegation loading when editing a site
   useEffect(() => {
@@ -351,16 +374,43 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       return;
     }
 
+    // Vérifier les dépendances lors de l'activation
+    if (enabled && moduleCode === 'VEILLE' && !isBibliothequeEnabled) {
+      toast({
+        title: "Dépendance manquante",
+        description: "Vous devez d'abord activer le module 'Bibliothèque réglementaire'",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Vérifier si on désactive BIBLIOTHEQUE alors que VEILLE est actif
+    if (!enabled && moduleCode === 'BIBLIOTHEQUE' && isVeilleEnabled) {
+      toast({
+        title: "Impossible de désactiver",
+        description: "Vous devez d'abord désactiver le module 'Veille réglementaire'",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       await toggleSiteModule(site.id, moduleCode, enabled, user?.id);
       await refetchSiteModules();
       
-      if (moduleCode === 'VEILLE' && !enabled) {
+      // Si on désactive BIBLIOTHEQUE, désactiver aussi tous les domaines
+      if (moduleCode === 'BIBLIOTHEQUE' && !enabled) {
         await refetchVeilleDomaines();
         toast({
-          title: "Module désactivé pour ce site",
-          description: "Les domaines de veille ont été désactivés (VEILLE OFF).",
+          title: "Module désactivé",
+          description: "La bibliothèque réglementaire a été désactivée. Les domaines associés ont été désactivés.",
+        });
+      } else if (moduleCode === 'VEILLE' && !enabled) {
+        await refetchVeilleDomaines();
+        toast({
+          title: "Module désactivé",
+          description: "La veille réglementaire a été désactivée.",
         });
       } else {
         toast({
@@ -703,31 +753,56 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                   
                   <Card className="p-4">
                     <div className="space-y-3">
-                      {modulesSysteme.map((module: any) => (
-                        <div key={module.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                          <div className="flex-1">
-                            <p className="font-medium">{module.libelle}</p>
-                            {module.description && (
-                              <p className="text-sm text-muted-foreground">{module.description}</p>
-                            )}
+                      {modulesSysteme.map((module: any) => {
+                        const IconComponent = MODULE_ICONS[module.code] || Settings;
+                        const isEnabled = isModuleEnabled(module.code);
+                        const isVeilleDisabled = module.code === 'VEILLE' && !isBibliothequeEnabled && !isEnabled;
+                        
+                        return (
+                          <div key={module.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                            <div className="flex items-center gap-3 flex-1">
+                              <IconComponent className="h-5 w-5 text-primary flex-shrink-0" />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium">{module.libelle}</p>
+                                  {isEnabled && (
+                                    <Badge variant="default" className="text-xs">Activé</Badge>
+                                  )}
+                                </div>
+                                {module.description && (
+                                  <p className="text-sm text-muted-foreground">{module.description}</p>
+                                )}
+                                {module.code === 'VEILLE' && !isBibliothequeEnabled && !isEnabled && (
+                                  <Badge variant="outline" className="text-xs mt-1">
+                                    Nécessite: Bibliothèque réglementaire
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <Switch
+                              checked={isEnabled}
+                              onCheckedChange={(checked) => handleToggleModule(module.code, checked)}
+                              disabled={!isAdmin || isVeilleDisabled}
+                            />
                           </div>
-                          <Switch
-                            checked={isModuleEnabled(module.code)}
-                            onCheckedChange={(checked) => handleToggleModule(module.code, checked)}
-                            disabled={!isAdmin}
-                          />
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </Card>
                 </div>
 
-                {/* Domaines de veille (only visible if VEILLE module is enabled) */}
-                {isVeilleEnabled && (
+                {/* Domaines réglementaires (visible if BIBLIOTHEQUE module is enabled) */}
+                {isBibliothequeEnabled && (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      <h3 className="font-semibold">Domaines de la veille réglementaire</h3>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5" />
+                        <h3 className="font-semibold">Domaines réglementaires autorisés</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Ces domaines seront disponibles dans la bibliothèque réglementaire
+                        {isVeilleEnabled && " et la veille réglementaire"}
+                      </p>
                     </div>
                     
                     <Card className="p-4">
@@ -759,10 +834,10 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                   </div>
                 )}
 
-                {!isVeilleEnabled && (
+                {!isBibliothequeEnabled && (
                   <div className="bg-muted/50 border border-border rounded-lg p-4">
                     <p className="text-sm text-muted-foreground">
-                      Activez le module "Veille réglementaire" pour configurer les domaines.
+                      Activez le module "Bibliothèque réglementaire" pour configurer les domaines autorisés.
                     </p>
                   </div>
                 )}
