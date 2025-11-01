@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -21,7 +21,14 @@ import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Briefcase, User as UserIcon, Upload, ChevronRight } from "lucide-react";
 import { PermissionMatrix } from "@/components/roles/PermissionMatrix";
-import { fetchUserSitesWithPermissions, fetchSitePermissions, saveSitePermissions } from "@/lib/multi-tenant-queries";
+import {
+  fetchUserSitesWithPermissions,
+  fetchSitePermissions,
+  saveSitePermissions,
+  listDomaines,
+  listEnabledModuleCodesForSite,
+  listEnabledDomainIdsForSites,
+} from "@/lib/multi-tenant-queries";
 import type { PermissionScope } from "@/types/roles";
 
 interface ClientUserManagementDrawerProps {
@@ -62,6 +69,16 @@ export function ClientUserManagementDrawer({
       return data;
     },
     enabled: !!user?.id && open,
+  });
+
+  // Get site IDs for filtering domains
+  const siteIds = useMemo(() => userSites.map(s => s.site_id), [userSites]);
+
+  // Fetch enabled domains for all user's sites (staff-authorized domains)
+  const { data: enabledDomainIds = [] } = useQuery({
+    queryKey: ["user-sites-enabled-domaines", user?.id, siteIds],
+    queryFn: () => listEnabledDomainIdsForSites(siteIds),
+    enabled: !!user?.id && open && siteIds.length > 0,
   });
 
   // Fetch permissions for expanded site

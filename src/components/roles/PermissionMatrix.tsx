@@ -33,6 +33,7 @@ interface PermissionMatrixProps {
   readOnly?: boolean;
   userType?: 'team' | 'client'; // For filtering modules
   siteId?: string; // For site-specific permissions
+  modules?: string[]; // Optional list of allowed module codes (lowercase)
 }
 
 export function PermissionMatrix({
@@ -44,17 +45,25 @@ export function PermissionMatrix({
   readOnly = false,
   userType,
   siteId,
+  modules,
 }: PermissionMatrixProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
 
-  // Filter modules based on user type
+  // Filter modules based on user type and optional allowed modules list
   const availableModules = useMemo(() => {
-    if (userType === 'client') {
-      return CLIENT_MODULES as readonly string[];
+    let baseModules: readonly string[] = userType === 'client' ? CLIENT_MODULES : MODULES;
+    
+    // If a specific list of allowed modules is provided, filter to only those
+    if (modules && modules.length > 0) {
+      const filtered = Array.from(baseModules).filter(module => 
+        modules.includes(module.toLowerCase())
+      );
+      return filtered;
     }
-    return MODULES;
-  }, [userType]);
+    
+    return Array.from(baseModules);
+  }, [userType, modules]);
 
   const filteredModules = useMemo(() => {
     return availableModules.filter(module =>
@@ -109,7 +118,8 @@ export function PermissionMatrix({
 
     if (preset === 'all') {
       const allPermissions: Permission[] = [];
-      MODULES.forEach(module => {
+      // Use availableModules instead of MODULES to respect allowed modules filter
+      availableModules.forEach(module => {
         ACTIONS.forEach(action => {
           allPermissions.push({ module, action, decision: 'allow' });
         });
@@ -120,7 +130,8 @@ export function PermissionMatrix({
 
     if (preset === 'read_only') {
       const readPermissions: Permission[] = [];
-      MODULES.forEach(module => {
+      // Use availableModules instead of MODULES to respect allowed modules filter
+      availableModules.forEach(module => {
         readPermissions.push({ module, action: 'view', decision: 'allow' });
         readPermissions.push({ module, action: 'export', decision: 'allow' });
       });

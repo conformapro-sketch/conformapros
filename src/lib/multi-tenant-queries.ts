@@ -1858,6 +1858,41 @@ export const fetchUserSitesWithPermissions = async (userId: string) => {
   return data || [];
 };
 
+// Fetch enabled module codes for a specific site (staff-authorized modules)
+export const listEnabledModuleCodesForSite = async (siteId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from("site_modules")
+    .select("modules_systeme!inner(code)")
+    .eq("site_id", siteId)
+    .eq("enabled", true);
+
+  if (error) throw error;
+  
+  // Extract and normalize module codes to lowercase
+  return (data || []).map((row: any) => 
+    row.modules_systeme?.code?.toLowerCase() || ''
+  ).filter(Boolean);
+};
+
+// Fetch enabled domain IDs for multiple sites (staff-authorized domains)
+export const listEnabledDomainIdsForSites = async (siteIds: string[]): Promise<string[]> => {
+  if (!siteIds || siteIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("site_veille_domaines")
+    .select("domaine_id")
+    .in("site_id", siteIds)
+    .eq("enabled", true);
+
+  if (error) throw error;
+  
+  // Return unique domain IDs with proper type
+  const domainIds = (data || [])
+    .map((row: any) => row.domaine_id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+  return Array.from(new Set(domainIds));
+};
+
 export const fetchSitePermissions = async (userId: string, siteId: string) => {
   const { data, error } = await supabase
     .from("user_permissions")
