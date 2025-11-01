@@ -242,7 +242,7 @@ export default function UserProfile() {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto py-6 space-y-6 px-4">
+      <div className="w-full py-6 space-y-6 px-4 max-w-7xl mx-auto">
         {/* Header Section */}
         <Card>
         <CardHeader>
