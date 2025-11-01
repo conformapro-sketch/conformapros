@@ -35,7 +35,7 @@ import type { Database } from "@/types/db";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Building2, Settings, AlertCircle, MapPin, Activity, Wrench } from "lucide-react";
+import { Building2, Settings, AlertCircle, MapPin, Activity } from "lucide-react";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useEffect, useState } from "react";
 import { LocationPicker } from "@/components/LocationPicker";
@@ -94,27 +94,12 @@ const SECTEURS = [
   "Autre",
 ];
 
-const EQUIPEMENTS = [
-  { key: "ria", label: "RIA (Robinets d'Incendie Armés)" },
-  { key: "extincteurs", label: "Extincteurs" },
-  { key: "ssi", label: "SSI (Système de Sécurité Incendie)" },
-  { key: "electricite_bt", label: "Électricité BT" },
-  { key: "electricite_ht", label: "Électricité HT" },
-  { key: "monte_charge", label: "Monte-charge" },
-  { key: "appareils_pression", label: "Appareils sous pression" },
-  { key: "chaudiere", label: "Chaudière" },
-  { key: "gaz", label: "Gaz" },
-  { key: "froid", label: "Installation de froid" },
-  { key: "levage", label: "Engins de levage" },
-];
-
 export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [selectedGouvernoratId, setSelectedGouvernoratId] = useState<string | null>(null);
-  const [equipements, setEquipements] = useState<Record<string, boolean>>({});
 
   // Check user role
   useEffect(() => {
@@ -189,15 +174,8 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
   const veilleModule = siteModules.find((sm: any) => sm.modules_systeme?.code === 'VEILLE');
   const isVeilleEnabled = veilleModule?.enabled || false;
 
-  // Load equipements from site data and set gouvernorat for delegation loading
+  // Load gouvernorat for delegation loading when editing a site
   useEffect(() => {
-    if (open && site?.equipements_critiques) {
-      setEquipements(site.equipements_critiques as Record<string, boolean>);
-    } else if (open && !site) {
-      setEquipements({});
-    }
-    
-    // When editing a site, load its gouvernorat to populate delegations
     if (open && site?.gouvernorat && gouvernorats.length > 0) {
       const gov = gouvernorats.find((g: any) => g.nom === site.gouvernorat);
       if (gov) {
@@ -276,7 +254,6 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
         nom_site: data.nom_site.trim(),
         code_site: data.code_site.trim(),
         est_siege: data.est_siege || false,
-        equipements_critiques: equipements,
       };
 
       // Add optional fields only if they have values
@@ -301,7 +278,6 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       toast({ title: "Site créé avec succès" });
       reset();
-      setEquipements({});
       setSelectedGouvernoratId(null);
       onOpenChange(false);
     },
@@ -322,7 +298,6 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
         nom_site: data.nom_site.trim(),
         code_site: data.code_site.trim(),
         est_siege: data.est_siege || false,
-        equipements_critiques: equipements,
       };
 
       // Add optional fields only if they have values
@@ -474,10 +449,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
         </p>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${site ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="essentiels">Informations essentielles</TabsTrigger>
             <TabsTrigger value="activite">Activité</TabsTrigger>
-            <TabsTrigger value="equipements">Équipements</TabsTrigger>
             {site && <TabsTrigger value="modules">Modules</TabsTrigger>}
           </TabsList>
 
@@ -708,45 +682,7 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
               />
             </TabsContent>
 
-            {/* Tab 3: Équipements critiques */}
-            <TabsContent value="equipements" className="space-y-4">
-              <div className="bg-muted/50 p-4 rounded-lg mb-4">
-                <p className="text-sm text-muted-foreground flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <span>
-                    Cochez les équipements présents sur le site pour activer les contrôles 
-                    techniques réglementaires associés.
-                  </span>
-                </p>
-              </div>
-
-              <Card className="p-4">
-                <div className="space-y-3">
-                  {EQUIPEMENTS.map((equip) => (
-                    <div key={equip.key} className="flex items-start space-x-3 py-2">
-                      <Checkbox
-                        id={`equip-${equip.key}`}
-                        checked={equipements[equip.key] || false}
-                        onCheckedChange={(checked) => {
-                          setEquipements(prev => ({
-                            ...prev,
-                            [equip.key]: checked as boolean,
-                          }));
-                        }}
-                      />
-                      <Label
-                        htmlFor={`equip-${equip.key}`}
-                        className="text-sm font-normal cursor-pointer leading-tight"
-                      >
-                        {equip.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </TabsContent>
-
-            {/* Tab 5: Modules & Domaines (only for editing) */}
+            {/* Tab 3: Modules & Domaines (only for editing) */}
             {site && (
               <TabsContent value="modules" className="space-y-6">
                 {!isAdmin && (
