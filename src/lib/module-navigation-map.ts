@@ -118,6 +118,7 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
   VISITES_MED: {
     icon: Stethoscope,
     subItems: [
+      { title: "Tableau de bord", url: "/visites-medicales/dashboard" },
       { title: "Liste des visites", url: "/visites-medicales" },
       { title: "Planning", url: "/visites-medicales/planning" },
     ],

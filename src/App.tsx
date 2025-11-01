@@ -66,6 +66,7 @@ import RoleManager from "./pages/RoleManager";
 import ClientUsers from "./pages/ClientUsers";
 import AllClientUsers from "./pages/AllClientUsers";
 import VisitesMedicales from "./pages/VisitesMedicales";
+import VisitesMedicalesDashboard from "./pages/VisitesMedicalesDashboard";
 import Formations from "./pages/Formations";
 import FormationsDashboard from "./pages/FormationsDashboard";
 import FormationsPlanning from "./pages/FormationsPlanning";
@@ -259,6 +260,7 @@ const App = () => (
               <Route path="environnement/points-limites" element={<EnvironnementPointsLimites />} />
               <Route path="environnement/prestataires" element={<EnvironnementPrestataires />} />
               
+              <Route path="visites-medicales/dashboard" element={<VisitesMedicalesDashboard />} />
               <Route path="visites-medicales" element={<VisitesMedicales />} />
               <Route path="visites-medicales/planning" element={<VisitesMedicalesPlanification />} />
               <Route path="visites-medicales/employe/:employeeId" element={<EmployeeSanteFiche />} />
