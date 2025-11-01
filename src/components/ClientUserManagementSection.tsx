@@ -64,9 +64,9 @@ const statusOptions = [
 export function ClientUserManagementSection({ clientId, clientName }: ClientUserManagementSectionProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user: currentUser, userRole } = useAuth();
+  const { user: currentUser, userRole, hasRole, isSuperAdmin } = useAuth();
 
-  const canManage = ["admin_global", "admin_client", "gestionnaire_hse"].includes(userRole ?? "");
+  const canManage = isSuperAdmin() || hasRole("admin_global") || hasRole("admin_client") || hasRole("gestionnaire_hse");
   const canViewUsers = canManage;
 
   const [search, setSearch] = useState("");
