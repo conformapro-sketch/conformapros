@@ -52,7 +52,7 @@ export function ArticleFormModal({
   useEffect(() => {
     if (article) {
       setFormData({
-        numero: article.numero || "",
+        numero: article.numero_article || "",
         titre_court: article.titre_court || "",
         resume: article.resume || "",
         contenu: article.contenu || "",

@@ -322,7 +322,7 @@ export default function BibliothequeTexteDetail() {
 
           {articles && articles.length > 0 ? (
             <div className="space-y-3">
-              {articles.map((article) => {
+              {articles.map((article, index) => {
                 const isExpanded = expandedArticles.includes(article.id);
                 const versionsData = articleVersionsMap[article.id] || [];
 
@@ -334,32 +334,37 @@ export default function BibliothequeTexteDetail() {
                     >
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="sm" className="p-0 h-auto hover:bg-transparent">
-                                <div className="flex items-center gap-2">
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                  )}
-                                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                                    {article.numero}
-                                    {article.titre_court && ` - ${article.titre_court}`}
-                                    {article.indicatif && (
-                                      <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 ml-2">
-                                        Indicatif
-                                      </Badge>
+                          <div className="flex items-start gap-3 flex-1">
+                            <Badge variant="outline" className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center font-bold">
+                              {index + 1}
+                            </Badge>
+                            <div className="flex-1">
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="p-0 h-auto hover:bg-transparent -ml-2">
+                                  <div className="flex items-center gap-2">
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4" />
                                     )}
-                                  </h3>
-                                </div>
-                              </Button>
-                            </CollapsibleTrigger>
-                            {article.contenu && (
-                              <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                {stripHtml(article.contenu)}
-                              </p>
-                            )}
+                                    <h3 className="font-semibold text-lg flex items-center gap-2 flex-wrap">
+                                      {article.numero_article}
+                                      {article.titre_court && <span className="text-muted-foreground">- {article.titre_court}</span>}
+                                      {article.indicatif && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          Indicatif
+                                        </Badge>
+                                      )}
+                                    </h3>
+                                  </div>
+                                </Button>
+                              </CollapsibleTrigger>
+                              {(article.resume || article.contenu) && (
+                                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                  {article.resume ? stripHtml(article.resume) : stripHtml(article.contenu)}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <div className="flex gap-2 shrink-0">
                             <Button
