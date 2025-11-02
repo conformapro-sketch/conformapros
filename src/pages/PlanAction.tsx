@@ -53,48 +53,20 @@ export default function PlanAction() {
     enabled: clientFilter !== "all",
   });
 
-  // Récupérer les actions correctives avec toutes les informations nécessaires
+  // Récupérer les actions correctives
   const { data: actionsData, isLoading } = useQuery({
     queryKey: ['actions-correctives', searchTerm, clientFilter, siteFilter, statutFilter, prioriteFilter, page],
     queryFn: async () => {
       let query = supabase
         .from('actions_correctives')
         .select(`
-          id,
-          titre,
-          manquement,
-          description,
-          statut,
-          priorite,
-          date_echeance,
-          cout_estime,
-          created_at,
-          responsable:responsable_id!employes (
-            id,
-            nom,
-            prenom,
-            email
-          ),
+          *,
           conformite:conformite_id (
             id,
             etat,
-            commentaire,
             status:status_id (
-              id,
               site_id,
-              article_id,
-              sites (
-                id,
-                nom_site,
-                code_site,
-                client_id,
-                clients (id, nom, nom_legal)
-              ),
-              textes_articles!inner (
-                numero,
-                titre_court,
-                texte_id
-              )
+              article_id
             )
           )
         `, { count: 'exact' });
@@ -113,53 +85,103 @@ export default function PlanAction() {
       const to = from + itemsPerPage - 1;
       query = query.range(from, to).order('created_at', { ascending: false });
 
-      const { data, error, count } = await query;
+      const { data: actions, error, count } = await query;
 
       if (error) {
         console.error('Error fetching actions:', error);
         throw error;
       }
 
-      // Filtrage côté client pour les recherches complexes
-      let filteredData = data || [];
+      if (!actions || actions.length === 0) {
+        return { actions: [], count: 0, enrichedActions: [] };
+      }
 
-      // Filtre par client
+      // Récupérer les IDs uniques pour les lookups
+      const siteIds = [...new Set(actions.map(a => a.conformite?.status?.site_id).filter(Boolean))];
+      const articleIds = [...new Set(actions.map(a => a.conformite?.status?.article_id).filter(Boolean))];
+      const responsableIds = [...new Set(actions.map(a => a.responsable_id).filter(Boolean))];
+
+      // Récupérer les sites avec clients
+      const { data: sitesData } = await supabase
+        .from('sites')
+        .select('id, nom_site, code_site, client_id, clients(id, nom, nom_legal)')
+        .in('id', siteIds);
+
+      // Récupérer les articles avec textes
+      const { data: articlesData } = await supabase
+        .from('textes_articles')
+        .select('id, numero, titre_court, texte_id')
+        .in('id', articleIds);
+
+      // Récupérer les textes réglementaires
+      const texteIds = [...new Set(articlesData?.map(a => a.texte_id).filter(Boolean) || [])];
+      const { data: textesData } = await supabase
+        .from('textes_reglementaires')
+        .select('id, reference_officielle, titre')
+        .in('id', texteIds);
+
+      // Récupérer les responsables
+      const { data: responsablesData } = await supabase
+        .from('employes')
+        .select('id, nom, prenom, email')
+        .in('id', responsableIds);
+
+      // Créer des maps pour lookup rapide
+      const sitesMap = new Map(sitesData?.map(s => [s.id, s]) || []);
+      const articlesMap = new Map(articlesData?.map(a => [a.id, a]) || []);
+      const textesMap = new Map(textesData?.map(t => [t.id, t]) || []);
+      const responsablesMap = new Map(responsablesData?.map(r => [r.id, r]) || []);
+
+      // Enrichir les actions avec les données jointes
+      const enrichedActions = actions.map(action => {
+        const siteId = action.conformite?.status?.site_id;
+        const articleId = action.conformite?.status?.article_id;
+        const site = siteId ? sitesMap.get(siteId) : null;
+        const article = articleId ? articlesMap.get(articleId) : null;
+        const texte = article?.texte_id ? textesMap.get(article.texte_id) : null;
+        const responsable = action.responsable_id ? responsablesMap.get(action.responsable_id) : null;
+
+        return {
+          ...action,
+          site,
+          article,
+          texte,
+          responsable,
+        };
+      });
+
+      // Filtrage côté client
+      let filteredActions = enrichedActions;
+
       if (clientFilter !== "all") {
-        filteredData = filteredData.filter(action => 
-          action.conformite?.status?.sites?.client_id === clientFilter
+        filteredActions = filteredActions.filter(action => 
+          action.site?.client_id === clientFilter
         );
       }
 
-      // Filtre par site
       if (siteFilter !== "all") {
-        filteredData = filteredData.filter(action => 
-          action.conformite?.status?.site_id === siteFilter
+        filteredActions = filteredActions.filter(action => 
+          action.site?.id === siteFilter
         );
       }
 
-      // Filtre par recherche textuelle
       if (searchTerm) {
         const lowerSearch = searchTerm.toLowerCase();
-        filteredData = filteredData.filter(action => {
-          const texte = action.conformite?.status?.textes_articles?.textes_reglementaires;
-          const article = action.conformite?.status?.textes_articles;
-          const site = action.conformite?.status?.sites;
-          const client = site?.clients;
-
+        filteredActions = filteredActions.filter(action => {
           return (
             action.titre?.toLowerCase().includes(lowerSearch) ||
             action.manquement?.toLowerCase().includes(lowerSearch) ||
-            texte?.reference_officielle?.toLowerCase().includes(lowerSearch) ||
-            texte?.titre?.toLowerCase().includes(lowerSearch) ||
-            article?.numero?.toLowerCase().includes(lowerSearch) ||
-            site?.nom_site?.toLowerCase().includes(lowerSearch) ||
-            client?.nom?.toLowerCase().includes(lowerSearch)
+            action.texte?.reference_officielle?.toLowerCase().includes(lowerSearch) ||
+            action.texte?.titre?.toLowerCase().includes(lowerSearch) ||
+            action.article?.numero?.toLowerCase().includes(lowerSearch) ||
+            action.site?.nom_site?.toLowerCase().includes(lowerSearch) ||
+            action.site?.clients?.nom?.toLowerCase().includes(lowerSearch)
           );
         });
       }
 
       return {
-        actions: filteredData,
+        actions: filteredActions,
         count: count || 0,
       };
     },
@@ -390,66 +412,59 @@ export default function PlanAction() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {actions.map((action) => {
-                    const site = action.conformite?.status?.sites;
-                    const client = site?.clients;
-                    const article = action.conformite?.status?.textes_articles;
-                    const texte = article?.textes_reglementaires;
-
-                    return (
-                      <TableRow key={action.id}>
-                        <TableCell className="font-medium">
-                          {client?.nom || client?.nom_legal || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {site?.nom_site || '-'}
-                        </TableCell>
-                        <TableCell className="max-w-xs">
-                          <div className="truncate" title={action.manquement || ''}>
-                            {action.manquement || '-'}
+                  {actions.map((action: any) => (
+                    <TableRow key={action.id}>
+                      <TableCell className="font-medium">
+                        {action.site?.clients?.nom || action.site?.clients?.nom_legal || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {action.site?.nom_site || '-'}
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="truncate" title={action.manquement || ''}>
+                          {action.manquement || '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        <div className="truncate font-medium" title={action.titre}>
+                          {action.titre}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {action.texte?.reference_officielle ? (
+                          <div className="text-sm">
+                            <div className="font-medium">{action.texte.reference_officielle}</div>
+                            <div className="text-muted-foreground">Art. {action.article?.numero}</div>
                           </div>
-                        </TableCell>
-                        <TableCell className="max-w-xs">
-                          <div className="truncate font-medium" title={action.titre}>
-                            {action.titre}
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {action.responsable ? (
+                          <div className="text-sm">
+                            {action.responsable.prenom} {action.responsable.nom}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          {texte?.reference_officielle ? (
-                            <div className="text-sm">
-                              <div className="font-medium">{texte.reference_officielle}</div>
-                              <div className="text-muted-foreground">Art. {article?.numero}</div>
-                            </div>
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {action.responsable ? (
-                            <div className="text-sm">
-                              {action.responsable.prenom} {action.responsable.nom}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">Non assigné</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {action.date_echeance ? (
-                            format(new Date(action.date_echeance), 'dd MMM yyyy', { locale: fr })
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{getPrioriteBadge(action.priorite)}</TableCell>
-                        <TableCell>{getStatutBadge(action.statut)}</TableCell>
-                        <TableCell>
-                          {action.cout_estime ? (
-                            `${action.cout_estime.toLocaleString('fr-FR')} DT`
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                        ) : (
+                          <span className="text-muted-foreground">Non assigné</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {action.date_echeance ? (
+                          format(new Date(action.date_echeance), 'dd MMM yyyy', { locale: fr })
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{getPrioriteBadge(action.priorite)}</TableCell>
+                      <TableCell>{getStatutBadge(action.statut)}</TableCell>
+                      <TableCell>
+                        {action.cout_estime ? (
+                          `${action.cout_estime.toLocaleString('fr-FR')} DT`
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
 
