@@ -33,6 +33,7 @@ import { ArticleVersionComparison } from "@/components/ArticleVersionComparison"
 import { TimelineChangelog } from "@/components/TimelineChangelog";
 import { TexteCodesDisplay } from "@/components/TexteCodesDisplay";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize-html";
+import { PDFViewerModal } from "@/components/PDFViewerModal";
 
 export default function BibliothequeTexteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +44,7 @@ export default function BibliothequeTexteDetail() {
   const [showArticleModal, setShowArticleModal] = useState(false);
   const [editingArticle, setEditingArticle] = useState<any>(null);
   const [deleteArticleId, setDeleteArticleId] = useState<string | null>(null);
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   
   // Version management
   const [expandedArticles, setExpandedArticles] = useState<string[]>([]);
@@ -246,10 +248,19 @@ export default function BibliothequeTexteDetail() {
             {texte.fichier_pdf_url && (
               <Button
                 variant="outline"
-                onClick={() => window.open(texte.fichier_pdf_url!, "_blank")}
+                onClick={() => setPdfViewerOpen(true)}
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                PDF
+                <FileText className="h-4 w-4 mr-2" />
+                Voir le PDF
+              </Button>
+            )}
+            {texte.pdf_url && (
+              <Button
+                variant="outline"
+                onClick={() => setPdfViewerOpen(true)}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Voir le PDF
               </Button>
             )}
           </div>
@@ -620,6 +631,14 @@ export default function BibliothequeTexteDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* PDF Viewer Modal */}
+      <PDFViewerModal
+        open={pdfViewerOpen}
+        onOpenChange={setPdfViewerOpen}
+        pdfUrl={texte?.pdf_url || texte?.fichier_pdf_url || null}
+        title={texte?.reference_officielle}
+      />
     </div>
   );
 }

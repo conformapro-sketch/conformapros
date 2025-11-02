@@ -39,6 +39,7 @@ import { BibliothequeActiveFilters } from "@/components/bibliotheque/Bibliothequ
 import { BibliothequeTableSkeleton } from "@/components/bibliotheque/BibliothequeTableSkeleton";
 import { BibliothequeQuickView } from "@/components/bibliotheque/BibliothequeQuickView";
 import { BibliothequeFloatingActions } from "@/components/bibliotheque/BibliothequeFloatingActions";
+import { PDFViewerModal } from "@/components/PDFViewerModal";
 import * as XLSX from 'xlsx';
 
 const TYPE_LABELS = {
@@ -76,6 +77,9 @@ export default function BibliothequeReglementaire() {
   const [pageSize, setPageSize] = useState(25);
   const [selectedTextes, setSelectedTextes] = useState<string[]>([]);
   const [quickViewTexte, setQuickViewTexte] = useState<any | null>(null);
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
+  const [selectedPdfTitle, setSelectedPdfTitle] = useState<string>("");
 
   const { data: domainesList } = useQuery({
     queryKey: ["domaines"],
@@ -293,6 +297,14 @@ export default function BibliothequeReglementaire() {
     XLSX.utils.book_append_sheet(wb, ws, "Textes sélectionnés");
     XLSX.writeFile(wb, `textes_selectionnes_${new Date().toISOString().split('T')[0]}.xlsx`);
     toast.success(`${selectedTextes.length} texte${selectedTextes.length > 1 ? 's exportés' : ' exporté'}`);
+  };
+
+  const handleViewPdf = (texte: any) => {
+    if (texte.pdf_url) {
+      setSelectedPdfUrl(texte.pdf_url);
+      setSelectedPdfTitle(texte.reference_officielle);
+      setPdfViewerOpen(true);
+    }
   };
 
   // Active filters for the badge display
@@ -680,6 +692,7 @@ export default function BibliothequeReglementaire() {
                         </TableHead>
                         <TableHead className="font-semibold">Statut</TableHead>
                         <TableHead className="font-semibold text-center">Articles</TableHead>
+                        <TableHead className="font-semibold text-center">Document</TableHead>
                         <TableHead className="font-semibold text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -740,6 +753,24 @@ export default function BibliothequeReglementaire() {
                                     {articleCount}
                                   </div>
                                 </TableCell>
+                                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                                  {texte.pdf_url ? (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewPdf(texte);
+                                      }}
+                                      className="h-8 px-3 hover:bg-accent/10"
+                                    >
+                                      <FileText className="h-4 w-4 text-accent mr-1.5" />
+                                      <Badge variant="secondary" className="text-xs">PDF</Badge>
+                                    </Button>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
                                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                   <div className="flex justify-end gap-1">
                                     <Button
@@ -793,6 +824,7 @@ export default function BibliothequeReglementaire() {
                         onEdit={handleEdit}
                         onDelete={setDeleteTexteId}
                         onQuickView={setQuickViewTexte}
+                        onViewPdf={handleViewPdf}
                         getStatutBadge={getStatutBadge}
                         isNew={isNewTexte(texte)}
                         isSelected={selectedTextes.includes(texte.id)}
@@ -917,6 +949,14 @@ export default function BibliothequeReglementaire() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PDF Viewer Modal */}
+      <PDFViewerModal
+        open={pdfViewerOpen}
+        onOpenChange={setPdfViewerOpen}
+        pdfUrl={selectedPdfUrl}
+        title={selectedPdfTitle}
+      />
     </div>
   );
 }

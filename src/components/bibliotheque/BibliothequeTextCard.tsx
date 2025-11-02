@@ -24,6 +24,7 @@ interface BibliothequeTextCardProps {
   onEdit: (texte: any) => void;
   onDelete: (id: string) => void;
   onQuickView?: (texte: any) => void;
+  onViewPdf?: (texte: any) => void;
   getStatutBadge: (statut: string) => { label: string; className: string; icon: string };
   isNew?: boolean;
   isSelected?: boolean;
@@ -35,6 +36,7 @@ export function BibliothequeTextCard({
   onEdit, 
   onDelete, 
   onQuickView,
+  onViewPdf,
   getStatutBadge, 
   isNew,
   isSelected,
@@ -57,14 +59,20 @@ export function BibliothequeTextCard({
         </div>
       )}
 
-      {isNew && (
-        <div className={`absolute top-3 ${onSelect ? 'right-3' : 'right-3'} z-10`}>
+      <div className={`absolute top-3 right-3 z-10 flex gap-2`}>
+        {texte.pdf_url && (
+          <Badge className="bg-blue-500 text-white text-xs">
+            <FileText className="h-3 w-3 mr-1" />
+            PDF
+          </Badge>
+        )}
+        {isNew && (
           <Badge className="bg-accent text-accent-foreground shadow-gold animate-pulse">
             <Sparkles className="h-3 w-3 mr-1" />
             Nouveau
           </Badge>
-        </div>
-      )}
+        )}
+      </div>
       
       <CardContent 
         className="p-5 cursor-pointer" 
@@ -118,6 +126,17 @@ export function BibliothequeTextCard({
       </CardContent>
 
       <CardFooter className="p-3 pt-0 flex gap-1" onClick={(e) => e.stopPropagation()}>
+        {texte.pdf_url && onViewPdf && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onViewPdf(texte)}
+            className="flex-1 text-xs hover:text-accent hover:border-accent"
+          >
+            <FileText className="h-3.5 w-3.5 mr-1" />
+            PDF
+          </Button>
+        )}
         {onQuickView && (
           <Button
             variant="outline"
