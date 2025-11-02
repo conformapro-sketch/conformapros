@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Search, 
   Plus,
@@ -19,7 +20,8 @@ import {
   FileText,
   Scale,
   Filter,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-queries";
@@ -32,6 +34,11 @@ import { BibliothequeStatsCards } from "@/components/bibliotheque/BibliothequeSt
 import { BibliothequeViewToggle } from "@/components/bibliotheque/BibliothequeViewToggle";
 import { BibliothequeTextCard } from "@/components/bibliotheque/BibliothequeTextCard";
 import { BibliothequePreview } from "@/components/bibliotheque/BibliothequePreview";
+import { BibliothequeEmptyState } from "@/components/bibliotheque/BibliothequeEmptyState";
+import { BibliothequeActiveFilters } from "@/components/bibliotheque/BibliothequeActiveFilters";
+import { BibliothequeTableSkeleton } from "@/components/bibliotheque/BibliothequeTableSkeleton";
+import { BibliothequeQuickView } from "@/components/bibliotheque/BibliothequeQuickView";
+import { BibliothequeFloatingActions } from "@/components/bibliotheque/BibliothequeFloatingActions";
 import * as XLSX from 'xlsx';
 
 const TYPE_LABELS = {
@@ -67,6 +74,8 @@ export default function BibliothequeReglementaire() {
   const [showFilters, setShowFilters] = useState(true);
   const [view, setView] = useState<"table" | "grid">("table");
   const [pageSize, setPageSize] = useState(25);
+  const [selectedTextes, setSelectedTextes] = useState<string[]>([]);
+  const [quickViewTexte, setQuickViewTexte] = useState<any | null>(null);
 
   const { data: domainesList } = useQuery({
     queryKey: ["domaines"],
@@ -234,11 +243,110 @@ export default function BibliothequeReglementaire() {
     setPage(1);
   };
 
+  const handleFilterByStatus = (status: string) => {
+    setStatutFilter(status);
+    setPage(1);
+  };
+
+  const handleSelectTexte = (id: string, selected: boolean) => {
+    setSelectedTextes(prev => 
+      selected ? [...prev, id] : prev.filter(texteId => texteId !== id)
+    );
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    setSelectedTextes(selected ? textes.map((t: any) => t.id) : []);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedTextes.length === 0) return;
+    
+    toast.promise(
+      Promise.all(selectedTextes.map(id => textesReglementairesQueries.softDelete(id))),
+      {
+        loading: `Suppression de ${selectedTextes.length} texte${selectedTextes.length > 1 ? 's' : ''}...`,
+        success: () => {
+          queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
+          setSelectedTextes([]);
+          return `${selectedTextes.length} texte${selectedTextes.length > 1 ? 's supprimés' : ' supprimé'}`;
+        },
+        error: "Erreur lors de la suppression",
+      }
+    );
+  };
+
+  const handleBulkExport = () => {
+    const selectedData = textes.filter((t: any) => selectedTextes.includes(t.id));
+    const exportData = selectedData.map((t: any) => ({
+      Type: TYPE_LABELS[t.type_acte as keyof typeof TYPE_LABELS],
+      Référence: t.reference_officielle,
+      Titre: t.intitule,
+      Autorité: t.autorite_emettrice || "",
+      "Date de publication": t.date_publication || "",
+      Statut: getStatutBadge(t.statut_vigueur).label,
+      "Nombre d'articles": t.articles?.[0]?.count || 0,
+      Année: t.annee || "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Textes sélectionnés");
+    XLSX.writeFile(wb, `textes_selectionnes_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success(`${selectedTextes.length} texte${selectedTextes.length > 1 ? 's exportés' : ' exporté'}`);
+  };
+
+  // Active filters for the badge display
+  const activeFilters = useMemo(() => {
+    const filters = [];
+    if (typeFilter !== "all") {
+      filters.push({
+        id: "type",
+        label: `Type: ${TYPE_LABELS[typeFilter as keyof typeof TYPE_LABELS]}`,
+        value: typeFilter,
+        onRemove: () => setTypeFilter("all"),
+      });
+    }
+    if (statutFilter !== "all") {
+      filters.push({
+        id: "statut",
+        label: `Statut: ${getStatutBadge(statutFilter).label}`,
+        value: statutFilter,
+        onRemove: () => setStatutFilter("all"),
+      });
+    }
+    if (domaineFilter !== "all") {
+      const domaine = domainesList?.find(d => d.id === domaineFilter);
+      filters.push({
+        id: "domaine",
+        label: `Domaine: ${domaine?.libelle || domaineFilter}`,
+        value: domaineFilter,
+        onRemove: () => setDomaineFilter("all"),
+      });
+    }
+    if (anneeFilter !== "all") {
+      filters.push({
+        id: "annee",
+        label: `Année: ${anneeFilter}`,
+        value: anneeFilter,
+        onRemove: () => setAnneeFilter("all"),
+      });
+    }
+    if (searchTerm) {
+      filters.push({
+        id: "search",
+        label: `Recherche: "${searchTerm}"`,
+        value: searchTerm,
+        onRemove: () => setSearchTerm(""),
+      });
+    }
+    return filters;
+  }, [typeFilter, statutFilter, domaineFilter, anneeFilter, searchTerm, domainesList]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Statistics Cards */}
-        <BibliothequeStatsCards stats={stats} />
+        <BibliothequeStatsCards stats={stats} onFilterByStatus={handleFilterByStatus} />
 
         {/* Header avec gradient */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-primary p-8 shadow-strong">
@@ -342,7 +450,19 @@ export default function BibliothequeReglementaire() {
                   <X className="h-4 w-4" />
                 </Button>
               )}
+              {isLoading && (
+                <div className="absolute right-12 top-3.5">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
             </div>
+
+            {/* Active Filters */}
+            <BibliothequeActiveFilters 
+              filters={activeFilters}
+              resultCount={totalCount}
+              onClearAll={clearAllFilters}
+            />
 
             {/* Filtres avancés */}
             {showFilters && (
@@ -477,6 +597,19 @@ export default function BibliothequeReglementaire() {
                     <SelectItem value="100">100 par page</SelectItem>
                   </SelectContent>
                 </Select>
+                {view === "grid" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSelectAll(selectedTextes.length !== textes.length)}
+                  >
+                    <Checkbox 
+                      checked={selectedTextes.length === textes.length && textes.length > 0}
+                      className="mr-2"
+                    />
+                    Tout sélectionner
+                  </Button>
+                )}
                 <BibliothequeViewToggle view={view} onViewChange={setView} />
               </div>
             </div>
@@ -484,10 +617,7 @@ export default function BibliothequeReglementaire() {
           
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-                <p className="text-muted-foreground font-medium">Chargement des textes...</p>
-              </div>
+              <BibliothequeTableSkeleton view={view} count={pageSize} />
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <div className="p-4 rounded-full bg-destructive/10">
@@ -655,15 +785,18 @@ export default function BibliothequeReglementaire() {
                     </Table>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-6">
                     {textes.map((texte: any) => (
                       <BibliothequeTextCard
                         key={texte.id}
                         texte={texte}
                         onEdit={handleEdit}
                         onDelete={setDeleteTexteId}
+                        onQuickView={setQuickViewTexte}
                         getStatutBadge={getStatutBadge}
                         isNew={isNewTexte(texte)}
+                        isSelected={selectedTextes.includes(texte.id)}
+                        onSelect={handleSelectTexte}
                       />
                     ))}
                   </div>
@@ -718,24 +851,34 @@ export default function BibliothequeReglementaire() {
                 )}
               </>
             ) : (
-              <div className="text-center py-16">
-                <div className="inline-flex p-4 rounded-full bg-muted/50 mb-4">
-                  <FileText className="h-12 w-12 text-muted-foreground" />
-                </div>
-                <p className="text-lg font-medium text-foreground mb-2">Aucun texte trouvé</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Essayez de modifier vos critères de recherche
-                </p>
-                {activeFiltersCount > 0 && (
-                  <Button variant="outline" onClick={clearAllFilters}>
-                    Réinitialiser les filtres
-                  </Button>
-                )}
-              </div>
+              <BibliothequeEmptyState
+                hasFilters={activeFiltersCount > 0}
+                hasSearch={!!searchTerm}
+                onClearFilters={clearAllFilters}
+                onAddNew={() => { setEditingTexte(null); setShowFormModal(true); }}
+              />
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Bulk Actions Floating Bar */}
+      <BibliothequeFloatingActions
+        selectedCount={selectedTextes.length}
+        onExport={handleBulkExport}
+        onDelete={handleBulkDelete}
+        onClear={() => setSelectedTextes([])}
+      />
+
+      {/* Quick View Drawer */}
+      <BibliothequeQuickView
+        open={!!quickViewTexte}
+        onOpenChange={(open) => !open && setQuickViewTexte(null)}
+        texte={quickViewTexte}
+        onEdit={handleEdit}
+        onDelete={setDeleteTexteId}
+        getStatutBadge={getStatutBadge}
+      />
 
       {/* Modals */}
       <TexteFormModal
