@@ -50,7 +50,6 @@ import {
   ChevronDown,
   ChevronRight,
   LayoutGrid,
-  Lightbulb,
 } from "lucide-react";
 import { ArticleApplicabilityCard } from "@/components/ArticleApplicabilityCard";
 import { Separator } from "@/components/ui/separator";
@@ -65,7 +64,7 @@ interface ArticleRow {
   texte_reference?: string;
   texte_titre?: string;
   site_id: string;
-  applicabilite: "obligatoire" | "recommande" | "non_applicable";
+  applicabilite: "obligatoire" | "non_applicable";
   motif_non_applicable?: string;
   commentaire_non_applicable?: string;
   isModified?: boolean;
@@ -94,9 +93,6 @@ export default function VeilleApplicabilite() {
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
   const [quickFilter, setQuickFilter] = useState<'all' | 'to_evaluate' | 'applicable' | 'non_applicable'>('all');
-  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
-  const [currentArticleForComment, setCurrentArticleForComment] = useState<ArticleRow | null>(null);
-  const [tempComment, setTempComment] = useState("");
 
   // Fetch clients (only for team users)
   const { data: clients = [] } = useQuery({
@@ -252,7 +248,7 @@ export default function VeilleApplicabilite() {
     if (quickFilter === 'to_evaluate') {
       return articles.filter(a => a.id.startsWith('new_'));
     } else if (quickFilter === 'applicable') {
-      return articles.filter(a => a.applicabilite === 'obligatoire' || a.applicabilite === 'recommande');
+      return articles.filter(a => a.applicabilite === 'obligatoire');
     } else if (quickFilter === 'non_applicable') {
       return articles.filter(a => a.applicabilite === 'non_applicable');
     }
@@ -262,9 +258,9 @@ export default function VeilleApplicabilite() {
   // Calculate stats
   const stats = useMemo(() => {
     return {
+      total: articles.length,
       toEvaluate: articles.filter(a => a.id.startsWith('new_')).length,
       applicable: articles.filter(a => a.applicabilite === 'obligatoire').length,
-      recommande: articles.filter(a => a.applicabilite === 'recommande').length,
       nonApplicable: articles.filter(a => a.applicabilite === 'non_applicable').length,
     };
   }, [articles]);
@@ -482,26 +478,12 @@ export default function VeilleApplicabilite() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {stats.recommande}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Recommandés</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2">
                   <XCircle className="h-5 w-5 text-gray-600" />
                   <div>
                     <div className="text-2xl font-bold text-gray-600">
                       {stats.nonApplicable}
                     </div>
-                    <p className="text-sm text-muted-foreground">Non concernés</p>
+                    <p className="text-sm text-muted-foreground">Non applicables</p>
                   </div>
                 </div>
               </CardContent>
@@ -531,7 +513,7 @@ export default function VeilleApplicabilite() {
                   size="sm"
                   onClick={() => setQuickFilter('applicable')}
                 >
-                  Applicables ({stats.applicable + stats.recommande})
+                  Applicables ({stats.applicable})
                 </Button>
                 <Button
                   variant={quickFilter === 'non_applicable' ? 'default' : 'outline'}
@@ -646,26 +628,14 @@ export default function VeilleApplicabilite() {
                       
                       <Button
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => {
-                          setBulkApplicabilite("recommande");
-                          handleBulkUpdate();
-                        }}
-                      >
-                        <Lightbulb className="h-4 w-4 mr-2" />
-                        Marquer recommandé
-                      </Button>
-                      
-                      <Button
-                        size="sm"
                         variant="secondary"
                         onClick={() => {
                           setBulkApplicabilite("non_applicable");
-                          setBulkDialogOpen(true);
+                          handleBulkUpdate();
                         }}
                       >
                         <XCircle className="h-4 w-4 mr-2" />
-                        Marquer non concerné
+                        Marquer non applicable
                       </Button>
                     </div>
                     
@@ -746,11 +716,6 @@ export default function VeilleApplicabilite() {
                           onUpdate={(applicabilite) => 
                             handleUpdateRow(article.article_id, 'applicabilite', applicabilite)
                           }
-                          onAddComment={() => {
-                            setCurrentArticleForComment(article);
-                            setTempComment(article.commentaire_non_applicable || "");
-                            setCommentDialogOpen(true);
-                          }}
                         />
                       ))}
                     </div>
@@ -837,16 +802,10 @@ export default function VeilleApplicabilite() {
                                         <span>Applicable</span>
                                       </div>
                                     )}
-                                    {article.applicabilite === "recommande" && (
-                                      <div className="flex items-center gap-2">
-                                        <Lightbulb className="h-4 w-4 text-blue-600" />
-                                        <span>Recommandé</span>
-                                      </div>
-                                    )}
                                     {article.applicabilite === "non_applicable" && (
                                       <div className="flex items-center gap-2">
                                         <XCircle className="h-4 w-4 text-gray-600" />
-                                        <span>Non concerné</span>
+                                        <span>Non applicable</span>
                                       </div>
                                     )}
                                   </SelectValue>
@@ -858,16 +817,10 @@ export default function VeilleApplicabilite() {
                                       <span>Applicable</span>
                                     </div>
                                   </SelectItem>
-                                  <SelectItem value="recommande">
-                                    <div className="flex items-center gap-2">
-                                      <Lightbulb className="h-4 w-4 text-blue-600" />
-                                      <span>Recommandé</span>
-                                    </div>
-                                  </SelectItem>
                                   <SelectItem value="non_applicable">
                                     <div className="flex items-center gap-2">
                                       <XCircle className="h-4 w-4 text-gray-600" />
-                                      <span>Non concerné</span>
+                                      <span>Non applicable</span>
                                     </div>
                                   </SelectItem>
                                 </SelectContent>
@@ -935,58 +888,6 @@ export default function VeilleApplicabilite() {
           </Card>
         </>
       )}
-
-      {/* Comment Dialog */}
-      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Justification de non-applicabilité</DialogTitle>
-            <DialogDescription>
-              Pourquoi cet article n'est-il pas concerné ?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="p-3 bg-muted rounded-md">
-              <p className="text-sm font-medium">
-                Article {currentArticleForComment?.article_numero}
-              </p>
-              {currentArticleForComment?.article_titre && (
-                <p className="text-sm text-muted-foreground">
-                  {currentArticleForComment.article_titre}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label>Commentaire</Label>
-              <Textarea
-                value={tempComment}
-                onChange={(e) => setTempComment(e.target.value)}
-                placeholder="Expliquez pourquoi cet article ne concerne pas votre site (ex: hors périmètre d'activité, effectif non concerné, zone géographique...)"
-                rows={4}
-                className="resize-none"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCommentDialogOpen(false)}>
-              Annuler
-            </Button>
-            <Button onClick={() => {
-              if (currentArticleForComment) {
-                handleUpdateRow(
-                  currentArticleForComment.article_id,
-                  'commentaire_non_applicable',
-                  tempComment
-                );
-              }
-              setCommentDialogOpen(false);
-              setTempComment("");
-            }}>
-              Enregistrer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Bulk Update Dialog */}
       <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>

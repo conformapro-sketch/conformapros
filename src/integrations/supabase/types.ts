@@ -3791,10 +3791,7 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "admin" | "gestionnaire" | "consultant" | "user"
-      applicabilite_reglementaire:
-        | "obligatoire"
-        | "recommande"
-        | "non_applicable"
+      applicabilite_reglementaire: "obligatoire" | "non_applicable"
       billing_mode: "par_site" | "par_nombre_employes" | "forfait_global"
       domaine_reglementaire:
         | "incendie"
@@ -3954,11 +3951,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "gestionnaire", "consultant", "user"],
-      applicabilite_reglementaire: [
-        "obligatoire",
-        "recommande",
-        "non_applicable",
-      ],
+      applicabilite_reglementaire: ["obligatoire", "non_applicable"],
       billing_mode: ["par_site", "par_nombre_employes", "forfait_global"],
       domaine_reglementaire: [
         "incendie",

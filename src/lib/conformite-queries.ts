@@ -13,6 +13,24 @@ export const conformiteQueries = {
     etatConformite?: string;
     siteId?: string;
   }) => {
+    // First, get applicable articles (applicabilite = 'obligatoire') from site_article_status
+    let applicableArticlesQuery = supabase
+      .from('site_article_status')
+      .select('site_id, article_id')
+      .eq('applicabilite', 'obligatoire');
+
+    if (filters?.siteId && filters.siteId !== 'all') {
+      applicableArticlesQuery = applicableArticlesQuery.eq('site_id', filters.siteId);
+    }
+
+    const { data: applicableArticles, error: applicableError } = await applicableArticlesQuery;
+    
+    if (applicableError) throw applicableError;
+    if (!applicableArticles || applicableArticles.length === 0) {
+      return [];
+    }
+
+    // Get applicabilites only for applicable articles
     let query = supabase
       .from('applicabilite')
       .select(`
@@ -53,9 +71,15 @@ export const conformiteQueries = {
     
     if (error) throw error;
 
+    // Filter to only include applicable articles
+    const filteredApplicabilites = applicabilites?.filter(appl =>
+      applicableArticles.some(
+        aa => aa.site_id === appl.site_id && aa.article_id === appl.article_id
+      )
+    );
     // Fetch related textes and articles separately
-    const texteIds = [...new Set(applicabilites?.map(a => a.texte_id))];
-    const articleIds = [...new Set(applicabilites?.map(a => a.article_id).filter(Boolean))];
+    const texteIds = [...new Set(filteredApplicabilites?.map(a => a.texte_id))];
+    const articleIds = [...new Set(filteredApplicabilites?.map(a => a.article_id).filter(Boolean))];
 
     const { data: textes } = await supabase
       .from('textes_reglementaires')
@@ -90,7 +114,7 @@ export const conformiteQueries = {
       .in('id', articleIds);
 
     // Combine data
-    const enrichedData = applicabilites?.map(appl => ({
+    const enrichedData = filteredApplicabilites?.map(appl => ({
       ...appl,
       textes_reglementaires: textes?.find(t => t.id === appl.texte_id),
       textes_articles: articles?.find(a => a.id === appl.article_id),

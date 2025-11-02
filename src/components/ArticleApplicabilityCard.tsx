@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, Lightbulb, XCircle, MessageSquare } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ArticleApplicabilityCardProps {
@@ -13,15 +13,13 @@ interface ArticleApplicabilityCardProps {
     article_contenu?: string;
     texte_reference?: string;
     texte_titre?: string;
-    applicabilite: "obligatoire" | "recommande" | "non_applicable";
-    commentaire_non_applicable?: string;
+    applicabilite: "obligatoire" | "non_applicable";
     isModified?: boolean;
   };
   index: number;
   isSelected: boolean;
   onSelect: (checked: boolean) => void;
   onUpdate: (applicabilite: string) => void;
-  onAddComment: () => void;
 }
 
 export function ArticleApplicabilityCard({
@@ -29,13 +27,11 @@ export function ArticleApplicabilityCard({
   index,
   isSelected,
   onSelect,
-  onUpdate,
-  onAddComment
+  onUpdate
 }: ArticleApplicabilityCardProps) {
   const getStatusColor = () => {
     switch (article.applicabilite) {
       case "obligatoire": return "border-l-green-500";
-      case "recommande": return "border-l-blue-500";
       case "non_applicable": return "border-l-gray-400";
     }
   };
@@ -75,21 +71,14 @@ export function ArticleApplicabilityCard({
               
               {/* Badge statut actuel */}
               <Badge 
-                variant={
-                  article.applicabilite === "obligatoire" ? "default" :
-                  article.applicabilite === "recommande" ? "secondary" :
-                  "outline"
-                } 
+                variant={article.applicabilite === "obligatoire" ? "default" : "outline"} 
                 className={cn(
                   "text-xs shrink-0 font-medium",
                   article.applicabilite === "obligatoire" && "bg-green-600 text-white hover:bg-green-700",
-                  article.applicabilite === "recommande" && "bg-blue-600 text-white hover:bg-blue-700",
                   article.applicabilite === "non_applicable" && "bg-gray-400 text-white"
                 )}
               >
-                {article.applicabilite === "obligatoire" ? "✅ Applicable" :
-                 article.applicabilite === "recommande" ? "💡 Recommandé" :
-                 "❌ Non concerné"}
+                {article.applicabilite === "obligatoire" ? "✅ Applicable" : "❌ Non applicable"}
               </Badge>
             </div>
             
@@ -115,43 +104,14 @@ export function ArticleApplicabilityCard({
               
               <Button
                 size="sm"
-                variant={article.applicabilite === "recommande" ? "default" : "outline"}
-                className="flex-1 h-8"
-                onClick={() => onUpdate("recommande")}
-              >
-                <Lightbulb className="h-3.5 w-3.5 mr-1" />
-                Recommandé
-              </Button>
-              
-              <Button
-                size="sm"
                 variant={article.applicabilite === "non_applicable" ? "default" : "outline"}
                 className="flex-1 h-8"
                 onClick={() => onUpdate("non_applicable")}
               >
                 <XCircle className="h-3.5 w-3.5 mr-1" />
-                Non concerné
+                Non applicable
               </Button>
-              
-              {/* Bouton commentaire (visible si non_applicable) */}
-              {article.applicabilite === "non_applicable" && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 px-2"
-                  onClick={onAddComment}
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                </Button>
-              )}
             </div>
-            
-            {/* Commentaire affiché si existe */}
-            {article.commentaire_non_applicable && (
-              <div className="mt-2 p-2 bg-muted rounded-md text-xs text-muted-foreground">
-                💬 {article.commentaire_non_applicable}
-              </div>
-            )}
           </div>
         </div>
       </CardContent>
