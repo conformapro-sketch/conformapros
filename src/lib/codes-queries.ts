@@ -10,10 +10,14 @@ export const codesQueries = {
       .from("codes_juridiques")
       .select(`
         *,
-        domaines_reglementaires (
+        codes_domaines (
           id,
-          libelle,
-          code
+          domaine_id,
+          domaines_reglementaires (
+            id,
+            libelle,
+            code
+          )
         )
       `)
       .is("deleted_at", null)
@@ -29,10 +33,14 @@ export const codesQueries = {
       .from("codes_juridiques")
       .select(`
         *,
-        domaines_reglementaires (
+        codes_domaines (
           id,
-          libelle,
-          code
+          domaine_id,
+          domaines_reglementaires (
+            id,
+            libelle,
+            code
+          )
         )
       `)
       .eq("id", id)
@@ -74,13 +82,12 @@ export const codesQueries = {
   },
 
   // Créer un code
-  async create(code: Partial<CodeJuridique>) {
+  async create(code: Partial<CodeJuridique>, domaineIds: string[] = []) {
     const { data, error } = await supabase
       .from("codes_juridiques")
       .insert({
         nom_officiel: code.nom_officiel,
         abreviation: code.abreviation,
-        domaine_reglementaire_id: code.domaine_reglementaire_id,
         reference_jort: code.reference_jort,
         description: code.description,
       })
@@ -88,17 +95,31 @@ export const codesQueries = {
       .single();
 
     if (error) throw error;
+
+    // Ajouter les liaisons avec les domaines
+    if (domaineIds.length > 0) {
+      const { error: linkError } = await supabase
+        .from("codes_domaines")
+        .insert(
+          domaineIds.map(domaineId => ({
+            code_id: data.id,
+            domaine_id: domaineId,
+          }))
+        );
+
+      if (linkError) throw linkError;
+    }
+
     return data as CodeJuridique;
   },
 
   // Mettre à jour un code
-  async update(id: string, code: Partial<CodeJuridique>) {
+  async update(id: string, code: Partial<CodeJuridique>, domaineIds: string[] = []) {
     const { data, error } = await supabase
       .from("codes_juridiques")
       .update({
         nom_officiel: code.nom_officiel,
         abreviation: code.abreviation,
-        domaine_reglementaire_id: code.domaine_reglementaire_id,
         reference_jort: code.reference_jort,
         description: code.description,
       })
@@ -107,6 +128,29 @@ export const codesQueries = {
       .single();
 
     if (error) throw error;
+
+    // Supprimer les anciennes liaisons
+    const { error: deleteError } = await supabase
+      .from("codes_domaines")
+      .delete()
+      .eq("code_id", id);
+
+    if (deleteError) throw deleteError;
+
+    // Ajouter les nouvelles liaisons
+    if (domaineIds.length > 0) {
+      const { error: linkError } = await supabase
+        .from("codes_domaines")
+        .insert(
+          domaineIds.map(domaineId => ({
+            code_id: id,
+            domaine_id: domaineId,
+          }))
+        );
+
+      if (linkError) throw linkError;
+    }
+
     return data as CodeJuridique;
   },
 

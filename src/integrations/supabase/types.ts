@@ -690,6 +690,49 @@ export type Database = {
           },
         ]
       }
+      codes_domaines: {
+        Row: {
+          code_id: string
+          created_at: string
+          domaine_id: string
+          id: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          domaine_id: string
+          id?: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          domaine_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "codes_domaines_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "codes_juridiques"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "codes_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "codes_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       codes_juridiques: {
         Row: {
           abreviation: string

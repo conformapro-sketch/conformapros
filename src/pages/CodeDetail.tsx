@@ -85,10 +85,15 @@ export default function CodeDetail() {
             </Badge>
             <h1 className="text-3xl font-bold">{code.nom_officiel}</h1>
           </div>
-          {code.domaines_reglementaires && (
-            <p className="text-muted-foreground">
-              Domaine: {code.domaines_reglementaires.libelle}
-            </p>
+          {code.codes_domaines && code.codes_domaines.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-muted-foreground">Domaines:</span>
+              {code.codes_domaines.map((cd) => (
+                <Badge key={cd.id} variant="secondary">
+                  {cd.domaines_reglementaires.libelle}
+                </Badge>
+              ))}
+            </div>
           )}
         </div>
         <Button onClick={() => setIsFormOpen(true)}>
@@ -145,6 +150,14 @@ export default function CodeDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                Domaines associés
+              </span>
+              <Badge variant="outline">
+                {code.codes_domaines?.length || 0}
+              </Badge>
+            </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
                 Nombre de textes

@@ -63,10 +63,15 @@ export default function CodesJuridiques() {
 
   const filteredCodes = codes?.filter((code) => {
     const searchLower = searchTerm.toLowerCase();
+    
+    const domaineMatch = code.codes_domaines?.some(cd => 
+      cd.domaines_reglementaires.libelle.toLowerCase().includes(searchLower)
+    );
+    
     return (
       code.nom_officiel.toLowerCase().includes(searchLower) ||
       code.abreviation.toLowerCase().includes(searchLower) ||
-      code.domaines_reglementaires?.libelle.toLowerCase().includes(searchLower)
+      domaineMatch
     );
   });
 
@@ -159,7 +164,15 @@ export default function CodesJuridiques() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      {code.domaines_reglementaires?.libelle || (
+                      {code.codes_domaines && code.codes_domaines.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {code.codes_domaines.map((cd) => (
+                            <Badge key={cd.id} variant="outline" className="text-xs">
+                              {cd.domaines_reglementaires.libelle}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>

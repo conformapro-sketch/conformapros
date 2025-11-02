@@ -6,12 +6,25 @@ export interface CodeJuridique {
   id: string;
   nom_officiel: string;
   abreviation: string;
-  domaine_reglementaire_id?: string;
+  domaine_reglementaire_id?: string; // Déprécié - gardé pour transition
   reference_jort?: string;
   description?: string;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
+  
+  // Relation many-to-many avec domaines
+  codes_domaines?: Array<{
+    id: string;
+    domaine_id: string;
+    domaines_reglementaires: {
+      id: string;
+      libelle: string;
+      code: string;
+    };
+  }>;
+  
+  // Ancien champ (rétrocompatibilité)
   domaines_reglementaires?: {
     id: string;
     libelle: string;
@@ -40,6 +53,13 @@ export interface CodeWithTextes extends CodeJuridique {
       statut_vigueur?: string;
     };
   }>;
+}
+
+export interface CodeDomaine {
+  id: string;
+  code_id: string;
+  domaine_id: string;
+  created_at: string;
 }
 
 export const TYPE_RELATION_LABELS: Record<TypeRelationCode, string> = {

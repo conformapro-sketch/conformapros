@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,16 +20,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { codesQueries } from "@/lib/codes-queries";
 import { supabase } from "@/integrations/supabase/client";
 import type { CodeJuridique } from "@/types/codes";
@@ -37,7 +33,6 @@ import type { CodeJuridique } from "@/types/codes";
 const codeSchema = z.object({
   nom_officiel: z.string().min(1, "Le nom officiel est requis"),
   abreviation: z.string().min(1, "L'abréviation est requise"),
-  domaine_reglementaire_id: z.string().optional(),
   reference_jort: z.string().optional(),
   description: z.string().optional(),
 });
@@ -53,20 +48,20 @@ interface CodeFormModalProps {
 export function CodeFormModal({ open, onOpenChange, code }: CodeFormModalProps) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedDomaines, setSelectedDomaines] = useState<string[]>([]);
 
   const form = useForm<CodeFormValues>({
     resolver: zodResolver(codeSchema),
     defaultValues: {
-      nom_officiel: code?.nom_officiel || "",
-      abreviation: code?.abreviation || "",
-      domaine_reglementaire_id: code?.domaine_reglementaire_id || "",
-      reference_jort: code?.reference_jort || "",
-      description: code?.description || "",
+      nom_officiel: "",
+      abreviation: "",
+      reference_jort: "",
+      description: "",
     },
   });
 
   // Récupérer les domaines réglementaires
-  const { data: domaines } = useQuery({
+  const { data: domaines, isLoading } = useQuery({
     queryKey: ["domaines-reglementaires"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -81,13 +76,53 @@ export function CodeFormModal({ open, onOpenChange, code }: CodeFormModalProps) 
     },
   });
 
+  // Charger les données du code en mode édition
+  useEffect(() => {
+    if (open) {
+      if (code) {
+        form.reset({
+          nom_officiel: code.nom_officiel,
+          abreviation: code.abreviation,
+          reference_jort: code.reference_jort || "",
+          description: code.description || "",
+        });
+        
+        // Charger les domaines sélectionnés
+        if (code.codes_domaines) {
+          const domaineIds = code.codes_domaines.map(cd => cd.domaine_id);
+          setSelectedDomaines(domaineIds);
+        } else {
+          setSelectedDomaines([]);
+        }
+      } else {
+        form.reset({
+          nom_officiel: "",
+          abreviation: "",
+          reference_jort: "",
+          description: "",
+        });
+        setSelectedDomaines([]);
+      }
+    }
+  }, [code, form, open]);
+
+  const handleDomaineToggle = (domaineId: string) => {
+    setSelectedDomaines(prev =>
+      prev.includes(domaineId)
+        ? prev.filter(id => id !== domaineId)
+        : [...prev, domaineId]
+    );
+  };
+
   const createMutation = useMutation({
-    mutationFn: (values: CodeFormValues) => codesQueries.create(values),
+    mutationFn: ({ values, domaineIds }: { values: CodeFormValues; domaineIds: string[] }) => 
+      codesQueries.create(values, domaineIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["codes-juridiques"] });
       toast.success("Code juridique créé avec succès");
       onOpenChange(false);
       form.reset();
+      setSelectedDomaines([]);
     },
     onError: (error: any) => {
       toast.error(error.message || "Erreur lors de la création du code");
@@ -95,7 +130,8 @@ export function CodeFormModal({ open, onOpenChange, code }: CodeFormModalProps) 
   });
 
   const updateMutation = useMutation({
-    mutationFn: (values: CodeFormValues) => codesQueries.update(code!.id, values),
+    mutationFn: ({ values, domaineIds }: { values: CodeFormValues; domaineIds: string[] }) => 
+      codesQueries.update(code!.id, values, domaineIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["codes-juridiques"] });
       queryClient.invalidateQueries({ queryKey: ["code", code?.id] });
@@ -111,9 +147,9 @@ export function CodeFormModal({ open, onOpenChange, code }: CodeFormModalProps) 
     setIsSubmitting(true);
     try {
       if (code) {
-        await updateMutation.mutateAsync(values);
+        await updateMutation.mutateAsync({ values, domaineIds: selectedDomaines });
       } else {
-        await createMutation.mutateAsync(values);
+        await createMutation.mutateAsync({ values, domaineIds: selectedDomaines });
       }
     } finally {
       setIsSubmitting(false);
@@ -172,33 +208,43 @@ export function CodeFormModal({ open, onOpenChange, code }: CodeFormModalProps) 
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="domaine_reglementaire_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Domaine réglementaire</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un domaine" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {domaines?.map((domaine) => (
-                        <SelectItem key={domaine.id} value={domaine.id}>
+            <div className="space-y-3">
+              <Label>Domaines réglementaires</Label>
+              <p className="text-sm text-muted-foreground">
+                Sélectionnez un ou plusieurs domaines
+              </p>
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground">Chargement...</p>
+              ) : (
+                <ScrollArea className="h-[200px] border rounded-md p-4">
+                  <div className="space-y-3">
+                    {domaines?.map((domaine) => (
+                      <div key={domaine.id} className="flex items-start space-x-2">
+                        <Checkbox
+                          id={`domaine-${domaine.id}`}
+                          checked={selectedDomaines.includes(domaine.id)}
+                          onCheckedChange={() => handleDomaineToggle(domaine.id)}
+                        />
+                        <Label
+                          htmlFor={`domaine-${domaine.id}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
                           {domaine.libelle}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                          {domaine.code && (
+                            <span className="text-muted-foreground ml-2">({domaine.code})</span>
+                          )}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               )}
-            />
+              {selectedDomaines.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedDomaines.length} domaine(s) sélectionné(s)
+                </p>
+              )}
+            </div>
 
             <FormField
               control={form.control}
