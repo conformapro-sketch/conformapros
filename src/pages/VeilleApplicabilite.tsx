@@ -66,8 +66,6 @@ interface ArticleRow {
   texte_titre?: string;
   site_id: string;
   applicabilite: "obligatoire" | "non_applicable" | "non_concerne";
-  motif_non_applicable?: string;
-  commentaire_non_applicable?: string;
   isModified?: boolean;
 }
 
@@ -214,8 +212,6 @@ export default function VeilleApplicabilite() {
             texte_titre: texte?.intitule,
             site_id: selectedSite,
             applicabilite: status?.applicabilite || "non_concerne",
-            motif_non_applicable: status?.motif_non_applicable,
-            commentaire_non_applicable: status?.commentaire_non_applicable,
             isModified: false,
           };
         }) || [];
@@ -291,8 +287,6 @@ export default function VeilleApplicabilite() {
         site_id: row.site_id,
         article_id: row.article_id,
         applicabilite: row.applicabilite,
-        motif_non_applicable: row.motif_non_applicable,
-        commentaire_non_applicable: row.commentaire_non_applicable,
         etat_conformite: "en_attente" as const,
       }));
 

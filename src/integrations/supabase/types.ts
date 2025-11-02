@@ -2797,15 +2797,11 @@ export type Database = {
           applicabilite: Database["public"]["Enums"]["applicabilite_reglementaire"]
           article_id: string
           commentaire: string | null
-          commentaire_non_applicable: string | null
           created_at: string
           date_derniere_evaluation: string | null
           etat_conformite: Database["public"]["Enums"]["etat_conformite"]
           evaluateur_id: string | null
           id: string
-          motif_non_applicable:
-            | Database["public"]["Enums"]["motif_non_applicable"]
-            | null
           site_id: string
           updated_at: string
         }
@@ -2813,15 +2809,11 @@ export type Database = {
           applicabilite?: Database["public"]["Enums"]["applicabilite_reglementaire"]
           article_id: string
           commentaire?: string | null
-          commentaire_non_applicable?: string | null
           created_at?: string
           date_derniere_evaluation?: string | null
           etat_conformite?: Database["public"]["Enums"]["etat_conformite"]
           evaluateur_id?: string | null
           id?: string
-          motif_non_applicable?:
-            | Database["public"]["Enums"]["motif_non_applicable"]
-            | null
           site_id: string
           updated_at?: string
         }
@@ -2829,15 +2821,11 @@ export type Database = {
           applicabilite?: Database["public"]["Enums"]["applicabilite_reglementaire"]
           article_id?: string
           commentaire?: string | null
-          commentaire_non_applicable?: string | null
           created_at?: string
           date_derniere_evaluation?: string | null
           etat_conformite?: Database["public"]["Enums"]["etat_conformite"]
           evaluateur_id?: string | null
           id?: string
-          motif_non_applicable?:
-            | Database["public"]["Enums"]["motif_non_applicable"]
-            | null
           site_id?: string
           updated_at?: string
         }
