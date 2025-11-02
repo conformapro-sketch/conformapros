@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
-import { fetchSites } from "@/lib/multi-tenant-queries";
+import { fetchSites, bulkUpdateSiteArticleStatus } from "@/lib/multi-tenant-queries";
 import { fetchDomaines } from "@/lib/domaines-queries";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -422,20 +422,15 @@ export default function VeilleApplicabilite() {
         throw new Error("Valeurs d'applicabilité invalides détectées");
       }
 
-      const upsertData = rows.map((row) => {
-        const isNew = row.id.startsWith("new_");
-        return {
-          ...(isNew ? {} : { id: row.id }),
-          site_id: row.site_id,
-          article_id: row.article_id,
-          applicabilite: row.applicabilite,
-          etat_conformite: "en_attente" as const,
-        };
-      });
+      // Use multi-tenant helper for bulk update
+      const updates = rows.map((row) => ({
+        article_id: row.article_id,
+        site_id: row.site_id,
+        applicabilite: row.applicabilite as "obligatoire" | "non_applicable" | "non_concerne",
+        etat_conformite: "en_attente" as const,
+      }));
 
-      const { error } = await supabase.from("site_article_status").upsert(upsertData);
-
-      if (error) throw error;
+      await bulkUpdateSiteArticleStatus(updates);
       return rows.length;
     },
     onSuccess: (count) => {
@@ -460,7 +455,7 @@ export default function VeilleApplicabilite() {
       return article;
     });
     queryClient.setQueryData(
-      ["applicabilite-articles", selectedSite, filters, searchTerm],
+      ["applicabilite-articles", selectedSite, filters, searchTerm, texteIdsAllowed],
       updatedArticles
     );
 
@@ -504,28 +499,13 @@ export default function VeilleApplicabilite() {
   const handleBulkUpdate = async () => {
     if (!bulkApplicabilite || selectedRows.length === 0) return;
 
-    // Filtrer les articles selon la règle métier
-    let articlesToUpdate = articles.filter(a => selectedRows.includes(a.article_id));
-    
-    // Si on essaie de passer à "obligatoire" ou "non_applicable",
-    // exclure les articles "non_concerne"
-    if (bulkApplicabilite !== "non_concerne") {
-      const excludedCount = articlesToUpdate.filter(a => a.applicabilite === "non_concerne").length;
-      articlesToUpdate = articlesToUpdate.filter(a => a.applicabilite !== "non_concerne");
-      
-      if (excludedCount > 0) {
-        toast({
-          title: "⚠️ Articles exclus",
-          description: `${excludedCount} article(s) à titre indicatif ne peuvent pas être modifiés`,
-          variant: "destructive"
-        });
-      }
-    }
+    // Get all selected articles (no longer excluding "non_concerne")
+    const articlesToUpdate = articles.filter(a => selectedRows.includes(a.article_id));
 
     if (articlesToUpdate.length === 0) {
       toast({
-        title: "Aucun article modifiable",
-        description: "Les articles sélectionnés sont tous à titre indicatif",
+        title: "Aucun article sélectionné",
+        description: "Veuillez sélectionner des articles à mettre à jour",
         variant: "destructive"
       });
       return;
@@ -534,14 +514,12 @@ export default function VeilleApplicabilite() {
     const updatedArticles = articlesToUpdate.map(article => ({
       ...article,
       applicabilite: bulkApplicabilite as any,
-      commentaire_non_applicable:
-        bulkApplicabilite === "non_applicable" ? bulkJustification : undefined,
       isModified: true,
     }));
 
     // Update local state first
     queryClient.setQueryData(
-      ["applicabilite-articles", selectedSite, filters, searchTerm],
+      ["applicabilite-articles", selectedSite, filters, searchTerm, texteIdsAllowed],
       articles.map((article) => {
         if (selectedRows.includes(article.article_id)) {
           return updatedArticles.find(a => a.article_id === article.article_id) || article;
@@ -550,7 +528,7 @@ export default function VeilleApplicabilite() {
       })
     );
 
-    // THEN auto-save to database
+    // THEN auto-save to database using multi-tenant helper
     await saveMutation.mutateAsync(updatedArticles);
 
     setBulkDialogOpen(false);
@@ -1009,9 +987,8 @@ export default function VeilleApplicabilite() {
                     </TableHeader>
                     <TableBody>
                       {filteredArticles.map((article) => (
-                        <>
+                        <Fragment key={article.article_id}>
                           <TableRow
-                            key={article.article_id}
                             className={article.isModified ? "bg-primary/5" : ""}
                           >
                             <TableCell>
@@ -1125,19 +1102,13 @@ export default function VeilleApplicabilite() {
                                 <span>Non concerné</span>
                               </div>
                             </SelectItem>
-                            <SelectItem 
-                              value="obligatoire"
-                              disabled={article.applicabilite === "non_concerne"}
-                            >
+                            <SelectItem value="obligatoire">
                               <div className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                                 <span>Applicable</span>
                               </div>
                             </SelectItem>
-                            <SelectItem 
-                              value="non_applicable"
-                              disabled={article.applicabilite === "non_concerne"}
-                            >
+                            <SelectItem value="non_applicable">
                               <div className="flex items-center gap-2">
                                 <XCircle className="h-4 w-4 text-gray-600" />
                                 <span>Non applicable</span>
@@ -1178,7 +1149,7 @@ export default function VeilleApplicabilite() {
                               </TableCell>
                             </TableRow>
                           )}
-                        </>
+                        </Fragment>
                       ))}
                     </TableBody>
                   </Table>
