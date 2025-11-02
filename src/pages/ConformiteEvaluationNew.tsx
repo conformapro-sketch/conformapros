@@ -70,23 +70,23 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
 // Types
-interface ApplicabiliteRecord {
+interface SiteArticleStatusRecord {
   id: string;
   site_id: string;
-  texte_id: string;
   article_id: string;
-  applicable: string; // 'obligatoire' | 'recommande' | 'non_applicable'
+  applicabilite: string; // 'obligatoire' | 'non_applicable' | 'non_concerne'
   justification?: string;
   motif_non_applicable?: string;
   commentaire_non_applicable?: string;
   activite?: string;
+  etat_conformite?: string;
   created_at: string;
   updated_at: string;
 }
 
 interface ConformiteRecord {
   id: string;
-  applicabilite_id: string;
+  status_id: string;
   etat: 'Conforme' | 'Non_conforme' | 'Non_evalue';
   commentaire?: string;
   score?: number;
@@ -109,7 +109,7 @@ interface PreuveRecord {
 }
 
 interface EvaluationRow {
-  applicabilite: ApplicabiliteRecord;
+  status: SiteArticleStatusRecord;
   conformite?: ConformiteRecord;
   preuves: PreuveRecord[];
   article?: {
@@ -140,13 +140,10 @@ const evaluationDataQueries = {
     search?: string;
   }) {
     let query = supabase
-      .from('applicabilite')
+      .from('site_article_status')
       .select(`
         *,
-        conformite (*),
-        preuves:conformite (
-          preuves (*)
-        )
+        conformite (*)
       `);
 
     if (params.siteId) {
@@ -154,58 +151,58 @@ const evaluationDataQueries = {
     }
 
     if (params.applicabilite) {
-      query = query.eq('applicable', params.applicabilite);
+      query = query.eq('applicabilite', params.applicabilite);
     }
 
-    const { data: applicabilites, error } = await query.order('updated_at', { ascending: false });
+    const { data: statusRecords, error } = await query.order('updated_at', { ascending: false });
 
     if (error) throw error;
-    if (!applicabilites) return [];
+    if (!statusRecords) return [];
 
-    // Fetch articles and textes
-    const articleIds = [...new Set(applicabilites.map(a => a.article_id).filter(Boolean))];
-    const texteIds = [...new Set(applicabilites.map(a => a.texte_id).filter(Boolean))];
+    // Fetch articles with textes
+    const articleIds = [...new Set(statusRecords.map(s => s.article_id).filter(Boolean))];
 
-    const [articlesResult, textesResult] = await Promise.all([
-      supabase.from('textes_articles').select('*').in('id', articleIds),
-      supabase
-        .from('actes_reglementaires')
-        .select(`
+    const articlesResult = await supabase
+      .from('textes_articles')
+      .select(`
+        *,
+        texte:textes_reglementaires (
           *,
           actes_reglementaires_domaines (
             domaine:domaines_reglementaires (id, code, libelle)
           )
-        `)
-        .in('id', texteIds),
-    ]);
+        )
+      `)
+      .in('id', articleIds);
 
     // Build combined data
-    const rows: EvaluationRow[] = applicabilites.map(appl => {
-      const article = articlesResult.data?.find(a => a.id === appl.article_id);
-      const texte = textesResult.data?.find(t => t.id === appl.texte_id);
-      const conformite = Array.isArray(appl.conformite) ? appl.conformite[0] : undefined;
+    const rows: EvaluationRow[] = statusRecords.map(status => {
+      const article = articlesResult.data?.find(a => a.id === status.article_id);
+      const texte = article?.texte;
+      const conformite = Array.isArray(status.conformite) ? status.conformite[0] : undefined;
       
-      // Extract preuves correctly
-      let preuves: PreuveRecord[] = [];
-      if (conformite && Array.isArray(appl.preuves)) {
-        const conformiteWithPreuves = appl.preuves.find((p: any) => p.id === conformite.id);
-        if (conformiteWithPreuves?.preuves) {
-          preuves = Array.isArray(conformiteWithPreuves.preuves) 
-            ? conformiteWithPreuves.preuves 
-            : [conformiteWithPreuves.preuves];
-        }
-      }
-
       const domaines = texte?.actes_reglementaires_domaines
         ?.map((d: any) => d.domaine)
         .filter(Boolean) || [];
 
       return {
-        applicabilite: appl,
+        status,
         conformite,
-        preuves,
-        article: article || undefined,
-        texte: texte || undefined,
+        preuves: [], // Will be loaded separately if needed
+        article: article ? {
+          id: article.id,
+          numero: article.numero,
+          titre_court: article.titre_court,
+          reference: article.reference,
+          contenu: article.contenu,
+        } : undefined,
+        texte: texte ? {
+          id: texte.id,
+          titre: texte.intitule,
+          reference_officielle: texte.reference_officielle,
+          type: texte.type_acte,
+          statut_vigueur: texte.statut_vigueur,
+        } : undefined,
         domaines,
       };
     });
@@ -220,7 +217,7 @@ const evaluationDataQueries = {
     }
 
     if (params.texteId) {
-      filtered = filtered.filter(row => row.applicabilite.texte_id === params.texteId);
+      filtered = filtered.filter(row => row.texte?.id === params.texteId);
     }
 
     if (params.conformite) {
@@ -240,9 +237,9 @@ const evaluationDataQueries = {
     return filtered;
   },
 
-  async updateApplicabilite(id: string, updates: Partial<ApplicabiliteRecord>) {
+  async updateSiteArticleStatus(id: string, updates: Partial<SiteArticleStatusRecord>) {
     const { data, error } = await supabase
-      .from('applicabilite')
+      .from('site_article_status')
       .update(updates)
       .eq('id', id)
       .select()
@@ -253,7 +250,7 @@ const evaluationDataQueries = {
   },
 
   async upsertConformite(data: {
-    applicabilite_id: string;
+    status_id: string;
     etat: ConformiteRecord['etat'];
     commentaire?: string;
     score?: number;
@@ -264,7 +261,7 @@ const evaluationDataQueries = {
     const { data: existing } = await supabase
       .from('conformite')
       .select('id')
-      .eq('applicabilite_id', data.applicabilite_id)
+      .eq('status_id', data.status_id)
       .maybeSingle();
 
     if (existing) {
@@ -287,7 +284,7 @@ const evaluationDataQueries = {
       const { data: created, error } = await supabase
         .from('conformite')
         .insert({
-          applicabilite_id: data.applicabilite_id,
+          status_id: data.status_id,
           etat: data.etat,
           commentaire: data.commentaire,
           score: data.score,
@@ -338,9 +335,9 @@ const evaluationDataQueries = {
     return data;
   },
 
-  async bulkUpdateApplicabilite(ids: string[], updates: Partial<ApplicabiliteRecord>) {
+  async bulkUpdateSiteArticleStatus(ids: string[], updates: Partial<SiteArticleStatusRecord>) {
     const { data, error } = await supabase
-      .from('applicabilite')
+      .from('site_article_status')
       .update(updates)
       .in('id', ids)
       .select();
@@ -351,10 +348,10 @@ const evaluationDataQueries = {
 
   async getStats(siteId: string) {
     const { data, error } = await supabase
-      .from('applicabilite')
+      .from('site_article_status')
       .select(`
         id,
-        applicable,
+        applicabilite,
         conformite (etat)
       `)
       .eq('site_id', siteId);
@@ -362,7 +359,7 @@ const evaluationDataQueries = {
     if (error) throw error;
 
     const total = data?.length || 0;
-    const applicable = data?.filter(d => d.applicable === 'obligatoire').length || 0;
+    const applicable = data?.filter(d => d.applicabilite === 'obligatoire').length || 0;
     const evaluated = data?.filter(d => 
       Array.isArray(d.conformite) && d.conformite.length > 0
     ).length || 0;
@@ -489,9 +486,9 @@ export default function ConformiteEvaluationNew() {
   });
 
   // Mutations
-  const updateApplicabiliteMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<ApplicabiliteRecord> }) =>
-      evaluationDataQueries.updateApplicabilite(id, updates),
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<SiteArticleStatusRecord> }) =>
+      evaluationDataQueries.updateSiteArticleStatus(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['evaluations'] });
       toast({ title: 'Succès', description: 'Applicabilité mise à jour' });
@@ -516,8 +513,8 @@ export default function ConformiteEvaluationNew() {
   });
 
   const bulkUpdateMutation = useMutation({
-    mutationFn: ({ ids, updates }: { ids: string[]; updates: Partial<ApplicabiliteRecord> }) =>
-      evaluationDataQueries.bulkUpdateApplicabilite(ids, updates),
+    mutationFn: ({ ids, updates }: { ids: string[]; updates: Partial<SiteArticleStatusRecord> }) =>
+      evaluationDataQueries.bulkUpdateSiteArticleStatus(ids, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['evaluations'] });
       toast({ title: 'Succès', description: `${selectedRows.length} articles mis à jour` });
@@ -536,7 +533,7 @@ export default function ConformiteEvaluationNew() {
   };
 
   const handleSaveEvaluation = (data: {
-    applicable: string;
+    applicabilite: string;
     justification?: string;
     motif_non_applicable?: string;
     etat?: ConformiteRecord['etat'];
@@ -545,20 +542,20 @@ export default function ConformiteEvaluationNew() {
   }) => {
     if (!activeRecord) return;
 
-    // First update applicabilite
-    updateApplicabiliteMutation.mutate({
-      id: activeRecord.applicabilite.id,
+    // First update site_article_status
+    updateStatusMutation.mutate({
+      id: activeRecord.status.id,
       updates: {
-        applicable: data.applicable,
+        applicabilite: data.applicabilite,
         justification: data.justification,
         motif_non_applicable: data.motif_non_applicable,
       },
     });
 
     // If applicable, update conformite
-    if (data.applicable === 'obligatoire' && data.etat) {
+    if (data.applicabilite === 'obligatoire' && data.etat) {
       upsertConformiteMutation.mutate({
-        applicabilite_id: activeRecord.applicabilite.id,
+        status_id: activeRecord.status.id,
         etat: data.etat,
         commentaire: data.commentaire,
         score: data.score,
@@ -572,7 +569,7 @@ export default function ConformiteEvaluationNew() {
     bulkUpdateMutation.mutate({
       ids: selectedRows,
       updates: {
-        applicable: action === 'applicable' ? 'obligatoire' : 'non_applicable',
+        applicabilite: action === 'applicable' ? 'obligatoire' : 'non_applicable',
       },
     });
   };
@@ -587,17 +584,17 @@ export default function ConformiteEvaluationNew() {
     if (selectedRows.length === evaluations.length) {
       setSelectedRows([]);
     } else {
-      setSelectedRows(evaluations.map(e => e.applicabilite.id));
+      setSelectedRows(evaluations.map(e => e.status.id));
     }
   };
 
   // Badge helpers
-  const getApplicabiliteBadge = (applicable: string) => {
-    switch (applicable) {
+  const getApplicabiliteBadge = (applicabilite: string) => {
+    switch (applicabilite) {
       case 'obligatoire':
         return <Badge className="bg-blue-500">Applicable</Badge>;
-      case 'recommande':
-        return <Badge variant="outline">Recommandé</Badge>;
+      case 'non_concerne':
+        return <Badge variant="outline">Non concerné</Badge>;
       default:
         return <Badge variant="secondary">Non applicable</Badge>;
     }
@@ -923,13 +920,13 @@ export default function ConformiteEvaluationNew() {
                         Aucun article trouvé
                       </TableCell>
                     </TableRow>
-                  ) : (
+                   ) : (
                     evaluations.map(record => (
-                      <TableRow key={record.applicabilite.id}>
+                      <TableRow key={record.status.id}>
                         <TableCell>
                           <Checkbox
-                            checked={selectedRows.includes(record.applicabilite.id)}
-                            onCheckedChange={() => toggleRowSelection(record.applicabilite.id)}
+                            checked={selectedRows.includes(record.status.id)}
+                            onCheckedChange={() => toggleRowSelection(record.status.id)}
                           />
                         </TableCell>
                         <TableCell>
@@ -951,14 +948,14 @@ export default function ConformiteEvaluationNew() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {getApplicabiliteBadge(record.applicabilite.applicable)}
+                          {getApplicabiliteBadge(record.status.applicabilite)}
                         </TableCell>
                         <TableCell>
                           {getConformiteBadge(record.conformite?.etat)}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
-                          {record.applicabilite.justification ||
-                            record.applicabilite.commentaire_non_applicable ||
+                          {record.status.justification ||
+                            record.status.commentaire_non_applicable ||
                             record.conformite?.commentaire ||
                             '—'}
                         </TableCell>
@@ -1022,7 +1019,7 @@ interface EvaluationDrawerProps {
 
 function EvaluationDrawer({ open, onOpenChange, record, onSave }: EvaluationDrawerProps) {
   const [formData, setFormData] = useState({
-    applicable: 'obligatoire',
+    applicabilite: 'obligatoire',
     justification: '',
     motif_non_applicable: '',
     etat: 'Conforme' as ConformiteRecord['etat'],
@@ -1034,9 +1031,9 @@ function EvaluationDrawer({ open, onOpenChange, record, onSave }: EvaluationDraw
   useState(() => {
     if (record) {
       setFormData({
-        applicable: record.applicabilite.applicable || 'obligatoire',
-        justification: record.applicabilite.justification || '',
-        motif_non_applicable: record.applicabilite.motif_non_applicable || '',
+        applicabilite: record.status.applicabilite || 'obligatoire',
+        justification: record.status.justification || '',
+        motif_non_applicable: record.status.motif_non_applicable || '',
         etat: record.conformite?.etat || 'Non_evalue',
         commentaire: record.conformite?.commentaire || '',
         score: record.conformite?.score || 100,
@@ -1067,21 +1064,21 @@ function EvaluationDrawer({ open, onOpenChange, record, onSave }: EvaluationDraw
             <div className="space-y-2">
               <Label>Cet article est-il applicable ?</Label>
               <Select
-                value={formData.applicable}
-                onValueChange={v => setFormData({ ...formData, applicable: v })}
+                value={formData.applicabilite}
+                onValueChange={v => setFormData({ ...formData, applicabilite: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="obligatoire">Applicable (Obligatoire)</SelectItem>
-                  <SelectItem value="recommande">Recommandé</SelectItem>
+                  <SelectItem value="non_concerne">Non concerné</SelectItem>
                   <SelectItem value="non_applicable">Non applicable</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {formData.applicable === 'non_applicable' && (
+            {formData.applicabilite === 'non_applicable' && (
               <>
                 <div className="space-y-2">
                   <Label>Motif de non-applicabilité</Label>
@@ -1117,7 +1114,7 @@ function EvaluationDrawer({ open, onOpenChange, record, onSave }: EvaluationDraw
           </div>
 
           {/* Conformité (only if applicable) */}
-          {formData.applicable === 'obligatoire' && (
+          {formData.applicabilite === 'obligatoire' && (
             <>
               <Separator />
               <div className="space-y-4">
