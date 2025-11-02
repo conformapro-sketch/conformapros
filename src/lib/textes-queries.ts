@@ -366,7 +366,12 @@ export const textesArticlesQueries = {
   async getByTexteId(texteId: string) {
     const { data, error } = await supabase
       .from("textes_articles")
-      .select("*")
+      .select(`
+        *,
+        sous_domaines:articles_sous_domaines(
+          sous_domaine:sous_domaines_application(*)
+        )
+      `)
       .eq("texte_id", texteId)
       .order("ordre");
     if (error) throw error;
@@ -376,7 +381,13 @@ export const textesArticlesQueries = {
   async getById(id: string) {
     const { data, error } = await supabase
       .from("textes_articles")
-      .select("*, actes_reglementaires(reference_officielle, intitule)")
+      .select(`
+        *, 
+        actes_reglementaires(reference_officielle, intitule),
+        sous_domaines:articles_sous_domaines(
+          sous_domaine:sous_domaines_application(*)
+        )
+      `)
       .eq("id", id)
       .maybeSingle();
     if (error) throw error;
@@ -410,6 +421,26 @@ export const textesArticlesQueries = {
       .delete()
       .eq("id", id);
     if (error) throw error;
+  },
+
+  async updateArticleSousDomaines(articleId: string, sousDomaineIds: string[]) {
+    // Delete existing associations
+    await supabase
+      .from("articles_sous_domaines")
+      .delete()
+      .eq("article_id", articleId);
+
+    // Insert new associations
+    if (sousDomaineIds.length > 0) {
+      const relations = sousDomaineIds.map((sousDomaineId) => ({
+        article_id: articleId,
+        sous_domaine_id: sousDomaineId,
+      }));
+      const { error } = await supabase
+        .from("articles_sous_domaines")
+        .insert(relations);
+      if (error) throw error;
+    }
   },
 };
 

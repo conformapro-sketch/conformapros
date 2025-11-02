@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { textesArticlesQueries } from "@/lib/textes-queries";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { textesArticlesQueries, textesReglementairesQueries } from "@/lib/textes-queries";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { ArticleSousDomainesSelector } from "@/components/ArticleSousDomainesSelector";
 
 interface ArticleFormModalProps {
   open: boolean;
@@ -33,6 +34,19 @@ export function ArticleFormModal({
     contenu: "",
     ordre: 0,
   });
+  const [selectedSousDomaines, setSelectedSousDomaines] = useState<string[]>([]);
+
+  // Load parent text to get its domains
+  const { data: texteData } = useQuery({
+    queryKey: ["texte", texteId],
+    queryFn: () => textesReglementairesQueries.getById(texteId),
+    enabled: !!texteId,
+  });
+
+  // Extract domain IDs from parent text
+  const texteDomaineIds = texteData?.domaines
+    ?.map((d: any) => d.domaine?.id)
+    .filter(Boolean) || [];
 
   useEffect(() => {
     if (article) {
@@ -43,8 +57,18 @@ export function ArticleFormModal({
         contenu: article.contenu || "",
         ordre: article.ordre || 0,
       });
+      
+      // Load existing sous-domaines
+      const articleWithRelations = article as any;
+      if (articleWithRelations.sous_domaines) {
+        const sousDomaineIds = articleWithRelations.sous_domaines
+          .map((sd: any) => sd.sous_domaine?.id)
+          .filter(Boolean);
+        setSelectedSousDomaines(sousDomaineIds);
+      }
     } else {
       resetForm();
+      setSelectedSousDomaines([]);
     }
   }, [article, open]);
 
@@ -59,12 +83,23 @@ export function ArticleFormModal({
   };
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => textesArticlesQueries.create(data),
+    mutationFn: async (data: any) => {
+      const newArticle = await textesArticlesQueries.create(data);
+      if (selectedSousDomaines.length > 0) {
+        await textesArticlesQueries.updateArticleSousDomaines(
+          newArticle.id,
+          selectedSousDomaines
+        );
+      }
+      return newArticle;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["bibliotheque-articles"] });
       toast.success("Article créé avec succès");
       onOpenChange(false);
       resetForm();
+      setSelectedSousDomaines([]);
       onSuccess?.();
     },
     onError: (error: any) => {
@@ -73,13 +108,17 @@ export function ArticleFormModal({
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      textesArticlesQueries.update(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      await textesArticlesQueries.update(id, data);
+      await textesArticlesQueries.updateArticleSousDomaines(id, selectedSousDomaines);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["bibliotheque-articles"] });
       toast.success("Article modifié avec succès");
       onOpenChange(false);
       resetForm();
+      setSelectedSousDomaines([]);
       onSuccess?.();
     },
     onError: (error: any) => {
@@ -187,6 +226,15 @@ export function ArticleFormModal({
               value={formData.ordre}
               onChange={(e) => setFormData({ ...formData, ordre: parseInt(e.target.value) || 0 })}
               min={0}
+            />
+          </div>
+
+          {/* Sous-domaines d'application */}
+          <div className="border-t pt-4">
+            <ArticleSousDomainesSelector
+              selectedSousDomaines={selectedSousDomaines}
+              onSousDomainesChange={setSelectedSousDomaines}
+              texteDomaineIds={texteDomaineIds}
             />
           </div>
 

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { actesQueries, articlesQueries } from "@/lib/actes-queries";
+import { textesArticlesQueries } from "@/lib/textes-queries";
 
 export default function BibliothequeTexteArticles() {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +23,7 @@ export default function BibliothequeTexteArticles() {
 
   const { data: articles, isLoading: articlesLoading } = useQuery({
     queryKey: ["bibliotheque-articles", id],
-    queryFn: () => articlesQueries.getByActeId(id!),
+    queryFn: () => textesArticlesQueries.getByTexteId(id!),
     enabled: !!id,
   });
 
@@ -90,6 +91,17 @@ export default function BibliothequeTexteArticles() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Sous-domaines */}
+                {(article as any).sous_domaines && (article as any).sous_domaines.length > 0 && (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {(article as any).sous_domaines.map((sd: any) => (
+                      <Badge key={sd.sous_domaine?.id} variant="secondary">
+                        {sd.sous_domaine?.libelle}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
                 {article.contenu_fr && (
                   <div className="prose prose-sm max-w-none">
                     <div className="text-sm whitespace-pre-wrap">{article.contenu_fr}</div>
