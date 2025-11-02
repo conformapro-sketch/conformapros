@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, XCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { stripHtml } from "@/lib/sanitize-html";
 
 interface ArticleApplicabilityCardProps {
   article: {
@@ -62,10 +63,10 @@ export function ArticleApplicabilityCard({
             {/* Référence article */}
             <div className="flex items-start justify-between gap-2">
               <h4 className="font-semibold text-sm">
-                {article.article_numero}
+                Article {article.article_numero}
                 {article.article_titre && (
                   <span className="text-muted-foreground font-normal ml-2">
-                    - {article.article_titre}
+                    {article.article_titre}
                   </span>
                 )}
               </h4>
@@ -86,12 +87,20 @@ export function ArticleApplicabilityCard({
               </Badge>
             </div>
             
-            {/* Texte source */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="secondary" className="text-xs">
-                {article.texte_reference}
-              </Badge>
-              <span className="line-clamp-1">{article.texte_titre}</span>
+            {/* Aperçu contenu article */}
+            {article.article_contenu && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {stripHtml(article.article_contenu)}
+              </p>
+            )}
+            
+            {/* Texte réglementaire source */}
+            <div className="flex items-start gap-2 text-xs">
+              <span className="text-muted-foreground shrink-0">Source:</span>
+              <div className="flex-1">
+                <div className="font-medium">{article.texte_titre}</div>
+                <div className="text-muted-foreground">{article.texte_reference}</div>
+              </div>
             </div>
             
             {/* Actions rapides */}

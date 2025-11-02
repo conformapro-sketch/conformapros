@@ -6,6 +6,7 @@ import { fetchSites } from "@/lib/multi-tenant-queries";
 import { fetchDomaines } from "@/lib/domaines-queries";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { stripHtml } from "@/lib/sanitize-html";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -801,9 +802,8 @@ export default function VeilleApplicabilite() {
                             }}
                           />
                         </TableHead>
-                        <TableHead>Référence</TableHead>
+                        <TableHead>Texte réglementaire</TableHead>
                         <TableHead>Article</TableHead>
-                        <TableHead>Texte</TableHead>
                         <TableHead>Applicabilité</TableHead>
                         <TableHead className="w-[100px]"></TableHead>
                       </TableRow>
@@ -829,25 +829,29 @@ export default function VeilleApplicabilite() {
                                 }}
                               />
                             </TableCell>
-                            <TableCell className="font-medium">
-                              {article.article_numero}
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{article.article_titre}</div>
-                                {article.article_contenu && (
-                                  <div className="text-sm text-muted-foreground line-clamp-2">
-                                    {article.article_contenu.substring(0, 100)}...
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
+                            
+                            {/* Texte réglementaire */}
                             <TableCell>
                               <div className="text-sm">
-                                <div className="font-medium">{article.texte_reference}</div>
-                                <div className="text-muted-foreground line-clamp-1">
-                                  {article.texte_titre}
+                                <div className="font-medium">{article.texte_titre}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {article.texte_reference}
                                 </div>
+                              </div>
+                            </TableCell>
+                            
+                            {/* Article */}
+                            <TableCell>
+                              <div>
+                                <div className="font-medium text-sm">
+                                  {article.article_numero}
+                                  {article.article_titre && ` - ${article.article_titre}`}
+                                </div>
+                                {article.article_contenu && (
+                                  <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                    {stripHtml(article.article_contenu).substring(0, 150)}...
+                                  </div>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
