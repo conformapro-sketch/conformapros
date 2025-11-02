@@ -80,7 +80,7 @@ interface ArticleRow {
 export default function VeilleApplicabilite() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { isTeamUser, getClientId } = useAuth();
+  const { isTeamUser, getClientId, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [selectedClient, setSelectedClient] = useState<string>(
@@ -151,13 +151,105 @@ export default function VeilleApplicabilite() {
     queryFn: fetchDomaines,
   });
 
-  // Fetch textes filtered by domain
-  const { data: textes = [] } = useQuery({
-    queryKey: ["textes-applicabilite", filters.domaine],
+  // Check if VEILLE module is enabled for the site
+  const { data: veilleModule, isLoading: isLoadingModule } = useQuery({
+    queryKey: ["site-veille-module", selectedSite],
     queryFn: async () => {
+      if (!selectedSite) return null;
+      
+      const { data, error } = await supabase
+        .from("site_modules")
+        .select("enabled, modules_systeme!inner(code)")
+        .eq("site_id", selectedSite)
+        .eq("modules_systeme.code", "VEILLE")
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedSite,
+  });
+
+  const isVeilleEnabled = veilleModule?.enabled === true;
+
+  // Get enabled domains for the site
+  const { data: siteVeilleDomaines = [], isLoading: isLoadingDomaines } = useQuery({
+    queryKey: ["site-veille-domaines", selectedSite],
+    queryFn: async () => {
+      if (!selectedSite) return [];
+      
+      const { data, error } = await supabase
+        .from("site_veille_domaines")
+        .select("domaine_id, enabled")
+        .eq("site_id", selectedSite)
+        .eq("enabled", true);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedSite && isVeilleEnabled,
+  });
+
+  const allowedDomaineIdsSite = siteVeilleDomaines.map(d => d.domaine_id);
+
+  // Get user domain scopes (if any)
+  const { data: userDomainScopes = [] } = useQuery({
+    queryKey: ["user-domain-scopes", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("user_domain_scopes")
+        .select("domaine_id, decision")
+        .eq("user_id", user.id)
+        .eq("decision", "allow");
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id && !!selectedSite && isVeilleEnabled,
+  });
+
+  // Calculate final allowed domains (intersection if user scopes exist)
+  const allowedDomaineIds = useMemo(() => {
+    if (userDomainScopes.length > 0) {
+      const userAllowedIds = userDomainScopes.map(s => s.domaine_id);
+      return allowedDomaineIdsSite.filter(id => userAllowedIds.includes(id));
+    }
+    return allowedDomaineIdsSite;
+  }, [allowedDomaineIdsSite, userDomainScopes]);
+
+  // Get allowed text IDs based on domains
+  const { data: texteIdsData = [] } = useQuery({
+    queryKey: ["texte-ids-by-domains", allowedDomaineIds],
+    queryFn: async () => {
+      if (allowedDomaineIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from("actes_reglementaires_domaines")
+        .select("acte_id, domaine_id")
+        .in("domaine_id", allowedDomaineIds);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: allowedDomaineIds.length > 0,
+  });
+
+  const texteIdsAllowed = useMemo(() => {
+    return [...new Set(texteIdsData.map(t => t.acte_id))];
+  }, [texteIdsData]);
+
+  // Fetch textes filtered by domain and allowed texts
+  const { data: textes = [] } = useQuery({
+    queryKey: ["textes-applicabilite", filters.domaine, texteIdsAllowed],
+    queryFn: async () => {
+      if (texteIdsAllowed.length === 0) return [];
+      
       let query = supabase
         .from("actes_reglementaires")
-        .select("id, intitule, reference_officielle, type_acte");
+        .select("id, intitule, reference_officielle, type_acte")
+        .in("id", texteIdsAllowed);
 
       if (filters.domaine && filters.domaine !== "all") {
         const { data: texteIds } = await supabase
@@ -166,10 +258,15 @@ export default function VeilleApplicabilite() {
           .eq("domaine_id", filters.domaine);
 
         if (texteIds && texteIds.length > 0) {
-          query = query.in(
-            "id",
-            texteIds.map((t) => t.acte_id)
-          );
+          const filteredIds = texteIds
+            .map((t) => t.acte_id)
+            .filter(id => texteIdsAllowed.includes(id));
+          
+          if (filteredIds.length > 0) {
+            query = query.in("id", filteredIds);
+          } else {
+            return [];
+          }
         }
       }
 
@@ -177,16 +274,17 @@ export default function VeilleApplicabilite() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!selectedSite,
+    enabled: !!selectedSite && isVeilleEnabled && texteIdsAllowed.length > 0,
   });
 
   // Fetch articles with applicability status
   const { data: articles = [], isLoading } = useQuery({
-    queryKey: ["applicabilite-articles", selectedSite, filters, searchTerm],
+    queryKey: ["applicabilite-articles", selectedSite, filters, searchTerm, texteIdsAllowed],
     queryFn: async () => {
       if (!selectedSite) return [];
+      if (texteIdsAllowed.length === 0) return [];
 
-      // Get all articles
+      // Get all articles filtered by allowed texts
       let articlesQuery = supabase
         .from("textes_articles")
         .select(
@@ -195,7 +293,6 @@ export default function VeilleApplicabilite() {
           numero,
           titre_court,
           contenu,
-          interpretation,
           texte_id,
           actes_reglementaires (
             id,
@@ -205,6 +302,7 @@ export default function VeilleApplicabilite() {
           )
         `
         )
+        .in("texte_id", texteIdsAllowed)
         .order("numero");
 
       if (filters.texte && filters.texte !== "all") {
@@ -232,7 +330,7 @@ export default function VeilleApplicabilite() {
             article_numero: article.numero,
             article_titre: article.titre_court,
             article_contenu: article.contenu,
-            interpretation: article.interpretation,
+            interpretation: undefined, // Field removed from query
             texte_id: article.texte_id,
             texte_reference: texte?.reference_officielle,
             texte_titre: texte?.intitule,
@@ -262,7 +360,7 @@ export default function VeilleApplicabilite() {
 
       return filtered;
     },
-    enabled: !!selectedSite,
+    enabled: !!selectedSite && isVeilleEnabled && texteIdsAllowed.length > 0,
   });
 
   // Apply quick filter
@@ -532,6 +630,63 @@ export default function VeilleApplicabilite() {
 
       {selectedSite && (
         <>
+          {/* Module Not Enabled Warning */}
+          {!isLoadingModule && !isVeilleEnabled && (
+            <Card className="border-destructive bg-destructive/5">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <AlertCircle className="h-6 w-6 text-destructive shrink-0 mt-1" />
+                  <div className="space-y-2 flex-1">
+                    <h3 className="font-semibold text-lg">Module VEILLE non activé</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Le module de veille réglementaire n'est pas activé pour ce site. 
+                      Contactez un administrateur pour activer ce module afin de pouvoir gérer l'applicabilité des articles.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Domains Enabled Warning */}
+          {!isLoadingDomaines && isVeilleEnabled && allowedDomaineIdsSite.length === 0 && (
+            <Card className="border-orange-500 bg-orange-50 dark:bg-orange-950">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <AlertCircle className="h-6 w-6 text-orange-600 shrink-0 mt-1" />
+                  <div className="space-y-2 flex-1">
+                    <h3 className="font-semibold text-lg">Aucun domaine de veille activé</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Aucun domaine réglementaire n'est activé pour la veille sur ce site. 
+                      Configurez les domaines de veille dans les paramètres du site pour commencer à gérer l'applicabilité des articles.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* User Has No Access to Enabled Domains */}
+          {isVeilleEnabled && allowedDomaineIdsSite.length > 0 && allowedDomaineIds.length === 0 && userDomainScopes.length > 0 && (
+            <Card className="border-orange-500 bg-orange-50 dark:bg-orange-950">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <AlertCircle className="h-6 w-6 text-orange-600 shrink-0 mt-1" />
+                  <div className="space-y-2 flex-1">
+                    <h3 className="font-semibold text-lg">Accès restreint</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Vos autorisations ne couvrent aucun des domaines activés sur ce site. 
+                      Contactez un administrateur pour ajuster vos permissions d'accès aux domaines réglementaires.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Stats Cards - Only show if module is enabled and domains are available */}
+          {isVeilleEnabled && allowedDomaineIds.length > 0 && (
+          <>
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Card>
@@ -689,20 +844,22 @@ export default function VeilleApplicabilite() {
                       <SelectItem value="obligatoire">✅ Applicable</SelectItem>
                       <SelectItem value="non_applicable">❌ Non applicable</SelectItem>
                       <SelectItem value="non_concerne">🔘 Non concerné</SelectItem>
-                    </SelectContent>
-                  </Select>
+                     </SelectContent>
+                   </Select>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => setFilters({ domaine: "all", texte: "all", applicabilite: "all" })}
-                  >
-                    <Undo className="h-4 w-4 mr-2" />
-                    Réinitialiser
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                   <Button
+                     variant="outline"
+                     onClick={() => setFilters({ domaine: "all", texte: "all", applicabilite: "all" })}
+                   >
+                     <Undo className="h-4 w-4 mr-2" />
+                     Réinitialiser
+                   </Button>
+                 </div>
+               </div>
+             </CardContent>
+           </Card>
+          </>
+          )}
 
           {/* Floating Bulk Actions Bar */}
           {selectedRows.length > 0 && (
@@ -757,7 +914,8 @@ export default function VeilleApplicabilite() {
             </div>
           )}
 
-          {/* Articles View */}
+          {/* Articles View - Only show if authorized */}
+          {isVeilleEnabled && allowedDomaineIds.length > 0 && (
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -904,20 +1062,12 @@ export default function VeilleApplicabilite() {
                                         <p className="text-xs text-muted-foreground">{article.article_titre}</p>
                                       )}
                                       <Separator />
-                                      <p className="text-xs leading-relaxed">
+                                       <p className="text-xs leading-relaxed">
                                         {article.article_contenu 
                                           ? stripHtml(article.article_contenu).substring(0, 300) + "..."
                                           : "Contenu non disponible"
                                         }
                                       </p>
-                                      {article.interpretation && (
-                                        <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded-md">
-                                          <p className="text-xs flex items-start gap-1">
-                                            <span className="text-blue-600 dark:text-blue-400">💡</span>
-                                            <span className="flex-1">Interprétation disponible</span>
-                                          </p>
-                                        </div>
-                                      )}
                                       <p className="text-xs text-muted-foreground italic">
                                         Cliquer sur l'icône 👁️ pour voir le détail complet
                                       </p>
@@ -1032,12 +1182,14 @@ export default function VeilleApplicabilite() {
                   )}
                 </>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Aucun article trouvé. Ajustez les filtres ou sélectionnez un autre site.
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>Aucun article trouvé pour les filtres en cours.</p>
+                  <p className="text-sm mt-2">Essayez d'ajuster les filtres de domaine ou de texte réglementaire.</p>
                 </div>
               )}
             </CardContent>
           </Card>
+          )}
         </>
       )}
 

@@ -94,15 +94,7 @@ export function ArticleApplicabilityCard({
                         : "Contenu non disponible"
                       }
                     </p>
-                    {article.interpretation && (
-                      <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded-md">
-                        <p className="text-xs flex items-start gap-1">
-                          <span className="text-blue-600 dark:text-blue-400">💡</span>
-                          <span className="flex-1">Interprétation disponible</span>
-                        </p>
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground italic">
+                    <p className="text-xs text-muted-foreground italic mt-2">
                       Cliquer sur l'icône 👁️ pour voir le détail complet
                     </p>
                   </div>

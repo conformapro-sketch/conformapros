@@ -121,8 +121,8 @@ export function ArticleViewModal({
           </div>
         </div>
 
-        {/* Interpretation Section */}
-        {article?.interpretation && (
+        {/* Interpretation Section - Commented out as field doesn't exist in DB */}
+        {/* {article?.interpretation && (
           <>
             <Separator />
             <div className="space-y-2">
@@ -138,7 +138,7 @@ export function ArticleViewModal({
               </div>
             </div>
           </>
-        )}
+        )} */}
 
         {/* Applicability Actions */}
         {onUpdateApplicabilite && (
