@@ -91,7 +91,7 @@ export default function VeilleApplicabilite() {
   const [bulkApplicabilite, setBulkApplicabilite] = useState<string>("");
   const [bulkJustification, setBulkJustification] = useState("");
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [quickFilter, setQuickFilter] = useState<'all' | 'to_evaluate' | 'applicable' | 'non_applicable'>('all');
 
   // Fetch clients (only for team users)
@@ -212,7 +212,7 @@ export default function VeilleApplicabilite() {
             texte_reference: texte?.reference_officielle,
             texte_titre: texte?.intitule,
             site_id: selectedSite,
-            applicabilite: status?.applicabilite || "obligatoire",
+            applicabilite: status?.applicabilite || "non_applicable",
             motif_non_applicable: status?.motif_non_applicable,
             commentaire_non_applicable: status?.commentaire_non_applicable,
             isModified: false,
@@ -741,7 +741,6 @@ export default function VeilleApplicabilite() {
                         <TableHead>Article</TableHead>
                         <TableHead>Texte</TableHead>
                         <TableHead>Applicabilité</TableHead>
-                        <TableHead>Justification</TableHead>
                         <TableHead className="w-[100px]"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -827,20 +826,6 @@ export default function VeilleApplicabilite() {
                               </Select>
                             </TableCell>
                             <TableCell>
-                              <Input
-                                placeholder="Justification..."
-                                value={article.commentaire_non_applicable || ""}
-                                onChange={(e) =>
-                                  handleUpdateRow(
-                                    article.article_id,
-                                    "commentaire_non_applicable",
-                                    e.target.value
-                                  )
-                                }
-                                className="w-[200px]"
-                              />
-                            </TableCell>
-                            <TableCell>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -862,7 +847,7 @@ export default function VeilleApplicabilite() {
                           </TableRow>
                           {expandedArticle === article.article_id && (
                             <TableRow>
-                              <TableCell colSpan={7}>
+                              <TableCell colSpan={6}>
                                 <div className="p-4 bg-muted/50 rounded-lg">
                                   <h4 className="font-semibold mb-2">Contenu de l'article</h4>
                                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">
