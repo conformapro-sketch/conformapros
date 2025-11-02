@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { textesArticlesQueries, textesReglementairesQueries } from "@/lib/textes-queries";
 import { toast } from "sonner";
@@ -30,10 +30,9 @@ export function ArticleFormModal({
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     numero: "",
-    reference: "",
     titre_court: "",
+    resume: "",
     contenu: "",
-    ordre: 0,
     indicatif: false,
   });
   const [selectedSousDomaines, setSelectedSousDomaines] = useState<string[]>([]);
@@ -54,10 +53,9 @@ export function ArticleFormModal({
     if (article) {
       setFormData({
         numero: article.numero || "",
-        reference: article.reference || "",
         titre_court: article.titre_court || "",
+        resume: article.resume || "",
         contenu: article.contenu || "",
-        ordre: article.ordre || 0,
         indicatif: article.indicatif || false,
       });
       
@@ -78,10 +76,9 @@ export function ArticleFormModal({
   const resetForm = () => {
     setFormData({
       numero: "",
-      reference: "",
       titre_court: "",
+      resume: "",
       contenu: "",
-      ordre: 0,
       indicatif: false,
     });
   };
@@ -146,10 +143,9 @@ export function ArticleFormModal({
     const cleanData = {
       texte_id: texteId,
       numero: formData.numero.trim(),
-      reference: formData.reference.trim() || null,
       titre_court: formData.titre_court.trim() || null,
+      resume: formData.resume.trim() || null,
       contenu: formData.contenu.trim() || null,
-      ordre: formData.ordre,
       indicatif: formData.indicatif,
     };
 
@@ -174,88 +170,103 @@ export function ArticleFormModal({
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Référence de l'article */}
-          <div className="space-y-2">
-            <Label htmlFor="numero">Référence de l'article *</Label>
-            <Input
-              id="numero"
-              value={formData.numero}
-              onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
-              placeholder="Ex: Article 1, Art. 3 bis"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 📋 Informations de base */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <span>📋</span> Informations de base
+            </h3>
+            
+            {/* Référence de l'article */}
+            <div className="space-y-2">
+              <Label htmlFor="numero">Référence de l'article *</Label>
+              <Input
+                id="numero"
+                value={formData.numero}
+                onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
+                placeholder="Ex: Article 1, Art. 3 bis"
+                required
+              />
+            </div>
 
-          {/* Référence alternative */}
-          <div className="space-y-2">
-            <Label htmlFor="reference">Référence alternative</Label>
-            <Input
-              id="reference"
-              value={formData.reference}
-              onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-              placeholder="Ex: Art. 1"
-            />
-          </div>
+            {/* Titre court */}
+            <div className="space-y-2">
+              <Label htmlFor="titre_court">Titre court</Label>
+              <Input
+                id="titre_court"
+                value={formData.titre_court}
+                onChange={(e) => setFormData({ ...formData, titre_court: e.target.value })}
+                placeholder="Titre descriptif de l'article"
+              />
+            </div>
 
-          {/* Titre court */}
-          <div className="space-y-2">
-            <Label htmlFor="titre_court">Titre court</Label>
-            <Input
-              id="titre_court"
-              value={formData.titre_court}
-              onChange={(e) => setFormData({ ...formData, titre_court: e.target.value })}
-              placeholder="Titre descriptif de l'article"
-            />
-          </div>
-
-          {/* Article indicatif */}
-          <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
-            <Checkbox
-              id="indicatif"
-              checked={formData.indicatif}
-              onCheckedChange={(checked) => setFormData({ ...formData, indicatif: checked === true })}
-            />
-            <div className="space-y-1">
-              <Label 
-                htmlFor="indicatif" 
-                className="text-sm font-medium cursor-pointer"
-              >
-                Article à titre indicatif (non applicable)
-              </Label>
+            {/* Résumé explicatif */}
+            <div className="space-y-2">
+              <Label htmlFor="resume">Résumé explicatif</Label>
+              <Textarea
+                id="resume"
+                value={formData.resume}
+                onChange={(e) => setFormData({ ...formData, resume: e.target.value })}
+                placeholder="Résumé court de l'article (optionnel)"
+                rows={3}
+              />
               <p className="text-xs text-muted-foreground">
-                Pour les articles de définition, explicatifs, descriptifs ou introductifs qui n'imposent pas d'obligations applicables
+                Ce résumé sera affiché dans les aperçus et les recherches
               </p>
             </div>
           </div>
 
-          {/* Contenu */}
-          <div className="space-y-2">
-            <Label htmlFor="contenu">Contenu de l'article</Label>
-            <RichTextEditor
-              value={formData.contenu}
-              onChange={(value) => setFormData({ ...formData, contenu: value })}
-              placeholder="Contenu complet de l'article..."
-            />
-            <p className="text-xs text-muted-foreground">
-              Le contenu peut être modifié ultérieurement via le système de versions
-            </p>
+          {/* ⚠️ Classification */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <span>⚠️</span> Classification
+            </h3>
+            
+            {/* Article indicatif */}
+            <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
+              <Checkbox
+                id="indicatif"
+                checked={formData.indicatif}
+                onCheckedChange={(checked) => setFormData({ ...formData, indicatif: checked === true })}
+              />
+              <div className="space-y-1">
+                <Label 
+                  htmlFor="indicatif" 
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Article à titre indicatif (non applicable)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Pour les articles de définition, explicatifs, descriptifs ou introductifs qui n'imposent pas d'obligations applicables
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Ordre d'affichage */}
-          <div className="space-y-2">
-            <Label htmlFor="ordre">Ordre d'affichage</Label>
-            <Input
-              id="ordre"
-              type="number"
-              value={formData.ordre}
-              onChange={(e) => setFormData({ ...formData, ordre: parseInt(e.target.value) || 0 })}
-              min={0}
-            />
+          {/* 📝 Contenu */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <span>📝</span> Contenu de l'article
+            </h3>
+            
+            <div className="space-y-2">
+              <RichTextEditor
+                value={formData.contenu}
+                onChange={(value) => setFormData({ ...formData, contenu: value })}
+                placeholder="Contenu complet de l'article..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Le contenu peut être modifié ultérieurement via le système de versions
+              </p>
+            </div>
           </div>
 
-          {/* Sous-domaines d'application */}
-          <div className="border-t pt-4">
+          {/* 🏷️ Domaines d'application */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <span>🏷️</span> Domaines d'application
+            </h3>
+            
             <ArticleSousDomainesSelector
               selectedSousDomaines={selectedSousDomaines}
               onSousDomainesChange={setSelectedSousDomaines}

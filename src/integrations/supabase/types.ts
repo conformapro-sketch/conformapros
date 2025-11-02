@@ -3184,6 +3184,7 @@ export type Database = {
           ordre: number | null
           parent_article_id: string | null
           reference: string | null
+          resume: string | null
           texte_id: string
           titre: string | null
           titre_court: string | null
@@ -3200,6 +3201,7 @@ export type Database = {
           ordre?: number | null
           parent_article_id?: string | null
           reference?: string | null
+          resume?: string | null
           texte_id: string
           titre?: string | null
           titre_court?: string | null
@@ -3216,6 +3218,7 @@ export type Database = {
           ordre?: number | null
           parent_article_id?: string | null
           reference?: string | null
+          resume?: string | null
           texte_id?: string
           titre?: string | null
           titre_court?: string | null
