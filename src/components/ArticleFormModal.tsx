@@ -142,7 +142,7 @@ export function ArticleFormModal({
 
     const cleanData = {
       texte_id: texteId,
-      numero: formData.numero.trim(),
+      numero_article: formData.numero.trim(),
       titre_court: formData.titre_court.trim() || null,
       resume: formData.resume.trim() || null,
       contenu: formData.contenu.trim() || null,
