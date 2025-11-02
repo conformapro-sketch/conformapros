@@ -233,8 +233,48 @@ export const conformiteQueries = {
     return preuve;
   },
 
-  // Create action corrective automatically
-  createActionCorrective: async (conformiteId: string, statusId: string) => {
+  // Create action corrective automatically when non-conforme
+  createActionCorrective: async (statusId: string) => {
+    // Get or create conformite for this status
+    const { data: existingConformite, error: confError } = await supabase
+      .from('conformite')
+      .select('id')
+      .eq('status_id', statusId)
+      .maybeSingle();
+
+    if (confError) throw confError;
+
+    let conformiteId = existingConformite?.id;
+
+    // If no existing conformite, create one
+    if (!conformiteId) {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const { data: newConformite, error: createError } = await supabase
+        .from('conformite')
+        .insert({
+          status_id: statusId,
+          etat: 'non_conforme',
+          mise_a_jour_par: userId,
+        })
+        .select('id')
+        .single();
+
+      if (createError) throw createError;
+      conformiteId = newConformite.id;
+    }
+
+    // Check if action already exists
+    const { data: existingAction } = await supabase
+      .from('actions_correctives')
+      .select('id')
+      .eq('conformite_id', conformiteId)
+      .maybeSingle();
+
+    if (existingAction) {
+      return existingAction; // Already exists
+    }
+
+    // Get details to create the action
     const { data: status } = await supabase
       .from('site_article_status')
       .select('article_id')
@@ -251,20 +291,21 @@ export const conformiteQueries = {
 
     const { data: texte } = await supabase
       .from('textes_reglementaires')
-      .select('reference_officielle')
+      .select('reference_officielle, titre')
       .eq('id', article?.texte_id)
       .maybeSingle();
 
     const userId = (await supabase.auth.getUser()).data.user?.id;
+    const manquement = `Non-conformité détectée sur ${texte?.reference_officielle || 'texte'} - Article ${article?.numero || 'N/A'}: ${article?.titre_court || ''}`;
 
     const { data: action, error } = await supabase
       .from('actions_correctives')
       .insert([{
         conformite_id: conformiteId,
-        manquement: `Non-conformité détectée sur ${texte?.reference_officielle || 'texte'} - Article ${article?.numero || 'N/A'}`,
-        titre: 'Action corrective à définir',
+        manquement,
+        titre: `Action corrective - ${texte?.reference_officielle || 'texte'} Art. ${article?.numero || 'N/A'}`,
         statut: 'a_faire',
-        priorite: 'moyenne',
+        priorite: 'haute',
         created_by: userId,
       }])
       .select()

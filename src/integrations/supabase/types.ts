@@ -349,48 +349,6 @@ export type Database = {
           },
         ]
       }
-      applicabilite: {
-        Row: {
-          activite: string | null
-          applicable: string
-          article_id: string
-          commentaire_non_applicable: string | null
-          created_at: string
-          id: string
-          justification: string | null
-          motif_non_applicable: string | null
-          site_id: string
-          texte_id: string
-          updated_at: string
-        }
-        Insert: {
-          activite?: string | null
-          applicable?: string
-          article_id: string
-          commentaire_non_applicable?: string | null
-          created_at?: string
-          id?: string
-          justification?: string | null
-          motif_non_applicable?: string | null
-          site_id: string
-          texte_id: string
-          updated_at?: string
-        }
-        Update: {
-          activite?: string | null
-          applicable?: string
-          article_id?: string
-          commentaire_non_applicable?: string | null
-          created_at?: string
-          id?: string
-          justification?: string | null
-          motif_non_applicable?: string | null
-          site_id?: string
-          texte_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       article_versions: {
         Row: {
           article_id: string

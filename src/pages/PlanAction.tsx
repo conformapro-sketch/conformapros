@@ -1,125 +1,190 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabaseAny as supabase } from "@/lib/supabase-any";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, Download, Plus, CheckCircle2, Clock, AlertCircle, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileText, AlertCircle, CheckCircle, Clock, Download, Plus, Filter, X } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 
-const PlanAction = () => {
+export default function PlanAction() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [clientFilter, setClientFilter] = useState<string>("all");
+  const [siteFilter, setSiteFilter] = useState<string>("all");
   const [statutFilter, setStatutFilter] = useState<string>("all");
   const [prioriteFilter, setPrioriteFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const pageSize = 20;
+  const itemsPerPage = 20;
 
-  // Fetch actions correctives
-  const { data: actions, isLoading } = useQuery({
-    queryKey: ["actions-correctives", searchTerm, statutFilter, prioriteFilter, page],
+  // Récupérer la liste des clients
+  const { data: clients = [] } = useQuery({
+    queryKey: ['clients-for-actions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, nom, nom_legal')
+        .order('nom');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Récupérer la liste des sites pour le client sélectionné
+  const { data: sites = [] } = useQuery({
+    queryKey: ['sites-for-actions', clientFilter],
+    queryFn: async () => {
+      if (clientFilter === "all") return [];
+      
+      const { data, error } = await supabase
+        .from('sites')
+        .select('id, nom_site, code_site')
+        .eq('client_id', clientFilter)
+        .order('nom_site');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: clientFilter !== "all",
+  });
+
+  // Récupérer les actions correctives avec toutes les informations nécessaires
+  const { data: actionsData, isLoading } = useQuery({
+    queryKey: ['actions-correctives', searchTerm, clientFilter, siteFilter, statutFilter, prioriteFilter, page],
     queryFn: async () => {
       let query = supabase
-        .from("actions_correctives")
+        .from('actions_correctives')
         .select(`
-          *,
+          id,
+          titre,
+          manquement,
+          description,
+          statut,
+          priorite,
+          date_echeance,
+          cout_estime,
+          created_at,
+          responsable:responsable_id!employes (
+            id,
+            nom,
+            prenom,
+            email
+          ),
           conformite:conformite_id (
             id,
             etat,
-            applicabilite:applicabilite_id (
+            commentaire,
+            status:status_id (
               id,
-              actes_reglementaires:texte_id (
-                reference,
-                titre
+              site_id,
+              article_id,
+              sites (
+                id,
+                nom_site,
+                code_site,
+                client_id,
+                clients (id, nom, nom_legal)
               ),
-              articles:article_id (
+              textes_articles!inner (
                 numero,
-                titre_court
-              ),
-              clients:client_id (
-                nom_legal
-              ),
-              sites:site_id (
-                nom_site
+                titre_court,
+                texte_id
               )
             )
-          ),
-          responsable_profile:responsable (
-            nom,
-            prenom
           )
-        `)
-        .order("created_at", { ascending: false })
-        .range((page - 1) * pageSize, page * pageSize - 1);
+        `, { count: 'exact' });
 
+      // Filtres
       if (statutFilter !== "all") {
-        query = query.eq("statut", statutFilter as any);
+        query = query.eq('statut', statutFilter);
       }
 
       if (prioriteFilter !== "all") {
-        query = query.eq("priorite", prioriteFilter as any);
+        query = query.eq('priorite', prioriteFilter);
       }
 
-      const { data, error, count } = await query;
-      if (error) throw error;
+      // Pagination
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to).order('created_at', { ascending: false });
 
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error('Error fetching actions:', error);
+        throw error;
+      }
+
+      // Filtrage côté client pour les recherches complexes
       let filteredData = data || [];
 
+      // Filtre par client
+      if (clientFilter !== "all") {
+        filteredData = filteredData.filter(action => 
+          action.conformite?.status?.sites?.client_id === clientFilter
+        );
+      }
+
+      // Filtre par site
+      if (siteFilter !== "all") {
+        filteredData = filteredData.filter(action => 
+          action.conformite?.status?.site_id === siteFilter
+        );
+      }
+
+      // Filtre par recherche textuelle
       if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        filteredData = filteredData.filter((item: any) => {
-          const texte = item.conformite?.applicabilite?.actes_reglementaires;
-          const client = item.conformite?.applicabilite?.clients;
+        const lowerSearch = searchTerm.toLowerCase();
+        filteredData = filteredData.filter(action => {
+          const texte = action.conformite?.status?.textes_articles?.textes_reglementaires;
+          const article = action.conformite?.status?.textes_articles;
+          const site = action.conformite?.status?.sites;
+          const client = site?.clients;
+
           return (
-            item.action?.toLowerCase().includes(term) ||
-            item.manquement?.toLowerCase().includes(term) ||
-            texte?.reference?.toLowerCase().includes(term) ||
-            client?.nom_legal?.toLowerCase().includes(term)
+            action.titre?.toLowerCase().includes(lowerSearch) ||
+            action.manquement?.toLowerCase().includes(lowerSearch) ||
+            texte?.reference_officielle?.toLowerCase().includes(lowerSearch) ||
+            texte?.titre?.toLowerCase().includes(lowerSearch) ||
+            article?.numero?.toLowerCase().includes(lowerSearch) ||
+            site?.nom_site?.toLowerCase().includes(lowerSearch) ||
+            client?.nom?.toLowerCase().includes(lowerSearch)
           );
         });
       }
 
-      return { data: filteredData, count: filteredData.length };
+      return {
+        actions: filteredData,
+        count: count || 0,
+      };
     },
   });
 
   const getStatutBadge = (statut: string) => {
     switch (statut) {
-      case "Terminee":
-        return <Badge className="bg-green-500"><CheckCircle2 className="h-3 w-3 mr-1" />Terminée</Badge>;
-      case "En_cours":
-        return <Badge className="bg-blue-500"><Clock className="h-3 w-3 mr-1" />En cours</Badge>;
-      case "En_retard":
-        return <Badge className="bg-red-500"><XCircle className="h-3 w-3 mr-1" />En retard</Badge>;
+      case 'a_faire':
+        return <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> À faire</Badge>;
+      case 'en_cours':
+        return <Badge variant="secondary" className="gap-1"><AlertCircle className="h-3 w-3" /> En cours</Badge>;
+      case 'termine':
+        return <Badge variant="default" className="gap-1 bg-green-500"><CheckCircle className="h-3 w-3" /> Terminé</Badge>;
       default:
-        return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />À faire</Badge>;
+        return <Badge variant="outline">{statut}</Badge>;
     }
   };
 
   const getPrioriteBadge = (priorite: string) => {
     switch (priorite) {
-      case "Critique":
-        return <Badge variant="destructive">Critique</Badge>;
-      case "Haute":
-        return <Badge className="bg-orange-500">Haute</Badge>;
-      case "Moyenne":
-        return <Badge className="bg-yellow-500">Moyenne</Badge>;
-      case "Basse":
+      case 'haute':
+        return <Badge variant="destructive">Haute</Badge>;
+      case 'moyenne':
+        return <Badge variant="secondary">Moyenne</Badge>;
+      case 'basse':
         return <Badge variant="outline">Basse</Badge>;
       default:
         return <Badge variant="outline">{priorite}</Badge>;
@@ -130,195 +195,294 @@ const PlanAction = () => {
     toast.info("Fonctionnalité d'export en cours de développement");
   };
 
-  const handleNewAction = () => {
-    toast.info("Fonctionnalité de création en cours de développement");
+  const resetFilters = () => {
+    setSearchTerm("");
+    setClientFilter("all");
+    setSiteFilter("all");
+    setStatutFilter("all");
+    setPrioriteFilter("all");
+    setPage(1);
   };
 
+  const hasActiveFilters = 
+    searchTerm !== "" || 
+    clientFilter !== "all" || 
+    siteFilter !== "all" || 
+    statutFilter !== "all" || 
+    prioriteFilter !== "all";
+
+  const actions = actionsData?.actions || [];
+  const totalCount = actionsData?.count || 0;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Plan d'action</h1>
           <p className="text-muted-foreground">
-            Gérez les actions correctives pour améliorer votre conformité
+            Gérez et suivez toutes les actions correctives
           </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleExport} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter
+            <Download className="mr-2 h-4 w-4" />
+            Export
           </Button>
-          <Button onClick={handleNewAction}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
             Nouvelle action
           </Button>
         </div>
       </div>
 
+      {/* Filtres */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtres de recherche</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              <CardTitle>Filtres</CardTitle>
+            </div>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={resetFilters}>
+                <X className="mr-2 h-4 w-4" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Recherche</label>
               <Input
-                placeholder="Rechercher une action..."
+                placeholder="Rechercher..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
 
-            <Select value={statutFilter} onValueChange={setStatutFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Tous les statuts" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="A_faire">À faire</SelectItem>
-                <SelectItem value="En_cours">En cours</SelectItem>
-                <SelectItem value="En_retard">En retard</SelectItem>
-                <SelectItem value="Terminee">Terminée</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Client</label>
+              <Select value={clientFilter} onValueChange={(value) => {
+                setClientFilter(value);
+                setSiteFilter("all");
+                setPage(1);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les clients" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les clients</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.nom || client.nom_legal}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select value={prioriteFilter} onValueChange={setPrioriteFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Toutes les priorités" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les priorités</SelectItem>
-                <SelectItem value="Critique">Critique</SelectItem>
-                <SelectItem value="Haute">Haute</SelectItem>
-                <SelectItem value="Moyenne">Moyenne</SelectItem>
-                <SelectItem value="Basse">Basse</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Site</label>
+              <Select 
+                value={siteFilter} 
+                onValueChange={(value) => {
+                  setSiteFilter(value);
+                  setPage(1);
+                }}
+                disabled={clientFilter === "all"}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les sites" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les sites</SelectItem>
+                  {sites.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.nom_site}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchTerm("");
-                setStatutFilter("all");
-                setPrioriteFilter("all");
-              }}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Réinitialiser
-            </Button>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Statut</label>
+              <Select value={statutFilter} onValueChange={(value) => {
+                setStatutFilter(value);
+                setPage(1);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les statuts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="a_faire">À faire</SelectItem>
+                  <SelectItem value="en_cours">En cours</SelectItem>
+                  <SelectItem value="termine">Terminé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Priorité</label>
+              <Select value={prioriteFilter} onValueChange={(value) => {
+                setPrioriteFilter(value);
+                setPage(1);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Toutes les priorités" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les priorités</SelectItem>
+                  <SelectItem value="haute">Haute</SelectItem>
+                  <SelectItem value="moyenne">Moyenne</SelectItem>
+                  <SelectItem value="basse">Basse</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Tableau des actions */}
       <Card>
-        <CardContent className="p-0">
+        <CardHeader>
+          <CardDescription>
+            {totalCount} action{totalCount > 1 ? 's' : ''} corrective{totalCount > 1 ? 's' : ''}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <p className="text-muted-foreground">Chargement...</p>
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : actions?.data.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+          ) : actions.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Aucune action trouvée</h3>
               <p className="text-muted-foreground mb-4">
-                Aucune action corrective ne correspond à vos critères de recherche
+                {hasActiveFilters 
+                  ? "Essayez de modifier les filtres" 
+                  : "Les actions correctives apparaîtront ici lorsque des non-conformités seront détectées"}
               </p>
-              <Button onClick={handleNewAction}>
-                <Plus className="h-4 w-4 mr-2" />
-                Créer une action
-              </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Manquement</TableHead>
-                  <TableHead>Action corrective</TableHead>
-                  <TableHead>Référence texte</TableHead>
-                  <TableHead>Responsable</TableHead>
-                  <TableHead>Échéance</TableHead>
-                  <TableHead>Priorité</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Coût estimé</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {actions?.data.map((action: any) => (
-                  <TableRow key={action.id}>
-                    <TableCell className="font-medium">
-                      {action.conformite?.applicabilite?.clients?.nom_legal || "-"}
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {action.manquement}
-                    </TableCell>
-                    <TableCell className="max-w-xs">
-                      <div className="line-clamp-2">{action.action}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium text-sm">
-                          {action.conformite?.applicabilite?.actes_reglementaires?.reference}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Art. {action.conformite?.applicabilite?.articles?.numero || "-"}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {action.responsable_profile
-                        ? `${action.responsable_profile.prenom} ${action.responsable_profile.nom}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {action.echeance
-                        ? new Date(action.echeance).toLocaleDateString("fr-FR")
-                        : "-"}
-                    </TableCell>
-                    <TableCell>{getPrioriteBadge(action.priorite)}</TableCell>
-                    <TableCell>{getStatutBadge(action.statut)}</TableCell>
-                    <TableCell>
-                      {action.cout_estime
-                        ? `${action.cout_estime.toLocaleString("fr-FR")} DT`
-                        : "-"}
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Site</TableHead>
+                    <TableHead>Non-conformité</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Référence texte</TableHead>
+                    <TableHead>Responsable</TableHead>
+                    <TableHead>Échéance</TableHead>
+                    <TableHead>Priorité</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Coût</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {actions.map((action) => {
+                    const site = action.conformite?.status?.sites;
+                    const client = site?.clients;
+                    const article = action.conformite?.status?.textes_articles;
+                    const texte = article?.textes_reglementaires;
+
+                    return (
+                      <TableRow key={action.id}>
+                        <TableCell className="font-medium">
+                          {client?.nom || client?.nom_legal || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {site?.nom_site || '-'}
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          <div className="truncate" title={action.manquement || ''}>
+                            {action.manquement || '-'}
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          <div className="truncate font-medium" title={action.titre}>
+                            {action.titre}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {texte?.reference_officielle ? (
+                            <div className="text-sm">
+                              <div className="font-medium">{texte.reference_officielle}</div>
+                              <div className="text-muted-foreground">Art. {article?.numero}</div>
+                            </div>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {action.responsable ? (
+                            <div className="text-sm">
+                              {action.responsable.prenom} {action.responsable.nom}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Non assigné</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {action.date_echeance ? (
+                            format(new Date(action.date_echeance), 'dd MMM yyyy', { locale: fr })
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{getPrioriteBadge(action.priorite)}</TableCell>
+                        <TableCell>{getStatutBadge(action.statut)}</TableCell>
+                        <TableCell>
+                          {action.cout_estime ? (
+                            `${action.cout_estime.toLocaleString('fr-FR')} DT`
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Page {page} sur {totalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                    >
+                      Précédent
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                    >
+                      Suivant
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
-
-      {actions && actions.count > pageSize && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {actions.count} action(s) trouvée(s)
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page - 1)}
-              disabled={page === 1}
-            >
-              Précédent
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page + 1)}
-              disabled={actions.data.length < pageSize}
-            >
-              Suivant
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
-};
-
-export default PlanAction;
+}

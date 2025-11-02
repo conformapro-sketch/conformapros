@@ -29,7 +29,6 @@ import BibliothequeArticleVersions from "./pages/BibliothequeArticleVersions";
 import BibliothequeTableauDeBord from "./pages/BibliothequeTableauDeBord";
 import BibliothequeRechercheIntelligente from "./pages/BibliothequeRechercheIntelligente";
 import ArticleVersions from "./pages/ArticleVersions";
-import VeilleEvaluation from "./pages/VeilleEvaluation";
 import ConformiteEvaluationNew from "./pages/ConformiteEvaluationNew";
 import PlanAction from "./pages/PlanAction";
 import DomainesPage from "./pages/DomainesPage";
@@ -208,7 +207,6 @@ const App = () => (
               <Route path="codes-juridiques" element={<CodesJuridiques />} />
               <Route path="codes-juridiques/:id" element={<CodeDetail />} />
               <Route path="veille/evaluation" element={<ConformiteEvaluationNew />} />
-              <Route path="veille/evaluation-advanced" element={<VeilleEvaluation />} />
               <Route path="veille/conformite" element={<Navigate to="/veille/evaluation" replace />} />
               <Route path="veille/actions" element={<PlanAction />} />
               <Route path="veille/textes/:id/articles" element={<GestionArticles />} />

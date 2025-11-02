@@ -142,10 +142,7 @@ export default function ConformiteEvaluation() {
 
       // Auto-create action if non-compliant
       if (evaluationDialog.etat === "Non_conforme") {
-        await conformiteQueries.createActionCorrective(
-          conformite.id,
-          evaluationDialog.statusId!
-        );
+        await conformiteQueries.createActionCorrective(evaluationDialog.statusId!);
         toast({
           title: "Action corrective créée",
           description: "Une action corrective a été automatiquement créée pour cette non-conformité.",

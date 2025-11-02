@@ -382,6 +382,21 @@ const evaluationDataQueries = {
       conformiteRate: evaluated > 0 ? (conforme / evaluated) * 100 : 0,
     };
   },
+
+  async createActionCorrective(statusId: string) {
+    const { data: existingConformite } = await supabase.from('conformite').select('id').eq('status_id', statusId).maybeSingle();
+    let conformiteId = existingConformite?.id;
+    if (!conformiteId) {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const { data: newConformite } = await supabase.from('conformite').insert({ status_id: statusId, etat: 'Non_conforme', mise_a_jour_par: userId }).select('id').single();
+      conformiteId = newConformite?.id;
+    }
+    const { data: existingAction } = await supabase.from('actions_correctives').select('id').eq('conformite_id', conformiteId).maybeSingle();
+    if (existingAction) return existingAction;
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    const { data: action } = await supabase.from('actions_correctives').insert([{ conformite_id: conformiteId, manquement: 'Non-conformité détectée', titre: 'Action corrective', statut: 'a_faire', priorite: 'haute', created_by: userId }]).select().single();
+    return action;
+  },
 };
 
 // Component
@@ -532,7 +547,7 @@ export default function ConformiteEvaluationNew() {
     setDrawerOpen(true);
   };
 
-  const handleSaveEvaluation = (data: {
+  const handleSaveEvaluation = async (data: {
     applicabilite: string;
     justification?: string;
     motif_non_applicable?: string;
@@ -560,6 +575,24 @@ export default function ConformiteEvaluationNew() {
         commentaire: data.commentaire,
         score: data.score,
       });
+
+      // Create corrective action automatically if non-conforme
+      if (data.etat === 'Non_conforme') {
+        try {
+          await evaluationDataQueries.createActionCorrective(activeRecord.status.id);
+          toast({ 
+            title: 'Action corrective créée', 
+            description: 'Une action corrective a été créée automatiquement. Consultez le plan d\'action.',
+          });
+        } catch (error) {
+          console.error('Erreur création action:', error);
+          toast({ 
+            title: 'Attention', 
+            description: 'L\'action corrective n\'a pas pu être créée automatiquement',
+            variant: 'destructive',
+          });
+        }
+      }
     }
   };
 
