@@ -48,7 +48,7 @@ export default function ConformiteEvaluation() {
 
   const [evaluationDialog, setEvaluationDialog] = useState<{
     open: boolean;
-    applicabiliteId?: string;
+    statusId?: string;
     conformiteId?: string;
     etat: string;
     commentaire: string;
@@ -134,7 +134,7 @@ export default function ConformiteEvaluation() {
   const handleEvaluate = async () => {
     try {
       const conformite = await conformiteQueries.upsertConformite({
-        applicabilite_id: evaluationDialog.applicabiliteId!,
+        status_id: evaluationDialog.statusId!,
         etat: evaluationDialog.etat as any,
         commentaire: evaluationDialog.commentaire,
         score: evaluationDialog.score,
@@ -144,7 +144,7 @@ export default function ConformiteEvaluation() {
       if (evaluationDialog.etat === "Non_conforme") {
         await conformiteQueries.createActionCorrective(
           conformite.id,
-          evaluationDialog.applicabiliteId!
+          evaluationDialog.statusId!
         );
         toast({
           title: "Action corrective créée",
@@ -389,8 +389,6 @@ export default function ConformiteEvaluation() {
                   <TableHead>Site</TableHead>
                   <TableHead>Référence texte</TableHead>
                   <TableHead>Article</TableHead>
-                  <TableHead>Activité</TableHead>
-                  <TableHead>Applicable</TableHead>
                   <TableHead>État</TableHead>
                   <TableHead>Score</TableHead>
                   <TableHead>Commentaire</TableHead>
@@ -402,13 +400,13 @@ export default function ConformiteEvaluation() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       Chargement...
                     </TableCell>
                   </TableRow>
                 ) : filteredData?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       Aucune donnée trouvée
                     </TableCell>
                   </TableRow>
@@ -427,18 +425,6 @@ export default function ConformiteEvaluation() {
                           <div className="text-xs text-muted-foreground">
                             {item.textes_articles.titre_court}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{item.activite || "-"}</TableCell>
-                      <TableCell>
-                        {item.applicable ? (
-                          <Badge variant="outline" className="bg-success/10 text-success">
-                            Oui
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-muted">
-                            Non
-                          </Badge>
                         )}
                       </TableCell>
                       <TableCell>
@@ -467,7 +453,7 @@ export default function ConformiteEvaluation() {
                           onClick={() =>
                             setEvaluationDialog({
                               open: true,
-                              applicabiliteId: item.id,
+                              statusId: item.id,
                               conformiteId: item.conformite?.[0]?.id,
                               etat: item.conformite?.[0]?.etat || "Non_evalue",
                               commentaire: item.conformite?.[0]?.commentaire || "",

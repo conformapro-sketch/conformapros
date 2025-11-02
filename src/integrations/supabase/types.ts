@@ -789,7 +789,6 @@ export type Database = {
       }
       conformite: {
         Row: {
-          applicabilite_id: string
           commentaire: string | null
           created_at: string
           date_evaluation: string | null
@@ -800,10 +799,10 @@ export type Database = {
           mise_a_jour_par: string | null
           score: number | null
           score_conformite: number | null
+          status_id: string
           updated_at: string
         }
         Insert: {
-          applicabilite_id: string
           commentaire?: string | null
           created_at?: string
           date_evaluation?: string | null
@@ -814,10 +813,10 @@ export type Database = {
           mise_a_jour_par?: string | null
           score?: number | null
           score_conformite?: number | null
+          status_id: string
           updated_at?: string
         }
         Update: {
-          applicabilite_id?: string
           commentaire?: string | null
           created_at?: string
           date_evaluation?: string | null
@@ -828,14 +827,15 @@ export type Database = {
           mise_a_jour_par?: string | null
           score?: number | null
           score_conformite?: number | null
+          status_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "conformite_applicabilite_id_fkey"
-            columns: ["applicabilite_id"]
+            foreignKeyName: "conformite_status_id_fkey"
+            columns: ["status_id"]
             isOneToOne: false
-            referencedRelation: "applicabilite"
+            referencedRelation: "site_article_status"
             referencedColumns: ["id"]
           },
         ]

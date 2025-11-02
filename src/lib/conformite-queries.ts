@@ -4,7 +4,7 @@ import type { Database } from "@/types/db";
 type EtatConformite = Database['public']['Enums']['etat_conformite'];
 
 export const conformiteQueries = {
-  // Get all applicabilities with related data
+  // Get all applicable articles with conformity data
   getMatrice: async (filters?: {
     domaineId?: string;
     sousDomaineId?: string;
@@ -13,34 +13,15 @@ export const conformiteQueries = {
     etatConformite?: string;
     siteId?: string;
   }) => {
-    // First, get applicable articles (applicabilite = 'obligatoire') from site_article_status
-    let applicableArticlesQuery = supabase
+    // Get applicable articles from site_article_status
+    let statusQuery = supabase
       .from('site_article_status')
-      .select('site_id, article_id')
-      .eq('applicabilite', 'obligatoire');
-
-    if (filters?.siteId && filters.siteId !== 'all') {
-      applicableArticlesQuery = applicableArticlesQuery.eq('site_id', filters.siteId);
-    }
-
-    const { data: applicableArticles, error: applicableError } = await applicableArticlesQuery;
-    
-    if (applicableError) throw applicableError;
-    if (!applicableArticles || applicableArticles.length === 0) {
-      return [];
-    }
-
-    // Get applicabilites only for applicable articles
-    let query = supabase
-      .from('applicabilite')
       .select(`
         id,
-        applicable,
-        justification,
-        activite,
-        texte_id,
-        article_id,
         site_id,
+        article_id,
+        applicabilite,
+        etat_conformite,
         sites (
           id,
           nom_site,
@@ -55,70 +36,85 @@ export const conformiteQueries = {
           derniere_mise_a_jour,
           preuves (
             id,
-            fichier_url,
-            type,
-            notes,
+            url_document,
+            type_document,
+            description,
             date
           )
         )
-      `);
+      `)
+      .eq('applicabilite', 'obligatoire');
 
     if (filters?.siteId && filters.siteId !== 'all') {
-      query = query.eq('site_id', filters.siteId);
+      statusQuery = statusQuery.eq('site_id', filters.siteId);
     }
 
-    const { data: applicabilites, error } = await query;
+    const { data: statusData, error: statusError } = await statusQuery;
     
-    if (error) throw error;
+    if (statusError) throw statusError;
+    if (!statusData || statusData.length === 0) {
+      return [];
+    }
 
-    // Filter to only include applicable articles
-    const filteredApplicabilites = applicabilites?.filter(appl =>
-      applicableArticles.some(
-        aa => aa.site_id === appl.site_id && aa.article_id === appl.article_id
-      )
-    );
-    // Fetch related textes and articles separately
-    const texteIds = [...new Set(filteredApplicabilites?.map(a => a.texte_id))];
-    const articleIds = [...new Set(filteredApplicabilites?.map(a => a.article_id).filter(Boolean))];
-
-    const { data: textes } = await supabase
-      .from('textes_reglementaires')
-      .select(`
-        id,
-        titre,
-        type,
-        statut_vigueur,
-        reference_officielle,
-        textes_reglementaires_domaines (
-          domaine_id,
-          domaines_application (
-            id,
-            libelle,
-            code
-          )
-        ),
-        textes_reglementaires_sous_domaines (
-          sous_domaine_id,
-          sous_domaines_application (
-            id,
-            libelle,
-            code
-          )
-        )
-      `)
-      .in('id', texteIds);
+    // Get unique article IDs to fetch article and text data
+    const articleIds = [...new Set(statusData.map(s => s.article_id))];
 
     const { data: articles } = await supabase
       .from('textes_articles')
-      .select('id, numero, titre_court, reference, contenu')
+      .select(`
+        id,
+        numero,
+        titre_court,
+        reference,
+        contenu,
+        texte_id,
+        textes_reglementaires (
+          id,
+          titre,
+          type,
+          statut_vigueur,
+          reference_officielle,
+          textes_reglementaires_domaines (
+            domaine_id,
+            domaines_application (
+              id,
+              libelle,
+              code
+            )
+          ),
+          textes_reglementaires_sous_domaines (
+            sous_domaine_id,
+            sous_domaines_application (
+              id,
+              libelle,
+              code
+            )
+          )
+        )
+      `)
       .in('id', articleIds);
 
     // Combine data
-    const enrichedData = filteredApplicabilites?.map(appl => ({
-      ...appl,
-      textes_reglementaires: textes?.find(t => t.id === appl.texte_id),
-      textes_articles: articles?.find(a => a.id === appl.article_id),
-    }));
+    const enrichedData = statusData.map(status => {
+      const article = articles?.find(a => a.id === status.article_id);
+      return {
+        id: status.id,
+        site_id: status.site_id,
+        article_id: status.article_id,
+        applicabilite: status.applicabilite,
+        etat_conformite: status.etat_conformite,
+        sites: status.sites,
+        conformite: status.conformite,
+        textes_articles: article ? {
+          id: article.id,
+          numero: article.numero,
+          titre_court: article.titre_court,
+          reference: article.reference,
+          contenu: article.contenu,
+        } : null,
+        textes_reglementaires: article?.textes_reglementaires,
+      };
+    });
 
     // Apply filters
     let filteredData = enrichedData;
@@ -164,7 +160,7 @@ export const conformiteQueries = {
 
   // Update or create conformite
   upsertConformite: async (data: {
-    applicabilite_id: string;
+    status_id: string;
     etat: EtatConformite;
     commentaire?: string;
     score?: number;
@@ -172,7 +168,7 @@ export const conformiteQueries = {
     const { data: existing } = await supabase
       .from('conformite')
       .select('id')
-      .eq('applicabilite_id', data.applicabilite_id)
+      .eq('status_id', data.status_id)
       .maybeSingle();
 
     const userId = (await supabase.auth.getUser()).data.user?.id;
@@ -197,7 +193,7 @@ export const conformiteQueries = {
       const { data: created, error } = await supabase
         .from('conformite')
         .insert([{
-          applicabilite_id: data.applicabilite_id,
+          status_id: data.status_id,
           etat: data.etat,
           commentaire: data.commentaire,
           score: data.score,
@@ -238,25 +234,25 @@ export const conformiteQueries = {
   },
 
   // Create action corrective automatically
-  createActionCorrective: async (conformiteId: string, applicabiliteId: string) => {
-    const { data: applicabilite } = await supabase
-      .from('applicabilite')
-      .select('article_id, texte_id')
-      .eq('id', applicabiliteId)
+  createActionCorrective: async (conformiteId: string, statusId: string) => {
+    const { data: status } = await supabase
+      .from('site_article_status')
+      .select('article_id')
+      .eq('id', statusId)
       .single();
 
-    if (!applicabilite) throw new Error('Applicabilité non trouvée');
+    if (!status) throw new Error('Status non trouvé');
 
     const { data: article } = await supabase
       .from('textes_articles')
-      .select('numero_article, titre')
-      .eq('id', applicabilite.article_id)
+      .select('numero, titre_court, texte_id')
+      .eq('id', status.article_id)
       .maybeSingle();
 
     const { data: texte } = await supabase
       .from('textes_reglementaires')
-      .select('numero')
-      .eq('id', applicabilite.texte_id)
+      .select('reference_officielle')
+      .eq('id', article?.texte_id)
       .maybeSingle();
 
     const userId = (await supabase.auth.getUser()).data.user?.id;
@@ -265,7 +261,7 @@ export const conformiteQueries = {
       .from('actions_correctives')
       .insert([{
         conformite_id: conformiteId,
-        manquement: `Non-conformité détectée sur ${texte?.numero || 'texte'} - Article ${article?.numero_article || 'N/A'}`,
+        manquement: `Non-conformité détectée sur ${texte?.reference_officielle || 'texte'} - Article ${article?.numero || 'N/A'}`,
         titre: 'Action corrective à définir',
         statut: 'a_faire',
         priorite: 'moyenne',
