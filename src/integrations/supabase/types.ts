@@ -3075,6 +3075,7 @@ export type Database = {
           domaine_id: string
           id: string
           libelle: string
+          ordre: number
         }
         Insert: {
           actif?: boolean | null
@@ -3085,6 +3086,7 @@ export type Database = {
           domaine_id: string
           id?: string
           libelle: string
+          ordre?: number
         }
         Update: {
           actif?: boolean | null
@@ -3095,6 +3097,7 @@ export type Database = {
           domaine_id?: string
           id?: string
           libelle?: string
+          ordre?: number
         }
         Relationships: [
           {
