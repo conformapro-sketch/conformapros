@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-queries";
@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TexteCodesSelector } from "@/components/TexteCodesSelector";
 import { textesCodesQueries } from "@/lib/codes-queries";
 import type { TypeRelationCode } from "@/types/codes";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
+import { Upload, X, Loader2, FileText } from "lucide-react";
 
 interface TexteFormModalProps {
   open: boolean;
@@ -39,6 +41,9 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   const [selectedCodes, setSelectedCodes] = useState<
     Array<{ codeId: string; typeRelation: TypeRelationCode }>
   >([]);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [existingPdfUrl, setExistingPdfUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: domaines, isLoading: domainesLoading } = useQuery({
     queryKey: ["domaines"],
@@ -83,6 +88,10 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
         }));
         setSelectedCodes(codes);
       }
+
+      // Load existing PDF
+      setExistingPdfUrl((texte as any).pdf_url || null);
+      setPdfFile(null);
     } else {
       setFormData({
         type_acte: "loi",
@@ -97,18 +106,72 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
       });
       setSelectedDomaines([]);
       setSelectedCodes([]);
+      setPdfFile(null);
+      setExistingPdfUrl(null);
     }
   }, [texte, open, existingCodes]);
 
+  const handlePdfUpload = async () => {
+    if (!pdfFile) return null;
+
+    const fileExt = pdfFile.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `textes/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('textes_reglementaires_pdf')
+      .upload(filePath, pdfFile);
+
+    if (uploadError) {
+      throw new Error(`Erreur lors de l'upload: ${uploadError.message}`);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('textes_reglementaires_pdf')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast.error('Seuls les fichiers PDF sont acceptés');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Le fichier ne doit pas dépasser 10 Mo');
+      return;
+    }
+
+    setPdfFile(file);
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Créer le texte
-      const newTexte = await textesReglementairesQueries.create(data, selectedDomaines);
-      // Associer les codes si sélectionnés
-      if (selectedCodes.length > 0) {
-        await textesCodesQueries.updateTexteCodes(newTexte.id, selectedCodes);
+      setIsUploading(true);
+      try {
+        // Upload PDF si présent
+        let pdfUrl = existingPdfUrl;
+        if (pdfFile) {
+          pdfUrl = await handlePdfUpload();
+        }
+
+        // Créer le texte avec l'URL du PDF
+        const texteData = { ...data, pdf_url: pdfUrl };
+        const newTexte = await textesReglementairesQueries.create(texteData, selectedDomaines);
+        
+        // Associer les codes si sélectionnés
+        if (selectedCodes.length > 0) {
+          await textesCodesQueries.updateTexteCodes(newTexte.id, selectedCodes);
+        }
+        return newTexte;
+      } finally {
+        setIsUploading(false);
       }
-      return newTexte;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
@@ -124,10 +187,23 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      // Mettre à jour le texte
-      await textesReglementairesQueries.update(id, data, selectedDomaines);
-      // Mettre à jour les codes associés
-      await textesCodesQueries.updateTexteCodes(id, selectedCodes);
+      setIsUploading(true);
+      try {
+        // Upload PDF si nouveau fichier
+        let pdfUrl = existingPdfUrl;
+        if (pdfFile) {
+          pdfUrl = await handlePdfUpload();
+        }
+
+        // Mettre à jour le texte avec l'URL du PDF
+        const texteData = { ...data, pdf_url: pdfUrl };
+        await textesReglementairesQueries.update(id, texteData, selectedDomaines);
+        
+        // Mettre à jour les codes associés
+        await textesCodesQueries.updateTexteCodes(id, selectedCodes);
+      } finally {
+        setIsUploading(false);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
@@ -251,11 +327,70 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
 
           <div className="space-y-2">
             <Label htmlFor="resume">Résumé</Label>
-            <Textarea
-              id="resume"
+            <RichTextEditor
               value={formData.resume}
-              onChange={(e) => setFormData({ ...formData, resume: e.target.value })}
-              rows={3}
+              onChange={(value) => setFormData({ ...formData, resume: value })}
+              placeholder="Résumé ou objet du texte réglementaire..."
+              className="min-h-[150px]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Pièce jointe PDF</Label>
+            {pdfFile || existingPdfUrl ? (
+              <div className="border rounded-lg p-4 bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {pdfFile ? pdfFile.name : "Document actuel"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">PDF</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setPdfFile(null);
+                      if (!texte) setExistingPdfUrl(null);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                onClick={() => document.getElementById("pdf_file")?.click()}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="p-3 bg-primary/10 rounded-full">
+                    <Upload className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Cliquez pour télécharger un fichier PDF</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ou glissez-déposez votre fichier ici
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Format PDF uniquement • Taille max: 10 Mo
+                  </p>
+                </div>
+              </div>
+            )}
+            <input
+              id="pdf_file"
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileChange}
+              className="hidden"
             />
           </div>
 
@@ -312,8 +447,19 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-              {createMutation.isPending || updateMutation.isPending ? "Enregistrement..." : texte ? "Modifier" : "Créer"}
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Upload en cours...
+                </>
+              ) : createMutation.isPending || updateMutation.isPending ? (
+                "Enregistrement..."
+              ) : texte ? (
+                "Modifier"
+              ) : (
+                "Créer"
+              )}
             </Button>
           </DialogFooter>
         </form>
