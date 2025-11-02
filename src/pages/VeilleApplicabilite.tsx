@@ -49,7 +49,11 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
+  LayoutGrid,
+  Lightbulb,
 } from "lucide-react";
+import { ArticleApplicabilityCard } from "@/components/ArticleApplicabilityCard";
+import { Separator } from "@/components/ui/separator";
 
 interface ArticleRow {
   id: string;
@@ -88,6 +92,11 @@ export default function VeilleApplicabilite() {
   const [bulkApplicabilite, setBulkApplicabilite] = useState<string>("");
   const [bulkJustification, setBulkJustification] = useState("");
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'to_evaluate' | 'applicable' | 'non_applicable'>('all');
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [currentArticleForComment, setCurrentArticleForComment] = useState<ArticleRow | null>(null);
+  const [tempComment, setTempComment] = useState("");
 
   // Fetch clients (only for team users)
   const { data: clients = [] } = useQuery({
@@ -233,6 +242,38 @@ export default function VeilleApplicabilite() {
       }
 
       return filtered;
+    },
+    enabled: !!selectedSite,
+  });
+
+  // Apply quick filter
+  const filteredArticles = useMemo(() => {
+    if (quickFilter === 'all') return articles;
+    if (quickFilter === 'to_evaluate') {
+      return articles.filter(a => a.id.startsWith('new_'));
+    } else if (quickFilter === 'applicable') {
+      return articles.filter(a => a.applicabilite === 'obligatoire' || a.applicabilite === 'recommande');
+    } else if (quickFilter === 'non_applicable') {
+      return articles.filter(a => a.applicabilite === 'non_applicable');
+    }
+    return articles;
+  }, [articles, quickFilter]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    return {
+      toEvaluate: articles.filter(a => a.id.startsWith('new_')).length,
+      applicable: articles.filter(a => a.applicabilite === 'obligatoire').length,
+      recommande: articles.filter(a => a.applicabilite === 'recommande').length,
+      nonApplicable: articles.filter(a => a.applicabilite === 'non_applicable').length,
+    };
+  }, [articles]);
+
+  // Use filteredArticles instead of articles for display
+  const { data: _unused } = useQuery({
+    queryKey: ["_unused"],
+    queryFn: async () => {
+      return null;
     },
     enabled: !!selectedSite,
   });
@@ -413,6 +454,81 @@ export default function VeilleApplicabilite() {
 
       {selectedSite && (
         <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-primary">
+                  {stats.toEvaluate}
+                </div>
+                <p className="text-sm text-muted-foreground">À évaluer</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-green-600">
+                  {stats.applicable}
+                </div>
+                <p className="text-sm text-muted-foreground">Applicables</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-blue-600">
+                  {stats.recommande}
+                </div>
+                <p className="text-sm text-muted-foreground">Recommandés</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-gray-600">
+                  {stats.nonApplicable}
+                </div>
+                <p className="text-sm text-muted-foreground">Non concernés</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Filters */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={quickFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('all')}
+                >
+                  Tous ({articles.length})
+                </Button>
+                <Button
+                  variant={quickFilter === 'to_evaluate' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('to_evaluate')}
+                >
+                  À évaluer ({stats.toEvaluate})
+                </Button>
+                <Button
+                  variant={quickFilter === 'applicable' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('applicable')}
+                >
+                  Applicables ({stats.applicable + stats.recommande})
+                </Button>
+                <Button
+                  variant={quickFilter === 'non_applicable' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('non_applicable')}
+                >
+                  Non concernés ({stats.nonApplicable})
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Filters */}
           <Card>
             <CardContent className="pt-6">
@@ -488,63 +604,153 @@ export default function VeilleApplicabilite() {
             </CardContent>
           </Card>
 
-          {/* Bulk Actions */}
+          {/* Floating Bulk Actions Bar */}
           {selectedRows.length > 0 && (
-            <Card className="border-primary">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    {selectedRows.length} article(s) sélectionné(s)
-                  </span>
-                  <div className="flex gap-2">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4">
+              <Card className="shadow-xl border-2 border-primary">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                      {selectedRows.length} sélectionné(s)
+                    </Badge>
+                    
+                    <Separator orientation="vertical" className="h-8" />
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => {
+                          setBulkApplicabilite("obligatoire");
+                          handleBulkUpdate();
+                        }}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Applicable
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={() => {
+                          setBulkApplicabilite("recommande");
+                          handleBulkUpdate();
+                        }}
+                      >
+                        <Lightbulb className="h-4 w-4 mr-2" />
+                        Recommandé
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setBulkApplicabilite("non_applicable");
+                          setBulkDialogOpen(true);
+                        }}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Non concerné
+                      </Button>
+                    </div>
+                    
+                    <Separator orientation="vertical" className="h-8" />
+                    
                     <Button
-                      variant="outline"
                       size="sm"
-                      onClick={() => setBulkDialogOpen(true)}
-                    >
-                      Mise à jour groupée
-                    </Button>
-                    <Button
                       variant="ghost"
-                      size="sm"
                       onClick={() => setSelectedRows([])}
                     >
                       Annuler
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           )}
 
-          {/* Articles Table */}
+          {/* Articles View */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Articles réglementaires</CardTitle>
-                  <CardDescription>{articles.length} article(s) trouvé(s)</CardDescription>
+                  <CardDescription>{filteredArticles.length} article(s) trouvé(s)</CardDescription>
                 </div>
-                <Button onClick={handleSave} disabled={saveMutation.isPending}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Enregistrer les modifications
-                </Button>
+                <div className="flex items-center gap-2">
+                  {/* View Toggle */}
+                  <div className="flex items-center gap-1 border rounded-md p-1">
+                    <Button
+                      variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-8"
+                      onClick={() => setViewMode('cards')}
+                    >
+                      <LayoutGrid className="h-4 w-4 mr-1" />
+                      Cartes
+                    </Button>
+                    <Button
+                      variant={viewMode === 'table' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-8"
+                      onClick={() => setViewMode('table')}
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      Tableau
+                    </Button>
+                  </div>
+                  
+                  <Button onClick={handleSave} disabled={saveMutation.isPending}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Enregistrer
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="text-center py-8 text-muted-foreground">Chargement...</div>
-              ) : articles.length > 0 ? (
+              ) : filteredArticles.length > 0 ? (
+                <>
+                  {viewMode === 'cards' ? (
+                    /* Cards View */
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {filteredArticles.map((article, index) => (
+                        <ArticleApplicabilityCard
+                          key={article.article_id}
+                          article={article}
+                          index={index + 1}
+                          isSelected={selectedRows.includes(article.article_id)}
+                          onSelect={(checked) => {
+                            if (checked) {
+                              setSelectedRows([...selectedRows, article.article_id]);
+                            } else {
+                              setSelectedRows(selectedRows.filter(id => id !== article.article_id));
+                            }
+                          }}
+                          onUpdate={(applicabilite) => 
+                            handleUpdateRow(article.article_id, 'applicabilite', applicabilite)
+                          }
+                          onAddComment={() => {
+                            setCurrentArticleForComment(article);
+                            setTempComment(article.commentaire_non_applicable || "");
+                            setCommentDialogOpen(true);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    /* Table View */
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[50px]">
                           <Checkbox
-                            checked={selectedRows.length === articles.length}
+                            checked={selectedRows.length === filteredArticles.length && filteredArticles.length > 0}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedRows(articles.map((a) => a.article_id));
+                                setSelectedRows(filteredArticles.map((a) => a.article_id));
                               } else {
                                 setSelectedRows([]);
                               }
@@ -560,7 +766,7 @@ export default function VeilleApplicabilite() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {articles.map((article) => (
+                      {filteredArticles.map((article) => (
                         <>
                           <TableRow
                             key={article.article_id}
@@ -668,7 +874,9 @@ export default function VeilleApplicabilite() {
                       ))}
                     </TableBody>
                   </Table>
-                </div>
+                  </div>
+                  )}
+                </>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   Aucun article trouvé. Ajustez les filtres ou sélectionnez un autre site.
@@ -678,6 +886,47 @@ export default function VeilleApplicabilite() {
           </Card>
         </>
       )}
+
+      {/* Comment Dialog */}
+      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Justification de non-applicabilité</DialogTitle>
+            <DialogDescription>
+              Article {currentArticleForComment?.article_numero}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Commentaire</Label>
+              <Textarea
+                value={tempComment}
+                onChange={(e) => setTempComment(e.target.value)}
+                placeholder="Expliquez pourquoi cet article ne s'applique pas à votre site..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={() => {
+              if (currentArticleForComment) {
+                handleUpdateRow(
+                  currentArticleForComment.article_id,
+                  'commentaire_non_applicable',
+                  tempComment
+                );
+              }
+              setCommentDialogOpen(false);
+              setTempComment("");
+            }}>
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk Update Dialog */}
       <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
