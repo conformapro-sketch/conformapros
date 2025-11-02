@@ -42,9 +42,9 @@ export function ArticleApplicabilityCard({
   
   return (
     <Card className={cn(
-      "border-l-4 transition-all hover:shadow-md",
+      "border-l-4 transition-all duration-300 hover:shadow-md",
       getStatusColor(),
-      article.isModified && "ring-2 ring-primary/20",
+      article.isModified && "ring-2 ring-primary/20 animate-pulse",
       isSelected && "ring-2 ring-primary"
     )}>
       <CardContent className="p-4">
@@ -74,14 +74,22 @@ export function ArticleApplicabilityCard({
               </h4>
               
               {/* Badge statut actuel */}
-              <Badge variant={
-                article.applicabilite === "obligatoire" ? "default" :
-                article.applicabilite === "recommande" ? "secondary" :
-                "outline"
-              } className="text-xs shrink-0">
-                {article.applicabilite === "obligatoire" ? "✅" :
-                 article.applicabilite === "recommande" ? "💡" :
-                 "❌"}
+              <Badge 
+                variant={
+                  article.applicabilite === "obligatoire" ? "default" :
+                  article.applicabilite === "recommande" ? "secondary" :
+                  "outline"
+                } 
+                className={cn(
+                  "text-xs shrink-0 font-medium",
+                  article.applicabilite === "obligatoire" && "bg-green-600 text-white hover:bg-green-700",
+                  article.applicabilite === "recommande" && "bg-blue-600 text-white hover:bg-blue-700",
+                  article.applicabilite === "non_applicable" && "bg-gray-400 text-white"
+                )}
+              >
+                {article.applicabilite === "obligatoire" ? "✅ Applicable" :
+                 article.applicabilite === "recommande" ? "💡 Recommandé" :
+                 "❌ Non concerné"}
               </Badge>
             </div>
             

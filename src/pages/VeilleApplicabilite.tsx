@@ -467,28 +467,43 @@ export default function VeilleApplicabilite() {
             
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-green-600">
-                  {stats.applicable}
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {stats.applicable}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Applicables</p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Applicables</p>
               </CardContent>
             </Card>
             
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-blue-600">
-                  {stats.recommande}
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {stats.recommande}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Recommandés</p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Recommandés</p>
               </CardContent>
             </Card>
             
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-gray-600">
-                  {stats.nonApplicable}
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-5 w-5 text-gray-600" />
+                  <div>
+                    <div className="text-2xl font-bold text-gray-600">
+                      {stats.nonApplicable}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Non concernés</p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Non concernés</p>
               </CardContent>
             </Card>
           </div>
@@ -585,10 +600,10 @@ export default function VeilleApplicabilite() {
                       <SelectValue placeholder="Applicabilité" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Tous</SelectItem>
-                      <SelectItem value="obligatoire">Obligatoire</SelectItem>
-                      <SelectItem value="recommande">Recommandé</SelectItem>
-                      <SelectItem value="non_applicable">Non applicable</SelectItem>
+                      <SelectItem value="all">Tous les statuts</SelectItem>
+                      <SelectItem value="obligatoire">✅ Applicable</SelectItem>
+                      <SelectItem value="recommande">💡 Recommandé</SelectItem>
+                      <SelectItem value="non_applicable">❌ Non concerné</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -619,38 +634,38 @@ export default function VeilleApplicabilite() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-green-600 hover:bg-green-700 text-white"
                         onClick={() => {
                           setBulkApplicabilite("obligatoire");
                           handleBulkUpdate();
                         }}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Applicable
+                        Marquer applicable
                       </Button>
                       
                       <Button
                         size="sm"
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
                         onClick={() => {
                           setBulkApplicabilite("recommande");
                           handleBulkUpdate();
                         }}
                       >
                         <Lightbulb className="h-4 w-4 mr-2" />
-                        Recommandé
+                        Marquer recommandé
                       </Button>
                       
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="secondary"
                         onClick={() => {
                           setBulkApplicabilite("non_applicable");
                           setBulkDialogOpen(true);
                         }}
                       >
                         <XCircle className="h-4 w-4 mr-2" />
-                        Non concerné
+                        Marquer non concerné
                       </Button>
                     </div>
                     
@@ -814,13 +829,47 @@ export default function VeilleApplicabilite() {
                                   handleUpdateRow(article.article_id, "applicabilite", v)
                                 }
                               >
-                                <SelectTrigger className="w-[150px]">
-                                  <SelectValue />
+                                <SelectTrigger className="w-[180px]">
+                                  <SelectValue>
+                                    {article.applicabilite === "obligatoire" && (
+                                      <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                        <span>Applicable</span>
+                                      </div>
+                                    )}
+                                    {article.applicabilite === "recommande" && (
+                                      <div className="flex items-center gap-2">
+                                        <Lightbulb className="h-4 w-4 text-blue-600" />
+                                        <span>Recommandé</span>
+                                      </div>
+                                    )}
+                                    {article.applicabilite === "non_applicable" && (
+                                      <div className="flex items-center gap-2">
+                                        <XCircle className="h-4 w-4 text-gray-600" />
+                                        <span>Non concerné</span>
+                                      </div>
+                                    )}
+                                  </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="obligatoire">Obligatoire</SelectItem>
-                                  <SelectItem value="recommande">Recommandé</SelectItem>
-                                  <SelectItem value="non_applicable">Non applicable</SelectItem>
+                                  <SelectItem value="obligatoire">
+                                    <div className="flex items-center gap-2">
+                                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                      <span>Applicable</span>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="recommande">
+                                    <div className="flex items-center gap-2">
+                                      <Lightbulb className="h-4 w-4 text-blue-600" />
+                                      <span>Recommandé</span>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="non_applicable">
+                                    <div className="flex items-center gap-2">
+                                      <XCircle className="h-4 w-4 text-gray-600" />
+                                      <span>Non concerné</span>
+                                    </div>
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </TableCell>
@@ -893,17 +942,28 @@ export default function VeilleApplicabilite() {
           <DialogHeader>
             <DialogTitle>Justification de non-applicabilité</DialogTitle>
             <DialogDescription>
-              Article {currentArticleForComment?.article_numero}
+              Pourquoi cet article n'est-il pas concerné ?
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="p-3 bg-muted rounded-md">
+              <p className="text-sm font-medium">
+                Article {currentArticleForComment?.article_numero}
+              </p>
+              {currentArticleForComment?.article_titre && (
+                <p className="text-sm text-muted-foreground">
+                  {currentArticleForComment.article_titre}
+                </p>
+              )}
+            </div>
             <div>
               <Label>Commentaire</Label>
               <Textarea
                 value={tempComment}
                 onChange={(e) => setTempComment(e.target.value)}
-                placeholder="Expliquez pourquoi cet article ne s'applique pas à votre site..."
+                placeholder="Expliquez pourquoi cet article ne concerne pas votre site (ex: hors périmètre d'activité, effectif non concerné, zone géographique...)"
                 rows={4}
+                className="resize-none"
               />
             </div>
           </div>
