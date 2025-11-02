@@ -27,13 +27,11 @@ export function BibliothequePreview({ texte, children, getStatutBadge }: Bibliot
       </HoverCardTrigger>
       <HoverCardPrimitive.Portal>
         <HoverCardContent 
-          className="w-80 md:w-96 max-w-[calc(100vw-2rem)]" 
-          side="right" 
-          align="start"
+          className="w-80 md:w-96 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-auto z-[9999]" 
           sideOffset={8}
-          alignOffset={-4}
-          collisionPadding={16}
+          collisionPadding={24}
           avoidCollisions={true}
+          updatePositionStrategy="always"
         >
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-2">
