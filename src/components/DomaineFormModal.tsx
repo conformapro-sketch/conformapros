@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,17 +43,36 @@ export function DomaineFormModal({ open, onOpenChange, domaine }: DomaineFormMod
     setValue,
   } = useForm<DomaineFormData>({
     resolver: zodResolver(domaineSchema),
-    defaultValues: domaine ? {
-      code: domaine.code,
-      libelle: domaine.libelle,
-      description: domaine.description || "",
-      actif: domaine.actif ?? true,
-    } : {
+    defaultValues: {
+      code: "",
+      libelle: "",
+      description: "",
       actif: true,
     },
   });
 
   const actif = watch("actif");
+
+  // Mettre à jour le formulaire quand le domaine change
+  useEffect(() => {
+    if (open) {
+      if (domaine) {
+        reset({
+          code: domaine.code,
+          libelle: domaine.libelle,
+          description: domaine.description || "",
+          actif: domaine.actif ?? true,
+        });
+      } else {
+        reset({
+          code: "",
+          libelle: "",
+          description: "",
+          actif: true,
+        });
+      }
+    }
+  }, [domaine, open, reset]);
 
   const createMutation = useMutation({
     mutationFn: createDomaine,
@@ -96,7 +116,15 @@ export function DomaineFormModal({ open, onOpenChange, domaine }: DomaineFormMod
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(newOpen) => {
+        if (!newOpen) {
+          reset();
+        }
+        onOpenChange(newOpen);
+      }}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{domaine ? "Modifier le domaine" : "Nouveau domaine"}</DialogTitle>

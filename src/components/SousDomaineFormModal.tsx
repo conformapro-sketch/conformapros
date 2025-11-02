@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,15 +52,11 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
     setValue,
   } = useForm<SousDomaineFormData>({
     resolver: zodResolver(sousDomaineSchema),
-    defaultValues: sousDomaine ? {
-      domaine_id: sousDomaine.domaine_id,
-      code: sousDomaine.code,
-      libelle: sousDomaine.libelle,
-      description: sousDomaine.description || "",
-      ordre: sousDomaine.ordre || 0,
-      actif: sousDomaine.actif ?? true,
-    } : {
-      domaine_id: defaultDomaineId || "",
+    defaultValues: {
+      domaine_id: "",
+      code: "",
+      libelle: "",
+      description: "",
       ordre: 0,
       actif: true,
     },
@@ -67,6 +64,31 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
 
   const actif = watch("actif");
   const domaineId = watch("domaine_id");
+
+  // Mettre à jour le formulaire quand le sous-domaine change
+  useEffect(() => {
+    if (open) {
+      if (sousDomaine) {
+        reset({
+          domaine_id: sousDomaine.domaine_id,
+          code: sousDomaine.code,
+          libelle: sousDomaine.libelle,
+          description: sousDomaine.description || "",
+          ordre: sousDomaine.ordre || 0,
+          actif: sousDomaine.actif ?? true,
+        });
+      } else {
+        reset({
+          domaine_id: defaultDomaineId || "",
+          code: "",
+          libelle: "",
+          description: "",
+          ordre: 0,
+          actif: true,
+        });
+      }
+    }
+  }, [sousDomaine, defaultDomaineId, open, reset]);
 
   const createMutation = useMutation({
     mutationFn: createSousDomaine,
@@ -112,7 +134,15 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog 
+      open={open} 
+      onOpenChange={(newOpen) => {
+        if (!newOpen) {
+          reset();
+        }
+        onOpenChange(newOpen);
+      }}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{sousDomaine ? "Modifier le sous-domaine" : "Nouveau sous-domaine"}</DialogTitle>
