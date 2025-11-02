@@ -51,7 +51,6 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
     subItems: [
       { title: "Tableau de bord", url: "/veille/dashboard" },
       { title: "Applicabilité", url: "/veille/applicabilite" },
-      { title: "Matrice d'applicabilité", url: "/veille/matrice" },
       { title: "Évaluation conformité", url: "/veille/evaluation" },
       { title: "Plan d'action", url: "/veille/actions" },
     ],
