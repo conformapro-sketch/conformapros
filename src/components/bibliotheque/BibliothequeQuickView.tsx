@@ -161,7 +161,7 @@ export function BibliothequeQuickView({
           <div className="flex flex-col gap-2">
             <Button
               onClick={() => {
-                navigate(`/veille/bibliotheque/textes/${texte.id}`);
+                navigate(`/bibliotheque/textes/${texte.id}`);
                 onOpenChange(false);
               }}
               className="w-full justify-start"

@@ -68,7 +68,7 @@ export function BibliothequeTextCard({
       
       <CardContent 
         className="p-5 cursor-pointer" 
-        onClick={() => onQuickView ? onQuickView(texte) : navigate(`/veille/bibliotheque/textes/${texte.id}`)}
+        onClick={() => onQuickView ? onQuickView(texte) : navigate(`/bibliotheque/textes/${texte.id}`)}
       >
         <div className="space-y-3">
           <div className={`flex items-start justify-between gap-2 ${onSelect ? 'ml-7' : ''}`}>

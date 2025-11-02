@@ -149,7 +149,7 @@ export function ApplicabiliteDrawer({ open, onOpenChange, siteId, siteName }: Ap
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              navigate(`/veille/bibliotheque/textes/${acte.acte_id}`);
+                              navigate(`/bibliotheque/textes/${acte.acte_id}`);
                               onOpenChange(false);
                             }}
                           >

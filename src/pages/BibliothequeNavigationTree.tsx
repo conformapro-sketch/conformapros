@@ -118,11 +118,11 @@ export default function BibliothequeNavigationTree() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate("/veille/bibliotheque/recherche")}>
+          <Button variant="outline" size="sm" onClick={() => navigate("/bibliotheque/recherche")}>
             <Search className="h-4 w-4 mr-2" />
             Recherche intelligente
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate("/veille/bibliotheque/dashbord")}>
+          <Button variant="outline" size="sm" onClick={() => navigate("/bibliotheque/dashbord")}>
             <BarChart3 className="h-4 w-4 mr-2" />
             Tableau de bord
           </Button>
@@ -337,12 +337,12 @@ export default function BibliothequeNavigationTree() {
                     const statutInfo = getStatutBadge(texte.statut_vigueur);
                     const articleCount = texte.articles?.[0]?.count || 0;
 
-                    return (
-                      <div
-                        key={texte.id}
-                        className="p-4 rounded-lg border border-border hover:border-primary/50 transition-all cursor-pointer hover:shadow-soft"
-                        onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
-                      >
+                      return (
+                        <div
+                          key={texte.id}
+                          className="p-4 rounded-lg border border-border hover:border-primary/50 transition-all cursor-pointer hover:shadow-soft"
+                          onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
+                        >
                         <div className="space-y-2">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">

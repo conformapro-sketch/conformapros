@@ -183,33 +183,34 @@ const App = () => (
               <Route path="textes/nouveau" element={<TexteForm />} />
               <Route path="textes/:id" element={<TexteDetail />} />
               <Route path="textes/:id/editer" element={<TexteForm />} />
-              <Route path="bibliotheque" element={<Navigate to="/veille/bibliotheque/" replace />} />
-              {/* legacy tableau-de-bord -> new dashbord path (client-side redirect) */}
-              <Route path="bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
+              {/* Bibliothèque Routes - Module indépendant */}
+              <Route path="bibliotheque" element={<BibliothequeReglementaire />} />
+              <Route path="bibliotheque/dashbord" element={<BibliothequeTableauDeBord />} />
+              <Route path="bibliotheque/domain" element={<DomainesPage />} />
               <Route path="bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
               <Route path="bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
               <Route path="bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
+              <Route path="bibliotheque/recherche" element={<BibliothequeRechercheIntelligente />} />
               <Route path="veille" element={<Navigate to="/veille/dashboard" replace />} />
               <Route path="veille/dashboard" element={<VeilleDashboard />} />
               <Route path="veille/applicabilite" element={<VeilleApplicabilite />} />
-              <Route path="veille/bibliotheque" element={<BibliothequeReglementaire />} />
+              {/* Redirections pour compatibilité - ancien chemin vers nouveau */}
+              <Route path="veille/bibliotheque" element={<Navigate to="/bibliotheque/" replace />} />
               <Route path="veille/bibliotheque-ancienne" element={<BibliothequeTextes />} />
-              <Route path="veille/bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
-              <Route path="veille/bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
-              <Route path="veille/bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
-              {/* keep new canonical path /veille/bibliotheque/dashbord and redirect old one */}
-              <Route path="veille/bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
-              <Route path="veille/bibliotheque/dashbord" element={<BibliothequeTableauDeBord />} />
-              <Route path="veille/bibliotheque/recherche" element={<BibliothequeRechercheIntelligente />} />
+              <Route path="veille/bibliotheque/dashbord" element={<Navigate to="/bibliotheque/dashbord" replace />} />
+              <Route path="veille/bibliotheque/tableau-de-bord" element={<Navigate to="/bibliotheque/dashbord" replace />} />
+              <Route path="veille/bibliotheque/domain" element={<Navigate to="/bibliotheque/domain" replace />} />
+              <Route path="veille/bibliotheque/textes/:id" element={<Navigate to="/bibliotheque/textes/:id" replace />} />
+              <Route path="veille/bibliotheque/textes/:id/articles" element={<Navigate to="/bibliotheque/textes/:id/articles" replace />} />
+              <Route path="veille/bibliotheque/articles/:articleId/versions" element={<Navigate to="/bibliotheque/articles/:articleId/versions" replace />} />
+              <Route path="veille/bibliotheque/recherche" element={<Navigate to="/bibliotheque/recherche" replace />} />
+              <Route path="veille/domaines" element={<Navigate to="/bibliotheque/domain" replace />} />
               <Route path="codes-juridiques" element={<CodesJuridiques />} />
               <Route path="codes-juridiques/:id" element={<CodeDetail />} />
               <Route path="veille/evaluation" element={<ConformiteEvaluationNew />} />
               <Route path="veille/evaluation-advanced" element={<VeilleEvaluation />} />
               <Route path="veille/conformite" element={<Navigate to="/veille/evaluation" replace />} />
               <Route path="veille/actions" element={<PlanAction />} />
-              {/* Domaines moved under Bibliothèque: add new route and redirect old one */}
-              <Route path="veille/domaines" element={<Navigate to="/veille/bibliotheque/domain" replace />} />
-              <Route path="veille/bibliotheque/domain" element={<DomainesPage />} />
               <Route path="veille/textes/:id/articles" element={<GestionArticles />} />
               <Route
                 path="utilisateurs"

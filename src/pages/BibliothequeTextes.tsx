@@ -291,7 +291,7 @@ export default function BibliothequeTextes() {
                         <TableRow
                           key={texte.id}
                           className="hover:bg-muted/50 cursor-pointer"
-                          onClick={() => navigate(`/veille/bibliotheque/textes/${texte.id}`)}
+                          onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
                         >
                           <TableCell>
                             <Badge variant="outline" className="text-xs">
@@ -359,7 +359,7 @@ export default function BibliothequeTextes() {
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/veille/bibliotheque/textes/${texte.id}`);
+                                navigate(`/bibliotheque/textes/${texte.id}`);
                               }}
                             >
                               <Eye className="h-4 w-4" />
@@ -382,7 +382,7 @@ export default function BibliothequeTextes() {
                     <div
                       key={texte.id}
                       className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/veille/bibliotheque/textes/${texte.id}`)}
+                      onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
                     >
                       <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">

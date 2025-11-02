@@ -200,7 +200,7 @@ export default function CodeDetail() {
                     </TableCell>
                     <TableCell>
                       <Link
-                        to={`/veille/bibliotheque/texte/${item.texte.id}`}
+                        to={`/bibliotheque/textes/${item.texte.id}`}
                         className="hover:underline"
                       >
                         {item.texte.intitule}

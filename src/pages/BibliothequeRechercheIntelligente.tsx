@@ -253,7 +253,7 @@ export default function BibliothequeRechercheIntelligente() {
                     <Card 
                       key={`texte-${result.id}`}
                       className="hover:shadow-soft transition-shadow cursor-pointer"
-                      onClick={() => navigate(`/veille/bibliotheque/textes/${texte.id}`)}
+                      onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
                     >
                       <CardContent className="pt-6">
                         <div className="space-y-3">
@@ -313,7 +313,7 @@ export default function BibliothequeRechercheIntelligente() {
                     <Card 
                       key={`article-${result.id}`}
                       className="hover:shadow-soft transition-shadow cursor-pointer border-l-4 border-l-primary"
-                      onClick={() => navigate(`/veille/bibliotheque/textes/${texte.id}`)}
+                      onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
                     >
                       <CardContent className="pt-6">
                         <div className="space-y-3">

@@ -693,7 +693,7 @@ export default function BibliothequeReglementaire() {
                             <BibliothequePreview key={texte.id} texte={texte} getStatutBadge={getStatutBadge}>
                               <TableRow 
                                 className="hover:bg-accent/5 transition-colors cursor-pointer"
-                                onClick={() => navigate(`/veille/bibliotheque/textes/${texte.id}`)}
+                                onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
                               >
                                 <TableCell>
                                   <div className="flex items-center gap-2">
@@ -747,7 +747,7 @@ export default function BibliothequeReglementaire() {
                                       size="sm"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        navigate(`/veille/bibliotheque/textes/${texte.id}`);
+                                        navigate(`/bibliotheque/textes/${texte.id}`);
                                       }}
                                       className="h-8 w-8 p-0"
                                     >

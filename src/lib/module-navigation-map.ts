@@ -39,11 +39,11 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
   BIBLIOTHEQUE: {
     icon: Library,
     subItems: [
-      { title: "Tableau de bord", url: "/veille/bibliotheque/dashbord" },
-      { title: "Domaines", url: "/veille/bibliotheque/domain" },
-      { title: "Textes & articles", url: "/veille/bibliotheque/" },
+      { title: "Tableau de bord", url: "/bibliotheque/dashbord" },
+      { title: "Domaines", url: "/bibliotheque/domain" },
+      { title: "Textes & articles", url: "/bibliotheque/" },
       { title: "Codes juridiques", url: "/codes-juridiques" },
-      { title: "Recherche intelligente", url: "/veille/bibliotheque/recherche" },
+      { title: "Recherche intelligente", url: "/bibliotheque/recherche" },
     ],
   },
   VEILLE: {

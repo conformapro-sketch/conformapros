@@ -40,7 +40,7 @@ export default function BibliothequeTexteArticles() {
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <FileText className="h-16 w-16 text-muted-foreground" />
         <p className="text-muted-foreground">Texte non trouvé</p>
-        <Button onClick={() => navigate("/veille/bibliotheque")}>
+        <Button onClick={() => navigate("/bibliotheque")}>
           Retour à la bibliothèque
         </Button>
       </div>
@@ -52,7 +52,7 @@ export default function BibliothequeTexteArticles() {
       {/* Navigation */}
       <Button
         variant="ghost"
-        onClick={() => navigate(`/veille/bibliotheque/textes/${id}`)}
+        onClick={() => navigate(`/bibliotheque/textes/${id}`)}
         className="mb-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -83,7 +83,7 @@ export default function BibliothequeTexteArticles() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate(`/veille/bibliotheque/articles/${article.id}/versions`)}
+                    onClick={() => navigate(`/bibliotheque/articles/${article.id}/versions`)}
                   >
                     <History className="h-4 w-4 mr-2" />
                     Versions

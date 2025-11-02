@@ -167,7 +167,7 @@ export default function BibliothequeArticleVersions() {
         <p className="text-destructive font-medium">
           {articleError ? "Erreur lors du chargement" : "Article non trouvé"}
         </p>
-        <Button variant="outline" onClick={() => navigate("/veille/bibliotheque")}>
+        <Button variant="outline" onClick={() => navigate("/bibliotheque")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour à la bibliothèque
         </Button>
