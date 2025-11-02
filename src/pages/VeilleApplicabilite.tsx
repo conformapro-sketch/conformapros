@@ -69,6 +69,7 @@ interface ArticleRow {
   article_titre?: string;
   article_contenu?: string;
   interpretation?: string;
+  indicatif?: boolean;
   texte_id: string;
   texte_reference?: string;
   texte_titre?: string;
@@ -284,7 +285,7 @@ export default function VeilleApplicabilite() {
       if (!selectedSite) return [];
       if (texteIdsAllowed.length === 0) return [];
 
-      // Get all articles filtered by allowed texts
+      // Get all articles filtered by allowed texts AND excluding indicative articles
       let articlesQuery = supabase
         .from("textes_articles")
         .select(
@@ -294,6 +295,7 @@ export default function VeilleApplicabilite() {
           titre_court,
           contenu,
           texte_id,
+          indicatif,
           actes_reglementaires (
             id,
             reference_officielle,
@@ -303,6 +305,7 @@ export default function VeilleApplicabilite() {
         `
         )
         .in("texte_id", texteIdsAllowed)
+        .or("indicatif.eq.false,indicatif.is.null")
         .order("numero");
 
       if (filters.texte && filters.texte !== "all") {
@@ -331,6 +334,7 @@ export default function VeilleApplicabilite() {
             article_titre: article.titre_court,
             article_contenu: article.contenu,
             interpretation: undefined, // Field removed from query
+            indicatif: article.indicatif,
             texte_id: article.texte_id,
             texte_reference: texte?.reference_officielle,
             texte_titre: texte?.intitule,
