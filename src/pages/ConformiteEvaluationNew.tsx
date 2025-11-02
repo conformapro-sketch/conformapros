@@ -65,7 +65,9 @@ import {
   Download,
   Sparkles,
   TrendingUp,
+  Eye,
 } from "lucide-react";
+import { ArticleViewModal } from "@/components/ArticleViewModal";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -150,9 +152,8 @@ const evaluationDataQueries = {
       query = query.eq('site_id', params.siteId);
     }
 
-    if (params.applicabilite) {
-      query = query.eq('applicabilite', params.applicabilite);
-    }
+    // Force filter to only show applicable articles
+    query = query.eq('applicabilite', 'obligatoire');
 
     const { data: statusRecords, error } = await query.order('updated_at', { ascending: false });
 
@@ -424,6 +425,8 @@ export default function ConformiteEvaluationNew() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeRecord, setActiveRecord] = useState<EvaluationRow | null>(null);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewRecord, setViewRecord] = useState<EvaluationRow | null>(null);
 
   // Queries
   const { data: clients = [] } = useQuery({
@@ -545,6 +548,42 @@ export default function ConformiteEvaluationNew() {
   const handleEvaluate = (record: EvaluationRow) => {
     setActiveRecord(record);
     setDrawerOpen(true);
+  };
+
+  const handleViewArticle = (record: EvaluationRow) => {
+    setViewRecord(record);
+    setViewModalOpen(true);
+  };
+
+  const handleQuickEvaluation = async (record: EvaluationRow, newEtat: ConformiteRecord['etat']) => {
+    try {
+      await upsertConformiteMutation.mutateAsync({
+        status_id: record.status.id,
+        etat: newEtat,
+      });
+
+      // If non-compliant, automatically create corrective action
+      if (newEtat === 'Non_conforme') {
+        await evaluationDataQueries.createActionCorrective(record.status.id);
+        toast({
+          title: 'Non-conformité détectée',
+          description: 'Action corrective créée automatiquement dans le plan d\'action',
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'Évaluation enregistrée',
+          description: `Article marqué comme ${newEtat === 'Conforme' ? 'conforme' : 'non évalué'}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error in quick evaluation:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'enregistrer l\'évaluation',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSaveEvaluation = async (data: {
@@ -847,22 +886,6 @@ export default function ConformiteEvaluationNew() {
               </Select>
             </div>
 
-            <div>
-              <Label>Applicabilité</Label>
-              <Select
-                value={filters.applicabilite || "all"}
-                onValueChange={v => setFilters({ ...filters, applicabilite: v === 'all' ? '' : v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Tous" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="obligatoire">Applicable</SelectItem>
-                  <SelectItem value="non_applicable">Non applicable</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
 
             <div>
               <Label>Conformité</Label>
@@ -929,10 +952,9 @@ export default function ConformiteEvaluationNew() {
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead>Domaine</TableHead>
+                     <TableHead>Domaine</TableHead>
                     <TableHead>Texte</TableHead>
                     <TableHead>Article</TableHead>
-                    <TableHead>Applicabilité</TableHead>
                     <TableHead>Conformité</TableHead>
                     <TableHead>Justification</TableHead>
                     <TableHead>Preuves</TableHead>
@@ -943,14 +965,14 @@ export default function ConformiteEvaluationNew() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
+                      <TableCell colSpan={9} className="text-center py-8">
                         Chargement...
                       </TableCell>
                     </TableRow>
                   ) : evaluations.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
-                        Aucun article trouvé
+                      <TableCell colSpan={9} className="text-center py-8">
+                        Aucun article applicable trouvé pour ce site
                       </TableCell>
                     </TableRow>
                    ) : (
@@ -965,26 +987,62 @@ export default function ConformiteEvaluationNew() {
                         <TableCell>
                           {record.domaines?.[0]?.libelle || '—'}
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {record.texte?.reference_officielle || record.texte?.titre || '—'}
+                        <TableCell 
+                          className="font-medium cursor-pointer hover:text-primary hover:underline transition-colors"
+                          onClick={() => handleViewArticle(record)}
+                          title="Cliquez pour consulter le texte"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-3 w-3" />
+                            {record.texte?.reference_officielle || record.texte?.titre || '—'}
+                          </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell 
+                          className="cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => handleViewArticle(record)}
+                          title="Cliquez pour consulter l'article"
+                        >
                           <div>
-                            <div className="font-medium">
+                            <div className="font-medium hover:underline flex items-center gap-2">
+                              <Eye className="h-3 w-3" />
                               Art. {record.article?.numero || '—'}
                             </div>
                             {record.article?.titre_court && (
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-muted-foreground line-clamp-1">
                                 {record.article.titre_court}
                               </div>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {getApplicabiliteBadge(record.status.applicabilite)}
-                        </TableCell>
-                        <TableCell>
-                          {getConformiteBadge(record.conformite?.etat)}
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={record.conformite?.etat || 'Non_evalue'}
+                            onValueChange={(newEtat) => handleQuickEvaluation(record, newEtat as ConformiteRecord['etat'])}
+                          >
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Conforme">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                  Conforme
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="Non_conforme">
+                                <div className="flex items-center gap-2">
+                                  <XCircle className="h-4 w-4 text-red-600" />
+                                  Non conforme
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="Non_evalue">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-gray-500" />
+                                  Non évalué
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
                           {record.status.justification ||
@@ -1037,6 +1095,15 @@ export default function ConformiteEvaluationNew() {
         onOpenChange={setBulkDialogOpen}
         selectedCount={selectedRows.length}
         onApply={handleBulkAction}
+      />
+
+      {/* Article View Modal */}
+      <ArticleViewModal
+        open={viewModalOpen}
+        onOpenChange={setViewModalOpen}
+        article={viewRecord?.article}
+        texte={viewRecord?.texte}
+        domaines={viewRecord?.domaines}
       />
     </div>
   );
