@@ -111,6 +111,8 @@ export function ArticleApplicabilityCard({
                 variant={article.applicabilite === "obligatoire" ? "default" : "outline"}
                 className="flex-1 h-8"
                 onClick={() => onUpdate("obligatoire")}
+                disabled={article.applicabilite === "non_concerne"}
+                title={article.applicabilite === "non_concerne" ? "Les articles à titre indicatif ne peuvent pas être applicables" : ""}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                 Applicable
@@ -121,6 +123,8 @@ export function ArticleApplicabilityCard({
                 variant={article.applicabilite === "non_applicable" ? "default" : "outline"}
                 className="flex-1 h-8"
                 onClick={() => onUpdate("non_applicable")}
+                disabled={article.applicabilite === "non_concerne"}
+                title={article.applicabilite === "non_concerne" ? "Les articles à titre indicatif ne peuvent pas être non applicables" : ""}
               >
                 <XCircle className="h-3.5 w-3.5 mr-1" />
                 Non applicable

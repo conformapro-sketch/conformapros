@@ -365,9 +365,34 @@ export default function VeilleApplicabilite() {
   const handleBulkUpdate = async () => {
     if (!bulkApplicabilite || selectedRows.length === 0) return;
 
-    const articlesToUpdate = articles.filter(a => 
-      selectedRows.includes(a.article_id)
-    ).map(article => ({
+    // Filtrer les articles selon la règle métier
+    let articlesToUpdate = articles.filter(a => selectedRows.includes(a.article_id));
+    
+    // Si on essaie de passer à "obligatoire" ou "non_applicable",
+    // exclure les articles "non_concerne"
+    if (bulkApplicabilite !== "non_concerne") {
+      const excludedCount = articlesToUpdate.filter(a => a.applicabilite === "non_concerne").length;
+      articlesToUpdate = articlesToUpdate.filter(a => a.applicabilite !== "non_concerne");
+      
+      if (excludedCount > 0) {
+        toast({
+          title: "⚠️ Articles exclus",
+          description: `${excludedCount} article(s) à titre indicatif ne peuvent pas être modifiés`,
+          variant: "destructive"
+        });
+      }
+    }
+
+    if (articlesToUpdate.length === 0) {
+      toast({
+        title: "Aucun article modifiable",
+        description: "Les articles sélectionnés sont tous à titre indicatif",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedArticles = articlesToUpdate.map(article => ({
       ...article,
       applicabilite: bulkApplicabilite as any,
       commentaire_non_applicable:
@@ -380,14 +405,14 @@ export default function VeilleApplicabilite() {
       ["applicabilite-articles", selectedSite, filters, searchTerm],
       articles.map((article) => {
         if (selectedRows.includes(article.article_id)) {
-          return articlesToUpdate.find(a => a.article_id === article.article_id) || article;
+          return updatedArticles.find(a => a.article_id === article.article_id) || article;
         }
         return article;
       })
     );
 
     // THEN auto-save to database
-    await saveMutation.mutateAsync(articlesToUpdate);
+    await saveMutation.mutateAsync(updatedArticles);
 
     setBulkDialogOpen(false);
     setBulkApplicabilite("");
@@ -854,26 +879,32 @@ export default function VeilleApplicabilite() {
                                     )}
                                   </SelectValue>
                                 </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="non_concerne">
-                                    <div className="flex items-center gap-2">
-                                      <Circle className="h-4 w-4 text-gray-400" />
-                                      <span>Non concerné</span>
-                                    </div>
-                                  </SelectItem>
-                                  <SelectItem value="obligatoire">
-                                    <div className="flex items-center gap-2">
-                                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                      <span>Applicable</span>
-                                    </div>
-                                  </SelectItem>
-                                  <SelectItem value="non_applicable">
-                                    <div className="flex items-center gap-2">
-                                      <XCircle className="h-4 w-4 text-gray-600" />
-                                      <span>Non applicable</span>
-                                    </div>
-                                  </SelectItem>
-                                </SelectContent>
+                          <SelectContent>
+                            <SelectItem value="non_concerne">
+                              <div className="flex items-center gap-2">
+                                <Circle className="h-4 w-4 text-gray-400" />
+                                <span>Non concerné</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem 
+                              value="obligatoire"
+                              disabled={article.applicabilite === "non_concerne"}
+                            >
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <span>Applicable</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem 
+                              value="non_applicable"
+                              disabled={article.applicabilite === "non_concerne"}
+                            >
+                              <div className="flex items-center gap-2">
+                                <XCircle className="h-4 w-4 text-gray-600" />
+                                <span>Non applicable</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
                               </Select>
                             </TableCell>
                             <TableCell>
