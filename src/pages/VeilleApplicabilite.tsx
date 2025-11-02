@@ -54,9 +54,13 @@ import {
   LayoutGrid,
   Loader2,
   AlertCircle,
+  Eye,
+  Info,
 } from "lucide-react";
 import { ArticleApplicabilityCard } from "@/components/ArticleApplicabilityCard";
 import { Separator } from "@/components/ui/separator";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { ArticleViewModal } from "@/components/ArticleViewModal";
 
 interface ArticleRow {
   id: string;
@@ -64,6 +68,7 @@ interface ArticleRow {
   article_numero: string;
   article_titre?: string;
   article_contenu?: string;
+  interpretation?: string;
   texte_id: string;
   texte_reference?: string;
   texte_titre?: string;
@@ -96,6 +101,8 @@ export default function VeilleApplicabilite() {
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [quickFilter, setQuickFilter] = useState<'all' | 'to_evaluate' | 'applicable' | 'non_applicable' | 'non_concerne'>('all');
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedArticleForView, setSelectedArticleForView] = useState<ArticleRow | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -188,6 +195,7 @@ export default function VeilleApplicabilite() {
           numero,
           titre_court,
           contenu,
+          interpretation,
           texte_id,
           actes_reglementaires (
             id,
@@ -224,6 +232,7 @@ export default function VeilleApplicabilite() {
             article_numero: article.numero,
             article_titre: article.titre_court,
             article_contenu: article.contenu,
+            interpretation: article.interpretation,
             texte_id: article.texte_id,
             texte_reference: texte?.reference_officielle,
             texte_titre: texte?.intitule,
@@ -361,6 +370,33 @@ export default function VeilleApplicabilite() {
       }
     }
   };
+
+  // Modal navigation handlers
+  const openArticleModal = (article: ArticleRow) => {
+    setSelectedArticleForView(article);
+    setViewModalOpen(true);
+  };
+
+  const handleNavigateArticle = (direction: "next" | "previous") => {
+    if (!selectedArticleForView) return;
+    
+    const currentIndex = filteredArticles.findIndex(
+      a => a.article_id === selectedArticleForView.article_id
+    );
+    
+    const newIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
+    
+    if (newIndex >= 0 && newIndex < filteredArticles.length) {
+      setSelectedArticleForView(filteredArticles[newIndex]);
+    }
+  };
+
+  const canNavigate = selectedArticleForView
+    ? {
+        next: filteredArticles.findIndex(a => a.article_id === selectedArticleForView.article_id) < filteredArticles.length - 1,
+        previous: filteredArticles.findIndex(a => a.article_id === selectedArticleForView.article_id) > 0
+      }
+    : { next: false, previous: false };
 
   // Handle bulk update
   const handleBulkUpdate = async () => {
@@ -765,24 +801,25 @@ export default function VeilleApplicabilite() {
                   {viewMode === 'cards' ? (
                     /* Cards View */
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {filteredArticles.map((article, index) => (
-                        <ArticleApplicabilityCard
-                          key={article.article_id}
-                          article={article}
-                          index={index + 1}
-                          isSelected={selectedRows.includes(article.article_id)}
-                          onSelect={(checked) => {
-                            if (checked) {
-                              setSelectedRows([...selectedRows, article.article_id]);
-                            } else {
-                              setSelectedRows(selectedRows.filter(id => id !== article.article_id));
-                            }
-                          }}
-                          onUpdate={(applicabilite) => 
-                            handleUpdateRow(article.article_id, 'applicabilite', applicabilite)
-                          }
-                        />
-                      ))}
+                       {filteredArticles.map((article, index) => (
+                         <ArticleApplicabilityCard
+                           key={article.article_id}
+                           article={article}
+                           index={index + 1}
+                           isSelected={selectedRows.includes(article.article_id)}
+                           onSelect={(checked) => {
+                             if (checked) {
+                               setSelectedRows([...selectedRows, article.article_id]);
+                             } else {
+                               setSelectedRows(selectedRows.filter(id => id !== article.article_id));
+                             }
+                           }}
+                           onUpdate={(applicabilite) => 
+                             handleUpdateRow(article.article_id, 'applicabilite', applicabilite)
+                           }
+                           onViewDetails={() => openArticleModal(article)}
+                         />
+                       ))}
                     </div>
                   ) : (
                     /* Table View */
@@ -842,16 +879,60 @@ export default function VeilleApplicabilite() {
                             
                             {/* Article */}
                             <TableCell>
-                              <div>
-                                <div className="font-medium text-sm">
-                                  {article.article_numero}
-                                  {article.article_titre && ` - ${article.article_titre}`}
-                                </div>
-                                {article.article_contenu && (
-                                  <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                    {stripHtml(article.article_contenu).substring(0, 150)}...
-                                  </div>
-                                )}
+                              <div className="flex items-center gap-2">
+                                <HoverCard openDelay={200}>
+                                  <HoverCardTrigger asChild>
+                                    <div className="flex-1 cursor-help">
+                                      <div className="font-medium text-sm flex items-center gap-2">
+                                        {article.article_numero}
+                                        {article.article_titre && ` - ${article.article_titre}`}
+                                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                                      </div>
+                                      {article.article_contenu && (
+                                        <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                          {stripHtml(article.article_contenu).substring(0, 150)}...
+                                        </div>
+                                      )}
+                                    </div>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-96" side="right">
+                                    <div className="space-y-2">
+                                      <h4 className="font-semibold text-sm">
+                                        Article {article.article_numero}
+                                      </h4>
+                                      {article.article_titre && (
+                                        <p className="text-xs text-muted-foreground">{article.article_titre}</p>
+                                      )}
+                                      <Separator />
+                                      <p className="text-xs leading-relaxed">
+                                        {article.article_contenu 
+                                          ? stripHtml(article.article_contenu).substring(0, 300) + "..."
+                                          : "Contenu non disponible"
+                                        }
+                                      </p>
+                                      {article.interpretation && (
+                                        <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded-md">
+                                          <p className="text-xs flex items-start gap-1">
+                                            <span className="text-blue-600 dark:text-blue-400">💡</span>
+                                            <span className="flex-1">Interprétation disponible</span>
+                                          </p>
+                                        </div>
+                                      )}
+                                      <p className="text-xs text-muted-foreground italic">
+                                        Cliquer sur l'icône 👁️ pour voir le détail complet
+                                      </p>
+                                    </div>
+                                  </HoverCardContent>
+                                </HoverCard>
+                                
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 shrink-0"
+                                  onClick={() => openArticleModal(article)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -1005,6 +1086,31 @@ export default function VeilleApplicabilite() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Article View Modal */}
+      <ArticleViewModal
+        open={viewModalOpen}
+        onOpenChange={setViewModalOpen}
+        article={selectedArticleForView ? {
+          numero: selectedArticleForView.article_numero,
+          titre_court: selectedArticleForView.article_titre,
+          contenu: selectedArticleForView.article_contenu,
+          interpretation: selectedArticleForView.interpretation,
+        } : undefined}
+        texte={selectedArticleForView ? {
+          titre: selectedArticleForView.texte_titre || "",
+          reference_officielle: selectedArticleForView.texte_reference,
+        } : undefined}
+        applicabilite={selectedArticleForView?.applicabilite}
+        onUpdateApplicabilite={(value) => {
+          if (selectedArticleForView) {
+            handleUpdateRow(selectedArticleForView.article_id, "applicabilite", value);
+          }
+        }}
+        onNext={() => handleNavigateArticle("next")}
+        onPrevious={() => handleNavigateArticle("previous")}
+        canNavigate={canNavigate}
+      />
     </div>
   );
 }

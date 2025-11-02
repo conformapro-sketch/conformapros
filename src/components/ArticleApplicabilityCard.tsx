@@ -2,9 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, XCircle, Circle } from "lucide-react";
+import { CheckCircle2, XCircle, Circle, Eye, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { stripHtml } from "@/lib/sanitize-html";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Separator } from "@/components/ui/separator";
 
 interface ArticleApplicabilityCardProps {
   article: {
@@ -12,6 +14,7 @@ interface ArticleApplicabilityCardProps {
     article_numero: string;
     article_titre?: string;
     article_contenu?: string;
+    interpretation?: string;
     texte_reference?: string;
     texte_titre?: string;
     applicabilite: "obligatoire" | "non_applicable" | "non_concerne";
@@ -21,6 +24,7 @@ interface ArticleApplicabilityCardProps {
   isSelected: boolean;
   onSelect: (checked: boolean) => void;
   onUpdate: (applicabilite: string) => void;
+  onViewDetails?: () => void;
 }
 
 export function ArticleApplicabilityCard({
@@ -28,7 +32,8 @@ export function ArticleApplicabilityCard({
   index,
   isSelected,
   onSelect,
-  onUpdate
+  onUpdate,
+  onViewDetails
 }: ArticleApplicabilityCardProps) {
   const getStatusColor = () => {
     switch (article.applicabilite) {
@@ -62,29 +67,75 @@ export function ArticleApplicabilityCard({
           <div className="flex-1 space-y-2">
             {/* Référence article */}
             <div className="flex items-start justify-between gap-2">
-              <h4 className="font-semibold text-sm">
-                Article {article.article_numero}
-                {article.article_titre && (
-                  <span className="text-muted-foreground font-normal ml-2">
-                    {article.article_titre}
-                  </span>
-                )}
-              </h4>
+              <HoverCard openDelay={200}>
+                <HoverCardTrigger asChild>
+                  <h4 className="font-semibold text-sm cursor-help flex items-center gap-2">
+                    Article {article.article_numero}
+                    {article.article_titre && (
+                      <span className="text-muted-foreground font-normal ml-2">
+                        {article.article_titre}
+                      </span>
+                    )}
+                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  </h4>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-96">
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm">
+                      Article {article.article_numero}
+                    </h4>
+                    {article.article_titre && (
+                      <p className="text-xs text-muted-foreground">{article.article_titre}</p>
+                    )}
+                    <Separator />
+                    <p className="text-xs leading-relaxed">
+                      {article.article_contenu 
+                        ? stripHtml(article.article_contenu).substring(0, 300) + "..."
+                        : "Contenu non disponible"
+                      }
+                    </p>
+                    {article.interpretation && (
+                      <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded-md">
+                        <p className="text-xs flex items-start gap-1">
+                          <span className="text-blue-600 dark:text-blue-400">💡</span>
+                          <span className="flex-1">Interprétation disponible</span>
+                        </p>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground italic">
+                      Cliquer sur l'icône 👁️ pour voir le détail complet
+                    </p>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
               
-              {/* Badge statut actuel */}
-              <Badge 
-                variant={article.applicabilite === "obligatoire" ? "default" : "outline"} 
-                className={cn(
-                  "text-xs shrink-0 font-medium",
-                  article.applicabilite === "obligatoire" && "bg-green-600 text-white hover:bg-green-700",
-                  article.applicabilite === "non_applicable" && "bg-gray-400 text-white",
-                  article.applicabilite === "non_concerne" && "bg-gray-300 text-gray-600"
+              <div className="flex items-center gap-2 shrink-0">
+                {onViewDetails && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={onViewDetails}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
                 )}
-              >
-                {article.applicabilite === "obligatoire" ? "✅ Applicable" : 
-                 article.applicabilite === "non_applicable" ? "❌ Non applicable" : 
-                 "🔘 Non concerné"}
-              </Badge>
+                
+                {/* Badge statut actuel */}
+                <Badge 
+                  variant={article.applicabilite === "obligatoire" ? "default" : "outline"} 
+                  className={cn(
+                    "text-xs shrink-0 font-medium",
+                    article.applicabilite === "obligatoire" && "bg-green-600 text-white hover:bg-green-700",
+                    article.applicabilite === "non_applicable" && "bg-gray-400 text-white",
+                    article.applicabilite === "non_concerne" && "bg-gray-300 text-gray-600"
+                  )}
+                >
+                  {article.applicabilite === "obligatoire" ? "✅ Applicable" : 
+                   article.applicabilite === "non_applicable" ? "❌ Non applicable" : 
+                   "🔘 Non concerné"}
+                </Badge>
+              </div>
             </div>
             
             {/* Aperçu contenu article */}

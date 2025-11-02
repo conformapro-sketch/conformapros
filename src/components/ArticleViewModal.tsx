@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FileText, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, BookOpen, Lightbulb, CheckCircle2, XCircle, Circle, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ArticleViewModalProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface ArticleViewModalProps {
     titre_court?: string;
     reference?: string;
     contenu?: string;
+    interpretation?: string;
   };
   texte?: {
     titre: string;
@@ -25,6 +27,11 @@ interface ArticleViewModalProps {
     statut_vigueur?: string;
   };
   domaines?: Array<{ id: string; code: string; libelle: string }>;
+  applicabilite?: "obligatoire" | "non_applicable" | "non_concerne";
+  onUpdateApplicabilite?: (value: string) => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  canNavigate?: { next: boolean; previous: boolean };
 }
 
 export function ArticleViewModal({
@@ -33,6 +40,11 @@ export function ArticleViewModal({
   article,
   texte,
   domaines,
+  applicabilite,
+  onUpdateApplicabilite,
+  onNext,
+  onPrevious,
+  canNavigate,
 }: ArticleViewModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,6 +120,93 @@ export function ArticleViewModal({
             )}
           </div>
         </div>
+
+        {/* Interpretation Section */}
+        {article?.interpretation && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h4 className="font-semibold text-base flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-yellow-500" />
+                Interprétation
+              </h4>
+              <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <div
+                  className="prose prose-sm max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: article.interpretation }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Applicability Actions */}
+        {onUpdateApplicabilite && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <h4 className="font-semibold text-base">Applicabilité</h4>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={applicabilite === "non_concerne" ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => onUpdateApplicabilite("non_concerne")}
+                >
+                  <Circle className="h-4 w-4 mr-2" />
+                  Non concerné
+                </Button>
+                <Button
+                  size="sm"
+                  variant={applicabilite === "obligatoire" ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => onUpdateApplicabilite("obligatoire")}
+                  disabled={applicabilite === "non_concerne"}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Applicable
+                </Button>
+                <Button
+                  size="sm"
+                  variant={applicabilite === "non_applicable" ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => onUpdateApplicabilite("non_applicable")}
+                  disabled={applicabilite === "non_concerne"}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Non applicable
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Navigation Footer */}
+        {(onNext || onPrevious) && (
+          <>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onPrevious}
+                disabled={!canNavigate?.previous}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onNext}
+                disabled={!canNavigate?.next}
+              >
+                Suivant
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
