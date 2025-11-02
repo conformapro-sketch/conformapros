@@ -1,3 +1,4 @@
+import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Building2, FileText, Eye } from "lucide-react";
@@ -24,60 +25,70 @@ export function BibliothequePreview({ texte, children, getStatutBadge }: Bibliot
       <HoverCardTrigger asChild>
         {children}
       </HoverCardTrigger>
-      <HoverCardContent className="w-96" side="right" align="start">
-        <div className="space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <Badge variant="outline" className="text-xs">
-              {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS]}
-            </Badge>
-            <Badge className={statutInfo.className}>
-              <span className="mr-1">{statutInfo.icon}</span>
-              {statutInfo.label}
-            </Badge>
-          </div>
+      <HoverCardPrimitive.Portal>
+        <HoverCardContent 
+          className="w-80 md:w-96 max-w-[calc(100vw-2rem)]" 
+          side="right" 
+          align="start"
+          sideOffset={8}
+          alignOffset={-4}
+          collisionPadding={16}
+          avoidCollisions={true}
+        >
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <Badge variant="outline" className="text-xs">
+                {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS]}
+              </Badge>
+              <Badge className={statutInfo.className}>
+                <span className="mr-1">{statutInfo.icon}</span>
+                {statutInfo.label}
+              </Badge>
+            </div>
 
-          <div>
-            <h4 className="font-bold text-sm text-primary mb-1">
-              {texte.reference_officielle}
-            </h4>
-            <p className="font-semibold text-foreground text-sm leading-tight">
-              {texte.intitule}
-            </p>
-          </div>
+            <div>
+              <h4 className="font-bold text-sm text-primary mb-1">
+                {texte.reference_officielle}
+              </h4>
+              <p className="font-semibold text-foreground text-sm leading-tight">
+                {texte.intitule}
+              </p>
+            </div>
 
-          {texte.resume && (
-            <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
-              {texte.resume}
-            </p>
-          )}
-
-          <div className="space-y-2 pt-2 border-t">
-            {texte.autorite_emettrice && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Building2 className="h-3.5 w-3.5" />
-                <span>{texte.autorite_emettrice}</span>
-              </div>
+            {texte.resume && (
+              <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                {texte.resume}
+              </p>
             )}
-            {texte.date_publication && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>{new Date(texte.date_publication).toLocaleDateString("fr-FR")}</span>
+
+            <div className="space-y-2 pt-2 border-t">
+              {texte.autorite_emettrice && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span>{texte.autorite_emettrice}</span>
+                </div>
+              )}
+              {texte.date_publication && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{new Date(texte.date_publication).toLocaleDateString("fr-FR")}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-xs">
+                <FileText className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium text-primary">
+                  {articleCount} article{articleCount > 1 ? 's' : ''}
+                </span>
               </div>
-            )}
-            <div className="flex items-center gap-2 text-xs">
-              <FileText className="h-3.5 w-3.5 text-primary" />
-              <span className="font-medium text-primary">
-                {articleCount} article{articleCount > 1 ? 's' : ''}
-              </span>
+            </div>
+
+            <div className="flex items-center gap-1 text-xs text-muted-foreground pt-2 border-t">
+              <Eye className="h-3 w-3" />
+              <span>Survolez pour voir les détails</span>
             </div>
           </div>
-
-          <div className="flex items-center gap-1 text-xs text-muted-foreground pt-2 border-t">
-            <Eye className="h-3 w-3" />
-            <span>Survolez pour voir les détails</span>
-          </div>
-        </div>
-      </HoverCardContent>
+        </HoverCardContent>
+      </HoverCardPrimitive.Portal>
     </HoverCard>
   );
 }
