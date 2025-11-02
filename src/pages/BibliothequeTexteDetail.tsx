@@ -26,7 +26,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
 import { changelogQueries } from "@/lib/actes-queries";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { ArticleVersionModal } from "@/components/ArticleVersionModal";
 import { ArticleVersionComparison } from "@/components/ArticleVersionComparison";
@@ -34,6 +34,7 @@ import { TimelineChangelog } from "@/components/TimelineChangelog";
 import { TexteCodesDisplay } from "@/components/TexteCodesDisplay";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize-html";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
+import { BibliothequeSearchBar } from "@/components/bibliotheque/BibliothequeSearchBar";
 
 export default function BibliothequeTexteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +46,7 @@ export default function BibliothequeTexteDetail() {
   const [editingArticle, setEditingArticle] = useState<any>(null);
   const [deleteArticleId, setDeleteArticleId] = useState<string | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Version management
   const [expandedArticles, setExpandedArticles] = useState<string[]>([]);
@@ -86,6 +88,32 @@ export default function BibliothequeTexteDetail() {
     queryFn: () => changelogQueries.getByActeId(id!),
     enabled: !!id,
   });
+
+  // Sort and filter articles
+  const sortedAndFilteredArticles = useMemo(() => {
+    if (!articles) return [];
+    
+    // 1. Filter by search query
+    let filtered = articles;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = articles.filter((article) => {
+        return (
+          article.numero_article?.toLowerCase().includes(query) ||
+          article.titre_court?.toLowerCase().includes(query) ||
+          stripHtml(article.resume || "").toLowerCase().includes(query) ||
+          stripHtml(article.contenu || "").toLowerCase().includes(query)
+        );
+      });
+    }
+    
+    // 2. Sort alphabetically by numero_article
+    return [...filtered].sort((a, b) => {
+      const numA = a.numero_article || "";
+      const numB = b.numero_article || "";
+      return numA.localeCompare(numB, 'fr', { numeric: true, sensitivity: 'base' });
+    });
+  }, [articles, searchQuery]);
 
   // Show error toast if query fails
   if (error) {
@@ -309,20 +337,31 @@ export default function BibliothequeTexteDetail() {
         </TabsList>
 
         <TabsContent value="articles" className="space-y-4">
-          <div className="flex justify-between items-center gap-4">
-            <h2 className="text-xl font-semibold">Articles réglementaires</h2>
-            <Button onClick={() => {
-              setEditingArticle(null);
-              setShowArticleModal(true);
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un article
-            </Button>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center gap-4">
+              <h2 className="text-xl font-semibold">Articles réglementaires</h2>
+              <Button onClick={() => {
+                setEditingArticle(null);
+                setShowArticleModal(true);
+              }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un article
+              </Button>
+            </div>
+            
+            {articles && articles.length > 0 && (
+              <BibliothequeSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                resultCount={sortedAndFilteredArticles.length}
+                className="max-w-2xl"
+              />
+            )}
           </div>
 
-          {articles && articles.length > 0 ? (
+          {sortedAndFilteredArticles && sortedAndFilteredArticles.length > 0 ? (
             <div className="space-y-3">
-              {articles.map((article, index) => {
+              {sortedAndFilteredArticles.map((article, index) => {
                 const isExpanded = expandedArticles.includes(article.id);
                 const versionsData = articleVersionsMap[article.id] || [];
 
@@ -518,6 +557,18 @@ export default function BibliothequeTexteDetail() {
                 );
               })}
             </div>
+          ) : searchQuery ? (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground mb-4">
+                Aucun article trouvé pour "{searchQuery}"
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => setSearchQuery("")}
+              >
+                Effacer la recherche
+              </Button>
+            </Card>
           ) : (
             <Card>
               <CardContent className="py-12 text-center">
