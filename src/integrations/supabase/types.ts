@@ -191,6 +191,7 @@ export type Database = {
           id: string
           intitule: string
           lien_officiel: string | null
+          pdf_url: string | null
           reference_officielle: string
           resume: string | null
           statut_vigueur: string | null
@@ -209,6 +210,7 @@ export type Database = {
           id?: string
           intitule: string
           lien_officiel?: string | null
+          pdf_url?: string | null
           reference_officielle: string
           resume?: string | null
           statut_vigueur?: string | null
@@ -227,6 +229,7 @@ export type Database = {
           id?: string
           intitule?: string
           lien_officiel?: string | null
+          pdf_url?: string | null
           reference_officielle?: string
           resume?: string | null
           statut_vigueur?: string | null

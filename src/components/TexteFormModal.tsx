@@ -114,23 +114,33 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   const handlePdfUpload = async () => {
     if (!pdfFile) return null;
 
-    const fileExt = pdfFile.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `textes/${fileName}`;
+    try {
+      const fileExt = pdfFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `textes/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('textes_reglementaires_pdf')
-      .upload(filePath, pdfFile);
+      const { error: uploadError } = await supabase.storage
+        .from('textes_reglementaires_pdf')
+        .upload(filePath, pdfFile);
 
-    if (uploadError) {
-      throw new Error(`Erreur lors de l'upload: ${uploadError.message}`);
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        toast.error(`Impossible d'uploader le PDF: ${uploadError.message}`);
+        throw new Error(`Erreur lors de l'upload: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('textes_reglementaires_pdf')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      console.error('PDF upload failed:', error);
+      if (!error.message?.includes('Impossible d\'uploader')) {
+        toast.error('Erreur lors de l\'upload du PDF');
+      }
+      throw error;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('textes_reglementaires_pdf')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,13 +162,14 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      setIsUploading(true);
       try {
         // Upload PDF si présent
+        setIsUploading(true);
         let pdfUrl = existingPdfUrl;
         if (pdfFile) {
           pdfUrl = await handlePdfUpload();
         }
+        setIsUploading(false);
 
         // Créer le texte avec l'URL du PDF
         const texteData = { ...data, pdf_url: pdfUrl };
@@ -169,8 +180,9 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
           await textesCodesQueries.updateTexteCodes(newTexte.id, selectedCodes);
         }
         return newTexte;
-      } finally {
+      } catch (error) {
         setIsUploading(false);
+        throw error;
       }
     },
     onSuccess: () => {
@@ -181,19 +193,21 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
       onSuccess?.();
     },
     onError: (error: any) => {
+      console.error('Create error:', error);
       toast.error(error.message || "Erreur lors de la création");
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      setIsUploading(true);
       try {
         // Upload PDF si nouveau fichier
+        setIsUploading(true);
         let pdfUrl = existingPdfUrl;
         if (pdfFile) {
           pdfUrl = await handlePdfUpload();
         }
+        setIsUploading(false);
 
         // Mettre à jour le texte avec l'URL du PDF
         const texteData = { ...data, pdf_url: pdfUrl };
@@ -201,8 +215,9 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
         
         // Mettre à jour les codes associés
         await textesCodesQueries.updateTexteCodes(id, selectedCodes);
-      } finally {
+      } catch (error) {
         setIsUploading(false);
+        throw error;
       }
     },
     onSuccess: () => {
@@ -213,6 +228,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
       onSuccess?.();
     },
     onError: (error: any) => {
+      console.error('Update error:', error);
       toast.error(error.message || "Erreur lors de la modification");
     },
   });
