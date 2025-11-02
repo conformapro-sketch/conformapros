@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-queries";
-import { domainesQueries } from "@/lib/actes-queries";
+import { domainesQueries } from "@/lib/textes-queries";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TexteCodesSelector } from "@/components/TexteCodesSelector";
@@ -40,7 +40,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
     Array<{ codeId: string; typeRelation: TypeRelationCode }>
   >([]);
 
-  const { data: domaines } = useQuery({
+  const { data: domaines, isLoading: domainesLoading } = useQuery({
     queryKey: ["domaines"],
     queryFn: () => domainesQueries.getActive(),
   });
@@ -272,24 +272,32 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
           <div className="space-y-2">
             <Label>Domaines d'application</Label>
             <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
-              {domaines?.map((domaine) => (
-                <div key={domaine.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`domaine-${domaine.id}`}
-                    checked={selectedDomaines.includes(domaine.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedDomaines([...selectedDomaines, domaine.id]);
-                      } else {
-                        setSelectedDomaines(selectedDomaines.filter((id) => id !== domaine.id));
-                      }
-                    }}
-                  />
-                  <label htmlFor={`domaine-${domaine.id}`} className="text-sm cursor-pointer">
-                    {domaine.libelle}
-                  </label>
-                </div>
-              ))}
+              {domainesLoading ? (
+                <p className="text-sm text-muted-foreground">Chargement des domaines...</p>
+              ) : !domaines || domaines.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucun domaine disponible. Veuillez d'abord créer des domaines.
+                </p>
+              ) : (
+                domaines.map((domaine) => (
+                  <div key={domaine.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`domaine-${domaine.id}`}
+                      checked={selectedDomaines.includes(domaine.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedDomaines([...selectedDomaines, domaine.id]);
+                        } else {
+                          setSelectedDomaines(selectedDomaines.filter((id) => id !== domaine.id));
+                        }
+                      }}
+                    />
+                    <label htmlFor={`domaine-${domaine.id}`} className="text-sm cursor-pointer">
+                      {domaine.libelle}
+                    </label>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

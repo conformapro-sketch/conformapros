@@ -31,6 +31,8 @@ export const domainesQueries = {
     const { data, error } = await supabase
       .from("domaines_reglementaires")
       .select("*")
+      .eq("actif", true)
+      .is("deleted_at", null)
       .order("libelle");
     if (error) throw error;
     return data || [];
