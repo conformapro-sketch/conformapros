@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Upload, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Upload, FileText, Loader2, X } from "lucide-react";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { z } from "zod";
 import { 
   actesQueries, 
@@ -528,35 +529,63 @@ export default function TexteForm() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="objet_resume">Résumé</Label>
-              <Textarea
-                id="objet_resume"
-                placeholder="Résumé ou objet du texte réglementaire"
+              <RichTextEditor
                 value={formData.objet_resume}
-                onChange={(e) => handleChange("objet_resume", e.target.value)}
-                rows={4}
+                onChange={(value) => handleChange("objet_resume", value)}
+                placeholder="Résumé ou objet du texte réglementaire..."
+                className="min-h-[150px]"
               />
             </div>
 
             <div>
               <Label htmlFor="pdf_file">Pièce jointe PDF</Label>
               <div className="mt-2">
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById("pdf_file")?.click()}
-                    className="w-full sm:w-auto"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Choisir un fichier
-                  </Button>
-                  {pdfFileName && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <FileText className="h-4 w-4" />
-                      <span className="truncate max-w-[200px]">{pdfFileName}</span>
+                {pdfFileName ? (
+                  <div className="border rounded-lg p-4 bg-muted/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-md">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{pdfFileName}</p>
+                          <p className="text-xs text-muted-foreground">PDF</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          handleChange("pdf_file", null);
+                          setPdfFileName("");
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div
+                    className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                    onClick={() => document.getElementById("pdf_file")?.click()}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="p-3 bg-primary/10 rounded-full">
+                        <Upload className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Cliquez pour télécharger un fichier PDF</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          ou glissez-déposez votre fichier ici
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Format PDF uniquement • Taille max: 10 Mo
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <input
                   id="pdf_file"
                   type="file"
@@ -564,11 +593,8 @@ export default function TexteForm() {
                   onChange={handleFileChange}
                   className="hidden"
                 />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Format PDF uniquement, taille maximale 10 Mo
-                </p>
                 {errors.pdf_file && (
-                  <p className="text-xs text-destructive mt-1">{errors.pdf_file}</p>
+                  <p className="text-xs text-destructive mt-2">{errors.pdf_file}</p>
                 )}
               </div>
             </div>
