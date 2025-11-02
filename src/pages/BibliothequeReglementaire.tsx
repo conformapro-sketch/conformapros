@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -40,6 +39,12 @@ import { BibliothequeTableSkeleton } from "@/components/bibliotheque/Bibliothequ
 import { BibliothequeQuickView } from "@/components/bibliotheque/BibliothequeQuickView";
 import { BibliothequeFloatingActions } from "@/components/bibliotheque/BibliothequeFloatingActions";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
+import { BibliothequeSearchBar } from "@/components/bibliotheque/BibliothequeSearchBar";
+import { BibliothequeQuickFilters } from "@/components/bibliotheque/BibliothequeQuickFilters";
+import { BibliothequeFilterSidebar } from "@/components/bibliotheque/BibliothequeFilterSidebar";
+import { BibliothequeViewSettings } from "@/components/bibliotheque/BibliothequeViewSettings";
+import { BibliothequeCardHoverPreview } from "@/components/bibliotheque/BibliothequeCardHoverPreview";
+import { BibliothequePreferencesProvider, useBibliothequePreferences } from "@/contexts/BibliothequePreferencesContext";
 import * as XLSX from 'xlsx';
 
 const TYPE_LABELS = {
@@ -56,9 +61,11 @@ const TYPE_ICONS = {
   circulaire: "📄",
 };
 
-export default function BibliothequeReglementaire() {
+function BibliothequeReglementaireContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { preferences, setView, setPageSize, setDensity, setSidebarOpen, toggleFavorite, isFavorite } = useBibliothequePreferences();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
@@ -66,15 +73,13 @@ export default function BibliothequeReglementaire() {
   const [statutFilter, setStatutFilter] = useState<string>("all");
   const [anneeFilter, setAnneeFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState("date_publication");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState(preferences.sortBy);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(preferences.sortOrder);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingTexte, setEditingTexte] = useState<TexteReglementaire | null>(null);
   const [deleteTexteId, setDeleteTexteId] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(true);
-  const [view, setView] = useState<"table" | "grid">("table");
-  const [pageSize, setPageSize] = useState(25);
+  const [showFilters, setShowFilters] = useState(preferences.filtersOpen);
   const [selectedTextes, setSelectedTextes] = useState<string[]>([]);
   const [quickViewTexte, setQuickViewTexte] = useState<any | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
@@ -103,7 +108,7 @@ export default function BibliothequeReglementaire() {
         sousDomaineFilter: sousDomaineFilter !== "all" ? sousDomaineFilter : undefined,
         anneeFilter: anneeFilter !== "all" ? anneeFilter : undefined,
         page,
-        pageSize,
+        pageSize: preferences.pageSize,
         sortBy,
         sortOrder,
       }),
@@ -134,6 +139,8 @@ export default function BibliothequeReglementaire() {
     const enVigueur = textes.filter((t: any) => t.statut_vigueur === "en_vigueur").length;
     const modifies = textes.filter((t: any) => t.statut_vigueur === "modifie").length;
     const abroges = textes.filter((t: any) => t.statut_vigueur === "abroge").length;
+    const withPdf = textes.filter((t: any) => t.pdf_url).length;
+    const favorites = textes.filter((t: any) => isFavorite(t.id)).length;
     
     const parType = {
       loi: textes.filter((t: any) => t.type_acte === "loi").length,
@@ -147,9 +154,11 @@ export default function BibliothequeReglementaire() {
       enVigueur,
       modifies,
       abroges,
+      withPdf,
+      favorites,
       parType,
     };
-  }, [textes, totalCount]);
+  }, [textes, totalCount, isFavorite]);
 
   // Check if texte is new (created in last 7 days)
   const isNewTexte = (texte: any) => {
@@ -248,8 +257,20 @@ export default function BibliothequeReglementaire() {
   };
 
   const handleFilterByStatus = (status: string) => {
-    setStatutFilter(status);
+    if (status === "with_pdf") {
+      // Handle PDF filter
+      // TODO: Add PDF filter to queries
+    } else if (status === "favorites") {
+      // Handle favorites filter
+      // TODO: Filter by favorites
+    } else {
+      setStatutFilter(status);
+    }
     setPage(1);
+  };
+
+  const handleQuickFilterChange = (filterId: string, value: string) => {
+    handleFilterByStatus(value);
   };
 
   const handleSelectTexte = (id: string, selected: boolean) => {
@@ -360,8 +381,8 @@ export default function BibliothequeReglementaire() {
         {/* Statistics Cards */}
         <BibliothequeStatsCards stats={stats} onFilterByStatus={handleFilterByStatus} />
 
-        {/* Header avec gradient */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-primary p-8 shadow-strong">
+        {/* Header avec gradient - Sticky */}
+        <div className="sticky top-0 z-30 relative overflow-hidden rounded-2xl bg-gradient-primary/95 backdrop-blur-lg p-6 shadow-strong">
           <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
           <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -378,6 +399,15 @@ export default function BibliothequeReglementaire() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => setSidebarOpen(true)}
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filtres
+              </Button>
               <Button 
                 variant="secondary" 
                 size="sm" 
@@ -408,66 +438,26 @@ export default function BibliothequeReglementaire() {
           </div>
         </div>
 
-        {/* Barre de recherche et filtres améliorés */}
+        {/* Search Bar with Quick Filters */}
         <Card className="shadow-medium border-2 border-border/50">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">Recherche et filtres</CardTitle>
-                {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {activeFiltersCount} filtre{activeFiltersCount > 1 ? 's' : ''}
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {activeFiltersCount > 0 && (
-                  <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-                    <X className="h-4 w-4 mr-1" />
-                    Réinitialiser
-                  </Button>
-                )}
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  {showFilters ? "Masquer" : "Afficher"}
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-4">
-            {/* Recherche principale */}
-            <div className="relative">
-              <Search className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par titre, référence, autorité..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-12 h-12 text-base border-2 focus:border-accent focus:ring-accent"
-              />
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-2"
-                  onClick={() => setSearchTerm("")}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-              {isLoading && (
-                <div className="absolute right-12 top-3.5">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              )}
-            </div>
+          <CardContent className="p-6 space-y-4">
+            {/* Recherche améliorée */}
+            <BibliothequeSearchBar
+              value={searchTerm}
+              onChange={(value) => {
+                setSearchTerm(value);
+                setPage(1);
+              }}
+              isLoading={isLoading}
+              resultCount={totalCount}
+            />
+
+            {/* Quick Filters */}
+            <BibliothequeQuickFilters
+              activeFilter={statutFilter}
+              onFilterChange={handleQuickFilterChange}
+              stats={stats}
+            />
 
             {/* Active Filters */}
             <BibliothequeActiveFilters 
@@ -586,7 +576,7 @@ export default function BibliothequeReglementaire() {
         </Card>
 
         {/* Tableau des résultats */}
-        <Card className="shadow-medium">
+        <Card className="shadow-medium" data-results-section>
           <CardHeader className="border-b bg-muted/30">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
@@ -599,7 +589,7 @@ export default function BibliothequeReglementaire() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Select value={String(pageSize)} onValueChange={(val) => { setPageSize(Number(val)); setPage(1); }}>
+                <Select value={String(preferences.pageSize)} onValueChange={(val) => { setPageSize(Number(val)); setPage(1); }}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -609,7 +599,7 @@ export default function BibliothequeReglementaire() {
                     <SelectItem value="100">100 par page</SelectItem>
                   </SelectContent>
                 </Select>
-                {view === "grid" && (
+                {preferences.view === "grid" && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -622,14 +612,18 @@ export default function BibliothequeReglementaire() {
                     Tout sélectionner
                   </Button>
                 )}
-                <BibliothequeViewToggle view={view} onViewChange={setView} />
+                <BibliothequeViewSettings 
+                  density={preferences.density}
+                  onDensityChange={setDensity}
+                />
+                <BibliothequeViewToggle view={preferences.view} onViewChange={setView} />
               </div>
             </div>
           </CardHeader>
           
           <CardContent className="p-0">
             {isLoading ? (
-              <BibliothequeTableSkeleton view={view} count={pageSize} />
+              <BibliothequeTableSkeleton view={preferences.view} count={preferences.pageSize} />
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <div className="p-4 rounded-full bg-destructive/10">
@@ -645,7 +639,7 @@ export default function BibliothequeReglementaire() {
               </div>
             ) : textes.length > 0 ? (
               <>
-                {view === "table" ? (
+                {preferences.view === "table" ? (
                   <div className="overflow-x-auto">
                     <Table>
                     <TableHeader>
@@ -816,20 +810,39 @@ export default function BibliothequeReglementaire() {
                     </Table>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-6">
-                    {textes.map((texte: any) => (
-                      <BibliothequeTextCard
+                  <div className={`grid gap-4 p-6 ${
+                    preferences.density === "compact" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3" :
+                    preferences.density === "large" ? "grid-cols-1 md:grid-cols-2 gap-6" :
+                    "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+                  }`}>
+                    {textes.map((texte: any, index) => (
+                      <div 
                         key={texte.id}
-                        texte={texte}
-                        onEdit={handleEdit}
-                        onDelete={setDeleteTexteId}
-                        onQuickView={setQuickViewTexte}
-                        onViewPdf={handleViewPdf}
-                        getStatutBadge={getStatutBadge}
-                        isNew={isNewTexte(texte)}
-                        isSelected={selectedTextes.includes(texte.id)}
-                        onSelect={handleSelectTexte}
-                      />
+                        className="animate-fade-in"
+                        style={{ animationDelay: `${index * 30}ms` }}
+                      >
+                        <BibliothequeCardHoverPreview
+                          texte={texte}
+                          getStatutBadge={getStatutBadge}
+                          onView={() => navigate(`/bibliotheque/textes/${texte.id}`)}
+                          onEdit={() => handleEdit(texte)}
+                          onViewPdf={() => handleViewPdf(texte)}
+                        >
+                          <BibliothequeTextCard
+                            texte={texte}
+                            onEdit={handleEdit}
+                            onDelete={setDeleteTexteId}
+                            onQuickView={setQuickViewTexte}
+                            onViewPdf={handleViewPdf}
+                            getStatutBadge={getStatutBadge}
+                            isNew={isNewTexte(texte)}
+                            isSelected={selectedTextes.includes(texte.id)}
+                            onSelect={handleSelectTexte}
+                            isFavorite={isFavorite(texte.id)}
+                            onToggleFavorite={toggleFavorite}
+                          />
+                        </BibliothequeCardHoverPreview>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -893,6 +906,26 @@ export default function BibliothequeReglementaire() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Filter Sidebar */}
+      <BibliothequeFilterSidebar
+        open={preferences.sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        typeFilter={typeFilter}
+        statutFilter={statutFilter}
+        domaineFilter={domaineFilter}
+        sousDomaineFilter={sousDomaineFilter}
+        anneeFilter={anneeFilter}
+        onTypeChange={(val) => { setTypeFilter(val); setPage(1); }}
+        onStatutChange={(val) => { setStatutFilter(val); setPage(1); }}
+        onDomaineChange={(val) => { setDomaineFilter(val); setPage(1); }}
+        onSousDomaineChange={(val) => { setSousDomaineFilter(val); setPage(1); }}
+        onAnneeChange={(val) => { setAnneeFilter(val); setPage(1); }}
+        domaines={domainesList?.map(d => ({ id: d.id, label: d.libelle })) || []}
+        sousDomaines={sousDomainesList?.map(sd => ({ id: sd.id, label: sd.libelle })) || []}
+        years={uniqueYears as number[]}
+        onClearAll={clearAllFilters}
+      />
 
       {/* Bulk Actions Floating Bar */}
       <BibliothequeFloatingActions
@@ -958,5 +991,13 @@ export default function BibliothequeReglementaire() {
         title={selectedPdfTitle}
       />
     </div>
+  );
+}
+
+export default function BibliothequeReglementaire() {
+  return (
+    <BibliothequePreferencesProvider>
+      <BibliothequeReglementaireContent />
+    </BibliothequePreferencesProvider>
   );
 }

@@ -36,7 +36,18 @@ export function BibliothequeStatsCards({ stats, onFilterByStatus }: Bibliotheque
   return (
     <TooltipProvider>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="border-2 hover:shadow-strong hover:border-primary/50 transition-all cursor-pointer group">
+        <Card 
+          className="border-2 hover:shadow-strong hover:border-primary/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group animate-fade-in"
+          style={{ animationDelay: "0ms" }}
+          onClick={() => {
+            if (onFilterByStatus) {
+              onFilterByStatus("all");
+              setTimeout(() => {
+                document.querySelector('[data-results-section]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 100);
+            }
+          }}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -66,8 +77,14 @@ export function BibliothequeStatsCards({ stats, onFilterByStatus }: Bibliotheque
         </Card>
 
         <Card 
-          className="border-2 hover:shadow-strong hover:border-success/50 transition-all cursor-pointer group"
-          onClick={() => onFilterByStatus?.("en_vigueur")}
+          className="border-2 hover:shadow-strong hover:border-success/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group animate-fade-in"
+          style={{ animationDelay: "50ms" }}
+          onClick={() => {
+            onFilterByStatus?.("en_vigueur");
+            setTimeout(() => {
+              document.querySelector('[data-results-section]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-3">
@@ -98,8 +115,14 @@ export function BibliothequeStatsCards({ stats, onFilterByStatus }: Bibliotheque
         </Card>
 
         <Card 
-          className="border-2 hover:shadow-strong hover:border-warning/50 transition-all cursor-pointer group"
-          onClick={() => onFilterByStatus?.("modifie")}
+          className="border-2 hover:shadow-strong hover:border-warning/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group animate-fade-in"
+          style={{ animationDelay: "100ms" }}
+          onClick={() => {
+            onFilterByStatus?.("modifie");
+            setTimeout(() => {
+              document.querySelector('[data-results-section]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-3">
@@ -130,8 +153,14 @@ export function BibliothequeStatsCards({ stats, onFilterByStatus }: Bibliotheque
         </Card>
 
         <Card 
-          className="border-2 hover:shadow-strong hover:border-destructive/50 transition-all cursor-pointer group"
-          onClick={() => onFilterByStatus?.("abroge")}
+          className="border-2 hover:shadow-strong hover:border-destructive/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer group animate-fade-in"
+          style={{ animationDelay: "150ms" }}
+          onClick={() => {
+            onFilterByStatus?.("abroge");
+            setTimeout(() => {
+              document.querySelector('[data-results-section]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-3">
@@ -161,7 +190,10 @@ export function BibliothequeStatsCards({ stats, onFilterByStatus }: Bibliotheque
           </CardContent>
         </Card>
 
-        <Card className="border-2 hover:shadow-strong transition-all group">
+        <Card 
+          className="border-2 hover:shadow-strong transition-all duration-300 group animate-fade-in"
+          style={{ animationDelay: "200ms" }}
+        >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-accent/10 group-hover:bg-accent/20 transition-colors">
