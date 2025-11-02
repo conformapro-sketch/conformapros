@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,10 @@ import { searchQueries } from "@/lib/bibliotheque-queries";
 import { toast } from "sonner";
 import { TexteFormModal } from "@/components/TexteFormModal";
 import { ImportCSVDialog } from "@/components/ImportCSVDialog";
+import { BibliothequeStatsCards } from "@/components/bibliotheque/BibliothequeStatsCards";
+import { BibliothequeViewToggle } from "@/components/bibliotheque/BibliothequeViewToggle";
+import { BibliothequeTextCard } from "@/components/bibliotheque/BibliothequeTextCard";
+import { BibliothequePreview } from "@/components/bibliotheque/BibliothequePreview";
 import * as XLSX from 'xlsx';
 
 const TYPE_LABELS = {
@@ -61,7 +65,8 @@ export default function BibliothequeReglementaire() {
   const [editingTexte, setEditingTexte] = useState<TexteReglementaire | null>(null);
   const [deleteTexteId, setDeleteTexteId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(true);
-  const pageSize = 25;
+  const [view, setView] = useState<"table" | "grid">("table");
+  const [pageSize, setPageSize] = useState(25);
 
   const { data: domainesList } = useQuery({
     queryKey: ["domaines"],
@@ -110,6 +115,38 @@ export default function BibliothequeReglementaire() {
   const textes = result?.data || [];
   const totalCount = result?.count || 0;
   const totalPages = result?.totalPages || 1;
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const enVigueur = textes.filter((t: any) => t.statut_vigueur === "en_vigueur").length;
+    const modifies = textes.filter((t: any) => t.statut_vigueur === "modifie").length;
+    const abroges = textes.filter((t: any) => t.statut_vigueur === "abroge").length;
+    
+    const parType = {
+      loi: textes.filter((t: any) => t.type_acte === "loi").length,
+      decret: textes.filter((t: any) => t.type_acte === "decret").length,
+      arrete: textes.filter((t: any) => t.type_acte === "arrete").length,
+      circulaire: textes.filter((t: any) => t.type_acte === "circulaire").length,
+    };
+
+    return {
+      total: totalCount,
+      enVigueur,
+      modifies,
+      abroges,
+      parType,
+    };
+  }, [textes, totalCount]);
+
+  // Check if texte is new (created in last 7 days)
+  const isNewTexte = (texte: any) => {
+    if (!texte.created_at) return false;
+    const createdDate = new Date(texte.created_at);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7;
+  };
 
   const uniqueYears = Array.from(
     new Set(
@@ -200,6 +237,9 @@ export default function BibliothequeReglementaire() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Statistics Cards */}
+        <BibliothequeStatsCards stats={stats} />
+
         {/* Header avec gradient */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-primary p-8 shadow-strong">
           <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
@@ -416,7 +456,7 @@ export default function BibliothequeReglementaire() {
         {/* Tableau des résultats */}
         <Card className="shadow-medium">
           <CardHeader className="border-b bg-muted/30">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-primary" />
                 <div>
@@ -425,6 +465,19 @@ export default function BibliothequeReglementaire() {
                     {totalCount} texte{totalCount > 1 ? 's' : ''} trouvé{totalCount > 1 ? 's' : ''}
                   </CardDescription>
                 </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Select value={String(pageSize)} onValueChange={(val) => { setPageSize(Number(val)); setPage(1); }}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25 par page</SelectItem>
+                    <SelectItem value="50">50 par page</SelectItem>
+                    <SelectItem value="100">100 par page</SelectItem>
+                  </SelectContent>
+                </Select>
+                <BibliothequeViewToggle view={view} onViewChange={setView} />
               </div>
             </div>
           </CardHeader>
@@ -450,8 +503,9 @@ export default function BibliothequeReglementaire() {
               </div>
             ) : textes.length > 0 ? (
               <>
-                <div className="overflow-x-auto">
-                  <Table>
+                {view === "table" ? (
+                  <div className="overflow-x-auto">
+                    <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
                         <TableHead className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort("type")}>
@@ -499,100 +553,121 @@ export default function BibliothequeReglementaire() {
                         <TableHead className="font-semibold text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {textes.map((texte: any) => {
-                        const statutInfo = getStatutBadge(texte.statut_vigueur);
-                        const articleCount = texte.articles?.[0]?.count || 0;
-                        
-                        return (
-                          <TableRow 
-                            key={texte.id} 
-                            className="hover:bg-accent/5 transition-colors cursor-pointer"
-                            onClick={() => navigate(`/veille/bibliotheque/textes/${texte.id}`)}
-                          >
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs font-medium">
-                                <span className="mr-1.5">{TYPE_ICONS[texte.type_acte as keyof typeof TYPE_ICONS]}</span>
-                                {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS]}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-semibold text-sm">
-                              {texte.reference_officielle}
-                            </TableCell>
-                            <TableCell>
-                              <div className="max-w-md">
-                                <div className="font-medium text-foreground line-clamp-2 mb-1">
-                                  {texte.intitule}
-                                </div>
-                                {texte.resume && (
-                                  <div className="text-xs text-muted-foreground line-clamp-1">
-                                    {texte.resume}
+                      <TableBody>
+                        {textes.map((texte: any) => {
+                          const statutInfo = getStatutBadge(texte.statut_vigueur);
+                          const articleCount = texte.articles?.[0]?.count || 0;
+                          const isNew = isNewTexte(texte);
+                          
+                          return (
+                            <BibliothequePreview key={texte.id} texte={texte} getStatutBadge={getStatutBadge}>
+                              <TableRow 
+                                className="hover:bg-accent/5 transition-colors cursor-pointer"
+                                onClick={() => navigate(`/veille/bibliotheque/textes/${texte.id}`)}
+                              >
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs font-medium">
+                                      <span className="mr-1.5">{TYPE_ICONS[texte.type_acte as keyof typeof TYPE_ICONS]}</span>
+                                      {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS]}
+                                    </Badge>
+                                    {isNew && (
+                                      <Badge className="bg-accent text-accent-foreground text-xs">Nouveau</Badge>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {texte.autorite_emettrice || "—"}
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                              {texte.date_publication
-                                ? new Date(texte.date_publication).toLocaleDateString("fr-FR")
-                                : "—"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={statutInfo.className}>
-                                <span className="mr-1">{statutInfo.icon}</span>
-                                {statutInfo.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-primary/5 text-primary font-semibold text-sm">
-                                {articleCount}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/veille/bibliotheque/textes/${texte.id}`);
-                                  }}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEdit(texte);
-                                  }}
-                                  className="h-8 w-8 p-0 hover:text-accent"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteTexteId(texte.id);
-                                  }}
-                                  className="h-8 w-8 p-0 hover:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                                </TableCell>
+                                <TableCell className="font-semibold text-sm">
+                                  {texte.reference_officielle}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="max-w-md">
+                                    <div className="font-medium text-foreground line-clamp-2 mb-1">
+                                      {texte.intitule}
+                                    </div>
+                                    {texte.resume && (
+                                      <div className="text-xs text-muted-foreground line-clamp-1">
+                                        {texte.resume}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {texte.autorite_emettrice || "—"}
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                  {texte.date_publication
+                                    ? new Date(texte.date_publication).toLocaleDateString("fr-FR")
+                                    : "—"}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={statutInfo.className}>
+                                    <span className="mr-1">{statutInfo.icon}</span>
+                                    {statutInfo.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-primary/5 text-primary font-semibold text-sm">
+                                    {articleCount}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex justify-end gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/veille/bibliotheque/textes/${texte.id}`);
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEdit(texte);
+                                      }}
+                                      className="h-8 w-8 p-0 hover:text-accent"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteTexteId(texte.id);
+                                      }}
+                                      className="h-8 w-8 p-0 hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            </BibliothequePreview>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+                    {textes.map((texte: any) => (
+                      <BibliothequeTextCard
+                        key={texte.id}
+                        texte={texte}
+                        onEdit={handleEdit}
+                        onDelete={setDeleteTexteId}
+                        getStatutBadge={getStatutBadge}
+                        isNew={isNewTexte(texte)}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {/* Pagination améliorée */}
                 {totalPages > 1 && (

@@ -183,7 +183,7 @@ const App = () => (
               <Route path="textes/nouveau" element={<TexteForm />} />
               <Route path="textes/:id" element={<TexteDetail />} />
               <Route path="textes/:id/editer" element={<TexteForm />} />
-              <Route path="bibliotheque" element={<BibliothequeNavigationTree />} />
+              <Route path="bibliotheque" element={<Navigate to="/veille/bibliotheque/" replace />} />
               {/* legacy tableau-de-bord -> new dashbord path (client-side redirect) */}
               <Route path="bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
               <Route path="bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
