@@ -282,13 +282,16 @@ export default function VeilleApplicabilite() {
   // Mutation to save applicability
   const saveMutation = useMutation({
     mutationFn: async (rows: ArticleRow[]) => {
-      const upsertData = rows.map((row) => ({
-        id: row.id.startsWith("new_") ? undefined : row.id,
-        site_id: row.site_id,
-        article_id: row.article_id,
-        applicabilite: row.applicabilite,
-        etat_conformite: "en_attente" as const,
-      }));
+      const upsertData = rows.map((row) => {
+        const isNew = row.id.startsWith("new_");
+        return {
+          ...(isNew ? {} : { id: row.id }),
+          site_id: row.site_id,
+          article_id: row.article_id,
+          applicabilite: row.applicabilite,
+          etat_conformite: "en_attente" as const,
+        };
+      });
 
       const { error } = await supabase.from("site_article_status").upsert(upsertData);
 
