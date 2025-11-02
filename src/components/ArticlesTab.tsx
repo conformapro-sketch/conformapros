@@ -26,6 +26,7 @@ interface ArticleFormData {
   titre_court: string;
   ordre: number;
   sous_domaine_ids: string[];
+  indicatif: boolean;
 }
 
 export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
@@ -41,6 +42,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
     titre_court: "",
     ordre: 0,
     sous_domaine_ids: [],
+    indicatif: false,
   });
 
   // Fetch sous-domaines
@@ -84,6 +86,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
         numero: data.numero,
         titre_court: data.titre_court,
         ordre: data.ordre,
+        indicatif: data.indicatif,
       });
 
       // Insert sous-domaines relationships
@@ -120,6 +123,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
         numero: data.numero,
         titre_court: data.titre_court,
         ordre: data.ordre,
+        indicatif: data.indicatif,
       });
 
       // Update sous-domaines relationships
@@ -171,6 +175,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
       titre_court: "",
       ordre: 0,
       sous_domaine_ids: [],
+      indicatif: false,
     });
     setEditingId(null);
   };
@@ -184,6 +189,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
       titre_court: article.titre_court || "",
       ordre: article.ordre || 0,
       sous_domaine_ids: articleSousDomaines,
+      indicatif: article.indicatif || false,
     });
     setEditingId(article.id);
     setDialogOpen(true);
@@ -277,6 +283,25 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
                   />
                 </div>
 
+                <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
+                  <Checkbox
+                    id="indicatif"
+                    checked={formData.indicatif}
+                    onCheckedChange={(checked) => setFormData({ ...formData, indicatif: checked === true })}
+                  />
+                  <div className="space-y-1">
+                    <Label 
+                      htmlFor="indicatif" 
+                      className="text-sm font-medium cursor-pointer"
+                    >
+                      Article à titre indicatif (non applicable)
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Pour les articles de définition, explicatifs, descriptifs ou introductifs qui n'imposent pas d'obligations applicables
+                    </p>
+                  </div>
+                </div>
+
                 <div>
                   <Label>Sous-domaines</Label>
                   <div className="border rounded-md p-4 max-h-60 overflow-y-auto space-y-2">
@@ -337,7 +362,16 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
                     const sousDomaines = getArticleSousDomaines(article.id);
                     return (
                       <TableRow key={article.id}>
-                        <TableCell className="font-medium">{article.numero}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {article.numero}
+                            {article.indicatif && (
+                              <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                Indicatif
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm">
                           {article.titre_court || <span className="text-muted-foreground">—</span>}
                         </TableCell>

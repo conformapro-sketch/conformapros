@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ export function ArticleFormModal({
     titre_court: "",
     contenu: "",
     ordre: 0,
+    indicatif: false,
   });
   const [selectedSousDomaines, setSelectedSousDomaines] = useState<string[]>([]);
 
@@ -56,6 +58,7 @@ export function ArticleFormModal({
         titre_court: article.titre_court || "",
         contenu: article.contenu || "",
         ordre: article.ordre || 0,
+        indicatif: article.indicatif || false,
       });
       
       // Load existing sous-domaines
@@ -79,6 +82,7 @@ export function ArticleFormModal({
       titre_court: "",
       contenu: "",
       ordre: 0,
+      indicatif: false,
     });
   };
 
@@ -146,6 +150,7 @@ export function ArticleFormModal({
       titre_court: formData.titre_court.trim() || null,
       contenu: formData.contenu.trim() || null,
       ordre: formData.ordre,
+      indicatif: formData.indicatif,
     };
 
     if (article) {
@@ -202,6 +207,26 @@ export function ArticleFormModal({
               onChange={(e) => setFormData({ ...formData, titre_court: e.target.value })}
               placeholder="Titre descriptif de l'article"
             />
+          </div>
+
+          {/* Article indicatif */}
+          <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
+            <Checkbox
+              id="indicatif"
+              checked={formData.indicatif}
+              onCheckedChange={(checked) => setFormData({ ...formData, indicatif: checked === true })}
+            />
+            <div className="space-y-1">
+              <Label 
+                htmlFor="indicatif" 
+                className="text-sm font-medium cursor-pointer"
+              >
+                Article à titre indicatif (non applicable)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Pour les articles de définition, explicatifs, descriptifs ou introductifs qui n'imposent pas d'obligations applicables
+              </p>
+            </div>
           </div>
 
           {/* Contenu */}

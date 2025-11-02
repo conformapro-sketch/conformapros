@@ -116,6 +116,7 @@ export interface Article {
   contenu_ar?: string;
   contenu_fr?: string;
   notes?: string;
+  indicatif?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at?: string;

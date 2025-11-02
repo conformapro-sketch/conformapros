@@ -3129,6 +3129,7 @@ export type Database = {
           contenu: string
           created_at: string
           id: string
+          indicatif: boolean
           numero: string | null
           numero_article: string
           ordre: number | null
@@ -3144,6 +3145,7 @@ export type Database = {
           contenu: string
           created_at?: string
           id?: string
+          indicatif?: boolean
           numero?: string | null
           numero_article: string
           ordre?: number | null
@@ -3159,6 +3161,7 @@ export type Database = {
           contenu?: string
           created_at?: string
           id?: string
+          indicatif?: boolean
           numero?: string | null
           numero_article?: string
           ordre?: number | null

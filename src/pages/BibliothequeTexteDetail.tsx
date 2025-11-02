@@ -332,9 +332,14 @@ export default function BibliothequeTexteDetail() {
                                   ) : (
                                     <ChevronRight className="h-4 w-4" />
                                   )}
-                                  <h3 className="font-semibold text-lg">
+                                  <h3 className="font-semibold text-lg flex items-center gap-2">
                                     {article.numero}
                                     {article.titre_court && ` - ${article.titre_court}`}
+                                    {article.indicatif && (
+                                      <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 ml-2">
+                                        Indicatif
+                                      </Badge>
+                                    )}
                                   </h3>
                                 </div>
                               </Button>
