@@ -21,7 +21,6 @@ const sousDomaineSchema = z.object({
   code: z.string().min(1, "Le code est requis").max(10, "Maximum 10 caractères"),
   libelle: z.string().min(1, "Le nom est requis"),
   description: z.string().optional(),
-  ordre: z.coerce.number().int().min(0).optional(),
   actif: z.boolean(),
 });
 
@@ -57,7 +56,6 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
       code: "",
       libelle: "",
       description: "",
-      ordre: 0,
       actif: true,
     },
   });
@@ -74,7 +72,6 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
           code: sousDomaine.code,
           libelle: sousDomaine.libelle,
           description: sousDomaine.description || "",
-          ordre: sousDomaine.ordre || 0,
           actif: sousDomaine.actif ?? true,
         });
       } else {
@@ -83,7 +80,6 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
           code: "",
           libelle: "",
           description: "",
-          ordre: 0,
           actif: true,
         });
       }
@@ -171,33 +167,18 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="code">Code *</Label>
-              <Input 
-                id="code" 
-                {...register("code")} 
-                placeholder="Ex: QUA-01"
-                className="uppercase"
-                maxLength={10}
-              />
-              {errors.code && (
-                <p className="text-sm text-destructive mt-1">{errors.code.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="ordre">Ordre</Label>
-              <Input 
-                id="ordre" 
-                type="number" 
-                {...register("ordre")} 
-                min="0"
-              />
-              {errors.ordre && (
-                <p className="text-sm text-destructive mt-1">{errors.ordre.message}</p>
-              )}
-            </div>
+          <div>
+            <Label htmlFor="code">Code *</Label>
+            <Input 
+              id="code" 
+              {...register("code")} 
+              placeholder="Ex: QUA-01"
+              className="uppercase"
+              maxLength={10}
+            />
+            {errors.code && (
+              <p className="text-sm text-destructive mt-1">{errors.code.message}</p>
+            )}
           </div>
 
           <div>

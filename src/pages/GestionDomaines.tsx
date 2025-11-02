@@ -38,7 +38,6 @@ const sousDomaineSchema = z.object({
   domaine_id: z.string().uuid("Domaine requis"),
   code: z.string().trim().min(1, "Le code est requis").max(50, "50 caractères maximum"),
   libelle: z.string().trim().min(1, "Le libellé est requis").max(255, "255 caractères maximum"),
-  ordre: z.number().int().min(0).default(0),
   actif: z.boolean().default(true),
 });
 
@@ -63,7 +62,6 @@ const GestionDomaines = () => {
     domaine_id: "",
     code: "",
     libelle: "",
-    ordre: 0,
     actif: true,
   });
 
@@ -227,7 +225,7 @@ const GestionDomaines = () => {
   };
 
   const resetSousDomaineForm = () => {
-    setSousDomaineForm({ domaine_id: "", code: "", libelle: "", ordre: 0, actif: true });
+    setSousDomaineForm({ domaine_id: "", code: "", libelle: "", actif: true });
     setEditingSousDomaine(null);
   };
 
@@ -265,7 +263,6 @@ const GestionDomaines = () => {
       domaine_id: sousDomaine.domaine_id,
       code: sousDomaine.code,
       libelle: sousDomaine.libelle,
-      ordre: sousDomaine.ordre || 0,
       actif: sousDomaine.actif,
     });
     setSousDomaineDialogOpen(true);
@@ -502,18 +499,6 @@ const GestionDomaines = () => {
                       placeholder="Protection contre l'incendie"
                       maxLength={255}
                       required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="sousdomaine-ordre">Ordre d'affichage</Label>
-                    <Input
-                      id="sousdomaine-ordre"
-                      type="number"
-                      min="0"
-                      value={sousDomaineForm.ordre}
-                      onChange={(e) =>
-                        setSousDomaineForm({ ...sousDomaineForm, ordre: parseInt(e.target.value) || 0 })
-                      }
                     />
                   </div>
                   <div className="flex items-center space-x-2">
