@@ -42,6 +42,7 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
       { title: "Tableau de bord", url: "/veille/bibliotheque/dashbord" },
       { title: "Domaines", url: "/veille/bibliotheque/domain" },
       { title: "Textes & articles", url: "/veille/bibliotheque/" },
+      { title: "Codes juridiques", url: "/codes-juridiques" },
       { title: "Recherche intelligente", url: "/veille/bibliotheque/recherche" },
     ],
   },

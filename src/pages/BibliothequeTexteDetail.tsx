@@ -31,6 +31,7 @@ import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { ArticleVersionModal } from "@/components/ArticleVersionModal";
 import { ArticleVersionComparison } from "@/components/ArticleVersionComparison";
 import { TimelineChangelog } from "@/components/TimelineChangelog";
+import { TexteCodesDisplay } from "@/components/TexteCodesDisplay";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize-html";
 
 export default function BibliothequeTexteDetail() {

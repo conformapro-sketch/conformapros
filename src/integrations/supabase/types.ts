@@ -690,6 +690,57 @@ export type Database = {
           },
         ]
       }
+      codes_juridiques: {
+        Row: {
+          abreviation: string
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          domaine_reglementaire_id: string | null
+          id: string
+          nom_officiel: string
+          reference_jort: string | null
+          updated_at: string
+        }
+        Insert: {
+          abreviation: string
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          domaine_reglementaire_id?: string | null
+          id?: string
+          nom_officiel: string
+          reference_jort?: string | null
+          updated_at?: string
+        }
+        Update: {
+          abreviation?: string
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          domaine_reglementaire_id?: string | null
+          id?: string
+          nom_officiel?: string
+          reference_jort?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "codes_juridiques_domaine_reglementaire_id_fkey"
+            columns: ["domaine_reglementaire_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "codes_juridiques_domaine_reglementaire_id_fkey"
+            columns: ["domaine_reglementaire_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conformite: {
         Row: {
           applicabilite_id: string
@@ -3132,6 +3183,45 @@ export type Database = {
             columns: ["texte_id"]
             isOneToOne: false
             referencedRelation: "actes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      textes_codes: {
+        Row: {
+          code_id: string
+          created_at: string
+          id: string
+          texte_id: string
+          type_relation: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          id?: string
+          texte_id: string
+          type_relation?: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          id?: string
+          texte_id?: string
+          type_relation?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textes_codes_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "codes_juridiques"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textes_codes_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
             referencedColumns: ["id"]
           },
         ]

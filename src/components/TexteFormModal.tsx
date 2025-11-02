@@ -10,6 +10,9 @@ import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-qu
 import { domainesQueries } from "@/lib/actes-queries";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TexteCodesSelector } from "@/components/TexteCodesSelector";
+import { textesCodesQueries } from "@/lib/codes-queries";
+import type { TypeRelationCode } from "@/types/codes";
 
 interface TexteFormModalProps {
   open: boolean;
@@ -33,10 +36,20 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
     annee: new Date().getFullYear(),
   });
   const [selectedDomaines, setSelectedDomaines] = useState<string[]>([]);
+  const [selectedCodes, setSelectedCodes] = useState<
+    Array<{ codeId: string; typeRelation: TypeRelationCode }>
+  >([]);
 
   const { data: domaines } = useQuery({
     queryKey: ["domaines"],
     queryFn: () => domainesQueries.getActive(),
+  });
+
+  // Charger les codes associés si on édite un texte
+  const { data: existingCodes } = useQuery({
+    queryKey: ["texte-codes", texte?.id],
+    queryFn: () => textesCodesQueries.getCodesByTexteId(texte!.id),
+    enabled: !!texte?.id,
   });
 
   useEffect(() => {
@@ -61,6 +74,15 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
           .filter(Boolean);
         setSelectedDomaines(domaineIds);
       }
+
+      // Load existing codes
+      if (existingCodes) {
+        const codes = existingCodes.map((tc: any) => ({
+          codeId: tc.codes_juridiques.id,
+          typeRelation: tc.type_relation as TypeRelationCode,
+        }));
+        setSelectedCodes(codes);
+      }
     } else {
       setFormData({
         type_acte: "loi",
@@ -74,13 +96,23 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
         annee: new Date().getFullYear(),
       });
       setSelectedDomaines([]);
+      setSelectedCodes([]);
     }
-  }, [texte, open]);
+  }, [texte, open, existingCodes]);
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => textesReglementairesQueries.create(data, selectedDomaines),
+    mutationFn: async (data: any) => {
+      // Créer le texte
+      const newTexte = await textesReglementairesQueries.create(data, selectedDomaines);
+      // Associer les codes si sélectionnés
+      if (selectedCodes.length > 0) {
+        await textesCodesQueries.updateTexteCodes(newTexte.id, selectedCodes);
+      }
+      return newTexte;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
+      queryClient.invalidateQueries({ queryKey: ["texte-codes"] });
       toast.success("Texte créé avec succès");
       onOpenChange(false);
       onSuccess?.();
@@ -91,10 +123,15 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => 
-      textesReglementairesQueries.update(id, data, selectedDomaines),
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      // Mettre à jour le texte
+      await textesReglementairesQueries.update(id, data, selectedDomaines);
+      // Mettre à jour les codes associés
+      await textesCodesQueries.updateTexteCodes(id, selectedCodes);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
+      queryClient.invalidateQueries({ queryKey: ["texte-codes"] });
       toast.success("Texte modifié avec succès");
       onOpenChange(false);
       onSuccess?.();
@@ -254,6 +291,13 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <TexteCodesSelector
+              selectedCodes={selectedCodes}
+              onCodesChange={setSelectedCodes}
+            />
           </div>
 
           <DialogFooter>

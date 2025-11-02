@@ -82,6 +82,8 @@ import VisitesMedicalesPlanification from "./pages/VisitesMedicalesPlanification
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 import UserProfile from "./pages/UserProfile";
+import CodesJuridiques from "./pages/CodesJuridiques";
+import CodeDetail from "./pages/CodeDetail";
 
 const queryClient = new QueryClient();
 
@@ -199,6 +201,8 @@ const App = () => (
               <Route path="veille/bibliotheque/tableau-de-bord" element={<Navigate to="/veille/bibliotheque/dashbord" replace />} />
               <Route path="veille/bibliotheque/dashbord" element={<BibliothequeTableauDeBord />} />
               <Route path="veille/bibliotheque/recherche" element={<BibliothequeRechercheIntelligente />} />
+              <Route path="codes-juridiques" element={<CodesJuridiques />} />
+              <Route path="codes-juridiques/:id" element={<CodeDetail />} />
               <Route path="veille/evaluation" element={<ConformiteEvaluationNew />} />
               <Route path="veille/evaluation-advanced" element={<VeilleEvaluation />} />
               <Route path="veille/conformite" element={<Navigate to="/veille/evaluation" replace />} />
