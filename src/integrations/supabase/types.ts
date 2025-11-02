@@ -2761,6 +2761,7 @@ export type Database = {
           evaluateur_id: string | null
           id: string
           site_id: string
+          tenant_id: string
           updated_at: string
         }
         Insert: {
@@ -2773,6 +2774,7 @@ export type Database = {
           evaluateur_id?: string | null
           id?: string
           site_id: string
+          tenant_id: string
           updated_at?: string
         }
         Update: {
@@ -2785,6 +2787,7 @@ export type Database = {
           evaluateur_id?: string | null
           id?: string
           site_id?: string
+          tenant_id?: string
           updated_at?: string
         }
         Relationships: [
