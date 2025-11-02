@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
@@ -51,6 +51,8 @@ import {
   ChevronDown,
   ChevronRight,
   LayoutGrid,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { ArticleApplicabilityCard } from "@/components/ArticleApplicabilityCard";
 import { Separator } from "@/components/ui/separator";
@@ -84,6 +86,7 @@ export default function VeilleApplicabilite() {
     texte: searchParams.get("texte") || "all",
     applicabilite: searchParams.get("applicabilite") || "all",
   });
+  const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
@@ -92,6 +95,19 @@ export default function VeilleApplicabilite() {
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [quickFilter, setQuickFilter] = useState<'all' | 'to_evaluate' | 'applicable' | 'non_applicable' | 'non_concerne'>('all');
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Reset expanded article when filters change
+  useEffect(() => {
+    setExpandedArticle(null);
+  }, [selectedSite, filters, searchTerm, quickFilter]);
 
   // Fetch clients (only for team users)
   const { data: clients = [] } = useQuery({
@@ -282,6 +298,18 @@ export default function VeilleApplicabilite() {
   // Mutation to save applicability
   const saveMutation = useMutation({
     mutationFn: async (rows: ArticleRow[]) => {
+      // Validate site is selected
+      if (!selectedSite) {
+        throw new Error("Aucun site sélectionné");
+      }
+      
+      // Validate applicability values
+      const validValues = ['obligatoire', 'non_applicable', 'non_concerne'];
+      const invalidRows = rows.filter(r => !validValues.includes(r.applicabilite));
+      if (invalidRows.length > 0) {
+        throw new Error("Valeurs d'applicabilité invalides détectées");
+      }
+
       const upsertData = rows.map((row) => {
         const isNew = row.id.startsWith("new_");
         return {
@@ -296,10 +324,14 @@ export default function VeilleApplicabilite() {
       const { error } = await supabase.from("site_article_status").upsert(upsertData);
 
       if (error) throw error;
+      return rows.length;
     },
-    onSuccess: () => {
+    onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["applicabilite-articles"] });
-      toast({ title: "Succès", description: "Applicabilité enregistrée" });
+      toast({ 
+        title: "✅ Enregistré", 
+        description: `${count} article(s) sauvegardé(s) avec succès` 
+      });
       setSelectedRows([]);
     },
     onError: (error: Error) => {
@@ -330,49 +362,38 @@ export default function VeilleApplicabilite() {
   };
 
   // Handle bulk update
-  const handleBulkUpdate = () => {
+  const handleBulkUpdate = async () => {
     if (!bulkApplicabilite || selectedRows.length === 0) return;
 
-    const updatedArticles = articles.map((article) => {
-      if (selectedRows.includes(article.article_id)) {
-        return {
-          ...article,
-          applicabilite: bulkApplicabilite as any,
-          commentaire_non_applicable:
-            bulkApplicabilite === "non_applicable" ? bulkJustification : undefined,
-          isModified: true,
-        };
-      }
-      return article;
-    });
+    const articlesToUpdate = articles.filter(a => 
+      selectedRows.includes(a.article_id)
+    ).map(article => ({
+      ...article,
+      applicabilite: bulkApplicabilite as any,
+      commentaire_non_applicable:
+        bulkApplicabilite === "non_applicable" ? bulkJustification : undefined,
+      isModified: true,
+    }));
 
+    // Update local state first
     queryClient.setQueryData(
       ["applicabilite-articles", selectedSite, filters, searchTerm],
-      updatedArticles
+      articles.map((article) => {
+        if (selectedRows.includes(article.article_id)) {
+          return articlesToUpdate.find(a => a.article_id === article.article_id) || article;
+        }
+        return article;
+      })
     );
+
+    // THEN auto-save to database
+    await saveMutation.mutateAsync(articlesToUpdate);
 
     setBulkDialogOpen(false);
     setBulkApplicabilite("");
     setBulkJustification("");
-    toast({
-      title: "Succès",
-      description: `${selectedRows.length} articles mis à jour`,
-    });
   };
 
-  // Get applicability badge
-  const getApplicabiliteBadge = (applicabilite: string) => {
-    switch (applicabilite) {
-      case "obligatoire":
-        return <Badge className="bg-primary">Obligatoire</Badge>;
-      case "recommande":
-        return <Badge className="bg-info">Recommandé</Badge>;
-      case "non_applicable":
-        return <Badge variant="outline">Non applicable</Badge>;
-      default:
-        return <Badge variant="secondary">Non défini</Badge>;
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -488,12 +509,12 @@ export default function VeilleApplicabilite() {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setQuickFilter('non_applicable')}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
-                  <XCircle className="h-5 w-5 text-gray-600" />
+                  <XCircle className="h-5 w-5 text-orange-600" />
                   <div>
-                    <div className="text-2xl font-bold text-gray-600">
+                    <div className="text-2xl font-bold text-orange-600">
                       {stats.nonApplicable}
                     </div>
                     <p className="text-sm text-muted-foreground">Non applicables</p>
@@ -533,7 +554,14 @@ export default function VeilleApplicabilite() {
                   size="sm"
                   onClick={() => setQuickFilter('non_applicable')}
                 >
-                  Non concernés ({stats.nonApplicable})
+                  Non applicables ({stats.nonApplicable})
+                </Button>
+                <Button
+                  variant={quickFilter === 'non_concerne' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setQuickFilter('non_concerne')}
+                >
+                  Non concernés ({stats.nonConcerne})
                 </Button>
               </div>
             </CardContent>
@@ -547,8 +575,8 @@ export default function VeilleApplicabilite() {
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Rechercher par numéro, titre, référence..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                     className="pl-10"
                   />
                 </div>
@@ -597,8 +625,8 @@ export default function VeilleApplicabilite() {
                     <SelectContent>
                       <SelectItem value="all">Tous les statuts</SelectItem>
                       <SelectItem value="obligatoire">✅ Applicable</SelectItem>
-                      <SelectItem value="recommande">💡 Recommandé</SelectItem>
-                      <SelectItem value="non_applicable">❌ Non concerné</SelectItem>
+                      <SelectItem value="non_applicable">❌ Non applicable</SelectItem>
+                      <SelectItem value="non_concerne">🔘 Non concerné</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -702,7 +730,10 @@ export default function VeilleApplicabilite() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Chargement des articles...</p>
+                </div>
               ) : filteredArticles.length > 0 ? (
                 <>
                   {viewMode === 'cards' ? (
@@ -904,16 +935,16 @@ export default function VeilleApplicabilite() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
+              <div className="space-y-2">
               <Label>Applicabilité</Label>
               <Select value={bulkApplicabilite} onValueChange={setBulkApplicabilite}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="obligatoire">Obligatoire</SelectItem>
-                  <SelectItem value="recommande">Recommandé</SelectItem>
+                  <SelectItem value="obligatoire">Applicable</SelectItem>
                   <SelectItem value="non_applicable">Non applicable</SelectItem>
+                  <SelectItem value="non_concerne">Non concerné</SelectItem>
                 </SelectContent>
               </Select>
             </div>
