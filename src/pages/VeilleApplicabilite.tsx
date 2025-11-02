@@ -41,6 +41,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   CheckCircle2,
   XCircle,
+  Circle,
   HelpCircle,
   Filter,
   Search,
@@ -64,7 +65,7 @@ interface ArticleRow {
   texte_reference?: string;
   texte_titre?: string;
   site_id: string;
-  applicabilite: "obligatoire" | "non_applicable";
+  applicabilite: "obligatoire" | "non_applicable" | "non_concerne";
   motif_non_applicable?: string;
   commentaire_non_applicable?: string;
   isModified?: boolean;
@@ -92,7 +93,7 @@ export default function VeilleApplicabilite() {
   const [bulkJustification, setBulkJustification] = useState("");
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
-  const [quickFilter, setQuickFilter] = useState<'all' | 'to_evaluate' | 'applicable' | 'non_applicable'>('all');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'to_evaluate' | 'applicable' | 'non_applicable' | 'non_concerne'>('all');
 
   // Fetch clients (only for team users)
   const { data: clients = [] } = useQuery({
@@ -212,7 +213,7 @@ export default function VeilleApplicabilite() {
             texte_reference: texte?.reference_officielle,
             texte_titre: texte?.intitule,
             site_id: selectedSite,
-            applicabilite: status?.applicabilite || "non_applicable",
+            applicabilite: status?.applicabilite || "non_concerne",
             motif_non_applicable: status?.motif_non_applicable,
             commentaire_non_applicable: status?.commentaire_non_applicable,
             isModified: false,
@@ -251,6 +252,8 @@ export default function VeilleApplicabilite() {
       return articles.filter(a => a.applicabilite === 'obligatoire');
     } else if (quickFilter === 'non_applicable') {
       return articles.filter(a => a.applicabilite === 'non_applicable');
+    } else if (quickFilter === 'non_concerne') {
+      return articles.filter(a => a.applicabilite === 'non_concerne');
     }
     return articles;
   }, [articles, quickFilter]);
@@ -260,6 +263,7 @@ export default function VeilleApplicabilite() {
     return {
       total: articles.length,
       toEvaluate: articles.filter(a => a.id.startsWith('new_')).length,
+      nonConcerne: articles.filter(a => a.applicabilite === 'non_concerne').length,
       applicable: articles.filter(a => a.applicabilite === 'obligatoire').length,
       nonApplicable: articles.filter(a => a.applicabilite === 'non_applicable').length,
     };
@@ -318,6 +322,14 @@ export default function VeilleApplicabilite() {
       ["applicabilite-articles", selectedSite, filters, searchTerm],
       updatedArticles
     );
+
+    // Automatic save when applicability changes
+    if (field === "applicabilite") {
+      const articleToSave = updatedArticles.find(a => a.article_id === articleId);
+      if (articleToSave) {
+        saveMutation.mutate([articleToSave]);
+      }
+    }
   };
 
   // Handle bulk update
@@ -451,7 +463,7 @@ export default function VeilleApplicabilite() {
       {selectedSite && (
         <>
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Card>
               <CardContent className="pt-6">
                 <div className="text-2xl font-bold text-primary">
@@ -460,8 +472,22 @@ export default function VeilleApplicabilite() {
                 <p className="text-sm text-muted-foreground">À évaluer</p>
               </CardContent>
             </Card>
+
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setQuickFilter('non_concerne')}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <Circle className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <div className="text-2xl font-bold text-gray-500">
+                      {stats.nonConcerne}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Non concernés</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
-            <Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setQuickFilter('applicable')}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -795,6 +821,12 @@ export default function VeilleApplicabilite() {
                               >
                                 <SelectTrigger className="w-[180px]">
                                   <SelectValue>
+                                    {article.applicabilite === "non_concerne" && (
+                                      <div className="flex items-center gap-2">
+                                        <Circle className="h-4 w-4 text-gray-400" />
+                                        <span>Non concerné</span>
+                                      </div>
+                                    )}
                                     {article.applicabilite === "obligatoire" && (
                                       <div className="flex items-center gap-2">
                                         <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -810,6 +842,12 @@ export default function VeilleApplicabilite() {
                                   </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
+                                  <SelectItem value="non_concerne">
+                                    <div className="flex items-center gap-2">
+                                      <Circle className="h-4 w-4 text-gray-400" />
+                                      <span>Non concerné</span>
+                                    </div>
+                                  </SelectItem>
                                   <SelectItem value="obligatoire">
                                     <div className="flex items-center gap-2">
                                       <CheckCircle2 className="h-4 w-4 text-green-600" />

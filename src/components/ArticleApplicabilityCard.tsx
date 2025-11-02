@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ArticleApplicabilityCardProps {
@@ -13,7 +13,7 @@ interface ArticleApplicabilityCardProps {
     article_contenu?: string;
     texte_reference?: string;
     texte_titre?: string;
-    applicabilite: "obligatoire" | "non_applicable";
+    applicabilite: "obligatoire" | "non_applicable" | "non_concerne";
     isModified?: boolean;
   };
   index: number;
@@ -33,6 +33,7 @@ export function ArticleApplicabilityCard({
     switch (article.applicabilite) {
       case "obligatoire": return "border-l-green-500";
       case "non_applicable": return "border-l-gray-400";
+      case "non_concerne": return "border-l-gray-300";
     }
   };
   
@@ -75,10 +76,13 @@ export function ArticleApplicabilityCard({
                 className={cn(
                   "text-xs shrink-0 font-medium",
                   article.applicabilite === "obligatoire" && "bg-green-600 text-white hover:bg-green-700",
-                  article.applicabilite === "non_applicable" && "bg-gray-400 text-white"
+                  article.applicabilite === "non_applicable" && "bg-gray-400 text-white",
+                  article.applicabilite === "non_concerne" && "bg-gray-300 text-gray-600"
                 )}
               >
-                {article.applicabilite === "obligatoire" ? "✅ Applicable" : "❌ Non applicable"}
+                {article.applicabilite === "obligatoire" ? "✅ Applicable" : 
+                 article.applicabilite === "non_applicable" ? "❌ Non applicable" : 
+                 "🔘 Non concerné"}
               </Badge>
             </div>
             
@@ -92,6 +96,16 @@ export function ArticleApplicabilityCard({
             
             {/* Actions rapides */}
             <div className="flex items-center gap-2 pt-2">
+              <Button
+                size="sm"
+                variant={article.applicabilite === "non_concerne" ? "default" : "outline"}
+                className="flex-1 h-8"
+                onClick={() => onUpdate("non_concerne")}
+              >
+                <Circle className="h-3.5 w-3.5 mr-1" />
+                Non concerné
+              </Button>
+
               <Button
                 size="sm"
                 variant={article.applicabilite === "obligatoire" ? "default" : "outline"}
