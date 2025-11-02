@@ -363,16 +363,6 @@ export default function VeilleApplicabilite() {
     });
   };
 
-  // Save modified rows
-  const handleSave = () => {
-    const modifiedRows = articles.filter((a) => a.isModified);
-    if (modifiedRows.length === 0) {
-      toast({ title: "Info", description: "Aucune modification à enregistrer" });
-      return;
-    }
-    saveMutation.mutate(modifiedRows);
-  };
-
   // Get applicability badge
   const getApplicabiliteBadge = (applicabilite: string) => {
     switch (applicabilite) {
@@ -710,11 +700,6 @@ export default function VeilleApplicabilite() {
                       Tableau
                     </Button>
                   </div>
-                  
-                  <Button onClick={handleSave} disabled={saveMutation.isPending}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Enregistrer
-                  </Button>
                 </div>
               </div>
             </CardHeader>
