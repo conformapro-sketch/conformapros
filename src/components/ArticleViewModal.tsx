@@ -22,7 +22,8 @@ import {
   ChevronRight,
   History,
   AlertCircle,
-  TrendingUp
+  TrendingUp,
+  Clock
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { sanitizeHtml } from "@/lib/sanitize-html";
@@ -93,17 +94,37 @@ export function ArticleViewModal({
     }
   };
 
+  // Calculer indicateur de stabilité
+  const getStabilityIndicator = () => {
+    if (!effetsRecus || effetsRecus.length === 0) {
+      return { label: "Stable", variant: "default" as const, description: "Aucune modification depuis la création" };
+    }
+    
+    const now = new Date();
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const recentChanges = effetsRecus.filter(e => new Date(e.date_effet) > oneYearAgo);
+    
+    if (recentChanges.length === 0) {
+      return { label: "Stable", variant: "default" as const, description: "Aucune modification depuis 12 mois" };
+    } else if (recentChanges.length >= 3) {
+      return { label: "En révision", variant: "secondary" as const, description: `${recentChanges.length} modifications ces 12 derniers mois` };
+    } else {
+      return { label: "Actif", variant: "outline" as const, description: `${recentChanges.length} modification(s) récente(s)` };
+    }
+  };
+
   const status = getArticleStatus();
   const StatusIcon = status.icon;
+  const stability = getStabilityIndicator();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh]">
         <DialogHeader>
-          <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3">
             <FileText className="h-5 w-5 text-primary mt-1" />
             <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <DialogTitle className="text-lg">
                   Article {article?.numero}
                 </DialogTitle>
@@ -111,10 +132,15 @@ export function ArticleViewModal({
                   <StatusIcon className="h-3 w-3" />
                   {status.label}
                 </Badge>
+                <Badge variant={stability.variant} className="gap-1">
+                  <Clock className="h-3 w-3" />
+                  {stability.label}
+                </Badge>
               </div>
               <DialogDescription className="space-y-1">
                 <div className="font-medium">{texte?.reference_officielle}</div>
                 <div>{texte?.titre}</div>
+                <div className="text-xs text-muted-foreground">{stability.description}</div>
               </DialogDescription>
             </div>
           </div>
@@ -231,12 +257,26 @@ export function ArticleViewModal({
                   </div>
                 ) : effetsRecus && effetsRecus.length > 0 ? (
                   <>
+                    {/* Contexte business - Pourquoi cette version */}
+                    {effetsRecus[0]?.raison_modification && (
+                      <Card className="p-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                          <Lightbulb className="h-4 w-4" />
+                          Pourquoi cette version ?
+                        </h4>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          {effetsRecus[0].raison_modification}
+                        </p>
+                      </Card>
+                    )}
+                    
                     <Card className="p-4 bg-muted/30">
                       <p className="text-sm text-muted-foreground">
                         Cet article a subi <strong>{effetsRecus.length}</strong> modification
                         {effetsRecus.length > 1 ? "s" : ""} au fil du temps
                       </p>
                     </Card>
+                    
                     <ArticleEffetsTimeline effets={effetsRecus} />
                   </>
                 ) : (

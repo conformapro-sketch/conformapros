@@ -56,6 +56,13 @@ export function ArticleQuickEffetModal({
   const [notes, setNotes] = useState<string>("");
   const [portee, setPortee] = useState<string>("article");
   const [porteeDetail, setPorteeDetail] = useState<string>("");
+  
+  // Nouveaux champs Phase 5
+  const [raisonModification, setRaisonModification] = useState<string>("");
+  const [tagsSelectionnes, setTagsSelectionnes] = useState<string[]>([]);
+  const [impactEstime, setImpactEstime] = useState<string>("medium");
+  const [isDraft, setIsDraft] = useState<boolean>(false);
+  
   const [hierarchyValidation, setHierarchyValidation] = useState<{
     severity: "error" | "warning" | "info" | "success";
     message: string;
@@ -178,6 +185,10 @@ export function ArticleQuickEffetModal({
     setNotes("");
     setPortee("article");
     setPorteeDetail("");
+    setRaisonModification("");
+    setTagsSelectionnes([]);
+    setImpactEstime("medium");
+    setIsDraft(false);
     setHierarchyValidation(null);
   };
 
@@ -192,6 +203,10 @@ export function ArticleQuickEffetModal({
     }
     if (typeEffet !== "ABROGE" && !contenuModifie.trim()) {
       console.log("❌ Contenu modifié manquant");
+      return false;
+    }
+    if (!raisonModification.trim()) {
+      console.log("❌ Raison de modification manquante");
       return false;
     }
     console.log("✅ Formulaire valide");
@@ -420,6 +435,49 @@ export function ArticleQuickEffetModal({
               />
             </div>
           )}
+
+          {/* Raison de modification (obligatoire) */}
+          <div className="space-y-2 border-t pt-4">
+            <Label htmlFor="raison" className="text-base font-semibold flex items-center gap-1">
+              Raison de la modification *
+            </Label>
+            <Textarea
+              id="raison"
+              rows={3}
+              value={raisonModification}
+              onChange={(e) => setRaisonModification(e.target.value)}
+              placeholder="Ex: Mise en conformité suite à l'adoption de la nouvelle loi n°2024-XX..."
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Expliquez pourquoi cette modification est nécessaire (obligatoire pour validation)
+            </p>
+          </div>
+
+          {/* Impact estimé */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Évaluation de l'impact</Label>
+            <RadioGroup value={impactEstime} onValueChange={setImpactEstime}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="low" id="impact-low" />
+                <Label htmlFor="impact-low" className="font-normal cursor-pointer">
+                  Faible - Modifications mineures, clarifications
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="medium" id="impact-medium" />
+                <Label htmlFor="impact-medium" className="font-normal cursor-pointer">
+                  Moyen - Changements significatifs de procédure
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="high" id="impact-high" />
+                <Label htmlFor="impact-high" className="font-normal cursor-pointer">
+                  Élevé - Changement majeur ou abrogation
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
 
           {/* Notes */}
           <div className="space-y-2">

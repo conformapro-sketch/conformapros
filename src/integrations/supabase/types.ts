@@ -352,6 +352,7 @@ export type Database = {
       article_versions: {
         Row: {
           article_id: string
+          commentaires_validation: string | null
           contenu: string
           created_at: string
           created_by: string | null
@@ -361,6 +362,7 @@ export type Database = {
           effective_from: string | null
           effective_to: string | null
           id: string
+          impact_estime: string | null
           is_active: boolean | null
           is_manual_correction: boolean | null
           modification_type: string | null
@@ -368,11 +370,15 @@ export type Database = {
           replaced_version_id: string | null
           source_article_reference: string | null
           source_text_id: string | null
+          tags: string[] | null
+          valide_le: string | null
+          valide_par: string | null
           version_label: string | null
           version_numero: number
         }
         Insert: {
           article_id: string
+          commentaires_validation?: string | null
           contenu: string
           created_at?: string
           created_by?: string | null
@@ -382,6 +388,7 @@ export type Database = {
           effective_from?: string | null
           effective_to?: string | null
           id?: string
+          impact_estime?: string | null
           is_active?: boolean | null
           is_manual_correction?: boolean | null
           modification_type?: string | null
@@ -389,11 +396,15 @@ export type Database = {
           replaced_version_id?: string | null
           source_article_reference?: string | null
           source_text_id?: string | null
+          tags?: string[] | null
+          valide_le?: string | null
+          valide_par?: string | null
           version_label?: string | null
           version_numero: number
         }
         Update: {
           article_id?: string
+          commentaires_validation?: string | null
           contenu?: string
           created_at?: string
           created_by?: string | null
@@ -403,6 +414,7 @@ export type Database = {
           effective_from?: string | null
           effective_to?: string | null
           id?: string
+          impact_estime?: string | null
           is_active?: boolean | null
           is_manual_correction?: boolean | null
           modification_type?: string | null
@@ -410,6 +422,9 @@ export type Database = {
           replaced_version_id?: string | null
           source_article_reference?: string | null
           source_text_id?: string | null
+          tags?: string[] | null
+          valide_le?: string | null
+          valide_par?: string | null
           version_label?: string | null
           version_numero?: number
         }
@@ -419,6 +434,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_versions_valide_par_fkey"
+            columns: ["valide_par"]
+            isOneToOne: false
+            referencedRelation: "client_users"
             referencedColumns: ["id"]
           },
           {

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { 
   ArrowLeft,
   FileText,
@@ -16,15 +18,19 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Filter,
+  Search
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import ReactDiffViewer from 'react-diff-viewer-continued';
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { ConsolidatedTextViewer } from "@/components/bibliotheque/ConsolidatedTextViewer";
+import { VersionStatsCard } from "@/components/bibliotheque/VersionStatsCard";
+import { VersionComparisonMatrix } from "@/components/bibliotheque/VersionComparisonMatrix";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -43,6 +49,11 @@ export default function BibliothequeArticleVersions() {
   const queryClient = useQueryClient();
   const [deleteVersionId, setDeleteVersionId] = useState<string | null>(null);
   const [compareVersionId, setCompareVersionId] = useState<string | null>(null);
+  
+  // Filtres
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterPeriod, setFilterPeriod] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const { data: article, isLoading: articleLoading, error: articleError } = useQuery({
     queryKey: ["texte-article", articleId],
@@ -75,6 +86,42 @@ export default function BibliothequeArticleVersions() {
     const today = new Date().toISOString().split('T')[0];
     return version.effective_from <= today && (!version.effective_to || version.effective_to > today);
   };
+
+  // Filtrer les versions
+  const filteredVersions = useMemo(() => {
+    if (!versions) return [];
+    
+    return versions.filter(version => {
+      // Filtre par type
+      if (filterType !== "all" && version.modification_type !== filterType) {
+        return false;
+      }
+      
+      // Filtre par période
+      if (filterPeriod !== "all") {
+        const versionDate = new Date(version.date_version);
+        const now = new Date();
+        const monthsAgo = filterPeriod === "6months" ? 6 : 12;
+        const cutoff = new Date(now.getFullYear(), now.getMonth() - monthsAgo, now.getDate());
+        
+        if (versionDate < cutoff) {
+          return false;
+        }
+      }
+      
+      // Filtre par recherche textuelle
+      if (searchTerm.trim()) {
+        const search = searchTerm.toLowerCase();
+        return (
+          version.raison_modification?.toLowerCase().includes(search) ||
+          version.notes_modification?.toLowerCase().includes(search) ||
+          version.version_label?.toLowerCase().includes(search)
+        );
+      }
+      
+      return true;
+    });
+  }, [versions, filterType, filterPeriod, searchTerm]);
 
   if (articleLoading || versionsLoading) {
     return (
@@ -142,6 +189,102 @@ export default function BibliothequeArticleVersions() {
             </div>
           </div>
 
+          {/* Statistiques */}
+          {versions && versions.length > 0 && (
+            <VersionStatsCard versions={versions} />
+          )}
+
+          {/* Filtres */}
+          {versions && versions.length > 0 && (
+            <Card className="p-4">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="font-semibold text-sm">Filtres</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Type de modification</label>
+                    <Select value={filterType} onValueChange={setFilterType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les types</SelectItem>
+                        <SelectItem value="modifie">Modification</SelectItem>
+                        <SelectItem value="abroge">Abrogation</SelectItem>
+                        <SelectItem value="remplace">Remplacement</SelectItem>
+                        <SelectItem value="renumerote">Renumérotation</SelectItem>
+                        <SelectItem value="complete">Complément</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Période</label>
+                    <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toute la période</SelectItem>
+                        <SelectItem value="6months">6 derniers mois</SelectItem>
+                        <SelectItem value="12months">12 derniers mois</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Recherche</label>
+                    <div className="relative">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Rechercher dans les notes..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {(filterType !== "all" || filterPeriod !== "all" || searchTerm) && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {filteredVersions.length} version(s) affichée(s)
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilterType("all");
+                        setFilterPeriod("all");
+                        setSearchTerm("");
+                      }}
+                    >
+                      Réinitialiser
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Matrice de comparaison */}
+          {versions && versions.length > 1 && (
+            <VersionComparisonMatrix 
+              versions={versions.slice(0, 3)}
+              currentVersion={article ? {
+                id: article.id!,
+                version_numero: 999,
+                version_label: "Version actuelle",
+                date_version: new Date().toISOString(),
+                contenu: article.contenu || "",
+                is_active: true
+              } : undefined}
+            />
+          )}
+
           <Card className="shadow-medium border-l-4 border-l-primary">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -194,13 +337,15 @@ export default function BibliothequeArticleVersions() {
             </Card>
           )}
 
-          {versions && versions.length > 0 ? (
+          {filteredVersions && filteredVersions.length > 0 ? (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Historique des versions</h3>
+              <h3 className="text-lg font-semibold">
+                Historique des versions {filteredVersions.length !== versions?.length && `(${filteredVersions.length}/${versions?.length})`}
+              </h3>
               
               {/* Timeline des versions */}
               <div className="relative space-y-4 before:absolute before:left-[23px] before:top-2 before:h-[calc(100%-2rem)] before:w-0.5 before:bg-border">
-                {versions.map((version, index) => {
+                {filteredVersions.map((version, index) => {
                   const modifType = MODIFICATION_TYPE_LABELS[version.modification_type as keyof typeof MODIFICATION_TYPE_LABELS] || 
                     { label: version.modification_type, variant: "secondary" as const, icon: FileText, color: "" };
                   const Icon = modifType.icon;
