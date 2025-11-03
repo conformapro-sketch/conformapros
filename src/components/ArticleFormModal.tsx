@@ -321,84 +321,116 @@ export function ArticleFormModal({
 
           {/* 🎯 Effet juridique */}
           {!article && (
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                <span>🎯</span> Effet juridique (si cet article modifie un autre texte)
-              </h3>
-              
-              <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
-                <Checkbox
-                  id="hasEffet"
-                  checked={hasEffet}
-                  onCheckedChange={(checked) => setHasEffet(checked === true)}
-                />
-                <div className="space-y-1">
-                  <Label htmlFor="hasEffet" className="text-sm font-medium cursor-pointer">
-                    Cet article a un effet sur un autre texte réglementaire
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Cochez si cet article modifie, abroge, remplace ou ajoute un article dans un autre texte
-                  </p>
+            <div className="space-y-4 border-t pt-4 bg-muted/20 rounded-lg p-4">
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <span>🎯</span> 
+                  Cet article a-t-il un effet sur un autre texte ?
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={!hasEffet ? "default" : "outline"}
+                    className="justify-start h-auto py-3"
+                    onClick={() => setHasEffet(false)}
+                  >
+                    <div className="text-left">
+                      <div className="font-medium">🟢 Nouvel article</div>
+                      <div className="text-xs opacity-80">Aucun effet juridique</div>
+                    </div>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={hasEffet ? "default" : "outline"}
+                    className="justify-start h-auto py-3"
+                    onClick={() => setHasEffet(true)}
+                  >
+                    <div className="text-left">
+                      <div className="font-medium">⚡ A un effet</div>
+                      <div className="text-xs opacity-80">Modifie un texte existant</div>
+                    </div>
+                  </Button>
                 </div>
               </div>
 
               {hasEffet && (
-                <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                <div className="space-y-4 pt-4 border-t">
                   {/* Type d'effet */}
                   <div className="space-y-2">
-                    <Label>Type d'effet *</Label>
+                    <Label className="font-medium">Type d'effet juridique *</Label>
                     <Select 
                       value={effetData.type_effet} 
                       onValueChange={(value) => setEffetData({ ...effetData, type_effet: value as TypeEffet })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="MODIFIE">
-                          <div className="flex items-center gap-2">
-                            <Pencil className="h-4 w-4" />
-                            Modifie
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="ABROGE">
-                          <div className="flex items-center gap-2">
-                            <XCircle className="h-4 w-4" />
-                            Abroge
+                          <div className="flex items-center gap-2 py-1">
+                            <Pencil className="h-4 w-4 text-yellow-600" />
+                            <div>
+                              <div className="font-medium">🟡 Modifie</div>
+                              <div className="text-xs text-muted-foreground">un article existant</div>
+                            </div>
                           </div>
                         </SelectItem>
                         <SelectItem value="REMPLACE">
-                          <div className="flex items-center gap-2">
-                            <RefreshCw className="h-4 w-4" />
-                            Remplace
+                          <div className="flex items-center gap-2 py-1">
+                            <RefreshCw className="h-4 w-4 text-blue-600" />
+                            <div>
+                              <div className="font-medium">🟠 Remplace</div>
+                              <div className="text-xs text-muted-foreground">un article précédent</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="ABROGE">
+                          <div className="flex items-center gap-2 py-1">
+                            <XCircle className="h-4 w-4 text-red-600" />
+                            <div>
+                              <div className="font-medium">🔴 Abroge</div>
+                              <div className="text-xs text-muted-foreground">un article précédent</div>
+                            </div>
                           </div>
                         </SelectItem>
                         <SelectItem value="AJOUTE">
-                          <div className="flex items-center gap-2">
-                            <PlusCircle className="h-4 w-4" />
-                            Ajoute
+                          <div className="flex items-center gap-2 py-1">
+                            <PlusCircle className="h-4 w-4 text-green-600" />
+                            <div>
+                              <div className="font-medium">➕ Ajoute</div>
+                              <div className="text-xs text-muted-foreground">un nouvel article</div>
+                            </div>
                           </div>
                         </SelectItem>
                         <SelectItem value="RENUMEROTE">
-                          <div className="flex items-center gap-2">
-                            <Hash className="h-4 w-4" />
-                            Rénuméroté
+                          <div className="flex items-center gap-2 py-1">
+                            <Hash className="h-4 w-4 text-purple-600" />
+                            <div>
+                              <div className="font-medium">🔵 Rénuméroté</div>
+                              <div className="text-xs text-muted-foreground">change le numéro</div>
+                            </div>
                           </div>
                         </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* Texte cible */}
+                  {/* Texte concerné */}
                   <div className="space-y-2">
-                    <Label>Texte réglementaire visé *</Label>
-                    <TexteAutocomplete
-                      value={effetData.texte_cible_id}
-                      onChange={(value) => {
-                        setEffetData({ ...effetData, texte_cible_id: value || "", article_cible_id: "" });
-                      }}
-                      placeholder="Rechercher le texte modifié..."
-                    />
+                    <Label className="font-medium">Texte réglementaire concerné *</Label>
+                    <div className="space-y-2">
+                      <TexteAutocomplete
+                        value={effetData.texte_cible_id}
+                        onChange={(value) => {
+                          setEffetData({ ...effetData, texte_cible_id: value || "", article_cible_id: "" });
+                        }}
+                        placeholder="🔍 Rechercher par type, numéro, année..."
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Sélectionnez le texte (Loi, Décret, Arrêté, Circulaire) concerné par cet effet
+                      </p>
+                    </div>
                   </div>
 
                   {/* Article cible */}
