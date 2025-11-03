@@ -388,87 +388,388 @@ SELECT * FROM v_versions_without_legal_effect WHERE is_manual = true;
 
 ---
 
-## 🎯 **PHASE 3 : Cohérence Juridique Avancée** (À FAIRE)
+## ✅ **PHASE 3 : Cohérence Juridique Avancée** (TERMINÉE)
 
-### 7. ⏳ Tables de référence pour applicabilité
-**Problème** : Les champs `establishment_types`, `sectors`, `risk_classes` sont des tableaux JSON sans validation.
+### 7. ✅ Tables de référence pour applicabilité
+**Problème** : Les champs `establishment_types`, `sectors`, `risk_classes` sont des tableaux JSON sans validation et sans relations normalisées.
 
-**Solution proposée** :
-```sql
--- Créer des tables de référence
-CREATE TABLE types_etablissements (
-  id UUID PRIMARY KEY,
-  code TEXT UNIQUE NOT NULL,
-  libelle TEXT NOT NULL
-);
+**Solution** :
+- ✅ Table `types_etablissements` avec code unique, libelle et description
+- ✅ Table `secteurs_activite` avec code unique, libelle et description
+- ✅ Table `classes_risque` avec code unique, libelle, niveau (1-4) et description
+- ✅ Table `actes_applicabilite_normalized` pour mapping normalisé avec foreign keys
+- ✅ Index optimisés sur toutes les clés de recherche
+- ✅ Triggers `updated_at` sur toutes les tables
 
-CREATE TABLE secteurs_activite (
-  id UUID PRIMARY KEY,
-  code TEXT UNIQUE NOT NULL,
-  libelle TEXT NOT NULL
-);
+**Impact** : Applicabilité structurée avec validation des données et intégrité référentielle.
 
-CREATE TABLE classes_risque (
-  id UUID PRIMARY KEY,
-  code TEXT UNIQUE NOT NULL,
-  libelle TEXT NOT NULL,
-  niveau INTEGER -- 1 à 4
-);
+---
 
--- Table de mapping avec foreign keys
-CREATE TABLE actes_applicabilite (
-  id UUID PRIMARY KEY,
-  acte_id UUID REFERENCES actes_reglementaires(id),
-  type_etablissement_id UUID REFERENCES types_etablissements(id),
-  secteur_id UUID REFERENCES secteurs_activite(id),
-  classe_risque_id UUID REFERENCES classes_risque(id)
-);
-```
-
-### 8. ⏳ Validation des modifications en chaîne
+### 8. ✅ Validation des modifications en chaîne
 **Problème** : Si Texte A modifie Article X, puis Texte B modifie aussi Article X, quel ordre d'application?
 
-**Solution proposée** :
-```sql
--- Fonction de détection de conflits
-CREATE FUNCTION detect_concurrent_modifications()
--- Si deux effets ont la même date_effet sur le même article
--- → Warning ou blocage selon configuration
-```
+**Solution** :
+- ✅ Fonction `trace_modification_chain()` : Trace récursivement la chaîne complète de modifications
+- ✅ Détection jusqu'à 10 niveaux de profondeur
+- ✅ Retourne le chemin complet : "LOI-2020 <- DECRET-2021 <- ARRETE-2022"
+- ✅ Identifie les textes modificateurs et leurs dates
+- ✅ Déjà implémenté en Phase 2 : `detect_concurrent_modifications()` pour conflits à même date
 
-### 9. ⏳ Consolidation temporelle
-**Problème** : Impossible de voir l'état du droit à une date donnée.
-
-**Solution proposée** :
+**Utilisation** :
 ```sql
--- Fonction de consolidation à une date
-CREATE FUNCTION get_consolidated_article_at_date(
-  p_article_id UUID,
-  p_date DATE
-) RETURNS TEXT;
--- Retourne le contenu de l'article tel qu'il était à cette date
+-- Voir toute la chaîne de modifications d'un article
+SELECT * FROM trace_modification_chain('article_uuid');
 ```
 
 ---
 
-## 🎯 **PHASE 3 : Fonctionnalités Métier** (À FAIRE)
+### 9. ✅ Consolidation temporelle
+**Problème** : Impossible de voir l'état du droit à une date donnée.
 
-### 10. ⏳ Export enrichi
+**Solution** :
+- ✅ Fonction `get_consolidated_article_at_date(p_article_id, p_date)` :
+  - Retourne la version exacte d'un article à une date donnée
+  - Utilise `effective_from` et `effective_to` pour retrouver la version applicable
+  - Indique si l'article était abrogé à cette date
+  - Fournit la référence du texte source de la modification
+
+- ✅ Fonction `get_article_legal_timeline(p_article_id)` :
+  - Timeline complète avec toutes les versions
+  - Inclut les effets juridiques associés (type, portée)
+  - Montre les références des textes modificateurs
+  - Extrait du contenu pour preview rapide
+
+- ✅ Vue `v_articles_historique_complexe` :
+  - Identifie les articles avec plus de 3 versions
+  - Compte les textes modificateurs différents
+  - Détecte les articles abrogés puis réactivés
+  - Aide à prioriser les revues juridiques
+
+**Utilisation** :
+```typescript
+// Voir l'article tel qu'il était le 1er janvier 2023
+const { data } = await supabase.rpc('get_consolidated_article_at_date', {
+  p_article_id: articleId,
+  p_date: '2023-01-01'
+});
+
+// Voir toute la timeline juridique
+const { data: timeline } = await supabase.rpc('get_article_legal_timeline', {
+  p_article_id: articleId
+});
+```
+
+---
+
+## 🎯 **PHASE 4 : Diagnostic et Maintenance** (TERMINÉE)
+
+### 10. ✅ Vues de diagnostic avancées
+
+#### `v_textes_statut_incoherent`
+Détecte les incohérences entre le statut déclaré d'un texte et l'état réel de ses articles.
+
+**Cas détectés** :
+- Texte "abrogé" mais articles encore actifs
+- Texte "en vigueur" mais tous les articles abrogés
+- Texte "suspendu" mais articles encore actifs
+
+```sql
+SELECT * FROM v_textes_statut_incoherent;
+-- Retourne: texte_id, reference, statut_declare, total_articles, 
+--           articles_abroges, articles_actifs, type_incoherence
+```
+
+#### `v_articles_sans_classification`
+Liste les articles sans domaines ou sous-domaines assignés.
+
+```sql
+SELECT * FROM v_articles_sans_classification;
+-- Retourne: article_id, numero_article, reference_officielle,
+--           sans_domaine, sans_sous_domaine
+```
+
+#### `v_effets_sans_version`
+Détecte les effets juridiques qui n'ont pas créé de version d'article correspondante.
+
+```sql
+SELECT * FROM v_effets_sans_version WHERE version_manquante = true;
+-- Retourne: effet_id, type_effet, date_effet, articles sources/cibles,
+--           textes sources/cibles, version_manquante
+```
+
+#### `v_articles_historique_complexe`
+Identifie les articles nécessitant une attention particulière (historique complexe).
+
+**Critères** :
+- Plus de 3 versions
+- Plus de 2 effets juridiques
+- Modifiés par plusieurs textes différents
+
+```sql
+SELECT * FROM v_articles_historique_complexe 
+ORDER BY nombre_versions DESC;
+```
+
+---
+
+### 11. ✅ Fonctions de maintenance automatique
+
+#### `generate_coherence_report()`
+Génère un rapport complet de cohérence du système avec niveaux de sévérité.
+
+**Métriques** :
+- Versions orphelines (HIGH)
+- Versions actives multiples (CRITICAL)
+- Modifications concurrentes (MEDIUM)
+- Statuts incohérents (HIGH)
+- Articles non classés (LOW)
+- Effets sans version (HIGH)
+- Violations de hiérarchie (INFO)
+
+```sql
+SELECT * FROM generate_coherence_report();
+-- Retourne: categorie, sous_categorie, nombre_elements, severite, description
+-- Trié par sévérité (CRITICAL → HIGH → MEDIUM → LOW → INFO)
+```
+
+#### `auto_fix_coherence_issues()`
+Corrige automatiquement les incohérences simples.
+
+**Actions** :
+1. Marque les versions orphelines pour revue manuelle
+2. Désactive les versions actives en doublon (garde la plus récente)
+3. Rafraîchit la vue matérialisée des statuts réels
+
+```sql
+SELECT * FROM auto_fix_coherence_issues();
+-- Retourne: action, elements_corriges, details
+```
+
+**⚠️ Important** : Cette fonction ne supprime rien, elle marque et désactive seulement.
+
+---
+
+## 📊 **MÉTRIQUES PHASE 3**
+
+### Avant Phase 3
+- ❌ Applicabilité non structurée (JSON arrays)
+- ❌ Pas de consolidation temporelle
+- ❌ Pas de traçabilité des chaînes de modifications
+- ❌ Diagnostic manuel des incohérences
+- ❌ Maintenance corrective manuelle
+
+### Après Phase 3
+- ✅ Tables référentielles normalisées avec FK
+- ✅ Consolidation à n'importe quelle date
+- ✅ Traçage récursif des modifications
+- ✅ 7 vues de diagnostic automatiques
+- ✅ Rapport de cohérence en 1 requête
+- ✅ Auto-correction des problèmes simples
+
+---
+
+## 🎯 **PHASE 5 : Fonctionnalités Métier Avancées** (PLANIFIÉE)
+
+### 12. ⏳ Dashboard de cohérence interactif
+- Interface graphique pour `generate_coherence_report()`
+- Visualisation des métriques avec graphiques
+- Drill-down sur chaque catégorie d'incohérence
+- Bouton "Auto-corriger" pour `auto_fix_coherence_issues()`
+
+### 13. ⏳ Export enrichi
 - Export PDF avec historique complet
-- Export PDF consolidé à une date
-- Export Word éditable
-- Export Excel avec statistiques
+- Export PDF consolidé à une date donnée
+- Export Word éditable avec annotations
+- Export Excel avec statistiques et métriques
 
-### 11. ⏳ Dashboard de cohérence
-- Nombre de versions orphelines
-- Textes avec statut incohérent
-- Articles sans domaines
-- Graphe des modifications
-
-### 12. ⏳ Notifications automatiques
-- Alerte quand un texte est modifié
-- Alerte quand un article est abrogé
+### 14. ⏳ Notifications automatiques
+- Webhook lors de modification/abrogation d'un texte
+- Email aux utilisateurs concernés (par domaine)
 - Rappel de mise à jour des évaluations de conformité
+- Alertes sur incohérences critiques détectées
+
+### 15. ⏳ Visualisation graphique
+- Graphe des relations entre textes (qui modifie quoi)
+- Timeline interactive des modifications
+- Heatmap des articles les plus modifiés
+- Arbre hiérarchique des normes
+
+---
+
+---
+
+## 🛠️ **GUIDE D'UTILISATION - PHASE 3**
+
+### Consolidation temporelle
+
+```typescript
+// 1. Voir un article tel qu'il était à une date précise
+const { data: articleAtDate } = await supabase.rpc('get_consolidated_article_at_date', {
+  p_article_id: articleId,
+  p_date: '2023-01-15'
+});
+
+console.log(articleAtDate);
+// {
+//   article_id: 'uuid',
+//   version_numero: 3,
+//   contenu: '<p>Contenu de l\'article...</p>',
+//   date_version: '2022-12-01',
+//   modification_type: 'modifie',
+//   source_text_ref: 'DECRET-2022-456',
+//   is_abroge: false
+// }
+
+// 2. Obtenir toute la timeline juridique d'un article
+const { data: timeline } = await supabase.rpc('get_article_legal_timeline', {
+  p_article_id: articleId
+});
+
+// Afficher l'historique chronologique
+timeline.forEach(version => {
+  console.log(`
+    Version ${version.version_numero} (${version.date_version})
+    Type: ${version.modification_type}
+    Source: ${version.source_text_ref}
+    Effet: ${version.type_effet} (${version.portee_effet})
+    Actif: ${version.is_active ? 'Oui' : 'Non'}
+  `);
+});
+```
+
+### Traçage des chaînes de modifications
+
+```typescript
+// Voir qui modifie quoi (cascade de modifications)
+const { data: chain } = await supabase.rpc('trace_modification_chain', {
+  p_article_id: articleId,
+  p_max_depth: 10
+});
+
+// Afficher le graphe de modifications
+chain.forEach(node => {
+  console.log(`
+    Niveau ${node.niveau}
+    Article: ${node.reference_texte} - ${node.numero_article}
+    ${node.type_effet ? `→ ${node.type_effet} le ${node.date_effet}` : '(Article initial)'}
+    Chemin: ${node.chemin}
+  `);
+});
+
+// Exemple de sortie:
+// Niveau 0 - LOI-2015-123 Article 5 (Article initial)
+// Niveau 1 - DECRET-2018-456 Article 3 → MODIFIE le 2018-06-15
+//   Chemin: LOI-2015-123 <- DECRET-2018-456
+// Niveau 2 - ARRETE-2020-789 Article 2 → COMPLETE le 2020-03-10
+//   Chemin: LOI-2015-123 <- DECRET-2018-456 <- ARRETE-2020-789
+```
+
+### Diagnostic et maintenance
+
+```typescript
+// 1. Générer un rapport complet de cohérence
+const { data: report } = await supabase.rpc('generate_coherence_report');
+
+report.forEach(item => {
+  console.log(`
+    [${item.severite}] ${item.categorie} - ${item.sous_categorie}
+    ${item.nombre_elements} élément(s)
+    ${item.description}
+  `);
+});
+
+// 2. Identifier les textes avec statut incohérent
+const { data: incoherents } = await supabase
+  .from('v_textes_statut_incoherent')
+  .select('*');
+
+incoherents.forEach(texte => {
+  console.warn(`
+    ⚠️ ${texte.reference_officielle}
+    Statut déclaré: ${texte.statut_declare}
+    Articles actifs: ${texte.articles_actifs} / Total: ${texte.total_articles}
+    Problème: ${texte.type_incoherence}
+  `);
+});
+
+// 3. Auto-correction des problèmes simples
+const { data: fixes } = await supabase.rpc('auto_fix_coherence_issues');
+
+fixes.forEach(fix => {
+  console.log(`
+    ✓ ${fix.action}
+    ${fix.elements_corriges} élément(s) corrigé(s)
+    ${fix.details}
+  `);
+});
+
+// 4. Identifier les articles avec historique complexe
+const { data: complexArticles } = await supabase
+  .from('v_articles_historique_complexe')
+  .select('*')
+  .order('nombre_versions', { ascending: false });
+
+complexArticles.forEach(article => {
+  console.log(`
+    📊 ${article.reference_officielle} - Article ${article.numero_article}
+    Versions: ${article.nombre_versions}
+    Effets juridiques: ${article.nombre_effets_juridiques}
+    Textes modificateurs: ${article.nombre_textes_modificateurs}
+    ${article.a_ete_abroge ? '🚫 A été abrogé' : '✓ Actif'}
+    Période: ${article.premiere_version_date} → ${article.derniere_version_date}
+  `);
+});
+```
+
+### Gestion de l'applicabilité normalisée
+
+```typescript
+// 1. Créer des référentiels
+await supabase.from('types_etablissements').insert([
+  { code: 'INDUS', libelle: 'Industrie', description: 'Établissements industriels' },
+  { code: 'COMM', libelle: 'Commerce', description: 'Établissements commerciaux' },
+  { code: 'ADMIN', libelle: 'Administration', description: 'Bureaux administratifs' }
+]);
+
+await supabase.from('classes_risque').insert([
+  { code: 'R1', libelle: 'Risque Faible', niveau: 1 },
+  { code: 'R2', libelle: 'Risque Moyen', niveau: 2 },
+  { code: 'R3', libelle: 'Risque Élevé', niveau: 3 },
+  { code: 'R4', libelle: 'Risque Très Élevé', niveau: 4 }
+]);
+
+// 2. Mapper l'applicabilité d'un acte
+const { data: typeEtab } = await supabase
+  .from('types_etablissements')
+  .select('id')
+  .eq('code', 'INDUS')
+  .single();
+
+const { data: classeRisque } = await supabase
+  .from('classes_risque')
+  .select('id')
+  .eq('code', 'R3')
+  .single();
+
+await supabase.from('actes_applicabilite_normalized').insert({
+  acte_id: acteId,
+  type_etablissement_id: typeEtab.id,
+  classe_risque_id: classeRisque.id,
+  notes: 'Applicable aux industries à risque élevé'
+});
+
+// 3. Requêter l'applicabilité
+const { data: actesApplicables } = await supabase
+  .from('actes_applicabilite_normalized')
+  .select(`
+    *,
+    actes_reglementaires (reference_officielle, intitule),
+    types_etablissements (code, libelle),
+    classes_risque (code, libelle, niveau)
+  `)
+  .eq('type_etablissement_id', typeEtab.id)
+  .gte('classes_risque.niveau', 3);
+```
 
 ---
 
