@@ -88,11 +88,11 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "reference_officielle",
       header: "Référence",
-      size: 200,
+      size: 140,
       cell: ({ row }) => (
         <HoverCard openDelay={200}>
           <HoverCardTrigger asChild>
-            <span className="font-semibold text-primary cursor-pointer hover:underline truncate block">
+            <span className="font-semibold text-primary cursor-pointer hover:underline line-clamp-3 leading-tight block">
               {row.original.reference_officielle}
             </span>
           </HoverCardTrigger>
