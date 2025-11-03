@@ -381,10 +381,6 @@ function BibliothequeReglementaireContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Statistics Cards */}
-        <BibliothequeStatsCards stats={stats} onFilterByStatus={handleFilterByStatus} />
-
-        {/* Header avec gradient - Sticky */}
         <div className="sticky top-0 z-30 relative overflow-hidden rounded-2xl bg-gradient-primary/95 backdrop-blur-lg p-6 shadow-strong">
           <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
           <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
