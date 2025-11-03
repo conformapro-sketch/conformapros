@@ -24,7 +24,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  AlertCircle
+  AlertCircle,
+  RotateCcw
 } from "lucide-react";
 import { format, formatDistance } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -75,7 +76,7 @@ interface ArticleEffetsTimelineProps {
   onViewSource?: (effetId: string) => void;
 }
 
-const getEffetIcon = (type: TypeEffet) => {
+const getEffetIcon = (type: TypeEffet | string) => {
   switch (type) {
     case "AJOUTE":
       return <PlusCircle className="h-4 w-4" />;
@@ -89,12 +90,14 @@ const getEffetIcon = (type: TypeEffet) => {
       return <Hash className="h-4 w-4" />;
     case "COMPLETE":
       return <FileEdit className="h-4 w-4" />;
+    case "restauration":
+      return <RotateCcw className="h-4 w-4" />;
     default:
       return <FileText className="h-4 w-4" />;
   }
 };
 
-const getEffetColor = (type: TypeEffet) => {
+const getEffetColor = (type: TypeEffet | string) => {
   switch (type) {
     case "AJOUTE":
       return "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950";
@@ -108,18 +111,22 @@ const getEffetColor = (type: TypeEffet) => {
       return "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950";
     case "COMPLETE":
       return "text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950";
+    case "restauration":
+      return "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950";
     default:
       return "text-muted-foreground bg-muted";
   }
 };
 
-const getEffetBadgeVariant = (type: TypeEffet): "default" | "secondary" | "destructive" | "outline" => {
+const getEffetBadgeVariant = (type: TypeEffet | string): "default" | "secondary" | "destructive" | "outline" => {
   switch (type) {
     case "ABROGE":
       return "destructive";
     case "MODIFIE":
     case "REMPLACE":
       return "default";
+    case "restauration":
+      return "outline";
     default:
       return "secondary";
   }

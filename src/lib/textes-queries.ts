@@ -581,6 +581,8 @@ export const textesArticlesVersionsQueries = {
     replaced_version_id?: string;
     notes_modification?: string;
     raison_modification?: string;
+    tags?: string[];
+    impact_estime?: string;
   }) {
     const { data, error } = await supabase
       .from("article_versions")

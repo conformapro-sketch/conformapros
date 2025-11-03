@@ -25,8 +25,19 @@ import {
   RefreshCw,
   PlusCircle,
   Hash,
-  FileEdit
+  FileEdit,
+  RotateCcw
 } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { EffetsCreesTab } from "@/components/EffetsCreesTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
@@ -64,6 +75,8 @@ export default function BibliothequeTexteDetail() {
   const [showQuickEffetModal, setShowQuickEffetModal] = useState(false);
   const [targetArticleForEffet, setTargetArticleForEffet] = useState<any>(null);
   const [showEditArticleModal, setShowEditArticleModal] = useState(false);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [versionToRestore, setVersionToRestore] = useState<any>(null);
 
   const { data: texte, isLoading, error } = useQuery({
     queryKey: ["texte-detail", id],
@@ -163,14 +176,52 @@ export default function BibliothequeTexteDetail() {
   });
 
   const setCurrentVersionMutation = useMutation({
-    mutationFn: ({ articleId, version }: { articleId: string; version: any }) =>
-      textesArticlesQueries.update(articleId, { contenu: version.contenu }),
+    mutationFn: async ({ articleId, version }: { articleId: string; version: any }) => {
+      // 1. Récupérer le prochain numéro de version
+      const existingVersions = await textesArticlesVersionsQueries.getByArticleId(articleId);
+      const nextVersionNum = Math.max(...existingVersions.map(v => v.version_numero), 0) + 1;
+      
+      // 2. Créer une nouvelle version (pas écraser l'article)
+      await textesArticlesVersionsQueries.create({
+        article_id: articleId,
+        version_numero: nextVersionNum,
+        version_label: `Version ${nextVersionNum} (Restaurée depuis V${version.version_numero})`,
+        date_version: new Date().toISOString().split('T')[0],
+        contenu: version.contenu,
+        modification_type: 'restauration',
+        source_text_id: version.source_text_id,
+        source_article_reference: `Restauration de Version ${version.version_numero}`,
+        effective_from: new Date().toISOString().split('T')[0],
+        effective_to: null,
+        raison_modification: `Restauration de la Version ${version.version_numero} datée du ${version.date_version}`,
+        tags: ['restauration', 'version_precedente'],
+        impact_estime: 'medium',
+      });
+      
+      // 3. Désactiver les versions précédentes
+      await Promise.all(
+        existingVersions
+          .filter(v => v.is_active)
+          .map(v => textesArticlesVersionsQueries.update(v.id, { 
+            effective_to: new Date().toISOString().split('T')[0] 
+          }))
+      );
+      
+      // 4. Mettre à jour le contenu actuel de l'article
+      await textesArticlesQueries.update(articleId, { contenu: version.contenu });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
-      toast.success("Version actuelle mise à jour");
+      queryClient.invalidateQueries({ queryKey: ["article-versions"] });
+      queryClient.invalidateQueries({ queryKey: ["article-versions-map"] });
+      toast.success("✅ Version restaurée avec succès - Nouvelle version créée dans l'historique");
+      setShowRestoreConfirm(false);
+      setVersionToRestore(null);
     },
     onError: () => {
-      toast.error("Erreur lors de la mise à jour");
+      toast.error("Erreur lors de la restauration");
+      setShowRestoreConfirm(false);
+      setVersionToRestore(null);
     },
   });
 
@@ -197,8 +248,13 @@ export default function BibliothequeTexteDetail() {
   };
 
   const handleSetCurrentVersion = (articleId: string, version: any) => {
-    if (confirm("Voulez-vous vraiment remplacer le contenu actuel de l'article par cette version ?")) {
-      setCurrentVersionMutation.mutate({ articleId, version });
+    setVersionToRestore({ articleId, version });
+    setShowRestoreConfirm(true);
+  };
+
+  const handleConfirmRestore = () => {
+    if (versionToRestore) {
+      setCurrentVersionMutation.mutate(versionToRestore);
     }
   };
 
@@ -858,6 +914,55 @@ export default function BibliothequeTexteDetail() {
         pdfUrl={texte?.pdf_url || texte?.fichier_pdf_url || null}
         title={texte?.reference_officielle}
       />
+
+      {/* Restore Version Confirmation Dialog */}
+      <AlertDialog open={showRestoreConfirm} onOpenChange={setShowRestoreConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Restaurer cette version ?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <div className="bg-blue-50 dark:bg-blue-950 border-l-4 border-blue-500 p-3 rounded">
+                <p className="font-medium text-blue-900 dark:text-blue-100">📌 Action : Création d'une nouvelle version</p>
+                <p className="text-sm mt-1 text-blue-700 dark:text-blue-300">
+                  Une nouvelle version sera créée avec le contenu de <strong>Version {versionToRestore?.version?.version_numero}</strong>
+                </p>
+              </div>
+              
+              <div className="space-y-2 text-sm">
+                <p className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-success" />
+                  L'historique complet sera préservé
+                </p>
+                <p className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-success" />
+                  La version actuelle restera consultable
+                </p>
+                <p className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-success" />
+                  La nouvelle version sera marquée comme "Version restaurée"
+                </p>
+              </div>
+              
+              <div className="bg-amber-50 dark:bg-amber-950 border-l-4 border-amber-500 p-3 rounded">
+                <p className="font-medium text-amber-900 dark:text-amber-100">⚠️ Important</p>
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  Cette action créera une nouvelle entrée dans l'historique des versions
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRestore}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Restaurer cette version
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
