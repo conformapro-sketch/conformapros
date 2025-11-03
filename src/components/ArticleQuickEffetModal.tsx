@@ -152,6 +152,7 @@ export function ArticleQuickEffetModal({
         portee: portee,
         portee_detail: porteeDetail || null,
         notes: notes || null,
+        nouveau_contenu: typeEffet !== 'ABROGE' ? contenuModifie : null,
       });
     },
     onSuccess: () => {

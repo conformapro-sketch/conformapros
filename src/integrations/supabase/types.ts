@@ -355,10 +355,20 @@ export type Database = {
           contenu: string
           created_at: string
           created_by: string | null
+          date_effet: string | null
           date_version: string
+          deleted_at: string | null
+          effective_from: string | null
+          effective_to: string | null
           id: string
+          is_active: boolean | null
           is_manual_correction: boolean | null
+          modification_type: string | null
           raison_modification: string | null
+          replaced_version_id: string | null
+          source_article_reference: string | null
+          source_text_id: string | null
+          version_label: string | null
           version_numero: number
         }
         Insert: {
@@ -366,10 +376,20 @@ export type Database = {
           contenu: string
           created_at?: string
           created_by?: string | null
+          date_effet?: string | null
           date_version: string
+          deleted_at?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
           id?: string
+          is_active?: boolean | null
           is_manual_correction?: boolean | null
+          modification_type?: string | null
           raison_modification?: string | null
+          replaced_version_id?: string | null
+          source_article_reference?: string | null
+          source_text_id?: string | null
+          version_label?: string | null
           version_numero: number
         }
         Update: {
@@ -377,10 +397,20 @@ export type Database = {
           contenu?: string
           created_at?: string
           created_by?: string | null
+          date_effet?: string | null
           date_version?: string
+          deleted_at?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
           id?: string
+          is_active?: boolean | null
           is_manual_correction?: boolean | null
+          modification_type?: string | null
           raison_modification?: string | null
+          replaced_version_id?: string | null
+          source_article_reference?: string | null
+          source_text_id?: string | null
+          version_label?: string | null
           version_numero?: number
         }
         Relationships: [
@@ -389,6 +419,27 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_replaced_version"
+            columns: ["replaced_version_id"]
+            isOneToOne: false
+            referencedRelation: "article_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_replaced_version"
+            columns: ["replaced_version_id"]
+            isOneToOne: false
+            referencedRelation: "v_orphan_article_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_source_text"
+            columns: ["source_text_id"]
+            isOneToOne: false
+            referencedRelation: "actes_reglementaires"
             referencedColumns: ["id"]
           },
         ]
@@ -402,6 +453,7 @@ export type Database = {
           date_fin_effet: string | null
           id: string
           notes: string | null
+          nouveau_contenu: string | null
           nouvelle_numerotation: string | null
           portee: string | null
           portee_detail: string | null
@@ -419,6 +471,7 @@ export type Database = {
           date_fin_effet?: string | null
           id?: string
           notes?: string | null
+          nouveau_contenu?: string | null
           nouvelle_numerotation?: string | null
           portee?: string | null
           portee_detail?: string | null
@@ -436,6 +489,7 @@ export type Database = {
           date_fin_effet?: string | null
           id?: string
           notes?: string | null
+          nouveau_contenu?: string | null
           nouvelle_numerotation?: string | null
           portee?: string | null
           portee_detail?: string | null
