@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FileText, Pencil, Trash2, Calendar, Building2, Sparkles, Eye, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { stripHtml } from "@/lib/sanitize-html";
 
 const TYPE_LABELS = {
   loi: "Loi",
@@ -127,7 +128,7 @@ export function BibliothequeTextCard({
             </p>
             {texte.resume && (
               <p className="text-xs text-muted-foreground line-clamp-2">
-                {texte.resume}
+                {stripHtml(texte.resume)}
               </p>
             )}
           </div>

@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { FileText, Pencil, Trash2, ExternalLink, Calendar, Building2, Scale, Copy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 const TYPE_LABELS = {
   loi: "Loi",
@@ -136,9 +137,10 @@ export function BibliothequeQuickView({
             <>
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-foreground">Résumé</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {texte.resume}
-                </p>
+                <div 
+                  className="prose prose-sm max-w-none text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(texte.resume) }}
+                />
               </div>
               <Separator />
             </>
@@ -149,9 +151,10 @@ export function BibliothequeQuickView({
             <>
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-foreground">Objet</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {texte.objet}
-                </p>
+                <div 
+                  className="prose prose-sm max-w-none text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(texte.objet) }}
+                />
               </div>
               <Separator />
             </>

@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { textesReglementairesQueries, domainesQueries } from "@/lib/textes-queries";
 import { fetchSousDomainesByDomaine } from "@/lib/domaines-queries";
 import { BibliothequeSearchBar } from "@/components/bibliotheque/BibliothequeSearchBar";
+import { stripHtml } from "@/lib/sanitize-html";
 
 const TYPE_LABELS: Record<string, string> = {
   LOI: "Loi",
@@ -413,7 +414,8 @@ export default function BibliothequeRechercheAvancee() {
                   const texte = result.data;
                   const statutInfo = STATUT_LABELS[texte.statut_vigueur] || { label: texte.statut_vigueur, className: "" };
                   const typeLabel = TYPE_LABELS[texte.type] || texte.type;
-                  const preview = texte.resume || texte.titre;
+                  const previewSource = texte.resume || texte.titre || "";
+                  const previewText = stripHtml(previewSource);
 
                   return (
                     <Card 
@@ -461,7 +463,7 @@ export default function BibliothequeRechercheAvancee() {
 
                           {/* Preview */}
                           <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                            {highlightText(getPreview(preview, debouncedSearch), debouncedSearch)}
+                            {highlightText(getPreview(previewText, debouncedSearch), debouncedSearch)}
                           </p>
                         </div>
                       </CardContent>
@@ -473,7 +475,8 @@ export default function BibliothequeRechercheAvancee() {
                   const texte = article.texte;
                   const statutInfo = STATUT_LABELS[texte.statut_vigueur] || { label: texte.statut_vigueur, className: "" };
                   const typeLabel = TYPE_LABELS[texte.type] || texte.type;
-                  const preview = article.contenu || article.titre_court || "";
+                  const previewSource = article.contenu || article.titre_court || "";
+                  const previewText = stripHtml(previewSource);
 
                   return (
                     <Card 
@@ -523,7 +526,7 @@ export default function BibliothequeRechercheAvancee() {
 
                           {/* Content Preview */}
                           <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-                            {highlightText(getPreview(preview, debouncedSearch), debouncedSearch)}
+                            {highlightText(getPreview(previewText, debouncedSearch), debouncedSearch)}
                           </p>
                         </div>
                       </CardContent>
