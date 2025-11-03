@@ -357,6 +357,7 @@ export type Database = {
           created_by: string | null
           date_version: string
           id: string
+          is_manual_correction: boolean | null
           raison_modification: string | null
           version_numero: number
         }
@@ -367,6 +368,7 @@ export type Database = {
           created_by?: string | null
           date_version: string
           id?: string
+          is_manual_correction?: boolean | null
           raison_modification?: string | null
           version_numero: number
         }
@@ -377,6 +379,7 @@ export type Database = {
           created_by?: string | null
           date_version?: string
           id?: string
+          is_manual_correction?: boolean | null
           raison_modification?: string | null
           version_numero?: number
         }
@@ -3694,6 +3697,27 @@ export type Database = {
           },
         ]
       }
+      v_orphan_article_versions: {
+        Row: {
+          article_id: string | null
+          date_version: string | null
+          id: string | null
+          numero_article: string | null
+          raison_modification: string | null
+          reference_officielle: string | null
+          texte_titre: string | null
+          version_numero: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_versions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_manage_client_user: {
@@ -3800,6 +3824,12 @@ export type Database = {
       is_user_client_admin: {
         Args: { check_client_id: string; user_id: string }
         Returns: boolean
+      }
+      mark_orphan_versions: {
+        Args: never
+        Returns: {
+          marked_count: number
+        }[]
       }
       search_actes_reglementaires: {
         Args: { result_limit?: number; search_term: string }

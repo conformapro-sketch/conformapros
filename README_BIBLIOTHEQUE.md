@@ -1,6 +1,256 @@
 # 📚 Module Bibliothèque Réglementaire - Conforma Pro
 
+## Table des matières
+1. [Vue d'ensemble](#vue-densemble)
+2. [Gestion des versions d'articles](#gestion-des-versions-darticles)
+3. [Hiérarchie des normes](#hiérarchie-des-normes)
+4. [Workflow de création d'effets juridiques](#workflow-de-création-deffets-juridiques)
+5. [Consolidation des textes](#consolidation-des-textes)
+6. [Tests et validation](#tests-et-validation)
+7. [Modèle de données](#modèle-de-données)
+8. [API et composants](#api-et-composants)
+
+---
+
 ## Vue d'ensemble
+
+La Bibliothèque Réglementaire est un système de gestion de textes législatifs et réglementaires qui respecte la hiérarchie des normes juridiques et assure une traçabilité complète des modifications apportées aux articles de loi.
+
+### Principes fondamentaux
+
+✅ **Un seul système de versioning** : Basé sur les effets juridiques déclarés  
+✅ **Traçabilité complète** : Chaque version liée à son texte modificateur  
+✅ **Conformité réglementaire** : Respect de la hiérarchie des normes  
+✅ **Automatisation** : Versions créées automatiquement via trigger SQL  
+✅ **Consolidation fiable** : Vue "en vigueur à une date" basée sur les effets réels
+
+---
+
+## Gestion des versions d'articles
+
+### Système automatique de versioning
+
+**Comment ça marche ?**
+
+1. Vous créez un **nouveau texte** (loi, décret, arrêté, circulaire)
+2. Lors de la saisie d'un article, vous **déclarez son effet** sur un article existant
+3. Le système crée **automatiquement une nouvelle version** de l'article cible
+4. L'historique est **entièrement tracé** via les effets juridiques
+
+### Types d'effets juridiques
+
+| Type d'effet | Description | Impact sur l'article cible |
+|-------------|-------------|---------------------------|
+| **MODIFIE** | Modifie partiellement le contenu | Crée une nouvelle version avec le contenu modifié |
+| **REMPLACE** | Remplace complètement l'article | Crée une nouvelle version avec le nouveau contenu |
+| **ABROGE** | Annule l'article | Marque l'article comme abrogé (non supprimé) |
+| **COMPLÈTE** | Ajoute un alinéa ou point | Ajoute du contenu sans remplacer |
+| **RENOMME** | Change la numérotation | Crée une nouvelle référence |
+| **AJOUTE** | Ajoute un nouvel article | Insère un article dans un texte existant |
+
+### Workflow de création d'un article modificateur
+
+#### Méthode 1 : Création d'article avec effet (Recommandé)
+
+1. Ouvrez le texte modificateur (nouveau décret, arrêté, etc.)
+2. Cliquez sur **"Ajouter un article"**
+3. Remplissez le contenu de l'article
+4. Cochez ✅ **"Cet article a un effet sur un autre article"**
+5. Sélectionnez :
+   - Type d'effet (MODIFIE, REMPLACE, ABROGE, etc.)
+   - Texte cible (Type + Numéro/Année)
+   - Article cible (recherche avec autocomplete)
+   - Portée (Article complet, Alinéa, Point)
+   - Date d'entrée en vigueur
+6. Validez → Le système crée automatiquement :
+   - L'article dans le nouveau texte
+   - L'effet juridique
+   - Une nouvelle version pour l'article cible
+
+#### Méthode 2 : Modification rapide depuis un article existant
+
+1. Naviguez vers l'article que vous voulez modifier
+2. Cliquez sur l'icône **Crayon** (Créer une modification)
+3. Renseignez le type d'effet et le nouveau contenu
+4. Validez → Le système lie automatiquement l'effet à votre texte source
+
+#### Méthode 3 : Abrogation en masse
+
+1. Depuis un nouveau texte, cliquez sur **"🗑️ Abroger des articles"**
+2. Recherchez et sélectionnez les articles à abroger
+3. Validez → Le système crée un effet ABROGE pour chaque article
+
+---
+
+## Hiérarchie des normes
+
+Le système applique automatiquement les règles de **hiérarchie des normes juridiques** pour éviter les incohérences.
+
+### Règles de validation
+
+#### ❌ Circulaire
+- **NE PEUT PAS** : Abroger, Modifier, Remplacer une loi ou un décret
+- **PEUT** : Compléter (ajout d'interprétation ou de précision)
+- **Message d'erreur** : Affiché en rouge, empêche la création
+
+#### ⚠️ Arrêté
+- **NE PEUT GÉNÉRALEMENT PAS** : Modifier une loi
+- **PEUT** : Modifier des décrets ou autres arrêtés
+- **Message d'avertissement** : Affiché en orange, permet de forcer si nécessaire
+
+#### ✅ Décret
+- **PEUT** : Modifier d'autres décrets, arrêtés, circulaires
+- **PEUT (sous conditions)** : Modifier une loi (décret-loi ou habilitation législative)
+
+#### ✅ Loi
+- **PEUT** : Modifier ou abroger toute norme inférieure
+
+### Exemple d'alerte hiérarchique
+
+```
+🚨 Erreur de hiérarchie
+Une circulaire ne peut pas abroger, modifier ou remplacer une loi ou un décret. 
+Utilisez 'COMPLÈTE' pour ajouter une interprétation.
+```
+
+---
+
+## Workflow de création d'effets juridiques
+
+### Scénario complet : Modification d'un article de loi
+
+**Contexte** : La loi n°2020-45 contient un article 10 que vous souhaitez modifier via le décret n°2024-123.
+
+**Étapes** :
+
+1. **Créer le nouveau texte**
+   - Type : Décret
+   - Référence : Décret n°2024-123
+   - Date de publication : 15/03/2024
+
+2. **Ajouter l'article modificateur**
+   ```
+   Numéro d'article : Article 5
+   Contenu : "L'article 10 de la loi n°2020-45 est modifié comme suit : [nouveau contenu]"
+   
+   ✅ Cet article a un effet sur un autre article
+   Type d'effet : MODIFIE
+   Texte cible : Loi n°2020-45
+   Article cible : Article 10
+   Portée : Article complet
+   Date d'effet : 15/03/2024 (date JORT)
+   ```
+
+3. **Résultat automatique**
+   - L'article 5 du décret est créé
+   - Un effet juridique lie l'article 5 (décret) → article 10 (loi)
+   - Une nouvelle version de l'article 10 est générée avec :
+     - Date d'effet : 15/03/2024
+     - Type de modification : "modification"
+     - Source : Décret n°2024-123, Article 5
+
+4. **Visualisation**
+   - Dans la loi n°2020-45, l'article 10 affiche :
+     - Badge "Modifié"
+     - Historique : Version originale + Version modifiée par décret
+   - Dans la vue consolidée à la date 16/03/2024 :
+     - L'article 10 affiche le nouveau contenu
+
+---
+
+## Consolidation des textes
+
+### Vue consolidée "en vigueur à une date"
+
+La vue consolidée affiche le texte tel qu'il était applicable à une date donnée, en appliquant tous les effets juridiques actifs.
+
+**Comment ça fonctionne ?**
+
+1. Sélectionnez une **date de consolidation** (par défaut : date du jour)
+2. Le système :
+   - Récupère tous les articles originaux du texte
+   - Applique les versions actives à cette date
+   - Identifie les articles abrogés
+   - Ajoute les articles insérés par d'autres textes
+   - Trie par numéro d'article
+
+**Exemple de rendu** :
+
+```
+📅 Consolidation au 01/01/2024
+
+Article 1 - [Contenu original]
+Article 2 - [Contenu modifié par Décret n°2023-50] ⚠️ MODIFIÉ
+Article 3 - [Contenu original] ❌ ABROGÉ par Loi n°2023-100
+Article 3 bis - [Ajouté par Décret n°2023-75] ✅ AJOUTÉ
+```
+
+### Marquage visuel
+
+- **Article normal** : Fond blanc, texte noir
+- **Article modifié** : Badge orange "Modifié par..."
+- **Article abrogé** : Fond grisé, texte barré, badge rouge "Abrogé par..."
+- **Article ajouté** : Badge vert "Ajouté par..."
+
+---
+
+## Tests et validation
+
+### Scénarios de test à valider
+
+#### Test 1 : Création d'un article modificateur
+1. Créer un nouveau décret
+2. Ajouter un article avec effet MODIFIE sur une loi existante
+3. **Vérifier** :
+   - ✅ L'effet juridique est créé
+   - ✅ Une version est automatiquement créée pour l'article cible
+   - ✅ La version apparaît dans l'historique de l'article cible
+   - ✅ Le texte consolidé affiche le nouveau contenu
+
+#### Test 2 : Abrogation en masse
+1. Utiliser le bouton "Abroger des articles existants"
+2. Sélectionner plusieurs articles
+3. **Vérifier** :
+   - ✅ Les effets ABROGE sont créés
+   - ✅ Les versions "abrogé" sont créées automatiquement
+   - ✅ Les articles apparaissent barrés dans la vue consolidée
+
+#### Test 3 : Chaîne de modifications
+1. Créer une loi avec article 10
+2. Créer un décret qui MODIFIE article 10
+3. Créer un arrêté qui MODIFIE à nouveau article 10
+4. **Vérifier** :
+   - ✅ L'historique montre les 3 versions
+   - ✅ La vue consolidée affiche la dernière version
+   - ✅ On peut naviguer entre les versions
+
+#### Test 4 : Validation hiérarchique
+1. Tenter de créer une circulaire qui ABROGE une loi
+2. **Vérifier** :
+   - ✅ Alerte d'erreur rouge affichée
+   - ✅ Bouton "Créer" désactivé
+   - ✅ Message explicatif clair
+
+#### Test 5 : Portée d'effet
+1. Créer un effet MODIFIE avec portée "Alinéa 2"
+2. **Vérifier** :
+   - ✅ La portée est enregistrée dans l'effet juridique
+   - ✅ L'historique affiche "Alinéa 2 modifié"
+
+### Cas limites documentés
+
+❓ **Que se passe-t-il si on abroge un article déjà abrogé ?**
+→ Le système crée un nouvel effet ABROGE daté. Techniquement possible, mais l'UI devrait afficher un avertissement.
+
+❓ **Peut-on modifier un article abrogé ?**
+→ Oui, techniquement. Cela peut être utile pour des restaurations. L'UI devrait afficher un avertissement.
+
+❓ **Comment gérer les dates d'effet dans le futur ?**
+→ L'effet est enregistré avec la date future. La vue consolidée ne l'applique que si la date sélectionnée est >= date d'effet.
+
+---
+
+## Modèle de données
 
 Le module **Bibliothèque Réglementaire** permet de créer, gérer, rechercher et versionner les textes réglementaires (lois, décrets, arrêtés, circulaires) applicables aux sites HSE.
 

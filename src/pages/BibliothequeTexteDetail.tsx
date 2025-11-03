@@ -32,8 +32,8 @@ import { changelogQueries } from "@/lib/actes-queries";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
-import { ArticleVersionModal } from "@/components/ArticleVersionModal";
 import { ArticleVersionComparison } from "@/components/ArticleVersionComparison";
+import { ArticleQuickEffetModal } from "@/components/ArticleQuickEffetModal";
 import { TimelineChangelog } from "@/components/TimelineChangelog";
 import { TexteCodesDisplay } from "@/components/TexteCodesDisplay";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize-html";
@@ -57,11 +57,10 @@ export default function BibliothequeTexteDetail() {
   
   // Version management
   const [expandedArticles, setExpandedArticles] = useState<string[]>([]);
-  const [showVersionModal, setShowVersionModal] = useState(false);
-  const [currentArticleId, setCurrentArticleId] = useState<string>("");
-  const [editingVersion, setEditingVersion] = useState<any>(null);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
   const [comparisonArticle, setComparisonArticle] = useState<any>(null);
+  const [showQuickEffetModal, setShowQuickEffetModal] = useState(false);
+  const [targetArticleForEffet, setTargetArticleForEffet] = useState<any>(null);
 
   const { data: texte, isLoading, error } = useQuery({
     queryKey: ["texte-detail", id],
@@ -173,20 +172,9 @@ export default function BibliothequeTexteDetail() {
   });
 
   const handleEditArticle = (article: any) => {
-    setEditingArticle(article);
-    setShowArticleModal(true);
-  };
-
-  const handleAddVersion = (articleId: string) => {
-    setCurrentArticleId(articleId);
-    setEditingVersion(null);
-    setShowVersionModal(true);
-  };
-
-  const handleEditVersion = (version: any, articleId: string) => {
-    setCurrentArticleId(articleId);
-    setEditingVersion(version);
-    setShowVersionModal(true);
+    // Proposer de créer un effet juridique au lieu d'éditer directement
+    setTargetArticleForEffet(article);
+    setShowQuickEffetModal(true);
   };
 
   const handleCompareVersions = (article: any) => {
@@ -440,15 +428,6 @@ export default function BibliothequeTexteDetail() {
                             </div>
                           </div>
                           <div className="flex gap-2 shrink-0">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleAddVersion(article.id)}
-                              title="Ajouter une version"
-                            >
-                              <History className="h-4 w-4 mr-2" />
-                              Version
-                            </Button>
                             {versionsData.length > 0 && (
                               <Button
                                 variant="outline"
@@ -463,7 +442,7 @@ export default function BibliothequeTexteDetail() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditArticle(article)}
-                              title="Modifier"
+                              title="Créer une modification"
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -539,38 +518,30 @@ export default function BibliothequeTexteDetail() {
                                               {versionStatut.label}
                                             </Badge>
                                           </TableCell>
-                                          <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleSetCurrentVersion(article.id, version)}
-                                                title="Marquer comme version actuelle"
-                                              >
-                                                <Check className="h-4 w-4" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEditVersion(version, article.id)}
-                                                title="Modifier"
-                                              >
-                                                <Pencil className="h-4 w-4" />
-                                              </Button>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                  if (confirm("Supprimer cette version ?")) {
-                                                    deleteVersionMutation.mutate(version.id);
-                                                  }
-                                                }}
-                                                title="Supprimer"
-                                              >
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                              </Button>
-                                            </div>
-                                          </TableCell>
+                                           <TableCell className="text-right">
+                                             <div className="flex justify-end gap-2">
+                                               <Button
+                                                 variant="ghost"
+                                                 size="sm"
+                                                 onClick={() => handleSetCurrentVersion(article.id, version)}
+                                                 title="Marquer comme version actuelle"
+                                               >
+                                                 <Check className="h-4 w-4" />
+                                               </Button>
+                                               <Button
+                                                 variant="ghost"
+                                                 size="sm"
+                                                 onClick={() => {
+                                                   if (confirm("Supprimer cette version ?")) {
+                                                     deleteVersionMutation.mutate(version.id);
+                                                   }
+                                                 }}
+                                                 title="Supprimer"
+                                               >
+                                                 <Trash2 className="h-4 w-4 text-destructive" />
+                                               </Button>
+                                             </div>
+                                           </TableCell>
                                         </TableRow>
                                       );
                                     })}
@@ -776,22 +747,22 @@ export default function BibliothequeTexteDetail() {
         }}
       />
 
-      <ArticleVersionModal
-        open={showVersionModal}
-        onOpenChange={setShowVersionModal}
-        articleId={currentArticleId}
-        version={editingVersion}
-        onSuccess={() => {
-          setEditingVersion(null);
-        }}
-      />
-
       {comparisonArticle && (
         <ArticleVersionComparison
           open={showComparisonModal}
           onOpenChange={setShowComparisonModal}
           versions={articleVersionsMap[comparisonArticle.id] || []}
           currentVersion={comparisonArticle}
+        />
+      )}
+
+      {/* Quick Effet Modal */}
+      {targetArticleForEffet && (
+        <ArticleQuickEffetModal
+          open={showQuickEffetModal}
+          onOpenChange={setShowQuickEffetModal}
+          targetArticle={targetArticleForEffet}
+          sourceTexte={texte}
         />
       )}
 

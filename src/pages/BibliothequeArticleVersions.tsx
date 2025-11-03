@@ -24,7 +24,6 @@ import { toast } from "sonner";
 import { useState } from "react";
 import ReactDiffViewer from 'react-diff-viewer-continued';
 import { sanitizeHtml } from "@/lib/sanitize-html";
-import { ArticleVersionModal } from "@/components/ArticleVersionModal";
 import { ConsolidatedTextViewer } from "@/components/bibliotheque/ConsolidatedTextViewer";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -42,8 +41,6 @@ export default function BibliothequeArticleVersions() {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [showVersionModal, setShowVersionModal] = useState(false);
-  const [editingVersion, setEditingVersion] = useState<any>(null);
   const [deleteVersionId, setDeleteVersionId] = useState<string | null>(null);
   const [compareVersionId, setCompareVersionId] = useState<string | null>(null);
 
@@ -73,11 +70,6 @@ export default function BibliothequeArticleVersions() {
       toast.error("Erreur lors de la suppression");
     },
   });
-
-  const handleEditVersion = (version: any) => {
-    setEditingVersion(version);
-    setShowVersionModal(true);
-  };
 
   const isVersionActive = (version: any) => {
     const today = new Date().toISOString().split('T')[0];
@@ -144,11 +136,10 @@ export default function BibliothequeArticleVersions() {
 
         <TabsContent value="versions" className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Gestion des versions</h2>
-            <Button onClick={() => setShowVersionModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle version
-            </Button>
+            <h2 className="text-xl font-semibold">Historique des versions</h2>
+            <div className="text-sm text-muted-foreground">
+              Les versions sont créées automatiquement via les effets juridiques
+            </div>
           </div>
 
           <Card className="shadow-medium border-l-4 border-l-primary">
@@ -300,14 +291,6 @@ export default function BibliothequeArticleVersions() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEditVersion(version)}
-                              title="Modifier"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
                               onClick={() => setDeleteVersionId(version.id)}
                               title="Supprimer"
                             >
@@ -346,20 +329,6 @@ export default function BibliothequeArticleVersions() {
           {texte && <ConsolidatedTextViewer texteId={texte.id} />}
         </TabsContent>
       </Tabs>
-
-      {/* Version Modal */}
-      <ArticleVersionModal
-        open={showVersionModal}
-        onOpenChange={(open) => {
-          setShowVersionModal(open);
-          if (!open) setEditingVersion(null);
-        }}
-        articleId={articleId!}
-        version={editingVersion}
-        onSuccess={() => {
-          setEditingVersion(null);
-        }}
-      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteVersionId} onOpenChange={() => setDeleteVersionId(null)}>
