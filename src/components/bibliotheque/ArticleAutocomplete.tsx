@@ -8,6 +8,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -19,8 +20,8 @@ import { textesArticlesQueries } from "@/lib/textes-queries";
 
 interface ArticleAutocompleteProps {
   texteId: string;
-  value?: string;
-  onChange: (value: string | undefined) => void;
+  value?: any;
+  onChange: (article: any) => void;
   placeholder?: string;
 }
 
@@ -28,7 +29,7 @@ export function ArticleAutocomplete({
   texteId,
   value,
   onChange,
-  placeholder = "Sélectionner un article...",
+  placeholder = "Rechercher un article...",
 }: ArticleAutocompleteProps) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,10 +37,8 @@ export function ArticleAutocomplete({
   const { data: articles = [], isLoading } = useQuery({
     queryKey: ["texte-articles", texteId],
     queryFn: () => textesArticlesQueries.getByTexteId(texteId),
-    enabled: !!texteId && open,
+    enabled: !!texteId,
   });
-
-  const selectedArticle = articles.find((a: any) => a.id === value);
 
   const filteredArticles = articles.filter((article: any) =>
     `${article.numero_article} ${article.titre_court || ""}`
@@ -56,10 +55,10 @@ export function ArticleAutocomplete({
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {selectedArticle ? (
+          {value ? (
             <span className="truncate">
-              {selectedArticle.numero_article}
-              {selectedArticle.titre_court && ` - ${selectedArticle.titre_court}`}
+              {value.numero_article}
+              {value.titre_court && ` - ${value.titre_court}`}
             </span>
           ) : (
             placeholder
@@ -74,36 +73,37 @@ export function ArticleAutocomplete({
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          <CommandEmpty>
-            {isLoading ? "Chargement..." : "Aucun article trouvé"}
-          </CommandEmpty>
-          <CommandGroup className="max-h-64 overflow-auto">
-            {filteredArticles.map((article: any) => (
-              <CommandItem
-                key={article.id}
-                value={article.id}
-                onSelect={() => {
-                  onChange(article.id === value ? undefined : article.id);
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === article.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <div className="flex-1">
-                  <div className="font-medium">{article.numero_article}</div>
-                  {article.titre_court && (
-                    <div className="text-xs text-muted-foreground">
-                      {article.titre_court}
-                    </div>
-                  )}
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <CommandList>
+            <CommandEmpty>
+              {isLoading ? "Chargement..." : "Aucun article trouvé"}
+            </CommandEmpty>
+            <CommandGroup className="max-h-64 overflow-auto">
+              {filteredArticles.map((article: any) => (
+                <CommandItem
+                  key={article.id}
+                  onSelect={() => {
+                    onChange(article);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value?.id === article.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium">{article.numero_article}</div>
+                    {article.titre_court && (
+                      <div className="text-xs text-muted-foreground">
+                        {article.titre_court}
+                      </div>
+                    )}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>

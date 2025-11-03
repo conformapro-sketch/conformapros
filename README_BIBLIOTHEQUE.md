@@ -352,6 +352,79 @@ search_vector | tsvector | Index recherche full-text
 - Historique modifications
 - Type de changement + résumé
 
+## 🔧 Édition vs Modification réglementaire
+
+### Quand utiliser "Éditer l'article" ?
+- ✅ Corriger une faute de frappe
+- ✅ Améliorer la formulation sans changer le sens
+- ✅ Mettre à jour les sous-domaines
+- ✅ Modifier le numéro d'article (renommage local)
+
+⚠️ Cette action modifie directement l'article **sans créer de version**.
+
+### Quand utiliser "Créer une modification réglementaire" ?
+- ✅ Un nouveau texte modifie/abroge/remplace cet article
+- ✅ Besoin de tracer l'historique réglementaire
+- ✅ Respect de la hiérarchie des normes
+
+✅ Cette action crée un effet juridique et une version automatiquement.
+
+## 🔗 Créer une modification réglementaire
+
+### Workflow complet
+
+1. **Identifier l'article cible** : Celui qui va être modifié/abrogé/remplacé
+2. **Cliquer sur "Créer une modification réglementaire"** (icône FileEdit bleue)
+3. **Sélectionner le texte source** : Le nouveau texte qui fait la modification
+4. **Choisir l'article source** :
+   - **Option A** : Sélectionner un article existant du texte source
+   - **Option B** : Créer un nouvel article dans le texte source
+5. **Configurer l'effet** :
+   - Type d'effet (MODIFIE, REMPLACE, ABROGE, COMPLÈTE, etc.)
+   - Portée (article entier, alinéa, point)
+   - Date d'entrée en vigueur
+   - Nouveau contenu (sauf pour ABROGE)
+6. **Valider** : L'effet et la version sont créés automatiquement
+
+### Exemple concret
+
+**Contexte** : L'article 11 de la Loi n°2010-45 doit être modifié par le Décret n°2024-678
+
+**Étapes** :
+1. Ouvrir la Loi n°2010-45
+2. Localiser l'article 11
+3. Cliquer sur le bouton "Créer une modification réglementaire" (icône FileEdit bleue)
+4. Dans le modal :
+   - **Texte source** : Sélectionner "Décret n°2024-678"
+   - **Article source** : Créer "Art. 5" (ou sélectionner existant)
+   - **Type d'effet** : MODIFIE
+   - **Nouveau contenu** : Saisir le texte modifié complet
+   - **Date d'effet** : 2024-12-01
+5. Valider
+
+**Résultat** :
+- ✅ Article 5 créé dans le Décret 2024-678 (si création choisie)
+- ✅ Effet juridique MODIFIE créé avec lien source → cible
+- ✅ Version automatique créée pour l'article 11
+- ✅ Timeline mise à jour : "Modifié par Décret 2024-678, Art. 5"
+- ✅ Vue consolidée affiche le nouveau contenu
+
+### Validation de la hiérarchie des normes
+
+Le système vérifie automatiquement la cohérence juridique :
+
+❌ **Erreur bloquante** :
+- Circulaire ne peut pas ABROGER/MODIFIE/REMPLACER une Loi ou Décret
+
+⚠️ **Avertissement** :
+- Arrêté ne peut généralement pas MODIFIER une Loi
+- Décret ne peut pas MODIFIER une Loi (seule une Loi peut modifier une Loi)
+
+✅ **Autorisé** :
+- Loi peut modifier tout
+- Décret peut modifier Arrêté/Circulaire
+- Tous peuvent COMPLÉTER (interprétation)
+
 ## 🔐 Sécurité (RLS)
 
 ### Politiques

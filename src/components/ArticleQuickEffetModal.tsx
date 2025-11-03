@@ -13,9 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { articlesEffetsJuridiquesQueries } from "@/lib/actes-queries";
-import { textesReglementairesQueries } from "@/lib/textes-queries";
+import { textesArticlesQueries } from "@/lib/textes-queries";
+import { TexteAutocomplete } from "./bibliotheque/TexteAutocomplete";
+import { ArticleAutocomplete } from "./bibliotheque/ArticleAutocomplete";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info, Pencil, Plus, Replace, XCircle, Hash } from "lucide-react";
 import { HierarchyAlert } from "@/components/HierarchyAlert";
@@ -28,11 +32,19 @@ interface ArticleQuickEffetModalProps {
     numero_article: string;
     contenu: string;
     texte_id: string;
+    texte?: {
+      type: string;
+      reference_officielle: string;
+    };
   };
   sourceTexte?: {
     id: string;
     reference_officielle: string;
     type?: string;
+  };
+  sourceArticle?: {
+    id: string;
+    numero_article: string;
   };
 }
 
@@ -41,8 +53,18 @@ export function ArticleQuickEffetModal({
   onOpenChange,
   targetArticle,
   sourceTexte,
+  sourceArticle,
 }: ArticleQuickEffetModalProps) {
   const queryClient = useQueryClient();
+  
+  // États pour la sélection du texte et article source
+  const [selectedTexteSource, setSelectedTexteSource] = useState<any>(null);
+  const [selectedArticleSource, setSelectedArticleSource] = useState<any>(null);
+  const [createNewArticle, setCreateNewArticle] = useState(false);
+  const [newArticleNumero, setNewArticleNumero] = useState("");
+  const [newArticleTitre, setNewArticleTitre] = useState("");
+  
+  // États pour l'effet juridique
   const [typeEffet, setTypeEffet] = useState<string>("MODIFIE");
   const [contenuModifie, setContenuModifie] = useState<string>("");
   const [dateEffet, setDateEffet] = useState<string>(new Date().toISOString().split("T")[0]);
@@ -54,55 +76,101 @@ export function ArticleQuickEffetModal({
     message: string;
   } | null>(null);
 
-  // Initialize content when modal opens
+  // Initialiser le contenu modifié avec le contenu actuel de l'article cible
   useEffect(() => {
     if (open && targetArticle) {
       setContenuModifie(targetArticle.contenu || "");
     }
   }, [open, targetArticle]);
 
-  // Validate hierarchy when typeEffet changes
+  // Réinitialiser les états source si fournis
   useEffect(() => {
-    if (!sourceTexte?.type) {
+    if (open) {
+      if (sourceTexte) {
+        setSelectedTexteSource(sourceTexte);
+      }
+      if (sourceArticle) {
+        setSelectedArticleSource(sourceArticle);
+      }
+    }
+  }, [open, sourceTexte, sourceArticle]);
+
+  // Valider la hiérarchie des normes
+  useEffect(() => {
+    const texteSource = selectedTexteSource || sourceTexte;
+    if (!texteSource?.type || !targetArticle?.texte?.type) {
       setHierarchyValidation(null);
       return;
     }
-    
-    const sourceType = sourceTexte.type.toLowerCase();
-    
-    // Circulaire restrictions
+
+    const sourceType = texteSource.type.toLowerCase();
+    const targetType = targetArticle.texte.type.toLowerCase();
+
+    // Circulaire ne peut pas modifier/abroger loi ou décret
     if (sourceType === "circulaire") {
-      if (["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
+      if (["loi", "décret", "décret-loi"].includes(targetType) && ["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
         setHierarchyValidation({
           severity: "error",
-          message: "Une circulaire ne peut pas abroger, modifier ou remplacer une loi ou un décret. Utilisez 'COMPLÈTE' pour ajouter une interprétation.",
+          message: `Une circulaire ne peut pas ${typeEffet.toLowerCase()} une ${targetType}. Utilisez 'COMPLÈTE' pour ajouter une interprétation.`,
         });
-      } else {
-        setHierarchyValidation(null);
+        return;
       }
     }
-    // Arrêté restrictions
-    else if (sourceType === "arrêté") {
-      if (["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
+    
+    // Arrêté ne peut pas modifier une loi
+    if (sourceType === "arrêté") {
+      if (targetType === "loi" && ["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
         setHierarchyValidation({
           severity: "warning",
           message: "Un arrêté ne peut généralement pas modifier une loi. Vérifiez la cohérence juridique.",
         });
-      } else {
-        setHierarchyValidation(null);
+        return;
       }
-    } else {
-      setHierarchyValidation(null);
     }
-  }, [sourceTexte, typeEffet]);
+    
+    // Décret peut modifier arrêté mais pas loi
+    if (sourceType === "décret") {
+      if (targetType === "loi" && ["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
+        setHierarchyValidation({
+          severity: "warning",
+          message: "Un décret ne peut pas modifier une loi. Seule une loi peut modifier une loi.",
+        });
+        return;
+      }
+    }
+    
+    setHierarchyValidation(null);
+  }, [selectedTexteSource, sourceTexte, targetArticle, typeEffet]);
 
   const createEffetMutation = useMutation({
-    mutationFn: async (data: any) => {
-      // Create the legal effect
+    mutationFn: async () => {
+      if (!targetArticle) {
+        throw new Error("Article cible manquant");
+      }
+
+      let articleSourceId = selectedArticleSource?.id;
+
+      // Si on crée un nouvel article, le créer d'abord
+      if (createNewArticle && (selectedTexteSource || sourceTexte)) {
+        const texteId = (selectedTexteSource || sourceTexte)!.id;
+        const newArticle = await textesArticlesQueries.create({
+          texte_id: texteId,
+          numero_article: newArticleNumero,
+          titre_court: newArticleTitre || null,
+          contenu: contenuModifie,
+          ordre_affichage: 999,
+        });
+        articleSourceId = newArticle.id;
+      }
+
+      if (!articleSourceId) {
+        throw new Error("Article source manquant");
+      }
+
       return articlesEffetsJuridiquesQueries.create({
-        article_source_id: data.articleSourceId,
-        article_cible_id: targetArticle!.id,
-        texte_cible_id: targetArticle!.texte_id,
+        article_source_id: articleSourceId,
+        article_cible_id: targetArticle.id,
+        texte_cible_id: targetArticle.texte_id,
         type_effet: typeEffet,
         date_effet: dateEffet,
         portee: portee,
@@ -125,6 +193,11 @@ export function ArticleQuickEffetModal({
   });
 
   const resetForm = () => {
+    if (!sourceTexte) setSelectedTexteSource(null);
+    if (!sourceArticle) setSelectedArticleSource(null);
+    setCreateNewArticle(false);
+    setNewArticleNumero("");
+    setNewArticleTitre("");
     setTypeEffet("MODIFIE");
     setContenuModifie("");
     setDateEffet(new Date().toISOString().split("T")[0]);
@@ -134,18 +207,28 @@ export function ArticleQuickEffetModal({
     setHierarchyValidation(null);
   };
 
+  const canSubmit = () => {
+    const texteSource = selectedTexteSource || sourceTexte;
+    if (!texteSource) return false;
+    if (createNewArticle && !newArticleNumero.trim()) return false;
+    if (!createNewArticle && !selectedArticleSource && !sourceArticle) return false;
+    if (hierarchyValidation?.severity === "error") return false;
+    if (typeEffet !== "ABROGE" && !contenuModifie.trim()) return false;
+    return true;
+  };
+
   const handleSubmit = () => {
-    if (!targetArticle || !sourceTexte) return;
+    if (!canSubmit()) {
+      toast.error("Veuillez remplir tous les champs requis");
+      return;
+    }
     
     if (hierarchyValidation?.severity === "error") {
       toast.error("Impossible de créer cet effet juridique en raison d'une incohérence hiérarchique");
       return;
     }
 
-    // For now, we create a temporary article source (in real implementation, this should be done separately)
-    createEffetMutation.mutate({
-      articleSourceId: sourceTexte.id, // This should be the actual source article ID
-    });
+    createEffetMutation.mutate();
   };
 
   const getEffetIcon = (type: string) => {
@@ -166,14 +249,107 @@ export function ArticleQuickEffetModal({
         <DialogHeader>
           <DialogTitle>Créer un effet juridique</DialogTitle>
           <DialogDescription>
-            Déclarez l'impact de votre nouveau texte sur l'article{" "}
-            <strong>{targetArticle?.numero_article}</strong>.
-            Une nouvelle version sera créée automatiquement.
+            Définir l'effet juridique sur l'article{" "}
+            <strong>{targetArticle?.numero_article}</strong>
+            {targetArticle?.texte?.reference_officielle && ` du ${targetArticle.texte.reference_officielle}`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Hierarchy validation alert */}
+          {/* Sélection du texte source */}
+          {!sourceTexte && (
+            <div className="space-y-2">
+              <Label>Texte réglementaire source (qui fait la modification) *</Label>
+              <TexteAutocomplete
+                value={selectedTexteSource?.id}
+                onChange={(id) => {
+                  if (id) {
+                    setSelectedTexteSource({ id });
+                    setSelectedArticleSource(null);
+                  } else {
+                    setSelectedTexteSource(null);
+                    setSelectedArticleSource(null);
+                  }
+                }}
+                placeholder="Ex: Décret n°2024-123"
+              />
+              {selectedTexteSource && (
+                <p className="text-xs text-muted-foreground">
+                  Texte sélectionné : {selectedTexteSource.reference_officielle || "Chargement..."}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Sélection ou création de l'article source */}
+          {(selectedTexteSource || sourceTexte) && !sourceArticle && (
+            <div className="space-y-3 border-t pt-4">
+              <Label>Article source (dans le texte modificateur) *</Label>
+              
+              <RadioGroup 
+                value={createNewArticle ? "new" : "existing"} 
+                onValueChange={(v) => {
+                  setCreateNewArticle(v === "new");
+                  if (v === "new") setSelectedArticleSource(null);
+                }}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="existing" id="existing" />
+                  <Label htmlFor="existing" className="font-normal cursor-pointer">
+                    Sélectionner un article existant
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="new" id="new" />
+                  <Label htmlFor="new" className="font-normal cursor-pointer">
+                    Créer un nouvel article
+                  </Label>
+                </div>
+              </RadioGroup>
+              
+              {createNewArticle ? (
+                <div className="space-y-3 pl-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="newNumero">Numéro d'article *</Label>
+                      <Input 
+                        id="newNumero"
+                        placeholder="Ex: Art. 5" 
+                        value={newArticleNumero}
+                        onChange={(e) => setNewArticleNumero(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newTitre">Titre (optionnel)</Label>
+                      <Input 
+                        id="newTitre"
+                        placeholder="Ex: Dispositions modificatives" 
+                        value={newArticleTitre}
+                        onChange={(e) => setNewArticleTitre(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Un nouvel article sera créé dans {(selectedTexteSource || sourceTexte)?.reference_officielle}
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              ) : (
+                <div className="pl-6">
+                  <ArticleAutocomplete
+                    texteId={(selectedTexteSource || sourceTexte)?.id}
+                    value={selectedArticleSource}
+                    onChange={setSelectedArticleSource}
+                    placeholder="Rechercher un article..."
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Validation hiérarchique */}
           {hierarchyValidation && (
             <HierarchyAlert
               severity={hierarchyValidation.severity}
@@ -182,7 +358,7 @@ export function ArticleQuickEffetModal({
           )}
 
           {/* Type d'effet */}
-          <div className="space-y-2">
+          <div className="space-y-2 border-t pt-4">
             <Label htmlFor="type-effet" className="flex items-center gap-2">
               Type d'effet
               <TooltipProvider>
@@ -289,6 +465,14 @@ export function ArticleQuickEffetModal({
                  typeEffet === "COMPLETE" ? "Contenu à ajouter" :
                  "Contenu"}
               </Label>
+              {typeEffet === "MODIFIE" && (
+                <Alert className="mb-2">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Modifiez le contenu ci-dessous. L'ancien contenu sera conservé dans l'historique.
+                  </AlertDescription>
+                </Alert>
+              )}
               <Textarea
                 id="contenu"
                 rows={8}
@@ -322,7 +506,7 @@ export function ArticleQuickEffetModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={createEffetMutation.isPending || hierarchyValidation?.severity === "error"}
+            disabled={!canSubmit() || createEffetMutation.isPending}
           >
             {createEffetMutation.isPending ? "Création..." : "Créer l'effet"}
           </Button>
