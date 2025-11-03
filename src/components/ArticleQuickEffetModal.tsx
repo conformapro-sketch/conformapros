@@ -203,7 +203,7 @@ export function ArticleQuickEffetModal({
     }
     
     if (hierarchyValidation?.severity === "error") {
-      toast.error("Impossible de créer cet effet juridique en raison d'une incohérence hiérarchique");
+      toast.error("Impossible de créer cette modification réglementaire en raison d'une incohérence hiérarchique");
       return;
     }
 
@@ -226,9 +226,9 @@ export function ArticleQuickEffetModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Créer un effet juridique</DialogTitle>
+          <DialogTitle>Créer une modification réglementaire</DialogTitle>
           <DialogDescription>
-            Définir l'effet juridique sur l'article{" "}
+            Définir l'impact réglementaire sur l'article{" "}
             <strong>{targetArticle?.numero_article}</strong>
             {targetArticle?.texte?.reference_officielle && ` du ${targetArticle.texte.reference_officielle}`}
           </DialogDescription>

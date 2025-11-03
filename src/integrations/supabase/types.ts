@@ -464,14 +464,14 @@ export type Database = {
             foreignKeyName: "articles_effets_juridiques_texte_cible_id_fkey"
             columns: ["texte_cible_id"]
             isOneToOne: false
-            referencedRelation: "textes_reglementaires"
+            referencedRelation: "actes_reglementaires"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "articles_effets_juridiques_texte_source_id_fkey"
             columns: ["texte_source_id"]
             isOneToOne: false
-            referencedRelation: "textes_reglementaires"
+            referencedRelation: "actes_reglementaires"
             referencedColumns: ["id"]
           },
         ]

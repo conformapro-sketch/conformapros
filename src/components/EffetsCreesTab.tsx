@@ -50,7 +50,7 @@ export function EffetsCreesTab({ texteId }: EffetsCreesTabProps) {
         <div className="text-center space-y-2">
           <FileEdit className="h-12 w-12 text-muted-foreground mx-auto" />
           <p className="text-muted-foreground">
-            Ce texte n'a créé aucun effet juridique pour le moment
+            Ce texte n'a créé aucune modification réglementaire pour le moment
           </p>
           <p className="text-xs text-muted-foreground">
             Les modifications apportées à d'autres articles apparaîtront ici
@@ -63,7 +63,7 @@ export function EffetsCreesTab({ texteId }: EffetsCreesTabProps) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Ce texte a créé <strong>{effets.length} effet(s) juridique(s)</strong> sur d'autres articles
+        Ce texte a créé <strong>{effets.length} modification(s) réglementaire(s)</strong> sur d'autres articles
       </p>
       
       {effets.map((effet) => (

@@ -351,8 +351,8 @@ export default function BibliothequeTexteDetail() {
       <Tabs defaultValue="articles" className="space-y-4">
         <TabsList>
           <TabsTrigger value="articles">Articles ({articles?.length || 0})</TabsTrigger>
-          <TabsTrigger value="effets-crees">Effets créés</TabsTrigger>
-          <TabsTrigger value="modifications">Modifications reçues ({effetsRecus?.length || 0})</TabsTrigger>
+          <TabsTrigger value="effets-crees">Modifications créées</TabsTrigger>
+          <TabsTrigger value="modifications">Reçues ({effetsRecus?.length || 0})</TabsTrigger>
           <TabsTrigger value="changelog">Historique ({changelogEntries?.length || 0})</TabsTrigger>
           <TabsTrigger value="info">Informations</TabsTrigger>
         </TabsList>
