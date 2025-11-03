@@ -88,11 +88,11 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "reference_officielle",
       header: "Référence",
-      size: 140,
+      size: 180,
       cell: ({ row }) => (
         <HoverCard openDelay={200}>
           <HoverCardTrigger asChild>
-            <span className="font-semibold text-primary cursor-pointer hover:underline line-clamp-3 leading-tight block">
+            <span className="font-semibold text-primary cursor-pointer hover:underline line-clamp-3 leading-tight block whitespace-normal break-words">
               {row.original.reference_officielle}
             </span>
           </HoverCardTrigger>
@@ -110,12 +110,12 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "intitule",
       header: "Titre",
-      size: 400,
+      size: 420,
       cell: ({ row }) => (
         <HoverCard openDelay={200}>
           <HoverCardTrigger asChild>
             <div className="cursor-pointer">
-              <p className="line-clamp-2 text-sm">{row.original.intitule}</p>
+              <p className="line-clamp-2 text-sm whitespace-normal break-words">{row.original.intitule}</p>
             </div>
           </HoverCardTrigger>
           <HoverCardContent className="w-96" side="right">
@@ -156,7 +156,7 @@ export function BibliothequeDataGrid({
         const date = row.original.date_publication;
         if (!date) return "-";
         return (
-          <span className="text-sm">
+          <span className="text-sm whitespace-nowrap">
             {new Date(date).toLocaleDateString("fr-FR", {
               day: "2-digit",
               month: "short",
@@ -198,7 +198,7 @@ export function BibliothequeDataGrid({
   return (
     <div className="rounded-md border bg-card w-full">
       <div className="overflow-x-auto">
-        <Table style={{ minWidth: '1120px', width: '100%' }}>
+        <Table className="table-fixed w-full">
           <TableHeader className="sticky top-0 bg-card z-10 border-b">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

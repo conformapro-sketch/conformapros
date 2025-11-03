@@ -39,10 +39,10 @@ function BibliothequeReglementaireContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isMobile, isDesktop } = useMediaQuery();
-  const { toggleFavorite, isFavorite } = useBibliothequePreferences();
+  const { toggleFavorite, isFavorite, preferences, setView } = useBibliothequePreferences();
   
-  // View state
-  const [view, setView] = useState<"table" | "grid">("table");
+  // View state from preferences
+  const view = preferences.view;
   
   // États des filtres
   const [searchTerm, setSearchTerm] = useState("");
