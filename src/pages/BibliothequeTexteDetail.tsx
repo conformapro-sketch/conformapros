@@ -42,6 +42,7 @@ import { EffetsCreesTab } from "@/components/EffetsCreesTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
 import { changelogQueries } from "@/lib/actes-queries";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
@@ -181,6 +182,50 @@ export default function BibliothequeTexteDetail() {
 
   const setCurrentVersionMutation = useMutation({
     mutationFn: async ({ articleId, version }: { articleId: string; version: any }) => {
+      // Vérifier s'il existe des effets juridiques postérieurs qui pourraient entrer en conflit
+      const { data: futureEffects, error: effectsError } = await supabase
+        .from('articles_effets_juridiques')
+        .select(`
+          id,
+          type_effet,
+          date_effet,
+          article_source_id,
+          textes_articles!articles_effets_juridiques_article_source_id_fkey(
+            numero_article,
+            actes_reglementaires!textes_articles_texte_id_fkey(reference_officielle)
+          )
+        `)
+        .eq('article_cible_id', articleId)
+        .gt('date_effet', version.date_version)
+        .in('type_effet', ['ABROGE', 'REMPLACE', 'MODIFIE']);
+
+      if (effectsError) throw effectsError;
+
+      // Vérifier si l'article a été abrogé après cette version
+      const hasAbrogation = futureEffects?.some(e => e.type_effet === 'ABROGE');
+      if (hasAbrogation) {
+        const abrogationEffect = futureEffects.find(e => e.type_effet === 'ABROGE');
+        const sourceRef = abrogationEffect?.textes_articles?.actes_reglementaires?.reference_officielle;
+        throw new Error(
+          `Impossible de restaurer cette version : l'article a été abrogé ultérieurement le ${new Date(abrogationEffect.date_effet).toLocaleDateString('fr-FR')}` +
+          (sourceRef ? ` par ${sourceRef}` : '')
+        );
+      }
+
+      // Avertir s'il y a des modifications postérieures
+      if (futureEffects && futureEffects.length > 0) {
+        const modificationsCount = futureEffects.filter(e => 
+          e.type_effet === 'MODIFIE' || e.type_effet === 'REMPLACE'
+        ).length;
+        
+        if (modificationsCount > 0) {
+          toast.warning(
+            `Attention : ${modificationsCount} modification(s) juridique(s) postérieure(s) existent`,
+            { duration: 5000 }
+          );
+        }
+      }
+
       // 1. Récupérer le prochain numéro de version
       const existingVersions = await textesArticlesVersionsQueries.getByArticleId(articleId);
       const nextVersionNum = Math.max(...existingVersions.map(v => v.version_numero), 0) + 1;
@@ -207,7 +252,7 @@ export default function BibliothequeTexteDetail() {
         existingVersions
           .filter(v => v.is_active)
           .map(v => textesArticlesVersionsQueries.update(v.id, { 
-            effective_to: new Date().toISOString().split('T')[0] 
+            effective_to: new Date().toISOString().split('T')[0]
           }))
       );
       
