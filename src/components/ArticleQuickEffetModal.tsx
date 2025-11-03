@@ -98,17 +98,22 @@ export function ArticleQuickEffetModal({
   // Valider la hiérarchie des normes
   useEffect(() => {
     const texteSource = selectedTexteSource || sourceTexte;
-    if (!texteSource?.type || !targetArticle?.texte?.type) {
+    if (!texteSource?.type_acte && !texteSource?.type) {
+      setHierarchyValidation(null);
+      return;
+    }
+    
+    if (!targetArticle?.texte?.type) {
       setHierarchyValidation(null);
       return;
     }
 
-    const sourceType = texteSource.type.toLowerCase();
+    const sourceType = (texteSource.type_acte || texteSource.type || "").toLowerCase();
     const targetType = targetArticle.texte.type.toLowerCase();
 
     // Circulaire ne peut pas modifier/abroger loi ou décret
     if (sourceType === "circulaire") {
-      if (["loi", "décret", "décret-loi"].includes(targetType) && ["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
+      if (["loi", "decret", "décret", "décret-loi"].includes(targetType) && ["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
         setHierarchyValidation({
           severity: "error",
           message: `Une circulaire ne peut pas ${typeEffet.toLowerCase()} une ${targetType}. Utilisez 'COMPLÈTE' pour ajouter une interprétation.`,
@@ -118,7 +123,7 @@ export function ArticleQuickEffetModal({
     }
     
     // Arrêté ne peut pas modifier une loi
-    if (sourceType === "arrêté") {
+    if (sourceType === "arrete" || sourceType === "arrêté") {
       if (targetType === "loi" && ["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
         setHierarchyValidation({
           severity: "warning",
@@ -129,7 +134,7 @@ export function ArticleQuickEffetModal({
     }
     
     // Décret peut modifier arrêté mais pas loi
-    if (sourceType === "décret") {
+    if (sourceType === "decret" || sourceType === "décret") {
       if (targetType === "loi" && ["ABROGE", "MODIFIE", "REMPLACE"].includes(typeEffet)) {
         setHierarchyValidation({
           severity: "warning",
@@ -262,21 +267,20 @@ export function ArticleQuickEffetModal({
               <Label>Texte réglementaire source (qui fait la modification) *</Label>
               <TexteAutocomplete
                 value={selectedTexteSource?.id}
-                onChange={(id) => {
-                  if (id) {
-                    setSelectedTexteSource({ id });
-                    setSelectedArticleSource(null);
-                  } else {
-                    setSelectedTexteSource(null);
-                    setSelectedArticleSource(null);
-                  }
+                onChange={(texte) => {
+                  setSelectedTexteSource(texte);
+                  setSelectedArticleSource(null);
                 }}
                 placeholder="Ex: Décret n°2024-123"
               />
               {selectedTexteSource && (
-                <p className="text-xs text-muted-foreground">
-                  Texte sélectionné : {selectedTexteSource.reference_officielle || "Chargement..."}
-                </p>
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium">
+                    {selectedTexteSource.type_acte?.toUpperCase() || "Texte"}
+                  </span>
+                  {" - "}
+                  {selectedTexteSource.reference_officielle}
+                </div>
               )}
             </div>
           )}

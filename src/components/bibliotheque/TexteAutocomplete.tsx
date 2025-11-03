@@ -9,7 +9,7 @@ import { textesReglementairesQueries } from "@/lib/textes-queries";
 
 interface TexteAutocompleteProps {
   value?: string;
-  onChange: (value: string | undefined) => void;
+  onChange: (texte: any | undefined) => void;
   placeholder?: string;
 }
 
@@ -34,7 +34,9 @@ export function TexteAutocomplete({ value, onChange, placeholder = "Rechercher u
     enabled: open,
   });
 
-  const selectedTexte = textes?.data?.find((t: any) => t.id === value);
+  const selectedTexte = value 
+    ? textes?.data?.find((t: any) => t.id === value)
+    : undefined;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -71,7 +73,8 @@ export function TexteAutocomplete({ value, onChange, placeholder = "Rechercher u
                   key={texte.id}
                   value={texte.id}
                   onSelect={(currentValue) => {
-                    onChange(currentValue === value ? undefined : currentValue);
+                    const selected = textes?.data?.find((t: any) => t.id === currentValue);
+                    onChange(selected || undefined);
                     setOpen(false);
                   }}
                 >

@@ -36,8 +36,11 @@ export function ArticleAutocomplete({
 
   const { data: articles = [], isLoading } = useQuery({
     queryKey: ["texte-articles", texteId],
-    queryFn: () => textesArticlesQueries.getByTexteId(texteId),
-    enabled: !!texteId,
+    queryFn: async () => {
+      const data = await textesArticlesQueries.getByTexteId(texteId);
+      return data || [];
+    },
+    enabled: !!texteId && open,
   });
 
   const filteredArticles = articles.filter((article: any) =>
@@ -54,14 +57,17 @@ export function ArticleAutocomplete({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          disabled={!texteId || isLoading}
         >
-          {value ? (
+          {isLoading ? (
+            "Chargement..."
+          ) : value ? (
             <span className="truncate">
               {value.numero_article}
               {value.titre_court && ` - ${value.titre_court}`}
             </span>
           ) : (
-            placeholder
+            <span className="text-muted-foreground">{placeholder}</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>

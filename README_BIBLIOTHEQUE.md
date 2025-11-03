@@ -425,6 +425,48 @@ Le système vérifie automatiquement la cohérence juridique :
 - Décret peut modifier Arrêté/Circulaire
 - Tous peuvent COMPLÉTER (interprétation)
 
+---
+
+## 🐛 Dépannage
+
+### Le sélecteur de texte source ne fonctionne pas
+
+**Symptôme** : Impossible de sélectionner un texte réglementaire lors de la création d'un effet juridique
+
+**Causes possibles** :
+1. **La recherche ne renvoie aucun résultat**
+   - Solution : Vérifier que des textes existent dans la base
+   - Essayer une recherche plus large (ex: "2024" au lieu du numéro complet)
+
+2. **Le texte est sélectionné mais ne s'affiche pas**
+   - Solution : Vérifier la console développeur pour des erreurs
+   - S'assurer que le texte a bien un `type_acte` et une `reference_officielle`
+
+### La validation de hiérarchie bloque la création
+
+**Symptôme** : Message d'erreur rouge et bouton "Créer l'effet" désactivé
+
+**Solutions** :
+- **Erreur bloquante (rouge)** : La hiérarchie des normes est violée. Par exemple, une circulaire ne peut pas ABROGER ou MODIFIER une loi.
+  - Utilisez "COMPLÈTE" pour ajouter une interprétation sans modifier le texte original
+- **Avertissement (jaune)** : La modification est inhabituelle mais pas impossible
+  - Vérifiez la cohérence juridique avant de valider
+  - La création reste possible malgré l'avertissement
+
+### Le sélecteur d'article source reste vide
+
+**Symptôme** : Après avoir sélectionné le texte source, aucun article ne s'affiche
+
+**Causes possibles** :
+1. **Le texte source ne contient pas encore d'articles**
+   - Solution : Créer d'abord des articles dans ce texte, ou utiliser l'option "Créer un nouvel article"
+
+2. **Erreur de chargement**
+   - Solution : Vérifier la console développeur
+   - Recharger la page et réessayer
+
+---
+
 ## 🔐 Sécurité (RLS)
 
 ### Politiques
