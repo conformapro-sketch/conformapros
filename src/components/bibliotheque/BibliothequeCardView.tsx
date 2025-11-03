@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FileText, Scale, FileCheck, Scroll, Calendar } from "lucide-react";
 import { BibliothequeRowActionsMenu } from "./BibliothequeRowActionsMenu";
 
@@ -11,8 +10,6 @@ interface BibliothequeCardViewProps {
   onDelete: (texte: any) => void;
   onViewPdf?: (texte: any) => void;
   onToggleFavorite?: (texte: any) => void;
-  selectedTextes: string[];
-  onSelectTexte: (id: string) => void;
 }
 
 const TYPE_ICONS: Record<string, any> = {
@@ -47,8 +44,6 @@ export function BibliothequeCardView({
   onDelete,
   onViewPdf,
   onToggleFavorite,
-  selectedTextes,
-  onSelectTexte,
 }: BibliothequeCardViewProps) {
   return (
     <div className="grid gap-4">
@@ -62,42 +57,31 @@ export function BibliothequeCardView({
         data.map((texte) => {
           const Icon = TYPE_ICONS[texte.type_acte] || FileText;
           const statut = getStatutBadge(texte.statut_vigueur);
-          const isSelected = selectedTextes.includes(texte.id);
 
           return (
             <Card
               key={texte.id}
-              className={`transition-all hover:shadow-md ${
-                isSelected ? "ring-2 ring-primary" : ""
-              }`}
+              className="transition-all hover:shadow-lg cursor-pointer group"
+              onClick={() => onView(texte)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => onSelectTexte(texte.id)}
-                      className="mt-1"
-                      aria-label="Sélectionner ce texte"
-                    />
-                    
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="gap-1.5">
-                          <Icon className="h-3.5 w-3.5" />
-                          {TYPE_LABELS[texte.type_acte] || texte.type_acte}
-                        </Badge>
-                        <Badge variant={statut.variant}>{statut.label}</Badge>
-                      </div>
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="gap-1.5">
+                        <Icon className="h-3.5 w-3.5" />
+                        {TYPE_LABELS[texte.type_acte] || texte.type_acte}
+                      </Badge>
+                      <Badge variant={statut.variant}>{statut.label}</Badge>
+                    </div>
 
-                      <div>
-                        <p className="font-semibold text-primary text-sm mb-1">
-                          {texte.reference_officielle}
-                        </p>
-                        <h3 className="font-medium line-clamp-2 text-sm">
-                          {texte.intitule}
-                        </h3>
-                      </div>
+                    <div>
+                      <p className="font-semibold text-primary text-sm mb-1">
+                        {texte.reference_officielle}
+                      </p>
+                      <h3 className="font-medium line-clamp-2 text-sm group-hover:text-primary transition-colors">
+                        {texte.intitule}
+                      </h3>
                     </div>
                   </div>
 

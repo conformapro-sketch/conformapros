@@ -14,8 +14,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
-import { Filter, ChevronDown, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { Filter, ChevronDown, ChevronUp, RotateCcw, Search, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface BibliothequeHorizontalFiltersProps {
   // États des filtres
@@ -86,40 +86,68 @@ export function BibliothequeHorizontalFilters({
   activeFiltersCount,
 }: BibliothequeHorizontalFiltersProps) {
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <div className="flex items-center justify-between mb-4">
-        <CollapsibleTrigger asChild>
+    <div className="space-y-3">
+      {/* Search Bar - Always Visible */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher par titre, référence..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9 h-10"
+        />
+        {searchTerm && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="gap-2"
-            aria-label="Basculer les filtres"
+            onClick={() => setSearchTerm("")}
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
           >
-            <Filter className="h-4 w-4" />
-            Filtres
-            {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
-                {activeFiltersCount}
-              </Badge>
-            )}
-            <ChevronDown
-              className={`h-4 w-4 transition-transform ${
-                isOpen ? "rotate-180" : ""
-              }`}
-            />
+            <X className="h-4 w-4" />
           </Button>
-        </CollapsibleTrigger>
+        )}
       </div>
 
-      <CollapsibleContent className="animate-accordion-down">
-        <div className="bg-muted/30 rounded-lg border p-6 mb-4 space-y-6">
-          {/* Ligne 1 : Type, Statut, Domaine */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="type-filter">Type de texte</Label>
+      {/* Advanced Filters - Collapsible */}
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex items-center justify-between">
+          <CollapsibleTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Filter className="h-4 w-4" />
+              Filtres avancés
+              {activeFiltersCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+              {isOpen ? (
+                <ChevronUp className="h-4 w-4 ml-1" />
+              ) : (
+                <ChevronDown className="h-4 w-4 ml-1" />
+              )}
+            </Button>
+          </CollapsibleTrigger>
+
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onReset}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Réinitialiser
+            </Button>
+          )}
+        </div>
+
+        <CollapsibleContent className={cn("space-y-3 pt-3", isOpen && "animate-accordion-down")}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="type-filter" className="text-xs">Type de texte</Label>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger id="type-filter">
-                  <SelectValue placeholder="Sélectionner un type" />
+                <SelectTrigger id="type-filter" className="h-9">
+                  <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
                   {TYPE_OPTIONS.map((option) => (
@@ -131,11 +159,11 @@ export function BibliothequeHorizontalFilters({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="statut-filter">Statut</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="statut-filter" className="text-xs">Statut</Label>
               <Select value={statutFilter} onValueChange={setStatutFilter}>
-                <SelectTrigger id="statut-filter">
-                  <SelectValue placeholder="Sélectionner un statut" />
+                <SelectTrigger id="statut-filter" className="h-9">
+                  <SelectValue placeholder="Statut" />
                 </SelectTrigger>
                 <SelectContent>
                   {STATUT_OPTIONS.map((option) => (
@@ -147,11 +175,11 @@ export function BibliothequeHorizontalFilters({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="domaine-filter">Domaine</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="domaine-filter" className="text-xs">Domaine</Label>
               <Select value={domaineFilter} onValueChange={setDomaineFilter}>
-                <SelectTrigger id="domaine-filter">
-                  <SelectValue placeholder="Tous les domaines" />
+                <SelectTrigger id="domaine-filter" className="h-9">
+                  <SelectValue placeholder="Domaine" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les domaines</SelectItem>
@@ -163,22 +191,19 @@ export function BibliothequeHorizontalFilters({
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          {/* Ligne 2 : Sous-domaine, Année, Recherche */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sousdomaine-filter">Sous-domaine</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="sousdomaine-filter" className="text-xs">Sous-domaine</Label>
               <Select
                 value={sousDomaineFilter}
                 onValueChange={setSousDomaineFilter}
                 disabled={domaineFilter === "all"}
               >
-                <SelectTrigger id="sousdomaine-filter">
-                  <SelectValue placeholder="Tous les sous-domaines" />
+                <SelectTrigger id="sousdomaine-filter" className="h-9">
+                  <SelectValue placeholder="Sous-domaine" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les sous-domaines</SelectItem>
+                  <SelectItem value="all">Tous</SelectItem>
                   {sousDomaines.map((sousDomaine) => (
                     <SelectItem key={sousDomaine.id} value={sousDomaine.id}>
                       {sousDomaine.nom}
@@ -188,8 +213,8 @@ export function BibliothequeHorizontalFilters({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="annee-filter">Année</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="annee-filter" className="text-xs">Année</Label>
               <Input
                 id="annee-filter"
                 type="number"
@@ -198,38 +223,18 @@ export function BibliothequeHorizontalFilters({
                 onChange={(e) => setAnneeFilter(e.target.value || "all")}
                 min="1900"
                 max="2100"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="search-filter">Recherche libre</Label>
-              <Input
-                id="search-filter"
-                type="text"
-                placeholder="Rechercher dans les textes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-9"
               />
             </div>
           </div>
 
-          {/* Ligne 3 : Boutons d'action */}
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex justify-end">
             <Button onClick={onApply} size="sm">
-              Appliquer les filtres
-            </Button>
-            <Button
-              onClick={onReset}
-              variant="ghost"
-              size="sm"
-              className="gap-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Réinitialiser
+              Appliquer
             </Button>
           </div>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
   );
 }

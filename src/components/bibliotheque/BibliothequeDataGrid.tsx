@@ -21,9 +21,9 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { cn } from "@/lib/utils";
 import { BibliothequeRowActionsMenu } from "./BibliothequeRowActionsMenu";
 import { ArrowUp, ArrowDown, FileText, Scale, FileCheck, Scroll } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface BibliothequeDataGridProps {
   data: any[];

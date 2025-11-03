@@ -19,6 +19,8 @@ import { BibliothequeActiveFilters } from "@/components/bibliotheque/Bibliothequ
 import { BibliothequeDataGrid } from "@/components/bibliotheque/BibliothequeDataGrid";
 import { BibliothequeCardView } from "@/components/bibliotheque/BibliothequeCardView";
 import { BibliothequeHorizontalFilters } from "@/components/bibliotheque/BibliothequeHorizontalFilters";
+import { BibliothequeQuickFilters } from "@/components/bibliotheque/BibliothequeQuickFilters";
+import { BibliothequeTableSkeleton } from "@/components/bibliotheque/BibliothequeTableSkeleton";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
 import { BibliothequePreferencesProvider, useBibliothequePreferences } from "@/contexts/BibliothequePreferencesContext";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -349,8 +351,6 @@ function BibliothequeReglementaireContent() {
                   onDelete={handleDelete}
                   onViewPdf={handleViewPdf}
                   onToggleFavorite={toggleFavorite}
-                  selectedTextes={[]}
-                  onSelectTexte={() => {}}
                 />
               ) : (
                 <BibliothequeDataGrid
