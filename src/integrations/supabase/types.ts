@@ -390,6 +390,73 @@ export type Database = {
           },
         ]
       }
+      articles_effets_juridiques: {
+        Row: {
+          article_cible_id: string | null
+          article_source_id: string
+          created_at: string
+          date_effet: string
+          date_fin_effet: string | null
+          id: string
+          notes: string | null
+          nouvelle_numerotation: string | null
+          reference_citation: string | null
+          texte_cible_id: string | null
+          type_effet: string
+          updated_at: string
+        }
+        Insert: {
+          article_cible_id?: string | null
+          article_source_id: string
+          created_at?: string
+          date_effet: string
+          date_fin_effet?: string | null
+          id?: string
+          notes?: string | null
+          nouvelle_numerotation?: string | null
+          reference_citation?: string | null
+          texte_cible_id?: string | null
+          type_effet: string
+          updated_at?: string
+        }
+        Update: {
+          article_cible_id?: string | null
+          article_source_id?: string
+          created_at?: string
+          date_effet?: string
+          date_fin_effet?: string | null
+          id?: string
+          notes?: string | null
+          nouvelle_numerotation?: string | null
+          reference_citation?: string | null
+          texte_cible_id?: string | null
+          type_effet?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_effets_juridiques_article_cible_id_fkey"
+            columns: ["article_cible_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "articles_effets_juridiques_article_source_id_fkey"
+            columns: ["article_source_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "articles_effets_juridiques_texte_cible_id_fkey"
+            columns: ["texte_cible_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles_sous_domaines: {
         Row: {
           article_id: string

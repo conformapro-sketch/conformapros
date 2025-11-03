@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
-import { Download, Calendar, FileText } from "lucide-react";
+import { Download, Calendar, FileText, PlusCircle } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -23,26 +23,75 @@ export function ConsolidatedTextViewer({ texteId }: ConsolidatedTextViewerProps)
     queryFn: () => textesArticlesQueries.getByTexteId(texteId),
   });
 
+  // Fetch articles ajoutés via effets juridiques de type "AJOUTE"
+  const { data: articlesAjoutes = [], isLoading: articlesAjoutesLoading } = useQuery({
+    queryKey: ['articles-ajoutes', texteId, targetDate],
+    queryFn: async () => {
+      const { articlesEffetsJuridiquesQueries } = await import("@/lib/actes-queries");
+      const effets = await articlesEffetsJuridiquesQueries.getByTexteCibleId(texteId);
+      
+      // Filtrer uniquement les effets de type "AJOUTE" applicables à la date
+      const ajouts = effets.filter((effet: any) => {
+        const dateEffet = new Date(effet.date_effet);
+        const dateTarget = new Date(targetDate);
+        const dateFinEffet = effet.date_fin_effet ? new Date(effet.date_fin_effet) : null;
+        
+        return (
+          effet.type_effet === 'AJOUTE' &&
+          dateEffet <= dateTarget &&
+          (!dateFinEffet || dateFinEffet >= dateTarget)
+        );
+      });
+      
+      // Charger les articles sources complets
+      const articlesPromises = ajouts.map(async (effet: any) => {
+        const article = await textesArticlesQueries.getById(effet.article_source_id);
+        return {
+          ...article,
+          _ajouteParEffet: effet, // Ajouter les infos de l'effet
+        };
+      });
+      
+      return Promise.all(articlesPromises);
+    },
+    enabled: !!texteId,
+  });
+
   const { data: consolidatedArticles, isLoading: consolidatedLoading } = useQuery({
     queryKey: ['consolidated-text', texteId, targetDate],
     queryFn: async () => {
       if (!articles) return [];
       
-      const consolidated = await Promise.all(
+      // 1. Récupérer les versions des articles originaux
+      const articlesOriginaux = await Promise.all(
         articles.map(async (article) => {
           const version = await textesArticlesVersionsQueries.getActiveVersionAtDate(
             article.id,
             targetDate
           );
-          return { article, version };
+          return { article, version, isAjoute: false };
         })
       );
-      return consolidated;
+
+      // 2. Ajouter les articles ajoutés par d'autres textes
+      const articlesAjoutesFormates = articlesAjoutes.map((article: any) => ({
+        article,
+        version: null, // Les articles ajoutés utilisent leur contenu actuel
+        isAjoute: true,
+      }));
+
+      // 3. Fusionner et trier par numéro d'article
+      const allArticles = [...articlesOriginaux, ...articlesAjoutesFormates];
+      return allArticles.sort((a, b) => {
+        const numA = a.article.numero_article || "";
+        const numB = b.article.numero_article || "";
+        return numA.localeCompare(numB, 'fr', { numeric: true, sensitivity: 'base' });
+      });
     },
     enabled: !!articles && articles.length > 0,
   });
 
-  const isLoading = articlesLoading || consolidatedLoading;
+  const isLoading = articlesLoading || consolidatedLoading || articlesAjoutesLoading;
 
   return (
     <div className="space-y-6">
@@ -79,46 +128,71 @@ export function ConsolidatedTextViewer({ texteId }: ConsolidatedTextViewerProps)
       ) : (
         <div className="space-y-4">
           {consolidatedArticles && consolidatedArticles.length > 0 ? (
-            consolidatedArticles.map(({ article, version }) => (
-              <Card key={article.id} className="shadow-soft">
+            consolidatedArticles.map(({ article, version, isAjoute }: any) => (
+              <Card 
+                key={article.id} 
+                className={`shadow-soft ${isAjoute ? 'border-l-4 border-l-success' : ''}`}
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
-                      Article {article.numero}
-                      {article.titre && <span className="text-muted-foreground font-normal">- {article.titre}</span>}
+                      Article {article.numero_article}
+                      {article.titre_court && <span className="text-muted-foreground font-normal">- {article.titre_court}</span>}
                     </CardTitle>
-                    {version ? (
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      {isAjoute ? (
                         <Badge variant="outline" className="bg-success/10 text-success-foreground border-success/20">
-                          Version applicable
+                          <PlusCircle className="h-3 w-3 mr-1" />
+                          Ajouté par {article._ajouteParEffet?.article_source?.texte?.reference_officielle}
                         </Badge>
-                        {version.modification_type && (
-                          <Badge variant="secondary">
-                            {version.modification_type}
+                      ) : version ? (
+                        <>
+                          <Badge variant="outline" className="bg-success/10 text-success-foreground border-success/20">
+                            Version applicable
                           </Badge>
-                        )}
-                      </div>
-                    ) : (
-                      <Badge variant="secondary" className="bg-muted">
-                        Non en vigueur
-                      </Badge>
-                    )}
+                          {version.modification_type && (
+                            <Badge variant="secondary">
+                              {version.modification_type}
+                            </Badge>
+                          )}
+                        </>
+                      ) : (
+                        <Badge variant="secondary" className="bg-muted">
+                          Non en vigueur
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  {version?.source_text_reference && (
+                  {isAjoute && article._ajouteParEffet?.reference_citation && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Référence: {article._ajouteParEffet.reference_citation}
+                    </p>
+                  )}
+                  {!isAjoute && version?.source_text_reference && (
                     <p className="text-xs text-muted-foreground mt-2">
                       Source: {version.source_text_reference}
                     </p>
                   )}
                 </CardHeader>
                 <CardContent>
-                  {version ? (
+                  {(isAjoute || version) ? (
                     <div>
                       <div 
                         className="prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(version.contenu) }}
+                        dangerouslySetInnerHTML={{ 
+                          __html: sanitizeHtml(isAjoute ? article.contenu : version.contenu) 
+                        }}
                       />
-                      {version.effective_from && (
+                      {isAjoute && article._ajouteParEffet?.date_effet && (
+                        <div className="mt-4 pt-4 border-t flex items-center gap-2 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            Ajouté le {format(new Date(article._ajouteParEffet.date_effet), 'dd MMMM yyyy', { locale: fr })}
+                          </span>
+                        </div>
+                      )}
+                      {!isAjoute && version?.effective_from && (
                         <div className="mt-4 pt-4 border-t flex items-center gap-2 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           <span>
@@ -151,7 +225,7 @@ export function ConsolidatedTextViewer({ texteId }: ConsolidatedTextViewerProps)
         <p className="text-xs text-muted-foreground">
           <strong>Note:</strong> Cette vue consolidée affiche le texte tel qu'il était en vigueur au {format(new Date(targetDate), 'dd MMMM yyyy', { locale: fr })}, 
           intégrant toutes les modifications applicables à cette date. Les versions sont déterminées automatiquement en fonction 
-          des dates d'application (effective_from / effective_to).
+          des dates d'application (effective_from / effective_to). Les articles marqués avec une bordure verte ont été ajoutés par d'autres textes réglementaires.
         </p>
       </div>
     </div>

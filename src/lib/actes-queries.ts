@@ -497,6 +497,108 @@ export const textesDomainesQueries = {
   },
 };
 
+// Effets juridiques entre articles
+export const articlesEffetsJuridiquesQueries = {
+  async getByArticleSourceId(articleSourceId: string) {
+    const { data, error } = await (supabase as any)
+      .from("articles_effets_juridiques")
+      .select(`
+        *,
+        texte_cible:textes_reglementaires!articles_effets_juridiques_texte_cible_id_fkey(
+          id,
+          reference_officielle,
+          intitule,
+          type
+        ),
+        article_cible:textes_articles!articles_effets_juridiques_article_cible_id_fkey(
+          id,
+          numero_article,
+          titre_court
+        )
+      `)
+      .eq("article_source_id", articleSourceId)
+      .order("date_effet", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async getByArticleCibleId(articleCibleId: string) {
+    const { data, error } = await (supabase as any)
+      .from("articles_effets_juridiques")
+      .select(`
+        *,
+        article_source:textes_articles!articles_effets_juridiques_article_source_id_fkey(
+          id,
+          numero_article,
+          titre_court,
+          texte:textes_reglementaires(
+            reference_officielle,
+            intitule
+          )
+        )
+      `)
+      .eq("article_cible_id", articleCibleId)
+      .order("date_effet", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async getByTexteCibleId(texteCibleId: string) {
+    const { data, error } = await (supabase as any)
+      .from("articles_effets_juridiques")
+      .select(`
+        *,
+        article_source:textes_articles!articles_effets_juridiques_article_source_id_fkey(
+          id,
+          numero_article,
+          titre_court,
+          texte:textes_reglementaires(
+            reference_officielle,
+            intitule
+          )
+        ),
+        article_cible:textes_articles!articles_effets_juridiques_article_cible_id_fkey(
+          id,
+          numero_article,
+          titre_court
+        )
+      `)
+      .eq("texte_cible_id", texteCibleId)
+      .order("date_effet", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async create(effet: Partial<any>) {
+    const { data, error } = await (supabase as any)
+      .from("articles_effets_juridiques")
+      .insert([effet])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, effet: Partial<any>) {
+    const { data, error } = await (supabase as any)
+      .from("articles_effets_juridiques")
+      .update(effet)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string) {
+    const { error } = await (supabase as any)
+      .from("articles_effets_juridiques")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+};
+
 // Relations textes-sous-domaines
 export const textesSousDomainesQueries = {
   async getByTexteId(texteId: string) {

@@ -193,3 +193,46 @@ export interface ChangelogEntry {
   version?: number;
   created_at: string;
 }
+
+export type TypeEffet = 
+  | "AJOUTE" 
+  | "MODIFIE" 
+  | "ABROGE" 
+  | "REMPLACE" 
+  | "RENUMEROTE";
+
+export interface ArticleEffetJuridique {
+  id: string;
+  article_source_id: string;
+  type_effet: TypeEffet;
+  texte_cible_id?: string;
+  article_cible_id?: string;
+  nouvelle_numerotation?: string;
+  date_effet: string;
+  date_fin_effet?: string;
+  reference_citation?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  // Relations chargées
+  texte_cible?: {
+    id: string;
+    reference_officielle: string;
+    intitule: string;
+    type: string;
+  };
+  article_cible?: {
+    id: string;
+    numero_article: string;
+    titre_court?: string;
+  };
+  article_source?: {
+    id: string;
+    numero_article: string;
+    titre_court?: string;
+    texte: {
+      reference_officielle: string;
+      intitule: string;
+    };
+  };
+}
