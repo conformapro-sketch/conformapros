@@ -133,11 +133,11 @@ export function ArticleFormModal({
 
     // Call hierarchy validation function (client-side simplified version)
     const hierarchy: Record<string, number> = {
-      "loi": 4,
-      "decret-loi": 3,
-      "decret": 2,
-      "arrete": 1,
-      "circulaire": 0
+      "loi": 5,
+      "decret-loi": 4,
+      "decret": 3,
+      "arrete": 2,
+      "circulaire": 1
     };
 
     const sourceLevel = hierarchy[sourceType] || 0;

@@ -27,7 +27,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
-    type_acte: "loi" as "loi" | "arrete" | "decret" | "circulaire",
+    type_acte: "loi" as "loi" | "decret-loi" | "arrete" | "decret" | "circulaire",
     reference_officielle: "",
     intitule: "",
     autorite_emettrice: "",
@@ -268,8 +268,9 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="loi">Loi</SelectItem>
-                <SelectItem value="arrete">Arrêté</SelectItem>
+                <SelectItem value="decret-loi">Décret-loi</SelectItem>
                 <SelectItem value="decret">Décret</SelectItem>
+                <SelectItem value="arrete">Arrêté</SelectItem>
                 <SelectItem value="circulaire">Circulaire</SelectItem>
               </SelectContent>
             </Select>

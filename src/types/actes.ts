@@ -1,6 +1,6 @@
 // Type definitions for Actes Réglementaires (Regulatory Acts)
 
-export type TypeActe = "loi" | "decret" | "arrete" | "circulaire";
+export type TypeActe = "loi" | "decret-loi" | "decret" | "arrete" | "circulaire";
 
 export type StatutVigueur = "en_vigueur" | "modifie" | "abroge" | "suspendu";
 

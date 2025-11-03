@@ -24,8 +24,9 @@ import { TexteFormModal } from "@/components/TexteFormModal";
 
 const TYPE_LABELS: Record<string, string> = {
   LOI: "Loi",
-  ARRETE: "Arrêté",
+  "DECRET-LOI": "Décret-loi",
   DECRET: "Décret",
+  ARRETE: "Arrêté",
   CIRCULAIRE: "Circulaire"
 };
 

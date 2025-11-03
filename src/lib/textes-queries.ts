@@ -3,7 +3,7 @@ import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 export interface TexteReglementaire {
   id: string;
-  type_acte: 'loi' | 'arrete' | 'decret' | 'circulaire';
+  type_acte: 'loi' | 'decret-loi' | 'arrete' | 'decret' | 'circulaire';
   reference_officielle: string;
   intitule: string;
   autorite_emettrice?: string;

@@ -45,19 +45,22 @@ import { BibliothequeFilterSidebar } from "@/components/bibliotheque/Bibliothequ
 import { BibliothequeViewSettings } from "@/components/bibliotheque/BibliothequeViewSettings";
 import { BibliothequeCardHoverPreview } from "@/components/bibliotheque/BibliothequeCardHoverPreview";
 import { BibliothequePreferencesProvider, useBibliothequePreferences } from "@/contexts/BibliothequePreferencesContext";
+import { BibliothequeIntegrityAlert } from "@/components/BibliothequeIntegrityAlert";
 import * as XLSX from 'xlsx';
 
 const TYPE_LABELS = {
   loi: "Loi",
-  arrete: "Arrêté",
+  "decret-loi": "Décret-loi",
   decret: "Décret",
+  arrete: "Arrêté",
   circulaire: "Circulaire",
 };
 
 const TYPE_ICONS = {
   loi: "⚖️",
-  arrete: "📋",
+  "decret-loi": "⚖️",
   decret: "📜",
+  arrete: "📋",
   circulaire: "📄",
 };
 
@@ -378,6 +381,9 @@ function BibliothequeReglementaireContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Alerte d'amélioration */}
+        <BibliothequeIntegrityAlert />
+        
         {/* Statistics Cards */}
         <BibliothequeStatsCards stats={stats} onFilterByStatus={handleFilterByStatus} />
 
