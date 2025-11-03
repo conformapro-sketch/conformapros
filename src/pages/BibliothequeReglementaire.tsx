@@ -300,13 +300,7 @@ function BibliothequeReglementaireContent() {
       </div>
 
       {/* Stats Cards */}
-      <BibliothequeStatsCards
-        stats={stats}
-        onStatClick={(statut) => {
-          setStatutFilter(statut);
-          setPage(1);
-        }}
-      />
+      <BibliothequeStatsCards stats={stats} />
 
       {/* Horizontal Filters */}
       <BibliothequeHorizontalFilters
