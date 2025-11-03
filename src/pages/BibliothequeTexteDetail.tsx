@@ -47,6 +47,8 @@ import { useState, useMemo } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { ArticleVersionComparison } from "@/components/ArticleVersionComparison";
 import { ArticleQuickEffetModal } from "@/components/ArticleQuickEffetModal";
+import { ArticleVersionsTimeline } from "@/components/bibliotheque/ArticleVersionsTimeline";
+import { VersionBeforeAfterView } from "@/components/bibliotheque/VersionBeforeAfterView";
 import { TimelineChangelog } from "@/components/TimelineChangelog";
 import { TexteCodesDisplay } from "@/components/TexteCodesDisplay";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize-html";
@@ -77,6 +79,8 @@ export default function BibliothequeTexteDetail() {
   const [showEditArticleModal, setShowEditArticleModal] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [versionToRestore, setVersionToRestore] = useState<any>(null);
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [compareVersions, setCompareVersions] = useState<{ before: any; after: any } | null>(null);
 
   const { data: texte, isLoading, error } = useQuery({
     queryKey: ["texte-detail", id],
@@ -256,6 +260,11 @@ export default function BibliothequeTexteDetail() {
     if (versionToRestore) {
       setCurrentVersionMutation.mutate(versionToRestore);
     }
+  };
+
+  const handleCompareVersionsDetail = (versionBefore: any, versionAfter: any) => {
+    setCompareVersions({ before: versionBefore, after: versionAfter });
+    setCompareModalOpen(true);
   };
 
   const toggleArticleExpand = (articleId: string) => {
@@ -552,87 +561,14 @@ export default function BibliothequeTexteDetail() {
                             </div>
                           )}
 
-                          {/* Versions List */}
-                          <div>
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="text-sm font-medium">Versions ({versionsData.length})</h4>
-                            </div>
-
-                            {versionsData.length > 0 ? (
-                              <div className="border rounded-md overflow-hidden">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>Version</TableHead>
-                                      <TableHead>Date d'effet</TableHead>
-                                      <TableHead>Statut</TableHead>
-                                      <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {versionsData.map((version: any) => {
-                                      const versionStatut = getStatutBadge(version.statut_vigueur);
-                                      return (
-                                        <TableRow key={version.id}>
-                                          <TableCell className="font-medium">
-                                            {version.version_label}
-                                          </TableCell>
-                                          <TableCell>
-                                            {version.date_effet 
-                                              ? new Date(version.date_effet).toLocaleDateString("fr-TN")
-                                              : "-"}
-                                          </TableCell>
-                                          <TableCell>
-                                            <Badge
-                                              className={
-                                                versionStatut.variant === "success"
-                                                  ? "bg-success text-success-foreground"
-                                                  : versionStatut.variant === "warning"
-                                                  ? "bg-warning text-warning-foreground"
-                                                  : versionStatut.variant === "destructive"
-                                                  ? "bg-destructive text-destructive-foreground"
-                                                  : ""
-                                              }
-                                            >
-                                              {versionStatut.label}
-                                            </Badge>
-                                          </TableCell>
-                                           <TableCell className="text-right">
-                                             <div className="flex justify-end gap-2">
-                                               <Button
-                                                 variant="ghost"
-                                                 size="sm"
-                                                 onClick={() => handleSetCurrentVersion(article.id, version)}
-                                                 title="Marquer comme version actuelle"
-                                               >
-                                                 <Check className="h-4 w-4" />
-                                               </Button>
-                                               <Button
-                                                 variant="ghost"
-                                                 size="sm"
-                                                 onClick={() => {
-                                                   if (confirm("Supprimer cette version ?")) {
-                                                     deleteVersionMutation.mutate(version.id);
-                                                   }
-                                                 }}
-                                                 title="Supprimer"
-                                               >
-                                                 <Trash2 className="h-4 w-4 text-destructive" />
-                                               </Button>
-                                             </div>
-                                           </TableCell>
-                                        </TableRow>
-                                      );
-                                    })}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            ) : (
-                              <div className="text-center py-8 border rounded-md bg-muted/20">
-                                <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                                <p className="text-sm text-muted-foreground">Aucune version</p>
-                              </div>
-                            )}
+                          {/* Versions Timeline */}
+                          <div className="mt-6">
+                            <ArticleVersionsTimeline
+                              versions={versionsData}
+                              currentContent={article.contenu}
+                              onCompare={handleCompareVersionsDetail}
+                              onRestore={(version) => handleSetCurrentVersion(article.id, version)}
+                            />
                           </div>
                         </CollapsibleContent>
                       </div>
@@ -963,6 +899,27 @@ export default function BibliothequeTexteDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Version Comparison Modal */}
+      <Dialog open={compareModalOpen} onOpenChange={setCompareModalOpen}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitCompare className="h-5 w-5" />
+              Comparaison détaillée des versions
+            </DialogTitle>
+          </DialogHeader>
+          {compareVersions && (
+            <VersionBeforeAfterView
+              versionBefore={compareVersions.before}
+              versionAfter={compareVersions.after}
+              onExport={() => {
+                toast.info("Export PDF en cours de développement");
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
