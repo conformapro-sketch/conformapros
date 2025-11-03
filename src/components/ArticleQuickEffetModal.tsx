@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   Dialog,
@@ -55,15 +55,18 @@ export function ArticleQuickEffetModal({
   } | null>(null);
 
   // Initialize content when modal opens
-  useState(() => {
+  useEffect(() => {
     if (open && targetArticle) {
       setContenuModifie(targetArticle.contenu || "");
     }
-  });
+  }, [open, targetArticle]);
 
   // Validate hierarchy when typeEffet changes
-  useState(() => {
-    if (!sourceTexte?.type) return;
+  useEffect(() => {
+    if (!sourceTexte?.type) {
+      setHierarchyValidation(null);
+      return;
+    }
     
     const sourceType = sourceTexte.type.toLowerCase();
     
@@ -91,7 +94,7 @@ export function ArticleQuickEffetModal({
     } else {
       setHierarchyValidation(null);
     }
-  });
+  }, [sourceTexte, typeEffet]);
 
   const createEffetMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -281,14 +284,21 @@ export function ArticleQuickEffetModal({
           {typeEffet !== "ABROGE" && (
             <div className="space-y-2">
               <Label htmlFor="contenu">
-                {typeEffet === "MODIFIE" ? "Nouveau contenu" : "Contenu"}
+                {typeEffet === "MODIFIE" ? "Nouveau contenu (modifié)" : 
+                 typeEffet === "REMPLACE" ? "Nouveau contenu (remplacement)" :
+                 typeEffet === "COMPLETE" ? "Contenu à ajouter" :
+                 "Contenu"}
               </Label>
               <Textarea
                 id="contenu"
                 rows={8}
                 value={contenuModifie}
                 onChange={(e) => setContenuModifie(e.target.value)}
-                placeholder="Saisissez le contenu modifié de l'article..."
+                placeholder={
+                  typeEffet === "MODIFIE" 
+                    ? "Modifiez le contenu ci-dessous. L'ancien contenu sera conservé dans l'historique."
+                    : "Saisissez le contenu..."
+                }
               />
             </div>
           )}

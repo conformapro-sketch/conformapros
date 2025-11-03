@@ -299,7 +299,10 @@ export function ArticleFormModal({
             {article ? "Modifier l'article" : "Ajouter un article"}
           </DialogTitle>
           <DialogDescription>
-            Remplissez les informations de l'article réglementaire
+            {article 
+              ? "Modifiez les informations de l'article (corrections éditoriales uniquement)"
+              : "Remplissez les informations de l'article réglementaire"
+            }
           </DialogDescription>
         </DialogHeader>
         

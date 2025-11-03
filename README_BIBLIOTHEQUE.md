@@ -82,6 +82,28 @@ La Bibliothèque Réglementaire est un système de gestion de textes législatif
 
 ---
 
+## 🔧 Édition vs Modification réglementaire
+
+### Quand utiliser "Éditer l'article" (bouton crayon ✏️) ?
+
+- ✅ **Corriger une faute de frappe**
+- ✅ **Améliorer la formulation** sans changer le sens juridique
+- ✅ **Mettre à jour les sous-domaines** d'application
+- ✅ **Modifier le numéro d'article** (renommage local)
+
+⚠️ **Important** : Cette action modifie directement l'article **sans créer de version** dans l'historique. Utilisez-la uniquement pour des corrections éditoriales.
+
+### Quand utiliser "Créer une modification réglementaire" (bouton bleu 📝) ?
+
+- ✅ **Un nouveau texte modifie/abroge/remplace cet article**
+- ✅ **Besoin de tracer l'historique réglementaire**
+- ✅ **Respect de la hiérarchie des normes**
+- ✅ **Impact juridique sur l'article**
+
+✅ **Résultat** : Cette action crée un **effet juridique** et une **version automatiquement** via le trigger SQL.
+
+---
+
 ## Hiérarchie des normes
 
 Le système applique automatiquement les règles de **hiérarchie des normes juridiques** pour éviter les incohérences.

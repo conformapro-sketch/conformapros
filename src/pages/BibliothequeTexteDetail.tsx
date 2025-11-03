@@ -24,7 +24,8 @@ import {
   XCircle,
   RefreshCw,
   PlusCircle,
-  Hash
+  Hash,
+  FileEdit
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
@@ -61,6 +62,7 @@ export default function BibliothequeTexteDetail() {
   const [comparisonArticle, setComparisonArticle] = useState<any>(null);
   const [showQuickEffetModal, setShowQuickEffetModal] = useState(false);
   const [targetArticleForEffet, setTargetArticleForEffet] = useState<any>(null);
+  const [showEditArticleModal, setShowEditArticleModal] = useState(false);
 
   const { data: texte, isLoading, error } = useQuery({
     queryKey: ["texte-detail", id],
@@ -172,7 +174,11 @@ export default function BibliothequeTexteDetail() {
   });
 
   const handleEditArticle = (article: any) => {
-    // Proposer de créer un effet juridique au lieu d'éditer directement
+    setEditingArticle(article);
+    setShowEditArticleModal(true);
+  };
+
+  const handleCreateEffet = (article: any) => {
     setTargetArticleForEffet(article);
     setShowQuickEffetModal(true);
   };
@@ -442,9 +448,17 @@ export default function BibliothequeTexteDetail() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEditArticle(article)}
-                              title="Créer une modification"
+                              title="Éditer l'article (corrections)"
                             >
                               <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCreateEffet(article)}
+                              title="Créer une modification réglementaire"
+                            >
+                              <FileEdit className="h-4 w-4 text-blue-600" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -755,6 +769,18 @@ export default function BibliothequeTexteDetail() {
           currentVersion={comparisonArticle}
         />
       )}
+
+      {/* Article Form Modal - For editing existing articles */}
+      <ArticleFormModal
+        open={showEditArticleModal}
+        onOpenChange={setShowEditArticleModal}
+        texteId={id!}
+        article={editingArticle}
+        onSuccess={() => {
+          setEditingArticle(null);
+          queryClient.invalidateQueries({ queryKey: ["texte-articles", id] });
+        }}
+      />
 
       {/* Quick Effet Modal */}
       {targetArticleForEffet && (
