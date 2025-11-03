@@ -351,8 +351,8 @@ export default function BibliothequeTexteDetail() {
       <Tabs defaultValue="articles" className="space-y-4">
         <TabsList>
           <TabsTrigger value="articles">Articles ({articles?.length || 0})</TabsTrigger>
-          <TabsTrigger value="effets-crees">Modifications créées</TabsTrigger>
-          <TabsTrigger value="modifications">Reçues ({effetsRecus?.length || 0})</TabsTrigger>
+          <TabsTrigger value="effets-crees">Versions créées</TabsTrigger>
+          <TabsTrigger value="modifications">Versions reçues ({effetsRecus?.length || 0})</TabsTrigger>
           <TabsTrigger value="changelog">Historique ({changelogEntries?.length || 0})</TabsTrigger>
           <TabsTrigger value="info">Informations</TabsTrigger>
         </TabsList>
@@ -465,7 +465,7 @@ export default function BibliothequeTexteDetail() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleCreateEffet(article)}
-                              title="Créer une modification réglementaire"
+                              title="Créer une version"
                             >
                               <FileEdit className="h-4 w-4 text-blue-600" />
                             </Button>

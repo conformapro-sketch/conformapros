@@ -474,6 +474,34 @@ export type Database = {
             referencedRelation: "actes_reglementaires"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_article_cible"
+            columns: ["article_cible_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_article_source"
+            columns: ["article_source_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_texte_cible"
+            columns: ["texte_cible_id"]
+            isOneToOne: false
+            referencedRelation: "actes_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_texte_source"
+            columns: ["texte_source_id"]
+            isOneToOne: false
+            referencedRelation: "actes_reglementaires"
+            referencedColumns: ["id"]
+          },
         ]
       }
       articles_sous_domaines: {

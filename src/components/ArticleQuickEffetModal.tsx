@@ -158,13 +158,14 @@ export function ArticleQuickEffetModal({
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
       queryClient.invalidateQueries({ queryKey: ["article-versions"] });
       queryClient.invalidateQueries({ queryKey: ["article-effets-cible"] });
-      toast.success("Effet juridique créé avec succès. Une nouvelle version a été générée automatiquement.");
+      toast.success("Version créée avec succès");
       onOpenChange(false);
       resetForm();
     },
     onError: (error: any) => {
-      toast.error("Erreur lors de la création de l'effet juridique");
-      console.error(error);
+      console.error("❌ Erreur détaillée:", error);
+      const errorMessage = error?.message || "Erreur inconnue";
+      toast.error(`Erreur lors de la création de la version: ${errorMessage}`);
     },
   });
 
@@ -203,7 +204,7 @@ export function ArticleQuickEffetModal({
     }
     
     if (hierarchyValidation?.severity === "error") {
-      toast.error("Impossible de créer cette modification réglementaire en raison d'une incohérence hiérarchique");
+      toast.error("Impossible de créer cette version en raison d'une incohérence hiérarchique");
       return;
     }
 
@@ -216,7 +217,7 @@ export function ArticleQuickEffetModal({
       case "ABROGE": return <XCircle className="h-4 w-4" />;
       case "REMPLACE": return <Replace className="h-4 w-4" />;
       case "AJOUTE": return <Plus className="h-4 w-4" />;
-      case "RENOMME": return <Hash className="h-4 w-4" />;
+      case "RENUMEROTE": return <Hash className="h-4 w-4" />;
       case "COMPLETE": return <Info className="h-4 w-4" />;
       default: return null;
     }
@@ -226,9 +227,9 @@ export function ArticleQuickEffetModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Créer une modification réglementaire</DialogTitle>
+          <DialogTitle>Créer une version</DialogTitle>
           <DialogDescription>
-            Définir l'impact réglementaire sur l'article{" "}
+            Créer une nouvelle version de l'article{" "}
             <strong>{targetArticle?.numero_article}</strong>
             {targetArticle?.texte?.reference_officielle && ` du ${targetArticle.texte.reference_officielle}`}
           </DialogDescription>
@@ -239,11 +240,10 @@ export function ArticleQuickEffetModal({
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs space-y-1 mt-2">
-              <div><strong>Comment créer une modification réglementaire ?</strong></div>
+              <div><strong>Comment créer une version ?</strong></div>
               <div>1️⃣ Sélectionnez le <strong>texte source</strong> (nouveau décret/loi qui modifie)</div>
-              <div>2️⃣ Choisissez ou créez l'<strong>article source</strong> (article du nouveau texte)</div>
-              <div>3️⃣ Définissez le <strong>type d'effet</strong> (MODIFIE, REMPLACE, ABROGE...)</div>
-              <div>4️⃣ Saisissez le <strong>nouveau contenu</strong> (sera créé automatiquement en version 2)</div>
+              <div>2️⃣ Définissez le <strong>type de modification</strong> (MODIFIE, REMPLACE, ABROGE...)</div>
+              <div>3️⃣ Saisissez le <strong>nouveau contenu</strong> (sera créé automatiquement en version 2)</div>
             </AlertDescription>
           </Alert>
 
@@ -290,10 +290,10 @@ export function ArticleQuickEffetModal({
             />
           )}
 
-          {/* Type d'effet */}
+          {/* Type de modification */}
           <div className="space-y-2 border-t pt-4">
             <Label htmlFor="type-effet" className="flex items-center gap-2">
-              Type d'effet
+              Type de modification
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -340,10 +340,10 @@ export function ArticleQuickEffetModal({
                     COMPLÈTE - Ajoute un alinéa/point
                   </div>
                 </SelectItem>
-                <SelectItem value="RENOMME">
+                <SelectItem value="RENUMEROTE">
                   <div className="flex items-center gap-2">
-                    {getEffetIcon("RENOMME")}
-                    RENOMME - Change la numérotation
+                    {getEffetIcon("RENUMEROTE")}
+                    RENUMEROTE - Change la numérotation
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -353,7 +353,7 @@ export function ArticleQuickEffetModal({
           {/* Portée */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="portee">Portée de l'effet</Label>
+              <Label htmlFor="portee">Portée de la modification</Label>
               <Select value={portee} onValueChange={setPortee}>
                 <SelectTrigger id="portee">
                   <SelectValue />
@@ -441,7 +441,7 @@ export function ArticleQuickEffetModal({
             onClick={handleSubmit}
             disabled={!canSubmit() || createEffetMutation.isPending}
           >
-            {createEffetMutation.isPending ? "Création..." : "Créer l'effet"}
+            {createEffetMutation.isPending ? "Création..." : "Créer la version"}
           </Button>
         </DialogFooter>
       </DialogContent>

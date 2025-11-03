@@ -117,7 +117,7 @@ export function ArticleEffetsTimeline({ effets, isLoading }: ArticleEffetsTimeli
     return (
       <Card className="p-6">
         <p className="text-sm text-muted-foreground text-center">
-          Aucune modification historique enregistrée
+          Aucun historique de version enregistré
         </p>
       </Card>
     );
@@ -203,7 +203,7 @@ export function ArticleEffetsTimeline({ effets, isLoading }: ArticleEffetsTimeli
                 </div>
               )}
 
-              {/* Portée de l'effet */}
+              {/* Portée de la modification */}
               {effet.portee && effet.portee !== 'article' && (
                 <div className="flex items-center gap-2 text-xs">
                   <Badge variant="outline" className="font-normal">
