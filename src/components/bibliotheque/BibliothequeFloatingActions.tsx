@@ -1,19 +1,25 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Download, X, CheckSquare } from "lucide-react";
+import { Trash2, X, CheckSquare, Archive, Power, UserPlus } from "lucide-react";
 
 interface BibliothequeFloatingActionsProps {
   selectedCount: number;
-  onExport: () => void;
   onDelete: () => void;
   onClear: () => void;
+  onActivate?: () => void;
+  onDeactivate?: () => void;
+  onAssign?: () => void;
+  onArchive?: () => void;
 }
 
 export function BibliothequeFloatingActions({ 
   selectedCount, 
-  onExport, 
   onDelete,
-  onClear 
+  onClear,
+  onActivate,
+  onDeactivate,
+  onAssign,
+  onArchive,
 }: BibliothequeFloatingActionsProps) {
   if (selectedCount === 0) return null;
 
@@ -33,15 +39,53 @@ export function BibliothequeFloatingActions({
         <div className="h-6 w-px bg-white/20" />
 
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onExport}
-            className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Exporter
-          </Button>
+          {onActivate && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onActivate}
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+            >
+              <Power className="h-4 w-4 mr-2" />
+              Activer
+            </Button>
+          )}
+
+          {onDeactivate && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onDeactivate}
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+            >
+              <Power className="h-4 w-4 mr-2" />
+              Désactiver
+            </Button>
+          )}
+
+          {onAssign && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onAssign}
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Assigner
+            </Button>
+          )}
+
+          {onArchive && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onArchive}
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+            >
+              <Archive className="h-4 w-4 mr-2" />
+              Archiver
+            </Button>
+          )}
 
           <Button
             size="sm"

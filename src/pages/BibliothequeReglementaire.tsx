@@ -1,75 +1,45 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Search, 
   Plus,
-  Download,
   Upload,
-  Pencil,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
   Scale,
-  Filter,
-  X,
-  Loader2
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-queries";
 import { domainesQueries, sousDomainesQueries } from "@/lib/actes-queries";
-import { searchQueries } from "@/lib/bibliotheque-queries";
 import { toast } from "sonner";
 import { TexteFormModal } from "@/components/TexteFormModal";
 import { ImportCSVDialog } from "@/components/ImportCSVDialog";
 import { BibliothequeStatsCards } from "@/components/bibliotheque/BibliothequeStatsCards";
-import { BibliothequeViewToggle } from "@/components/bibliotheque/BibliothequeViewToggle";
-import { BibliothequeTextCard } from "@/components/bibliotheque/BibliothequeTextCard";
-import { BibliothequePreview } from "@/components/bibliotheque/BibliothequePreview";
-import { BibliothequeEmptyState } from "@/components/bibliotheque/BibliothequeEmptyState";
 import { BibliothequeActiveFilters } from "@/components/bibliotheque/BibliothequeActiveFilters";
-import { BibliothequeTableSkeleton } from "@/components/bibliotheque/BibliothequeTableSkeleton";
-import { BibliothequeQuickView } from "@/components/bibliotheque/BibliothequeQuickView";
 import { BibliothequeFloatingActions } from "@/components/bibliotheque/BibliothequeFloatingActions";
+import { BibliothequeDataGrid } from "@/components/bibliotheque/BibliothequeDataGrid";
+import { BibliothequeCardView } from "@/components/bibliotheque/BibliothequeCardView";
+import { BibliothequeHorizontalFilters } from "@/components/bibliotheque/BibliothequeHorizontalFilters";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
-import { BibliothequeSearchBar } from "@/components/bibliotheque/BibliothequeSearchBar";
-import { BibliothequeQuickFilters } from "@/components/bibliotheque/BibliothequeQuickFilters";
-import { BibliothequeFilterSidebar } from "@/components/bibliotheque/BibliothequeFilterSidebar";
-import { BibliothequeViewSettings } from "@/components/bibliotheque/BibliothequeViewSettings";
-import { BibliothequeCardHoverPreview } from "@/components/bibliotheque/BibliothequeCardHoverPreview";
 import { BibliothequePreferencesProvider, useBibliothequePreferences } from "@/contexts/BibliothequePreferencesContext";
-import { BibliothequeRowActionsMenu } from "@/components/bibliotheque/BibliothequeRowActionsMenu";
-
-import * as XLSX from 'xlsx';
-
-const TYPE_LABELS = {
-  loi: "Loi",
-  "decret-loi": "Décret-loi",
-  decret: "Décret",
-  arrete: "Arrêté",
-  circulaire: "Circulaire",
-};
-
-const TYPE_ICONS = {
-  loi: "⚖️",
-  "decret-loi": "⚖️",
-  decret: "📜",
-  arrete: "📋",
-  circulaire: "📄",
-};
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 function BibliothequeReglementaireContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { preferences, setView, setPageSize, setDensity, setSidebarOpen, toggleFavorite, isFavorite } = useBibliothequePreferences();
+  const { isMobile, isDesktop } = useMediaQuery();
+  const { toggleFavorite, isFavorite } = useBibliothequePreferences();
   
+  // États des filtres
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
@@ -78,19 +48,29 @@ function BibliothequeReglementaireContent() {
   const [anneeFilter, setAnneeFilter] = useState<string>("all");
   const [withPdfFilter, setWithPdfFilter] = useState<boolean>(false);
   const [favoritesFilter, setFavoritesFilter] = useState<boolean>(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  
+  // États UI
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState(preferences.sortBy);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(preferences.sortOrder);
+  const [pageSize, setPageSize] = useState(25);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingTexte, setEditingTexte] = useState<TexteReglementaire | null>(null);
   const [deleteTexteId, setDeleteTexteId] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(preferences.filtersOpen);
   const [selectedTextes, setSelectedTextes] = useState<string[]>([]);
-  const [quickViewTexte, setQuickViewTexte] = useState<any | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
   const [selectedPdfTitle, setSelectedPdfTitle] = useState<string>("");
+  
+  // Navigation clavier
+  useKeyboardNavigation({
+    onToggleFilters: () => setFiltersOpen(!filtersOpen),
+    onEscape: () => {
+      if (pdfViewerOpen) setPdfViewerOpen(false);
+      if (showFormModal) setShowFormModal(false);
+      if (filtersOpen) setFiltersOpen(false);
+    },
+  });
 
   const { data: domainesList } = useQuery({
     queryKey: ["domaines"],
@@ -99,12 +79,12 @@ function BibliothequeReglementaireContent() {
 
   const { data: sousDomainesList } = useQuery({
     queryKey: ["sous-domaines", domaineFilter],
-    queryFn: () => domaineFilter !== "all" ? sousDomainesQueries.getActive(domaineFilter) : Promise.resolve([]),
+    queryFn: () => sousDomainesQueries.getByDomaineId(domaineFilter),
     enabled: domaineFilter !== "all",
   });
 
   const { data: result, isLoading, error } = useQuery({
-    queryKey: ["textes-reglementaires", searchTerm, typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter, withPdfFilter, favoritesFilter, page, sortBy, sortOrder],
+    queryKey: ["textes-reglementaires", typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter, searchTerm, page, pageSize],
     queryFn: async () => {
       const data = await textesReglementairesQueries.getAll({
         searchTerm,
@@ -114,9 +94,7 @@ function BibliothequeReglementaireContent() {
         sousDomaineFilter: sousDomaineFilter !== "all" ? sousDomaineFilter : undefined,
         anneeFilter: anneeFilter !== "all" ? anneeFilter : undefined,
         page,
-        pageSize: preferences.pageSize,
-        sortBy,
-        sortOrder,
+        pageSize,
       });
       
       // Client-side filtering for PDF and favorites
@@ -136,10 +114,6 @@ function BibliothequeReglementaireContent() {
     },
   });
 
-  if (error) {
-    toast.error("Erreur lors du chargement des textes réglementaires");
-  }
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => textesReglementairesQueries.softDelete(id),
     onSuccess: () => {
@@ -152,9 +126,23 @@ function BibliothequeReglementaireContent() {
     },
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => textesReglementairesQueries.softDelete(id)));
+    },
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
+      setSelectedTextes([]);
+      toast.success(`${ids.length} texte${ids.length > 1 ? 's supprimés' : ' supprimé'}`);
+    },
+    onError: () => {
+      toast.error("Erreur lors de la suppression");
+    },
+  });
+
   const textes = result?.data || [];
   const totalCount = result?.count || 0;
-  const totalPages = result?.totalPages || 1;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -170,7 +158,7 @@ function BibliothequeReglementaireContent() {
       arrete: textes.filter((t: any) => t.type_acte === "arrete").length,
       circulaire: textes.filter((t: any) => t.type_acte === "circulaire").length,
     };
-
+    
     return {
       total: totalCount,
       enVigueur,
@@ -182,91 +170,8 @@ function BibliothequeReglementaireContent() {
     };
   }, [textes, totalCount, isFavorite]);
 
-  // Check if texte is new (created in last 7 days)
-  const isNewTexte = (texte: any) => {
-    if (!texte.created_at) return false;
-    const createdDate = new Date(texte.created_at);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7;
-  };
-
-  const uniqueYears = Array.from(
-    new Set(
-      textes
-        .map((t: any) => t.annee)
-        .filter((y): y is number => y !== null)
-    )
-  ).sort((a, b) => (b as number) - (a as number));
-
-  const getStatutBadge = (statut: string) => {
-    switch (statut) {
-      case "en_vigueur":
-        return { 
-          label: "En vigueur", 
-          className: "bg-success/10 text-success border border-success/20 font-medium",
-          icon: "✓"
-        };
-      case "modifie":
-        return { 
-          label: "Modifié", 
-          className: "bg-warning/10 text-warning border border-warning/20 font-medium",
-          icon: "⚠"
-        };
-      case "abroge":
-        return { 
-          label: "Abrogé", 
-          className: "bg-destructive/10 text-destructive border border-destructive/20 font-medium",
-          icon: "✕"
-        };
-      case "suspendu":
-        return { 
-          label: "Suspendu", 
-          className: "bg-muted text-muted-foreground border border-border font-medium",
-          icon: "⏸"
-        };
-      default:
-        return { label: statut, className: "", icon: "" };
-    }
-  };
-
-  const handleSort = (column: string) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(column);
-      setSortOrder("desc");
-    }
-    setPage(1);
-  };
-
-  const handleEdit = (texte: TexteReglementaire) => {
-    setEditingTexte(texte);
-    setShowFormModal(true);
-  };
-
-  const handleExportExcel = () => {
-    const exportData = textes.map((t: any) => ({
-      Type: TYPE_LABELS[t.type_acte as keyof typeof TYPE_LABELS],
-      Référence: t.reference_officielle,
-      Titre: t.intitule,
-      Autorité: t.autorite_emettrice || "",
-      "Date de publication": t.date_publication || "",
-      Statut: getStatutBadge(t.statut_vigueur).label,
-      "Nombre d'articles": t.articles?.[0]?.count || 0,
-      Année: t.annee || "",
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Textes");
-    XLSX.writeFile(wb, `textes_reglementaires_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success("Export Excel effectué");
-  };
-
   const activeFiltersCount = [typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter]
-    .filter(f => f !== "all").length;
+    .filter(f => f !== "all").length + (withPdfFilter ? 1 : 0) + (favoritesFilter ? 1 : 0);
 
   const clearAllFilters = () => {
     setTypeFilter("all");
@@ -280,36 +185,9 @@ function BibliothequeReglementaireContent() {
     setPage(1);
   };
 
-  const handleFilterByStatus = (status: string) => {
-    if (status === "all") {
-      setStatutFilter("all");
-      setWithPdfFilter(false);
-      setFavoritesFilter(false);
-    } else {
-      setStatutFilter(status);
-    }
-    setPage(1);
-  };
-
-  const handleQuickFilterChange = (filterId: string, value: string) => {
-    if (filterId === "with_pdf") {
-      setWithPdfFilter(value === "true");
-      setStatutFilter("all");
-      setFavoritesFilter(false);
-    } else if (filterId === "favorites") {
-      setFavoritesFilter(value === "true");
-      setStatutFilter("all");
-      setWithPdfFilter(false);
-    } else {
-      handleFilterByStatus(value);
-    }
-    setPage(1);
-  };
-
-
-  const handleSelectTexte = (id: string, selected: boolean) => {
+  const handleSelectTexte = (id: string) => {
     setSelectedTextes(prev => 
-      selected ? [...prev, id] : prev.filter(texteId => texteId !== id)
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
 
@@ -319,39 +197,22 @@ function BibliothequeReglementaireContent() {
 
   const handleBulkDelete = () => {
     if (selectedTextes.length === 0) return;
-    
-    toast.promise(
-      Promise.all(selectedTextes.map(id => textesReglementairesQueries.softDelete(id))),
-      {
-        loading: `Suppression de ${selectedTextes.length} texte${selectedTextes.length > 1 ? 's' : ''}...`,
-        success: () => {
-          queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
-          setSelectedTextes([]);
-          return `${selectedTextes.length} texte${selectedTextes.length > 1 ? 's supprimés' : ' supprimé'}`;
-        },
-        error: "Erreur lors de la suppression",
-      }
-    );
+    if (confirm(`Supprimer ${selectedTextes.length} texte${selectedTextes.length > 1 ? 's' : ''} ?`)) {
+      bulkDeleteMutation.mutate(selectedTextes);
+    }
   };
 
-  const handleBulkExport = () => {
-    const selectedData = textes.filter((t: any) => selectedTextes.includes(t.id));
-    const exportData = selectedData.map((t: any) => ({
-      Type: TYPE_LABELS[t.type_acte as keyof typeof TYPE_LABELS],
-      Référence: t.reference_officielle,
-      Titre: t.intitule,
-      Autorité: t.autorite_emettrice || "",
-      "Date de publication": t.date_publication || "",
-      Statut: getStatutBadge(t.statut_vigueur).label,
-      "Nombre d'articles": t.articles?.[0]?.count || 0,
-      Année: t.annee || "",
-    }));
+  const handleView = (texte: any) => {
+    navigate(`/bibliotheque/textes/${texte.id}`);
+  };
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Textes sélectionnés");
-    XLSX.writeFile(wb, `textes_selectionnes_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success(`${selectedTextes.length} texte${selectedTextes.length > 1 ? 's exportés' : ' exporté'}`);
+  const handleEdit = (texte: TexteReglementaire) => {
+    setEditingTexte(texte);
+    setShowFormModal(true);
+  };
+
+  const handleDelete = (texte: any) => {
+    setDeleteTexteId(texte.id);
   };
 
   const handleViewPdf = (texte: any) => {
@@ -362,13 +223,12 @@ function BibliothequeReglementaireContent() {
     }
   };
 
-  // Active filters for the badge display
   const activeFilters = useMemo(() => {
     const filters = [];
     if (typeFilter !== "all") {
       filters.push({
         id: "type",
-        label: `Type: ${TYPE_LABELS[typeFilter as keyof typeof TYPE_LABELS]}`,
+        label: `Type: ${typeFilter}`,
         value: typeFilter,
         onRemove: () => setTypeFilter("all"),
       });
@@ -376,13 +236,13 @@ function BibliothequeReglementaireContent() {
     if (statutFilter !== "all") {
       filters.push({
         id: "statut",
-        label: `Statut: ${getStatutBadge(statutFilter).label}`,
+        label: `Statut: ${statutFilter}`,
         value: statutFilter,
         onRemove: () => setStatutFilter("all"),
       });
     }
     if (domaineFilter !== "all") {
-      const domaine = domainesList?.find(d => d.id === domaineFilter);
+      const domaine = domainesList?.find((d: any) => d.id === domaineFilter);
       filters.push({
         id: "domaine",
         label: `Domaine: ${domaine?.libelle || domaineFilter}`,
@@ -390,440 +250,223 @@ function BibliothequeReglementaireContent() {
         onRemove: () => setDomaineFilter("all"),
       });
     }
-    if (anneeFilter !== "all") {
+    if (withPdfFilter) {
       filters.push({
-        id: "annee",
-        label: `Année: ${anneeFilter}`,
-        value: anneeFilter,
-        onRemove: () => setAnneeFilter("all"),
+        id: "pdf",
+        label: "Avec PDF",
+        value: "true",
+        onRemove: () => setWithPdfFilter(false),
       });
     }
-    if (searchTerm) {
+    if (favoritesFilter) {
       filters.push({
-        id: "search",
-        label: `Recherche: "${searchTerm}"`,
-        value: searchTerm,
-        onRemove: () => setSearchTerm(""),
+        id: "favorites",
+        label: "Favoris",
+        value: "true",
+        onRemove: () => setFavoritesFilter(false),
       });
     }
     return filters;
-  }, [typeFilter, statutFilter, domaineFilter, anneeFilter, searchTerm, domainesList]);
+  }, [typeFilter, statutFilter, domaineFilter, withPdfFilter, favoritesFilter, domainesList]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Statistics Cards - Compact */}
-        <BibliothequeStatsCards stats={stats} onFilterByStatus={handleFilterByStatus} />
-
-        {/* Header avec gradient - Sticky */}
-        <div className="sticky top-0 z-30 relative overflow-hidden rounded-2xl bg-gradient-primary/95 backdrop-blur-lg p-6 shadow-strong">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
-          <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-xl bg-accent/10 backdrop-blur-sm">
-                <Scale className="h-8 w-8 text-accent" />
-              </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl font-bold text-primary-foreground mb-2">
-                  Bibliothèque Réglementaire
-                </h1>
-                <p className="text-primary-foreground/80 text-sm sm:text-base">
-                  Gestion centralisée des textes juridiques HSE
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={() => setShowImportDialog(true)}
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Importer
-              </Button>
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={handleExportExcel}
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exporter
-              </Button>
-              <Button 
-                size="sm" 
-                onClick={() => { setEditingTexte(null); setShowFormModal(true); }}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-gold"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau texte
-              </Button>
-            </div>
+    <div className="container mx-auto p-6 space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-gradient-primary shadow-elegant">
+            <Scale className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">Bibliothèque Réglementaire</h1>
+            <p className="text-muted-foreground">
+              {totalCount} texte{totalCount > 1 ? 's' : ''} réglementaire{totalCount > 1 ? 's' : ''}
+            </p>
           </div>
         </div>
-
-        {/* Search Bar with Quick Filters */}
-        <Card className="shadow-medium border-2 border-border/50">
-          <CardContent className="p-6 space-y-4">
-            <div className="flex gap-3 items-start">
-              {/* Recherche améliorée */}
-              <div className="flex-1">
-                <BibliothequeSearchBar
-                  value={searchTerm}
-                  onChange={(value) => {
-                    setSearchTerm(value);
-                    setPage(1);
-                  }}
-                  isLoading={isLoading}
-                  resultCount={totalCount}
-                />
-              </div>
-
-              {/* Bouton Filtres avancés */}
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setShowFilters(true)}
-                className="h-[42px] border-2 hover:border-primary/50 hover:bg-accent/5 transition-all"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filtres
-                {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-2 px-2 py-0.5">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </Button>
-            </div>
-
-            {/* Quick Filters */}
-            <BibliothequeQuickFilters
-              activeFilter={withPdfFilter ? "with_pdf" : favoritesFilter ? "favorites" : statutFilter}
-              onFilterChange={handleQuickFilterChange}
-              stats={stats}
-            />
-
-            {/* Active Filters */}
-            <BibliothequeActiveFilters 
-              filters={activeFilters}
-              resultCount={totalCount}
-              onClearAll={clearAllFilters}
-            />
-          </CardContent>
-        </Card>
-
-
-        {/* Tableau des résultats */}
-        <Card className="shadow-medium border-2" data-results-section>
-          <CardHeader className="border-b bg-muted/20 backdrop-blur-sm">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-bold">Textes réglementaires</CardTitle>
-                  <CardDescription className="mt-1 text-sm font-medium">
-                    {totalCount} texte{totalCount > 1 ? 's' : ''} trouvé{totalCount > 1 ? 's' : ''}
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Select value={String(preferences.pageSize)} onValueChange={(val) => { setPageSize(Number(val)); setPage(1); }}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="25">25 par page</SelectItem>
-                    <SelectItem value="50">50 par page</SelectItem>
-                    <SelectItem value="100">100 par page</SelectItem>
-                  </SelectContent>
-                </Select>
-                <BibliothequeViewSettings 
-                  density={preferences.density}
-                  onDensityChange={setDensity}
-                />
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="p-0">
-            {isLoading ? (
-              <BibliothequeTableSkeleton view={preferences.view} count={preferences.pageSize} />
-            ) : error ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <div className="p-4 rounded-full bg-destructive/10">
-                  <FileText className="h-12 w-12 text-destructive" />
-                </div>
-                <div className="text-center">
-                  <p className="text-destructive font-semibold mb-2">Erreur de chargement</p>
-                  <p className="text-sm text-muted-foreground">Impossible de charger les textes réglementaires</p>
-                </div>
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  Réessayer
-                </Button>
-              </div>
-            ) : textes.length > 0 ? (
-              <>
-                {preferences.view === "table" ? (
-                  <div className="overflow-x-auto">
-                     <Table>
-                     <TableHeader>
-                      <TableRow className="bg-muted/50 hover:bg-muted/50 border-b-2 border-border">
-                        <TableHead className="w-[50px]">
-                          <Checkbox
-                            checked={selectedTextes.length === textes.length && textes.length > 0}
-                            onCheckedChange={handleSelectAll}
-                            aria-label="Tout sélectionner"
-                          />
-                        </TableHead>
-                        <TableHead className="w-[120px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("type")}>
-                          <div className="flex items-center gap-1.5">
-                            Type
-                            {sortBy === "type" && (
-                              <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                            )}
-                          </div>
-                        </TableHead>
-                        <TableHead className="w-[140px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("reference_officielle")}>
-                          <div className="flex items-center gap-1.5">
-                            Référence
-                            {sortBy === "reference_officielle" && (
-                              <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                            )}
-                          </div>
-                        </TableHead>
-                        <TableHead className="font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("titre")}>
-                          <div className="flex items-center gap-1.5">
-                            Titre
-                            {sortBy === "titre" && (
-                              <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                            )}
-                          </div>
-                        </TableHead>
-                        <TableHead className="w-[180px] font-bold text-sm uppercase tracking-wide">Statut & Articles</TableHead>
-                        <TableHead className="w-[100px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("date_publication")}>
-                          <div className="flex items-center gap-1.5">
-                            Date
-                            {sortBy === "date_publication" && (
-                              <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                            )}
-                          </div>
-                        </TableHead>
-                        <TableHead className="w-[120px] font-bold text-right text-sm uppercase tracking-wide">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                      <TableBody>
-                        {textes.map((texte: any, index: number) => {
-                          const statutInfo = getStatutBadge(texte.statut_vigueur);
-                          const articleCount = texte.articles?.[0]?.count || 0;
-                          const isNew = isNewTexte(texte);
-                          const isSelected = selectedTextes.includes(texte.id);
-                          
-                          return (
-                            <BibliothequePreview key={texte.id} texte={texte} getStatutBadge={getStatutBadge}>
-                              <TableRow 
-                                className={`transition-all duration-200 cursor-pointer border-b border-border/50 group ${
-                                  index % 2 === 0 ? 'bg-background' : 'bg-muted/30'
-                                } hover:bg-accent/10`}
-                                onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
-                              >
-                                <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onCheckedChange={(checked) => handleSelectTexte(texte.id, checked as boolean)}
-                                    aria-label={`Sélectionner ${texte.reference_officielle}`}
-                                  />
-                                </TableCell>
-                                <TableCell className="py-4">
-                                  <div className="flex flex-col gap-2">
-                                    <Badge 
-                                      variant="outline" 
-                                      className="text-xs font-bold px-3 py-1 w-fit border-2 group-hover:border-primary/50 transition-colors"
-                                    >
-                                      <span className="mr-1.5 text-base">{TYPE_ICONS[texte.type_acte as keyof typeof TYPE_ICONS]}</span>
-                                      {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS]}
-                                    </Badge>
-                                    {isNew && (
-                                      <Badge className="bg-accent text-accent-foreground text-xs w-fit font-semibold px-2 py-0.5">
-                                        Nouveau
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="font-bold text-sm py-4 text-primary">
-                                  <div className="break-words leading-relaxed">
-                                    {texte.reference_officielle}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="py-4">
-                                  <div className="space-y-1.5">
-                                    <div className="font-semibold text-foreground leading-snug line-clamp-2 text-[15px]">
-                                      {texte.intitule}
-                                    </div>
-                                    {texte.resume && (
-                                      <div className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                                        {texte.resume}
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="py-4">
-                                  <div className="flex flex-col gap-2">
-                                    <Badge className={`${statutInfo.className} px-3 py-1.5 text-xs whitespace-nowrap w-fit`}>
-                                      <span className="mr-1.5 text-sm">{statutInfo.icon}</span>
-                                      {statutInfo.label}
-                                    </Badge>
-                                    <div className="inline-flex items-center justify-start px-2 py-1 rounded-lg bg-primary/10 text-primary font-bold text-sm border border-primary/20 w-fit">
-                                      <FileText className="h-3 w-3 mr-1.5" />
-                                      {articleCount} article{articleCount > 1 ? 's' : ''}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-sm font-medium text-foreground whitespace-nowrap py-4">
-                                  {texte.date_publication
-                                    ? new Date(texte.date_publication).toLocaleDateString("fr-FR", {
-                                        day: '2-digit',
-                                        month: 'short',
-                                        year: 'numeric'
-                                      })
-                                    : "—"}
-                                </TableCell>
-                                <TableCell className="text-right py-4" onClick={(e) => e.stopPropagation()}>
-                                  <BibliothequeRowActionsMenu
-                                    texte={texte}
-                                    onView={() => navigate(`/bibliotheque/textes/${texte.id}`)}
-                                    onEdit={() => handleEdit(texte)}
-                                    onDelete={() => setDeleteTexteId(texte.id)}
-                                    onViewPdf={texte.pdf_url ? handleViewPdf : undefined}
-                                    onToggleFavorite={() => toggleFavorite(texte.id)}
-                                    isFavorite={isFavorite(texte.id)}
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            </BibliothequePreview>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className={`grid gap-4 p-6 ${
-                    preferences.density === "compact" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3" :
-                    preferences.density === "large" ? "grid-cols-1 md:grid-cols-2 gap-6" :
-                    "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-                  }`}>
-                    {textes.map((texte: any, index) => (
-                      <div 
-                        key={texte.id}
-                        className="animate-fade-in"
-                        style={{ animationDelay: `${index * 30}ms` }}
-                      >
-                        <BibliothequeCardHoverPreview
-                          texte={texte}
-                          getStatutBadge={getStatutBadge}
-                          onView={() => navigate(`/bibliotheque/textes/${texte.id}`)}
-                          onEdit={() => handleEdit(texte)}
-                          onViewPdf={() => handleViewPdf(texte)}
-                        >
-                          <BibliothequeTextCard
-                            texte={texte}
-                            onEdit={handleEdit}
-                            onDelete={setDeleteTexteId}
-                            onQuickView={setQuickViewTexte}
-                            onViewPdf={handleViewPdf}
-                            getStatutBadge={getStatutBadge}
-                            isNew={isNewTexte(texte)}
-                            isSelected={selectedTextes.includes(texte.id)}
-                            onSelect={handleSelectTexte}
-                            isFavorite={isFavorite(texte.id)}
-                            onToggleFavorite={toggleFavorite}
-                          />
-                        </BibliothequeCardHoverPreview>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Pagination améliorée */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/20">
-                    <div className="text-sm text-muted-foreground">
-                      Page <span className="font-semibold text-foreground">{page}</span> sur{" "}
-                      <span className="font-semibold text-foreground">{totalPages}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(1)}
-                        disabled={page === 1}
-                        className="hidden sm:flex"
-                      >
-                        Première
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(page - 1)}
-                        disabled={page === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        <span className="hidden sm:inline ml-1">Précédent</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(page + 1)}
-                        disabled={page === totalPages}
-                      >
-                        <span className="hidden sm:inline mr-1">Suivant</span>
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(totalPages)}
-                        disabled={page === totalPages}
-                        className="hidden sm:flex"
-                      >
-                        Dernière
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <BibliothequeEmptyState
-                hasFilters={activeFiltersCount > 0}
-                hasSearch={!!searchTerm}
-                onClearFilters={clearAllFilters}
-                onAddNew={() => { setEditingTexte(null); setShowFormModal(true); }}
-              />
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setShowImportDialog(true)}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Importer
+          </Button>
+          <Button onClick={() => { setEditingTexte(null); setShowFormModal(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter un texte
+          </Button>
+        </div>
       </div>
 
-      {/* Filter Sidebar */}
-      <BibliothequeFilterSidebar
-        open={showFilters}
-        onOpenChange={setShowFilters}
+      {/* Stats Cards */}
+      <BibliothequeStatsCards
+        stats={stats}
+        onStatClick={(statut) => {
+          setStatutFilter(statut);
+          setPage(1);
+        }}
+      />
+
+      {/* Horizontal Filters */}
+      <BibliothequeHorizontalFilters
         typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
         statutFilter={statutFilter}
+        setStatutFilter={setStatutFilter}
         domaineFilter={domaineFilter}
+        setDomaineFilter={setDomaineFilter}
         sousDomaineFilter={sousDomaineFilter}
+        setSousDomaineFilter={setSousDomaineFilter}
         anneeFilter={anneeFilter}
-        onTypeChange={(val) => { setTypeFilter(val); setPage(1); }}
-        onStatutChange={(val) => { setStatutFilter(val); setPage(1); }}
-        onDomaineChange={(val) => { setDomaineFilter(val); setPage(1); }}
-        onSousDomaineChange={(val) => { setSousDomaineFilter(val); setPage(1); }}
-        onAnneeChange={(val) => { setAnneeFilter(val); setPage(1); }}
-        domaines={domainesList?.map((d: any) => ({ id: d.id, label: d.libelle })) || []}
-        sousDomaines={sousDomainesList?.map((sd: any) => ({ id: sd.id, label: sd.libelle })) || []}
-        years={uniqueYears as number[]}
-        onClearAll={clearAllFilters}
+        setAnneeFilter={setAnneeFilter}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        domaines={domainesList?.map((d: any) => ({ id: d.id, nom: d.libelle })) || []}
+        sousDomaines={sousDomainesList?.map((sd: any) => ({ id: sd.id, nom: sd.libelle })) || []}
+        onApply={() => setPage(1)}
+        onReset={clearAllFilters}
+        isOpen={filtersOpen}
+        setIsOpen={setFiltersOpen}
+        activeFiltersCount={activeFiltersCount}
+      />
+
+      {/* Active Filters */}
+      {activeFilters.length > 0 && (
+        <BibliothequeActiveFilters
+          filters={activeFilters}
+          resultCount={totalCount}
+          onClearAll={clearAllFilters}
+        />
+      )}
+
+      {/* Data Grid / Card View */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Résultats</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              {totalCount} résultat{totalCount > 1 ? 's' : ''}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center space-y-3">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-sm text-muted-foreground">Chargement...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <div className="text-center">
+                <p className="text-destructive font-semibold mb-2">Erreur de chargement</p>
+                <p className="text-sm text-muted-foreground">Impossible de charger les textes réglementaires</p>
+              </div>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Réessayer
+              </Button>
+            </div>
+          ) : textes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <div className="text-center">
+                <p className="text-lg font-semibold mb-2">Aucun résultat</p>
+                <p className="text-sm text-muted-foreground">Essayez de modifier vos filtres</p>
+              </div>
+              <Button variant="outline" onClick={clearAllFilters}>
+                Réinitialiser les filtres
+              </Button>
+            </div>
+          ) : (
+            <>
+              {isDesktop ? (
+                <BibliothequeDataGrid
+                  data={textes}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onViewPdf={handleViewPdf}
+                  onToggleFavorite={toggleFavorite}
+                  selectedTextes={selectedTextes}
+                  onSelectTexte={handleSelectTexte}
+                  onSelectAll={handleSelectAll}
+                />
+              ) : (
+                <BibliothequeCardView
+                  data={textes}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onViewPdf={handleViewPdf}
+                  onToggleFavorite={toggleFavorite}
+                  selectedTextes={selectedTextes}
+                  onSelectTexte={handleSelectTexte}
+                />
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Affichage {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalCount)} sur {totalCount}
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => page > 1 && setPage(page - 1)}
+                          className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const pageNum = i + 1;
+                        return (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              onClick={() => setPage(pageNum)}
+                              isActive={page === pageNum}
+                              className="cursor-pointer"
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => page < totalPages && setPage(page + 1)}
+                          className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modals */}
+      <TexteFormModal
+        open={showFormModal}
+        onOpenChange={setShowFormModal}
+        texte={editingTexte}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
+          setShowFormModal(false);
+          setEditingTexte(null);
+        }}
+      />
+
+      <ImportCSVDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
+          setShowImportDialog(false);
+        }}
       />
 
       <PDFViewerModal
@@ -833,50 +476,12 @@ function BibliothequeReglementaireContent() {
         title={selectedPdfTitle}
       />
 
-      {/* Bulk Actions Floating Bar */}
-      {selectedTextes.length > 0 && (
-        <BibliothequeFloatingActions
-          selectedCount={selectedTextes.length}
-          onExport={handleBulkExport}
-          onDelete={handleBulkDelete}
-          onClear={() => setSelectedTextes([])}
-        />
-      )}
-
-      {/* Quick View Drawer */}
-      <BibliothequeQuickView
-        open={!!quickViewTexte}
-        onOpenChange={(open) => !open && setQuickViewTexte(null)}
-        texte={quickViewTexte}
-        onEdit={handleEdit}
-        onDelete={setDeleteTexteId}
-        getStatutBadge={getStatutBadge}
-      />
-
-      {/* Modals */}
-      <TexteFormModal
-        open={showFormModal}
-        onOpenChange={(open) => {
-          setShowFormModal(open);
-          if (!open) setEditingTexte(null);
-        }}
-        texte={editingTexte}
-      />
-
-      <ImportCSVDialog
-        open={showImportDialog}
-        onOpenChange={setShowImportDialog}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
-        }}
-      />
-
       <AlertDialog open={!!deleteTexteId} onOpenChange={() => setDeleteTexteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce texte réglementaire ? Cette action ne peut pas être annulée.
+              Êtes-vous sûr de vouloir supprimer ce texte ? Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -890,6 +495,16 @@ function BibliothequeReglementaireContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Actions */}
+      {selectedTextes.length > 0 && (
+        <BibliothequeFloatingActions
+          selectedCount={selectedTextes.length}
+          onDelete={handleBulkDelete}
+          onClear={() => setSelectedTextes([])}
+          onArchive={() => toast.info("Archivage en cours de développement")}
+        />
+      )}
     </div>
   );
 }
