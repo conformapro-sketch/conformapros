@@ -24,6 +24,12 @@ interface ArticleEffet {
   notes?: string;
   portee?: PorteeEffet;
   portee_detail?: string;
+  texte_source?: {
+    id: string;
+    reference_officielle: string;
+    intitule: string;
+    type_acte?: string;
+  };
   article_source?: {
     id: string;
     numero_article: string;
@@ -154,7 +160,22 @@ export function ArticleEffetsTimeline({ effets, isLoading }: ArticleEffetsTimeli
                     </span>
                   </div>
 
-                  {effet.article_source && (
+                  {effet.texte_source ? (
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium">
+                        {effet.texte_source.reference_officielle}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {effet.texte_source.intitule}
+                      </p>
+                      {effet.article_source && (
+                        <p className="text-xs text-muted-foreground">
+                          Article {effet.article_source.numero_article}
+                          {effet.article_source.titre_court && ` - ${effet.article_source.titre_court}`}
+                        </p>
+                      )}
+                    </div>
+                  ) : effet.article_source?.texte ? (
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium">
                         {effet.article_source.texte.reference_officielle}
@@ -167,6 +188,8 @@ export function ArticleEffetsTimeline({ effets, isLoading }: ArticleEffetsTimeli
                         {effet.article_source.titre_court && ` - ${effet.article_source.titre_court}`}
                       </p>
                     </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Source non spécifiée</p>
                   )}
                 </div>
               </div>

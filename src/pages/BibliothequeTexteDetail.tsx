@@ -27,6 +27,7 @@ import {
   Hash,
   FileEdit
 } from "lucide-react";
+import { EffetsCreesTab } from "@/components/EffetsCreesTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
 import { changelogQueries } from "@/lib/actes-queries";
@@ -350,6 +351,7 @@ export default function BibliothequeTexteDetail() {
       <Tabs defaultValue="articles" className="space-y-4">
         <TabsList>
           <TabsTrigger value="articles">Articles ({articles?.length || 0})</TabsTrigger>
+          <TabsTrigger value="effets-crees">Effets créés</TabsTrigger>
           <TabsTrigger value="modifications">Modifications reçues ({effetsRecus?.length || 0})</TabsTrigger>
           <TabsTrigger value="changelog">Historique ({changelogEntries?.length || 0})</TabsTrigger>
           <TabsTrigger value="info">Informations</TabsTrigger>
@@ -722,6 +724,20 @@ export default function BibliothequeTexteDetail() {
             </CardHeader>
             <CardContent>
               <TimelineChangelog entries={changelogEntries} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="effets-crees" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Effets juridiques créés</CardTitle>
+              <CardDescription>
+                Liste des modifications apportées par ce texte à d'autres articles réglementaires
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EffetsCreesTab texteId={id!} />
             </CardContent>
           </Card>
         </TabsContent>

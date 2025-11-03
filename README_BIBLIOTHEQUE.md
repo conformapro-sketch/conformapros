@@ -431,33 +431,45 @@ Le système vérifie automatiquement la cohérence juridique :
 
 ### ❓ FAQ : Création de versions
 
-#### Je n'arrive pas à sélectionner le texte source
+## ❓ FAQ : Création de versions
 
-**Problème** : Le sélecteur de texte réglementaire ne fonctionne pas
+### Comment créer une modification réglementaire ?
 
-**Solutions** :
-1. **Vérifiez que vous utilisez le bon bouton** :
-   - ✅ **Bouton bleu FileEdit** "Créer une modification réglementaire"
-   - ❌ Pas le bouton Pencil "Éditer l'article"
+**Workflow simplifié** :
 
-2. **Si le sélecteur reste vide** :
-   - Vérifiez qu'il existe des textes dans la bibliothèque
-   - Essayez une recherche plus large ("2024" au lieu du numéro exact)
-   - Ouvrez la console développeur (F12) pour voir les erreurs
+1. **Identifier l'article cible** : L'article qui va être modifié
+2. **Cliquer sur "Créer une modification réglementaire"** (bouton FileEdit bleu)
+3. **Sélectionner uniquement le texte source** : Le décret/loi qui crée la modification
+4. **Configurer l'effet** :
+   - Type d'effet (MODIFIE, REMPLACE, ABROGE...)
+   - Portée (article entier, alinéa, point)
+   - Date d'entrée en vigueur
+   - Nouveau contenu
+5. **Valider** : L'effet et la nouvelle version sont créés automatiquement
 
-3. **Si le texte ne s'affiche pas après sélection** :
-   - Rafraîchissez la page (F5)
-   - Vérifiez que le texte a bien un `type_acte` défini
-   - Vérifiez les logs dans la console développeur
+✅ **Plus besoin de spécifier l'article source** - juste le texte suffit !
 
-#### Différence entre "Éditer" et "Créer une modification" ?
+### Consulter les effets créés par un texte
+
+Pour voir tous les articles modifiés par un texte réglementaire :
+
+1. Ouvrir le texte source (ex: Décret n°2024-123)
+2. Aller dans l'onglet **"Effets créés"**
+3. Voir la liste de tous les articles impactés par ce texte
+
+### Différence entre "Éditer" et "Créer une modification" ?
 
 | Action | Bouton | Résultat | Quand l'utiliser ? |
 |--------|--------|----------|-------------------|
 | **Éditer l'article** | Pencil (✏️) | Modifie directement sans version | Corriger une faute de frappe |
 | **Créer une modification** | FileEdit (📝) | Crée une version liée à un texte source | Modification réglementaire officielle |
 
-### Le sélecteur de texte source ne fonctionne pas
+### Avantages du nouveau workflow
+
+✅ **Simplicité** : Plus besoin de créer ou sélectionner un article source  
+✅ **Rapidité** : Workflow en 3 clics  
+✅ **Traçabilité** : Voir tous les effets d'un texte dans l'onglet "Effets créés"  
+✅ **Flexibilité** : Focus sur le texte réglementaire, la source de la modification
 
 **Symptôme** : Impossible de sélectionner un texte réglementaire lors de la création d'un effet juridique
 

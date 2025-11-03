@@ -57,12 +57,8 @@ export function ArticleQuickEffetModal({
 }: ArticleQuickEffetModalProps) {
   const queryClient = useQueryClient();
   
-  // États pour la sélection du texte et article source
+  // État pour la sélection du texte source uniquement
   const [selectedTexteSource, setSelectedTexteSource] = useState<any>(null);
-  const [selectedArticleSource, setSelectedArticleSource] = useState<any>(null);
-  const [createNewArticle, setCreateNewArticle] = useState(false);
-  const [newArticleNumero, setNewArticleNumero] = useState("");
-  const [newArticleTitre, setNewArticleTitre] = useState("");
   
   // États pour l'effet juridique
   const [typeEffet, setTypeEffet] = useState<string>("MODIFIE");
@@ -94,17 +90,12 @@ export function ArticleQuickEffetModal({
     }
   }, [open, targetArticle]);
 
-  // Réinitialiser les états source si fournis
+  // Réinitialiser le texte source si fourni
   useEffect(() => {
-    if (open) {
-      if (sourceTexte) {
-        setSelectedTexteSource(sourceTexte);
-      }
-      if (sourceArticle) {
-        setSelectedArticleSource(sourceArticle);
-      }
+    if (open && sourceTexte) {
+      setSelectedTexteSource(sourceTexte);
     }
-  }, [open, sourceTexte, sourceArticle]);
+  }, [open, sourceTexte]);
 
   // Valider la hiérarchie des normes
   useEffect(() => {
@@ -164,27 +155,14 @@ export function ArticleQuickEffetModal({
         throw new Error("Article cible manquant");
       }
 
-      let articleSourceId = selectedArticleSource?.id;
-
-      // Si on crée un nouvel article, le créer d'abord
-      if (createNewArticle && (selectedTexteSource || sourceTexte)) {
-        const texteId = (selectedTexteSource || sourceTexte)!.id;
-        const newArticle = await textesArticlesQueries.create({
-          texte_id: texteId,
-          numero_article: newArticleNumero,
-          titre_court: newArticleTitre || null,
-          contenu: contenuModifie,
-          ordre_affichage: 999,
-        });
-        articleSourceId = newArticle.id;
-      }
-
-      if (!articleSourceId) {
-        throw new Error("Article source manquant");
+      const texteSource = selectedTexteSource || sourceTexte;
+      if (!texteSource) {
+        throw new Error("Texte source manquant");
       }
 
       return articlesEffetsJuridiquesQueries.create({
-        article_source_id: articleSourceId,
+        texte_source_id: texteSource.id,
+        article_source_id: null,
         article_cible_id: targetArticle.id,
         texte_cible_id: targetArticle.texte_id,
         type_effet: typeEffet,
@@ -210,10 +188,6 @@ export function ArticleQuickEffetModal({
 
   const resetForm = () => {
     if (!sourceTexte) setSelectedTexteSource(null);
-    if (!sourceArticle) setSelectedArticleSource(null);
-    setCreateNewArticle(false);
-    setNewArticleNumero("");
-    setNewArticleTitre("");
     setTypeEffet("MODIFIE");
     setContenuModifie("");
     setDateEffet(new Date().toISOString().split("T")[0]);
@@ -227,14 +201,6 @@ export function ArticleQuickEffetModal({
     const texteSource = selectedTexteSource || sourceTexte;
     if (!texteSource) {
       console.log("❌ Texte source manquant");
-      return false;
-    }
-    if (createNewArticle && !newArticleNumero.trim()) {
-      console.log("❌ Numéro de nouvel article manquant");
-      return false;
-    }
-    if (!createNewArticle && !selectedArticleSource && !sourceArticle) {
-      console.log("❌ Article source manquant");
       return false;
     }
     if (hierarchyValidation?.severity === "error") {
@@ -308,13 +274,13 @@ export function ArticleQuickEffetModal({
               <div className="text-xs">{targetArticle?.texte?.reference_officielle}</div>
             </div>
           </div>
-          {/* Sélection du texte source */}
+          {/* Sélection du texte source UNIQUEMENT */}
           {!sourceTexte && (
             <div className="space-y-2">
               <Label>
-                🔍 Texte réglementaire source (qui fait la modification) *
+                📄 Texte réglementaire source *
                 <span className="text-xs text-muted-foreground block mt-1">
-                  Exemple : Si un décret de 2024 modifie cet article, sélectionnez ce décret
+                  Le texte qui crée cette modification (décret, loi, arrêté...)
                 </span>
               </Label>
               <TexteAutocomplete
@@ -322,7 +288,6 @@ export function ArticleQuickEffetModal({
                 onChange={(texte) => {
                   console.log("📄 Texte source sélectionné:", texte);
                   setSelectedTexteSource(texte);
-                  setSelectedArticleSource(null);
                 }}
                 placeholder="Ex: Décret n°2024-123 du 15 janvier 2024"
               />
@@ -333,74 +298,6 @@ export function ArticleQuickEffetModal({
                   </span>
                   {" - "}
                   {selectedTexteSource.reference_officielle}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Sélection ou création de l'article source */}
-          {(selectedTexteSource || sourceTexte) && !sourceArticle && (
-            <div className="space-y-3 border-t pt-4">
-              <Label>Article source (dans le texte modificateur) *</Label>
-              
-              <RadioGroup 
-                value={createNewArticle ? "new" : "existing"} 
-                onValueChange={(v) => {
-                  setCreateNewArticle(v === "new");
-                  if (v === "new") setSelectedArticleSource(null);
-                }}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="existing" id="existing" />
-                  <Label htmlFor="existing" className="font-normal cursor-pointer">
-                    Sélectionner un article existant
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="new" id="new" />
-                  <Label htmlFor="new" className="font-normal cursor-pointer">
-                    Créer un nouvel article
-                  </Label>
-                </div>
-              </RadioGroup>
-              
-              {createNewArticle ? (
-                <div className="space-y-3 pl-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="newNumero">Numéro d'article *</Label>
-                      <Input 
-                        id="newNumero"
-                        placeholder="Ex: Art. 5" 
-                        value={newArticleNumero}
-                        onChange={(e) => setNewArticleNumero(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="newTitre">Titre (optionnel)</Label>
-                      <Input 
-                        id="newTitre"
-                        placeholder="Ex: Dispositions modificatives" 
-                        value={newArticleTitre}
-                        onChange={(e) => setNewArticleTitre(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      Un nouvel article sera créé dans {(selectedTexteSource || sourceTexte)?.reference_officielle}
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              ) : (
-                <div className="pl-6">
-                  <ArticleAutocomplete
-                    texteId={(selectedTexteSource || sourceTexte)?.id}
-                    value={selectedArticleSource}
-                    onChange={setSelectedArticleSource}
-                    placeholder="Rechercher un article..."
-                  />
                 </div>
               )}
             </div>

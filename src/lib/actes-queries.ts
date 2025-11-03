@@ -527,6 +527,12 @@ export const articlesEffetsJuridiquesQueries = {
       .from("articles_effets_juridiques")
       .select(`
         *,
+        texte_source:textes_reglementaires!articles_effets_juridiques_texte_source_id_fkey(
+          id,
+          reference_officielle,
+          intitule,
+          type_acte
+        ),
         article_source:textes_articles!articles_effets_juridiques_article_source_id_fkey(
           id,
           numero_article,
@@ -538,6 +544,34 @@ export const articlesEffetsJuridiquesQueries = {
         )
       `)
       .eq("article_cible_id", articleCibleId)
+      .order("date_effet", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async getByTexteSourceId(texteSourceId: string) {
+    const { data, error } = await (supabase as any)
+      .from("articles_effets_juridiques")
+      .select(`
+        *,
+        article_source:textes_articles!articles_effets_juridiques_article_source_id_fkey(
+          id,
+          numero_article,
+          titre_court
+        ),
+        texte_cible:textes_reglementaires!articles_effets_juridiques_texte_cible_id_fkey(
+          id,
+          reference_officielle,
+          intitule,
+          type_acte
+        ),
+        article_cible:textes_articles!articles_effets_juridiques_article_cible_id_fkey(
+          id,
+          numero_article,
+          titre_court
+        )
+      `)
+      .eq("texte_source_id", texteSourceId)
       .order("date_effet", { ascending: false });
     if (error) throw error;
     return data;

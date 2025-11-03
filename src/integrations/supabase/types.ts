@@ -396,7 +396,7 @@ export type Database = {
       articles_effets_juridiques: {
         Row: {
           article_cible_id: string | null
-          article_source_id: string
+          article_source_id: string | null
           created_at: string
           date_effet: string
           date_fin_effet: string | null
@@ -407,12 +407,13 @@ export type Database = {
           portee_detail: string | null
           reference_citation: string | null
           texte_cible_id: string | null
+          texte_source_id: string | null
           type_effet: string
           updated_at: string
         }
         Insert: {
           article_cible_id?: string | null
-          article_source_id: string
+          article_source_id?: string | null
           created_at?: string
           date_effet: string
           date_fin_effet?: string | null
@@ -423,12 +424,13 @@ export type Database = {
           portee_detail?: string | null
           reference_citation?: string | null
           texte_cible_id?: string | null
+          texte_source_id?: string | null
           type_effet: string
           updated_at?: string
         }
         Update: {
           article_cible_id?: string | null
-          article_source_id?: string
+          article_source_id?: string | null
           created_at?: string
           date_effet?: string
           date_fin_effet?: string | null
@@ -439,6 +441,7 @@ export type Database = {
           portee_detail?: string | null
           reference_citation?: string | null
           texte_cible_id?: string | null
+          texte_source_id?: string | null
           type_effet?: string
           updated_at?: string
         }
@@ -460,6 +463,13 @@ export type Database = {
           {
             foreignKeyName: "articles_effets_juridiques_texte_cible_id_fkey"
             columns: ["texte_cible_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "articles_effets_juridiques_texte_source_id_fkey"
+            columns: ["texte_source_id"]
             isOneToOne: false
             referencedRelation: "textes_reglementaires"
             referencedColumns: ["id"]
