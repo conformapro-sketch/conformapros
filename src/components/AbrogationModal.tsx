@@ -30,7 +30,7 @@ export function AbrogationModal({
   onSuccess,
 }: AbrogationModalProps) {
   const queryClient = useQueryClient();
-  const [searchType, setSearchType] = useState<string>("");
+  const [searchType, setSearchType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTexteId, setSelectedTexteId] = useState("");
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
@@ -42,7 +42,7 @@ export function AbrogationModal({
     queryFn: async () => {
       if (!searchTerm || searchTerm.length < 2) return [];
       const filters: any = { search: searchTerm };
-      if (searchType) filters.type = searchType;
+      if (searchType && searchType !== "all") filters.type = searchType;
       return textesReglementairesQueries.getAll(filters);
     },
     enabled: searchTerm.length >= 2,
@@ -92,7 +92,7 @@ export function AbrogationModal({
   });
 
   const resetForm = () => {
-    setSearchType("");
+    setSearchType("all");
     setSearchTerm("");
     setSelectedTexteId("");
     setSelectedArticles([]);
@@ -143,7 +143,7 @@ export function AbrogationModal({
                     <SelectValue placeholder="Tous les types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les types</SelectItem>
+                    <SelectItem value="all">Tous les types</SelectItem>
                     <SelectItem value="loi">Loi</SelectItem>
                     <SelectItem value="decret">Décret</SelectItem>
                     <SelectItem value="arrete">Arrêté</SelectItem>
