@@ -27,7 +27,7 @@ import BibliothequeTexteDetail from "./pages/BibliothequeTexteDetail";
 import BibliothequeTexteArticles from "./pages/BibliothequeTexteArticles";
 import BibliothequeArticleVersions from "./pages/BibliothequeArticleVersions";
 import BibliothequeTableauDeBord from "./pages/BibliothequeTableauDeBord";
-import BibliothequeRechercheIntelligente from "./pages/BibliothequeRechercheIntelligente";
+import BibliothequeRechercheAvancee from "./pages/BibliothequeRechercheAvancee";
 import ArticleVersions from "./pages/ArticleVersions";
 import ConformiteEvaluationNew from "./pages/ConformiteEvaluationNew";
 import PlanAction from "./pages/PlanAction";
@@ -189,7 +189,7 @@ const App = () => (
               <Route path="bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
               <Route path="bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
               <Route path="bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
-              <Route path="bibliotheque/recherche" element={<BibliothequeRechercheIntelligente />} />
+              <Route path="bibliotheque/recherche" element={<BibliothequeRechercheAvancee />} />
               <Route path="veille" element={<Navigate to="/veille/dashboard" replace />} />
               <Route path="veille/dashboard" element={<VeilleDashboard />} />
               <Route path="veille/applicabilite" element={<VeilleApplicabilite />} />

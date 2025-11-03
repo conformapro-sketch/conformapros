@@ -43,7 +43,7 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
       { title: "Domaines", url: "/bibliotheque/domain" },
       { title: "Textes & articles", url: "/bibliotheque/" },
       { title: "Codes juridiques", url: "/codes-juridiques" },
-      { title: "Recherche intelligente", url: "/bibliotheque/recherche" },
+      { title: "Recherche avancée", url: "/bibliotheque/recherche" },
     ],
   },
   VEILLE: {

@@ -61,6 +61,7 @@ export const textesReglementairesQueries = {
     typeFilter?: string;
     statutFilter?: string;
     domaineFilter?: string;
+    sousDomaineFilter?: string;
     anneeFilter?: string;
     page?: number;
     pageSize?: number;
@@ -97,6 +98,36 @@ export const textesReglementairesQueries = {
       textesQuery = textesQuery.eq("annee", parseInt(filters.anneeFilter));
     }
 
+    // Filter by domaine if specified
+    if (filters?.domaineFilter && filters.domaineFilter !== "all") {
+      const { data: actesWithDomain } = await supabase
+        .from("actes_reglementaires_domaines")
+        .select("acte_id")
+        .eq("domaine_id", filters.domaineFilter);
+      
+      const acteIds = actesWithDomain?.map(a => a.acte_id) || [];
+      if (acteIds.length > 0) {
+        textesQuery = textesQuery.in("id", acteIds);
+      } else {
+        textesQuery = textesQuery.in("id", []);
+      }
+    }
+
+    // Filter by sous-domaine if specified
+    if (filters?.sousDomaineFilter && filters.sousDomaineFilter !== "all") {
+      const { data: actesWithSousDomaine } = await supabase
+        .from("actes_reglementaires_sous_domaines")
+        .select("acte_id")
+        .eq("sous_domaine_id", filters.sousDomaineFilter);
+      
+      const acteIds = actesWithSousDomaine?.map(a => a.acte_id) || [];
+      if (acteIds.length > 0) {
+        textesQuery = textesQuery.in("id", acteIds);
+      } else {
+        textesQuery = textesQuery.in("id", []);
+      }
+    }
+
     // Search in articles
     let articlesQuery = supabase
       .from("textes_articles")
@@ -126,6 +157,36 @@ export const textesReglementairesQueries = {
 
     if (filters?.anneeFilter && filters.anneeFilter !== "all") {
       articlesQuery = articlesQuery.eq("texte.annee", parseInt(filters.anneeFilter));
+    }
+
+    // Filter articles by domaine if specified
+    if (filters?.domaineFilter && filters.domaineFilter !== "all") {
+      const { data: actesWithDomain } = await supabase
+        .from("actes_reglementaires_domaines")
+        .select("acte_id")
+        .eq("domaine_id", filters.domaineFilter);
+      
+      const acteIds = actesWithDomain?.map(a => a.acte_id) || [];
+      if (acteIds.length > 0) {
+        articlesQuery = articlesQuery.in("texte_id", acteIds);
+      } else {
+        articlesQuery = articlesQuery.in("texte_id", []);
+      }
+    }
+
+    // Filter articles by sous-domaine if specified
+    if (filters?.sousDomaineFilter && filters.sousDomaineFilter !== "all") {
+      const { data: actesWithSousDomaine } = await supabase
+        .from("actes_reglementaires_sous_domaines")
+        .select("acte_id")
+        .eq("sous_domaine_id", filters.sousDomaineFilter);
+      
+      const acteIds = actesWithSousDomaine?.map(a => a.acte_id) || [];
+      if (acteIds.length > 0) {
+        articlesQuery = articlesQuery.in("texte_id", acteIds);
+      } else {
+        articlesQuery = articlesQuery.in("texte_id", []);
+      }
     }
 
     const [textesResult, articlesResult] = await Promise.all([
