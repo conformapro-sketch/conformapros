@@ -45,6 +45,7 @@ import { BibliothequeFilterSidebar } from "@/components/bibliotheque/Bibliothequ
 import { BibliothequeViewSettings } from "@/components/bibliotheque/BibliothequeViewSettings";
 import { BibliothequeCardHoverPreview } from "@/components/bibliotheque/BibliothequeCardHoverPreview";
 import { BibliothequePreferencesProvider, useBibliothequePreferences } from "@/contexts/BibliothequePreferencesContext";
+import { BibliothequeRowActionsMenu } from "@/components/bibliotheque/BibliothequeRowActionsMenu";
 
 import * as XLSX from 'xlsx';
 
@@ -75,6 +76,8 @@ function BibliothequeReglementaireContent() {
   const [sousDomaineFilter, setSousDomaineFilter] = useState<string>("all");
   const [statutFilter, setStatutFilter] = useState<string>("all");
   const [anneeFilter, setAnneeFilter] = useState<string>("all");
+  const [withPdfFilter, setWithPdfFilter] = useState<boolean>(false);
+  const [favoritesFilter, setFavoritesFilter] = useState<boolean>(false);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState(preferences.sortBy);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">(preferences.sortOrder);
@@ -101,9 +104,9 @@ function BibliothequeReglementaireContent() {
   });
 
   const { data: result, isLoading, error } = useQuery({
-    queryKey: ["textes-reglementaires", searchTerm, typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter, page, sortBy, sortOrder],
-    queryFn: () =>
-      textesReglementairesQueries.getAll({
+    queryKey: ["textes-reglementaires", searchTerm, typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter, withPdfFilter, favoritesFilter, page, sortBy, sortOrder],
+    queryFn: async () => {
+      const data = await textesReglementairesQueries.getAll({
         searchTerm,
         typeFilter: typeFilter !== "all" ? typeFilter : undefined,
         statutFilter: statutFilter !== "all" ? statutFilter : undefined,
@@ -114,7 +117,23 @@ function BibliothequeReglementaireContent() {
         pageSize: preferences.pageSize,
         sortBy,
         sortOrder,
-      }),
+      });
+      
+      // Client-side filtering for PDF and favorites
+      let filteredData = data.data;
+      if (withPdfFilter) {
+        filteredData = filteredData.filter((t: any) => t.pdf_url);
+      }
+      if (favoritesFilter) {
+        filteredData = filteredData.filter((t: any) => isFavorite(t.id));
+      }
+      
+      return {
+        ...data,
+        data: filteredData,
+        count: filteredData.length,
+      };
+    },
   });
 
   if (error) {
@@ -255,17 +274,17 @@ function BibliothequeReglementaireContent() {
     setSousDomaineFilter("all");
     setStatutFilter("all");
     setAnneeFilter("all");
+    setWithPdfFilter(false);
+    setFavoritesFilter(false);
     setSearchTerm("");
     setPage(1);
   };
 
   const handleFilterByStatus = (status: string) => {
-    if (status === "with_pdf") {
-      // Handle PDF filter
-      // TODO: Add PDF filter to queries
-    } else if (status === "favorites") {
-      // Handle favorites filter
-      // TODO: Filter by favorites
+    if (status === "all") {
+      setStatutFilter("all");
+      setWithPdfFilter(false);
+      setFavoritesFilter(false);
     } else {
       setStatutFilter(status);
     }
@@ -273,8 +292,20 @@ function BibliothequeReglementaireContent() {
   };
 
   const handleQuickFilterChange = (filterId: string, value: string) => {
-    handleFilterByStatus(value);
+    if (filterId === "with_pdf") {
+      setWithPdfFilter(value === "true");
+      setStatutFilter("all");
+      setFavoritesFilter(false);
+    } else if (filterId === "favorites") {
+      setFavoritesFilter(value === "true");
+      setStatutFilter("all");
+      setWithPdfFilter(false);
+    } else {
+      handleFilterByStatus(value);
+    }
+    setPage(1);
   };
+
 
   const handleSelectTexte = (id: string, selected: boolean) => {
     setSelectedTextes(prev => 
@@ -381,6 +412,10 @@ function BibliothequeReglementaireContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Statistics Cards - Compact */}
+        <BibliothequeStatsCards stats={stats} onFilterByStatus={handleFilterByStatus} />
+
+        {/* Header avec gradient - Sticky */}
         <div className="sticky top-0 z-30 relative overflow-hidden rounded-2xl bg-gradient-primary/95 backdrop-blur-lg p-6 shadow-strong">
           <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
           <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -431,20 +466,40 @@ function BibliothequeReglementaireContent() {
         {/* Search Bar with Quick Filters */}
         <Card className="shadow-medium border-2 border-border/50">
           <CardContent className="p-6 space-y-4">
-            {/* Recherche améliorée */}
-            <BibliothequeSearchBar
-              value={searchTerm}
-              onChange={(value) => {
-                setSearchTerm(value);
-                setPage(1);
-              }}
-              isLoading={isLoading}
-              resultCount={totalCount}
-            />
+            <div className="flex gap-3 items-start">
+              {/* Recherche améliorée */}
+              <div className="flex-1">
+                <BibliothequeSearchBar
+                  value={searchTerm}
+                  onChange={(value) => {
+                    setSearchTerm(value);
+                    setPage(1);
+                  }}
+                  isLoading={isLoading}
+                  resultCount={totalCount}
+                />
+              </div>
+
+              {/* Bouton Filtres avancés */}
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowFilters(true)}
+                className="h-[42px] border-2 hover:border-primary/50 hover:bg-accent/5 transition-all"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filtres
+                {activeFiltersCount > 0 && (
+                  <Badge variant="secondary" className="ml-2 px-2 py-0.5">
+                    {activeFiltersCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
 
             {/* Quick Filters */}
             <BibliothequeQuickFilters
-              activeFilter={statutFilter}
+              activeFilter={withPdfFilter ? "with_pdf" : favoritesFilter ? "favorites" : statutFilter}
               onFilterChange={handleQuickFilterChange}
               stats={stats}
             />
@@ -457,6 +512,7 @@ function BibliothequeReglementaireContent() {
             />
           </CardContent>
         </Card>
+
 
         {/* Tableau des résultats */}
         <Card className="shadow-medium border-2" data-results-section>
@@ -513,9 +569,16 @@ function BibliothequeReglementaireContent() {
                 {preferences.view === "table" ? (
                   <div className="overflow-x-auto">
                      <Table>
-                    <TableHeader>
+                     <TableHeader>
                       <TableRow className="bg-muted/50 hover:bg-muted/50 border-b-2 border-border">
-                        <TableHead className="w-[140px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("type")}>
+                        <TableHead className="w-[50px]">
+                          <Checkbox
+                            checked={selectedTextes.length === textes.length && textes.length > 0}
+                            onCheckedChange={handleSelectAll}
+                            aria-label="Tout sélectionner"
+                          />
+                        </TableHead>
+                        <TableHead className="w-[120px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("type")}>
                           <div className="flex items-center gap-1.5">
                             Type
                             {sortBy === "type" && (
@@ -523,7 +586,7 @@ function BibliothequeReglementaireContent() {
                             )}
                           </div>
                         </TableHead>
-                        <TableHead className="w-[160px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("reference_officielle")}>
+                        <TableHead className="w-[140px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("reference_officielle")}>
                           <div className="flex items-center gap-1.5">
                             Référence
                             {sortBy === "reference_officielle" && (
@@ -539,15 +602,8 @@ function BibliothequeReglementaireContent() {
                             )}
                           </div>
                         </TableHead>
-                        <TableHead className="w-[200px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("autorite")}>
-                          <div className="flex items-center gap-1.5">
-                            Autorité
-                            {sortBy === "autorite" && (
-                              <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                            )}
-                          </div>
-                        </TableHead>
-                        <TableHead className="w-[110px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("date_publication")}>
+                        <TableHead className="w-[180px] font-bold text-sm uppercase tracking-wide">Statut & Articles</TableHead>
+                        <TableHead className="w-[100px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("date_publication")}>
                           <div className="flex items-center gap-1.5">
                             Date
                             {sortBy === "date_publication" && (
@@ -555,24 +611,31 @@ function BibliothequeReglementaireContent() {
                             )}
                           </div>
                         </TableHead>
-                        <TableHead className="w-[120px] font-bold text-sm uppercase tracking-wide">Statut</TableHead>
-                        <TableHead className="w-[90px] font-bold text-center text-sm uppercase tracking-wide">Articles</TableHead>
-                        <TableHead className="w-[100px] font-bold text-center text-sm uppercase tracking-wide">Document</TableHead>
-                        <TableHead className="w-[140px] font-bold text-right text-sm uppercase tracking-wide">Actions</TableHead>
+                        <TableHead className="w-[120px] font-bold text-right text-sm uppercase tracking-wide">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                       <TableBody>
-                        {textes.map((texte: any) => {
+                        {textes.map((texte: any, index: number) => {
                           const statutInfo = getStatutBadge(texte.statut_vigueur);
                           const articleCount = texte.articles?.[0]?.count || 0;
                           const isNew = isNewTexte(texte);
+                          const isSelected = selectedTextes.includes(texte.id);
                           
                           return (
                             <BibliothequePreview key={texte.id} texte={texte} getStatutBadge={getStatutBadge}>
                               <TableRow 
-                                className="hover:bg-accent/5 transition-all duration-200 cursor-pointer border-b border-border/50 group"
+                                className={`transition-all duration-200 cursor-pointer border-b border-border/50 group ${
+                                  index % 2 === 0 ? 'bg-background' : 'bg-muted/30'
+                                } hover:bg-accent/10`}
                                 onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
                               >
+                                <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => handleSelectTexte(texte.id, checked as boolean)}
+                                    aria-label={`Sélectionner ${texte.reference_officielle}`}
+                                  />
+                                </TableCell>
                                 <TableCell className="py-4">
                                   <div className="flex flex-col gap-2">
                                     <Badge 
@@ -606,9 +669,16 @@ function BibliothequeReglementaireContent() {
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-sm text-muted-foreground py-4 leading-relaxed">
-                                  <div className="line-clamp-2">
-                                    {texte.autorite_emettrice || "—"}
+                                <TableCell className="py-4">
+                                  <div className="flex flex-col gap-2">
+                                    <Badge className={`${statutInfo.className} px-3 py-1.5 text-xs whitespace-nowrap w-fit`}>
+                                      <span className="mr-1.5 text-sm">{statutInfo.icon}</span>
+                                      {statutInfo.label}
+                                    </Badge>
+                                    <div className="inline-flex items-center justify-start px-2 py-1 rounded-lg bg-primary/10 text-primary font-bold text-sm border border-primary/20 w-fit">
+                                      <FileText className="h-3 w-3 mr-1.5" />
+                                      {articleCount} article{articleCount > 1 ? 's' : ''}
+                                    </div>
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-sm font-medium text-foreground whitespace-nowrap py-4">
@@ -620,74 +690,16 @@ function BibliothequeReglementaireContent() {
                                       })
                                     : "—"}
                                 </TableCell>
-                                <TableCell className="py-4">
-                                  <Badge className={`${statutInfo.className} px-3 py-1.5 text-xs whitespace-nowrap`}>
-                                    <span className="mr-1.5 text-sm">{statutInfo.icon}</span>
-                                    {statutInfo.label}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-center py-4">
-                                  <div className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-bold text-base border border-primary/20">
-                                    {articleCount}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center py-4" onClick={(e) => e.stopPropagation()}>
-                                  {texte.pdf_url ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleViewPdf(texte);
-                                      }}
-                                      className="h-9 px-4 hover:bg-accent/10 hover:text-accent transition-colors"
-                                    >
-                                      <FileText className="h-4 w-4 mr-1.5" />
-                                      <span className="font-medium text-xs">PDF</span>
-                                    </Button>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground font-medium">—</span>
-                                  )}
-                                </TableCell>
                                 <TableCell className="text-right py-4" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex justify-end gap-1.5">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/bibliotheque/textes/${texte.id}`);
-                                      }}
-                                      className="h-9 w-9 p-0 hover:bg-primary/10 hover:text-primary transition-colors"
-                                      title="Voir les détails"
-                                    >
-                                      <FileText className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEdit(texte);
-                                      }}
-                                      className="h-9 w-9 p-0 hover:bg-accent/10 hover:text-accent transition-colors"
-                                      title="Modifier"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeleteTexteId(texte.id);
-                                      }}
-                                      className="h-9 w-9 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
-                                      title="Supprimer"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
+                                  <BibliothequeRowActionsMenu
+                                    texte={texte}
+                                    onView={() => navigate(`/bibliotheque/textes/${texte.id}`)}
+                                    onEdit={() => handleEdit(texte)}
+                                    onDelete={() => setDeleteTexteId(texte.id)}
+                                    onViewPdf={texte.pdf_url ? handleViewPdf : undefined}
+                                    onToggleFavorite={() => toggleFavorite(texte.id)}
+                                    isFavorite={isFavorite(texte.id)}
+                                  />
                                 </TableCell>
                               </TableRow>
                             </BibliothequePreview>
@@ -796,8 +808,8 @@ function BibliothequeReglementaireContent() {
 
       {/* Filter Sidebar */}
       <BibliothequeFilterSidebar
-        open={preferences.sidebarOpen}
-        onOpenChange={setSidebarOpen}
+        open={showFilters}
+        onOpenChange={setShowFilters}
         typeFilter={typeFilter}
         statutFilter={statutFilter}
         domaineFilter={domaineFilter}
@@ -808,19 +820,28 @@ function BibliothequeReglementaireContent() {
         onDomaineChange={(val) => { setDomaineFilter(val); setPage(1); }}
         onSousDomaineChange={(val) => { setSousDomaineFilter(val); setPage(1); }}
         onAnneeChange={(val) => { setAnneeFilter(val); setPage(1); }}
-        domaines={domainesList?.map(d => ({ id: d.id, label: d.libelle })) || []}
-        sousDomaines={sousDomainesList?.map(sd => ({ id: sd.id, label: sd.libelle })) || []}
+        domaines={domainesList?.map((d: any) => ({ id: d.id, label: d.libelle })) || []}
+        sousDomaines={sousDomainesList?.map((sd: any) => ({ id: sd.id, label: sd.libelle })) || []}
         years={uniqueYears as number[]}
         onClearAll={clearAllFilters}
       />
 
-      {/* Bulk Actions Floating Bar */}
-      <BibliothequeFloatingActions
-        selectedCount={selectedTextes.length}
-        onExport={handleBulkExport}
-        onDelete={handleBulkDelete}
-        onClear={() => setSelectedTextes([])}
+      <PDFViewerModal
+        open={pdfViewerOpen}
+        onOpenChange={setPdfViewerOpen}
+        pdfUrl={selectedPdfUrl || ""}
+        title={selectedPdfTitle}
       />
+
+      {/* Bulk Actions Floating Bar */}
+      {selectedTextes.length > 0 && (
+        <BibliothequeFloatingActions
+          selectedCount={selectedTextes.length}
+          onExport={handleBulkExport}
+          onDelete={handleBulkDelete}
+          onClear={() => setSelectedTextes([])}
+        />
+      )}
 
       {/* Quick View Drawer */}
       <BibliothequeQuickView
@@ -869,14 +890,6 @@ function BibliothequeReglementaireContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* PDF Viewer Modal */}
-      <PDFViewerModal
-        open={pdfViewerOpen}
-        onOpenChange={setPdfViewerOpen}
-        pdfUrl={selectedPdfUrl}
-        title={selectedPdfTitle}
-      />
     </div>
   );
 }
