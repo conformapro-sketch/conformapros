@@ -73,9 +73,7 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "type_acte",
       header: "Type",
-      size: 100,
-      minSize: 80,
-      maxSize: 150,
+      size: 120,
       cell: ({ row }) => {
         const type = row.original.type_acte;
         const Icon = TYPE_ICONS[type] || FileText;
@@ -90,11 +88,9 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "reference_officielle",
       header: "Référence",
-      size: 150,
-      minSize: 120,
-      maxSize: 200,
+      size: 200,
       cell: ({ row }) => (
-        <HoverCard openDelay={300}>
+        <HoverCard openDelay={200}>
           <HoverCardTrigger asChild>
             <span className="font-semibold text-primary cursor-pointer hover:underline truncate block">
               {row.original.reference_officielle}
@@ -114,11 +110,9 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "intitule",
       header: "Titre",
-      size: 300,
-      minSize: 200,
-      maxSize: 500,
+      size: 400,
       cell: ({ row }) => (
-        <HoverCard openDelay={300}>
+        <HoverCard openDelay={200}>
           <HoverCardTrigger asChild>
             <div className="cursor-pointer">
               <p className="line-clamp-2 text-sm">{row.original.intitule}</p>
@@ -138,7 +132,7 @@ export function BibliothequeDataGrid({
     {
       id: "statut_articles",
       header: "Statut & Articles",
-      size: 160,
+      size: 180,
       cell: ({ row }) => {
         const statut = getStatutBadge(row.original.statut_vigueur);
         const articlesCount = row.original.articles?.[0]?.count || 0;
@@ -157,9 +151,7 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "date_publication",
       header: "Date",
-      size: 110,
-      minSize: 100,
-      maxSize: 130,
+      size: 120,
       cell: ({ row }) => {
         const date = row.original.date_publication;
         if (!date) return "-";
@@ -176,7 +168,7 @@ export function BibliothequeDataGrid({
     },
     {
       id: "actions",
-      size: 80,
+      size: 100,
       cell: ({ row }) => (
         <BibliothequeRowActionsMenu
           texte={row.original}
@@ -189,7 +181,6 @@ export function BibliothequeDataGrid({
         />
       ),
       enableSorting: false,
-      enableResizing: false,
     },
   ];
 
@@ -202,14 +193,12 @@ export function BibliothequeDataGrid({
     state: {
       sorting,
     },
-    enableColumnResizing: true,
-    columnResizeMode: "onChange",
   });
 
   return (
-    <div className="rounded-md border bg-card">
+    <div className="rounded-md border bg-card w-full">
       <div className="overflow-x-auto">
-        <Table>
+        <Table style={{ minWidth: '1120px', width: '100%' }}>
           <TableHeader className="sticky top-0 bg-card z-10 border-b">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -237,16 +226,8 @@ export function BibliothequeDataGrid({
                             {sorted === "asc" && <ArrowUp className="h-4 w-4" />}
                             {sorted === "desc" && <ArrowDown className="h-4 w-4" />}
                           </span>
-                        )}
-                      </div>
-                      
-                      {header.column.getCanResize() && (
-                        <div
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-border opacity-0 hover:opacity-100 transition-opacity"
-                        />
                       )}
+                      </div>
                     </TableHead>
                   );
                 })}
@@ -260,10 +241,8 @@ export function BibliothequeDataGrid({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={cn(
-                    "transition-colors hover:bg-muted/50",
-                    index % 2 === 0 && "bg-muted/30"
-                  )}
+                  className="transition-colors hover:bg-muted/70 cursor-pointer"
+                  onClick={() => onView(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell

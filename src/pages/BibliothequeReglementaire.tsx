@@ -21,6 +21,7 @@ import { BibliothequeCardView } from "@/components/bibliotheque/BibliothequeCard
 import { BibliothequeHorizontalFilters } from "@/components/bibliotheque/BibliothequeHorizontalFilters";
 import { BibliothequeQuickFilters } from "@/components/bibliotheque/BibliothequeQuickFilters";
 import { BibliothequeTableSkeleton } from "@/components/bibliotheque/BibliothequeTableSkeleton";
+import { BibliothequeViewToggle } from "@/components/bibliotheque/BibliothequeViewToggle";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
 import { BibliothequePreferencesProvider, useBibliothequePreferences } from "@/contexts/BibliothequePreferencesContext";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -39,6 +40,9 @@ function BibliothequeReglementaireContent() {
   const queryClient = useQueryClient();
   const { isMobile, isDesktop } = useMediaQuery();
   const { toggleFavorite, isFavorite } = useBibliothequePreferences();
+  
+  // View state
+  const [view, setView] = useState<"table" | "grid">("table");
   
   // États des filtres
   const [searchTerm, setSearchTerm] = useState("");
@@ -254,6 +258,7 @@ function BibliothequeReglementaireContent() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {!isMobile && <BibliothequeViewToggle view={view} onViewChange={setView} />}
           <Button
             variant="outline"
             onClick={() => setShowImportDialog(true)}
@@ -343,7 +348,7 @@ function BibliothequeReglementaireContent() {
             </div>
           ) : (
             <>
-              {isMobile ? (
+              {isMobile || view === "grid" ? (
                 <BibliothequeCardView
                   data={textes}
                   onView={handleView}
