@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { FileText, BookOpen, Lightbulb, CheckCircle2, XCircle, Circle, ChevronLeft, ChevronRight } from "lucide-react";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface ArticleViewModalProps {
   open: boolean;
@@ -111,7 +112,7 @@ export function ArticleViewModal({
             {article?.contenu ? (
               <div
                 className="prose prose-sm max-w-none dark:prose-invert"
-                dangerouslySetInnerHTML={{ __html: article.contenu }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.contenu) }}
               />
             ) : (
               <p className="text-sm text-muted-foreground italic">

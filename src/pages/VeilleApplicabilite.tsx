@@ -6,7 +6,7 @@ import { fetchSites, bulkUpdateSiteArticleStatus } from "@/lib/multi-tenant-quer
 import { fetchDomaines } from "@/lib/domaines-queries";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { stripHtml } from "@/lib/sanitize-html";
+import { stripHtml, sanitizeHtml } from "@/lib/sanitize-html";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1142,9 +1142,14 @@ export default function VeilleApplicabilite() {
                               <TableCell colSpan={6}>
                                 <div className="p-4 bg-muted/50 rounded-lg">
                                   <h4 className="font-semibold mb-2">Contenu de l'article</h4>
-                                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                    {article.article_contenu}
-                                  </p>
+                                  <div 
+                                    className="prose prose-sm max-w-none text-sm text-muted-foreground"
+                                    dangerouslySetInnerHTML={{ 
+                                      __html: article.article_contenu 
+                                        ? sanitizeHtml(article.article_contenu) 
+                                        : "Contenu non disponible" 
+                                    }}
+                                  />
                                 </div>
                               </TableCell>
                             </TableRow>

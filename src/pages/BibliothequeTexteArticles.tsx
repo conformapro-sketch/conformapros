@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { actesQueries, articlesQueries } from "@/lib/actes-queries";
 import { textesArticlesQueries } from "@/lib/textes-queries";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export default function BibliothequeTexteArticles() {
   const { id } = useParams<{ id: string }>();
@@ -104,12 +105,18 @@ export default function BibliothequeTexteArticles() {
 
                 {article.contenu_fr && (
                   <div className="prose prose-sm max-w-none">
-                    <div className="text-sm whitespace-pre-wrap">{article.contenu_fr}</div>
+                    <div 
+                      className="text-sm"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.contenu_fr) }}
+                    />
                   </div>
                 )}
                 {article.contenu_ar && (
                   <div className="mt-4 prose prose-sm max-w-none" dir="rtl">
-                    <div className="text-sm whitespace-pre-wrap">{article.contenu_ar}</div>
+                    <div 
+                      className="text-sm"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.contenu_ar) }}
+                    />
                   </div>
                 )}
                 {article.notes && (
