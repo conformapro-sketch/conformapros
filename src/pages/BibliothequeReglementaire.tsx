@@ -408,15 +408,6 @@ function BibliothequeReglementaireContent() {
               <Button 
                 variant="secondary" 
                 size="sm" 
-                onClick={() => setSidebarOpen(true)}
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filtres
-              </Button>
-              <Button 
-                variant="secondary" 
-                size="sm" 
                 onClick={() => setShowImportDialog(true)}
                 className="bg-white/20 hover:bg-white/30 text-white border-white/30"
               >
@@ -471,125 +462,20 @@ function BibliothequeReglementaireContent() {
               resultCount={totalCount}
               onClearAll={clearAllFilters}
             />
-
-            {/* Filtres avancés */}
-            {showFilters && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2 border-t">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Type
-                  </label>
-                  <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); setPage(1); }}>
-                    <SelectTrigger className="border-2">
-                      <SelectValue placeholder="Tous les types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les types</SelectItem>
-                      {Object.entries(TYPE_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Statut
-                  </label>
-                  <Select value={statutFilter} onValueChange={(val) => { setStatutFilter(val); setPage(1); }}>
-                    <SelectTrigger className="border-2">
-                      <SelectValue placeholder="Tous les statuts" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les statuts</SelectItem>
-                      <SelectItem value="en_vigueur">✓ En vigueur</SelectItem>
-                      <SelectItem value="modifie">⚠ Modifié</SelectItem>
-                      <SelectItem value="abroge">✕ Abrogé</SelectItem>
-                      <SelectItem value="suspendu">⏸ Suspendu</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Domaine
-                  </label>
-                  <Select value={domaineFilter} onValueChange={(val) => { 
-                    setDomaineFilter(val); 
-                    setSousDomaineFilter("all");
-                    setPage(1); 
-                  }}>
-                    <SelectTrigger className="border-2">
-                      <SelectValue placeholder="Tous les domaines" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les domaines</SelectItem>
-                      {domainesList?.map((domaine) => (
-                        <SelectItem key={domaine.id} value={domaine.id}>
-                          {domaine.libelle}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Sous-domaine
-                  </label>
-                  <Select 
-                    value={sousDomaineFilter} 
-                    onValueChange={(val) => { setSousDomaineFilter(val); setPage(1); }}
-                    disabled={domaineFilter === "all"}
-                  >
-                    <SelectTrigger className="border-2">
-                      <SelectValue placeholder="Sous-domaine" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous</SelectItem>
-                      {sousDomainesList?.map((sd) => (
-                        <SelectItem key={sd.id} value={sd.id}>
-                          {sd.libelle}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Année
-                  </label>
-                  <Select value={anneeFilter} onValueChange={(val) => { setAnneeFilter(val); setPage(1); }}>
-                    <SelectTrigger className="border-2">
-                      <SelectValue placeholder="Toutes" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toutes les années</SelectItem>
-                      {uniqueYears.map((year: any) => (
-                        <SelectItem key={year} value={String(year)}>
-                          {year as number}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
         {/* Tableau des résultats */}
-        <Card className="shadow-medium" data-results-section>
-          <CardHeader className="border-b bg-muted/30">
+        <Card className="shadow-medium border-2" data-results-section>
+          <CardHeader className="border-b bg-muted/20 backdrop-blur-sm">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-primary" />
+                <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
                 <div>
-                  <CardTitle className="text-xl">Textes réglementaires</CardTitle>
-                  <CardDescription className="mt-1">
+                  <CardTitle className="text-xl font-bold">Textes réglementaires</CardTitle>
+                  <CardDescription className="mt-1 text-sm font-medium">
                     {totalCount} texte{totalCount > 1 ? 's' : ''} trouvé{totalCount > 1 ? 's' : ''}
                   </CardDescription>
                 </div>
@@ -605,24 +491,10 @@ function BibliothequeReglementaireContent() {
                     <SelectItem value="100">100 par page</SelectItem>
                   </SelectContent>
                 </Select>
-                {preferences.view === "grid" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSelectAll(selectedTextes.length !== textes.length)}
-                  >
-                    <Checkbox 
-                      checked={selectedTextes.length === textes.length && textes.length > 0}
-                      className="mr-2"
-                    />
-                    Tout sélectionner
-                  </Button>
-                )}
                 <BibliothequeViewSettings 
                   density={preferences.density}
                   onDensityChange={setDensity}
                 />
-                <BibliothequeViewToggle view={preferences.view} onViewChange={setView} />
               </div>
             </div>
           </CardHeader>
@@ -647,53 +519,53 @@ function BibliothequeReglementaireContent() {
               <>
                 {preferences.view === "table" ? (
                   <div className="overflow-x-auto">
-                    <Table>
+                     <Table>
                     <TableHeader>
-                      <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableHead className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort("type")}>
-                          <div className="flex items-center gap-1">
+                      <TableRow className="bg-muted/50 hover:bg-muted/50 border-b-2 border-border">
+                        <TableHead className="w-[140px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("type")}>
+                          <div className="flex items-center gap-1.5">
                             Type
                             {sortBy === "type" && (
                               <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
                             )}
                           </div>
                         </TableHead>
-                        <TableHead className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort("reference_officielle")}>
-                          <div className="flex items-center gap-1">
+                        <TableHead className="w-[160px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("reference_officielle")}>
+                          <div className="flex items-center gap-1.5">
                             Référence
                             {sortBy === "reference_officielle" && (
                               <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
                             )}
                           </div>
                         </TableHead>
-                        <TableHead className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort("titre")}>
-                          <div className="flex items-center gap-1">
+                        <TableHead className="font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("titre")}>
+                          <div className="flex items-center gap-1.5">
                             Titre
                             {sortBy === "titre" && (
                               <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
                             )}
                           </div>
                         </TableHead>
-                        <TableHead className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort("autorite")}>
-                          <div className="flex items-center gap-1">
+                        <TableHead className="w-[200px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("autorite")}>
+                          <div className="flex items-center gap-1.5">
                             Autorité
                             {sortBy === "autorite" && (
                               <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
                             )}
                           </div>
                         </TableHead>
-                        <TableHead className="font-semibold cursor-pointer hover:text-primary transition-colors" onClick={() => handleSort("date_publication")}>
-                          <div className="flex items-center gap-1">
+                        <TableHead className="w-[110px] font-bold cursor-pointer hover:text-primary transition-colors text-sm uppercase tracking-wide" onClick={() => handleSort("date_publication")}>
+                          <div className="flex items-center gap-1.5">
                             Date
                             {sortBy === "date_publication" && (
                               <span className="text-accent">{sortOrder === "asc" ? "↑" : "↓"}</span>
                             )}
                           </div>
                         </TableHead>
-                        <TableHead className="font-semibold">Statut</TableHead>
-                        <TableHead className="font-semibold text-center">Articles</TableHead>
-                        <TableHead className="font-semibold text-center">Document</TableHead>
-                        <TableHead className="font-semibold text-right">Actions</TableHead>
+                        <TableHead className="w-[120px] font-bold text-sm uppercase tracking-wide">Statut</TableHead>
+                        <TableHead className="w-[90px] font-bold text-center text-sm uppercase tracking-wide">Articles</TableHead>
+                        <TableHead className="w-[100px] font-bold text-center text-sm uppercase tracking-wide">Document</TableHead>
+                        <TableHead className="w-[140px] font-bold text-right text-sm uppercase tracking-wide">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                       <TableBody>
@@ -705,55 +577,68 @@ function BibliothequeReglementaireContent() {
                           return (
                             <BibliothequePreview key={texte.id} texte={texte} getStatutBadge={getStatutBadge}>
                               <TableRow 
-                                className="hover:bg-accent/5 transition-colors cursor-pointer"
+                                className="hover:bg-accent/5 transition-all duration-200 cursor-pointer border-b border-border/50 group"
                                 onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
                               >
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-xs font-medium">
-                                      <span className="mr-1.5">{TYPE_ICONS[texte.type_acte as keyof typeof TYPE_ICONS]}</span>
+                                <TableCell className="py-4">
+                                  <div className="flex flex-col gap-2">
+                                    <Badge 
+                                      variant="outline" 
+                                      className="text-xs font-bold px-3 py-1 w-fit border-2 group-hover:border-primary/50 transition-colors"
+                                    >
+                                      <span className="mr-1.5 text-base">{TYPE_ICONS[texte.type_acte as keyof typeof TYPE_ICONS]}</span>
                                       {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS]}
                                     </Badge>
                                     {isNew && (
-                                      <Badge className="bg-accent text-accent-foreground text-xs">Nouveau</Badge>
+                                      <Badge className="bg-accent text-accent-foreground text-xs w-fit font-semibold px-2 py-0.5">
+                                        Nouveau
+                                      </Badge>
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className="font-semibold text-sm">
-                                  {texte.reference_officielle}
+                                <TableCell className="font-bold text-sm py-4 text-primary">
+                                  <div className="break-words leading-relaxed">
+                                    {texte.reference_officielle}
+                                  </div>
                                 </TableCell>
-                                <TableCell>
-                                  <div className="max-w-md">
-                                    <div className="font-medium text-foreground line-clamp-2 mb-1">
+                                <TableCell className="py-4">
+                                  <div className="space-y-1.5">
+                                    <div className="font-semibold text-foreground leading-snug line-clamp-2 text-[15px]">
                                       {texte.intitule}
                                     </div>
                                     {texte.resume && (
-                                      <div className="text-xs text-muted-foreground line-clamp-1">
+                                      <div className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                                         {texte.resume}
                                       </div>
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                  {texte.autorite_emettrice || "—"}
+                                <TableCell className="text-sm text-muted-foreground py-4 leading-relaxed">
+                                  <div className="line-clamp-2">
+                                    {texte.autorite_emettrice || "—"}
+                                  </div>
                                 </TableCell>
-                                <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                                <TableCell className="text-sm font-medium text-foreground whitespace-nowrap py-4">
                                   {texte.date_publication
-                                    ? new Date(texte.date_publication).toLocaleDateString("fr-FR")
+                                    ? new Date(texte.date_publication).toLocaleDateString("fr-FR", {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                      })
                                     : "—"}
                                 </TableCell>
-                                <TableCell>
-                                  <Badge className={statutInfo.className}>
-                                    <span className="mr-1">{statutInfo.icon}</span>
+                                <TableCell className="py-4">
+                                  <Badge className={`${statutInfo.className} px-3 py-1.5 text-xs whitespace-nowrap`}>
+                                    <span className="mr-1.5 text-sm">{statutInfo.icon}</span>
                                     {statutInfo.label}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-center">
-                                  <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-md bg-primary/5 text-primary font-semibold text-sm">
+                                <TableCell className="text-center py-4">
+                                  <div className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-bold text-base border border-primary/20">
                                     {articleCount}
                                   </div>
                                 </TableCell>
-                                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                                <TableCell className="text-center py-4" onClick={(e) => e.stopPropagation()}>
                                   {texte.pdf_url ? (
                                     <Button
                                       variant="ghost"
@@ -762,17 +647,17 @@ function BibliothequeReglementaireContent() {
                                         e.stopPropagation();
                                         handleViewPdf(texte);
                                       }}
-                                      className="h-8 px-3 hover:bg-accent/10"
+                                      className="h-9 px-4 hover:bg-accent/10 hover:text-accent transition-colors"
                                     >
-                                      <FileText className="h-4 w-4 text-accent mr-1.5" />
-                                      <Badge variant="secondary" className="text-xs">PDF</Badge>
+                                      <FileText className="h-4 w-4 mr-1.5" />
+                                      <span className="font-medium text-xs">PDF</span>
                                     </Button>
                                   ) : (
-                                    <span className="text-xs text-muted-foreground">—</span>
+                                    <span className="text-xs text-muted-foreground font-medium">—</span>
                                   )}
                                 </TableCell>
-                                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex justify-end gap-1">
+                                <TableCell className="text-right py-4" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex justify-end gap-1.5">
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -780,7 +665,8 @@ function BibliothequeReglementaireContent() {
                                         e.stopPropagation();
                                         navigate(`/bibliotheque/textes/${texte.id}`);
                                       }}
-                                      className="h-8 w-8 p-0"
+                                      className="h-9 w-9 p-0 hover:bg-primary/10 hover:text-primary transition-colors"
+                                      title="Voir les détails"
                                     >
                                       <FileText className="h-4 w-4" />
                                     </Button>
@@ -791,7 +677,8 @@ function BibliothequeReglementaireContent() {
                                         e.stopPropagation();
                                         handleEdit(texte);
                                       }}
-                                      className="h-8 w-8 p-0 hover:text-accent"
+                                      className="h-9 w-9 p-0 hover:bg-accent/10 hover:text-accent transition-colors"
+                                      title="Modifier"
                                     >
                                       <Pencil className="h-4 w-4" />
                                     </Button>
@@ -802,7 +689,8 @@ function BibliothequeReglementaireContent() {
                                         e.stopPropagation();
                                         setDeleteTexteId(texte.id);
                                       }}
-                                      className="h-8 w-8 p-0 hover:text-destructive"
+                                      className="h-9 w-9 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                      title="Supprimer"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
