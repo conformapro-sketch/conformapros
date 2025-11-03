@@ -122,17 +122,42 @@ export interface Article {
   deleted_at?: string;
 }
 
+export type ModificationType = 
+  | "ajout" 
+  | "modification" 
+  | "abrogation" 
+  | "remplacement" 
+  | "insertion";
+
 export interface ArticleVersion {
   id: string;
   article_id: string;
+  version_numero: number;
   version_label: string;
   contenu: string;
-  date_effet?: string;
-  statut_vigueur: StatutVigueur;
-  remplace_version_id?: string;
+  date_version: string;
+  raison_modification?: string;
+  // Nouveaux champs de traçabilité
+  modification_type: ModificationType;
+  source_text_id?: string;
+  source_article_reference?: string;
+  effective_from: string;
+  effective_to?: string;
+  is_active: boolean;
+  notes_modification?: string;
+  replaced_version_id?: string;
+  created_by?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   deleted_at?: string;
+  // Relations chargées
+  source_text?: {
+    id: string;
+    reference_officielle: string;
+    intitule: string;
+    type_acte: TypeActe;
+    date_publication?: string;
+  };
 }
 
 export interface StructureCode {

@@ -510,27 +510,90 @@ export const textesArticlesQueries = {
 export const textesArticlesVersionsQueries = {
   async getByArticleId(articleId: string) {
     const { data, error } = await supabase
-      .from("textes_articles_versions")
-      .select("*")
+      .from("article_versions")
+      .select(`
+        *,
+        source_text:source_text_id (
+          id,
+          reference_officielle,
+          intitule,
+          type_acte,
+          date_publication
+        )
+      `)
       .eq("article_id", articleId)
       .is("deleted_at", null)
-      .order("created_at", { ascending: false });
+      .order("effective_from", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async getByArticleIdWithSources(articleId: string) {
+    const { data, error } = await supabase
+      .from("article_versions")
+      .select(`
+        *,
+        source_text:source_text_id (
+          id,
+          reference_officielle,
+          intitule,
+          type_acte,
+          date_publication
+        )
+      `)
+      .eq("article_id", articleId)
+      .is("deleted_at", null)
+      .order("effective_from", { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+  async getActiveVersionAtDate(articleId: string, targetDate: string) {
+    const { data, error } = await supabase
+      .rpc('get_article_version_at_date', {
+        p_article_id: articleId,
+        p_target_date: targetDate
+      });
+    if (error) throw error;
+    return data?.[0];
+  },
+
+  async getModificationHistory(articleId: string) {
+    const { data, error } = await supabase
+      .rpc('get_article_modification_history', {
+        p_article_id: articleId
+      });
     if (error) throw error;
     return data;
   },
 
   async create(version: {
     article_id: string;
+    version_numero: number;
     version_label: string;
     contenu: string;
-    date_effet?: string;
-    statut_vigueur: string;
-    remplace_version_id?: string;
+    date_version: string;
+    effective_from: string;
+    effective_to?: string;
+    modification_type: string;
+    source_text_id?: string;
+    source_article_reference?: string;
+    replaced_version_id?: string;
+    notes_modification?: string;
+    raison_modification?: string;
   }) {
     const { data, error } = await supabase
-      .from("textes_articles_versions")
+      .from("article_versions")
       .insert([version as any])
-      .select()
+      .select(`
+        *,
+        source_text:source_text_id (
+          id,
+          reference_officielle,
+          intitule,
+          type_acte
+        )
+      `)
       .single();
     if (error) throw error;
     return data;
@@ -539,14 +602,27 @@ export const textesArticlesVersionsQueries = {
   async update(id: string, version: Partial<{
     version_label: string;
     contenu: string;
-    date_effet: string;
-    statut_vigueur: string;
+    effective_from: string;
+    effective_to?: string;
+    modification_type: string;
+    source_text_id?: string;
+    source_article_reference?: string;
+    notes_modification?: string;
+    is_active: boolean;
   }>) {
     const { data, error } = await supabase
-      .from("textes_articles_versions")
+      .from("article_versions")
       .update(version as any)
       .eq("id", id)
-      .select()
+      .select(`
+        *,
+        source_text:source_text_id (
+          id,
+          reference_officielle,
+          intitule,
+          type_acte
+        )
+      `)
       .single();
     if (error) throw error;
     return data;
@@ -554,7 +630,7 @@ export const textesArticlesVersionsQueries = {
 
   async softDelete(id: string) {
     const { error } = await supabase
-      .from("textes_articles_versions")
+      .from("article_versions")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", id);
     if (error) throw error;
