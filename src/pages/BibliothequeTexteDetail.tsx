@@ -179,7 +179,14 @@ export default function BibliothequeTexteDetail() {
   };
 
   const handleCreateEffet = (article: any) => {
-    setTargetArticleForEffet(article);
+    setTargetArticleForEffet({
+      ...article,
+      texte_id: id,
+      texte: {
+        type: texte?.type || "",
+        reference_officielle: texte?.reference_officielle || "",
+      }
+    });
     setShowQuickEffetModal(true);
   };
 

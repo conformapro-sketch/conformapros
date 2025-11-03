@@ -429,6 +429,34 @@ Le système vérifie automatiquement la cohérence juridique :
 
 ## 🐛 Dépannage
 
+### ❓ FAQ : Création de versions
+
+#### Je n'arrive pas à sélectionner le texte source
+
+**Problème** : Le sélecteur de texte réglementaire ne fonctionne pas
+
+**Solutions** :
+1. **Vérifiez que vous utilisez le bon bouton** :
+   - ✅ **Bouton bleu FileEdit** "Créer une modification réglementaire"
+   - ❌ Pas le bouton Pencil "Éditer l'article"
+
+2. **Si le sélecteur reste vide** :
+   - Vérifiez qu'il existe des textes dans la bibliothèque
+   - Essayez une recherche plus large ("2024" au lieu du numéro exact)
+   - Ouvrez la console développeur (F12) pour voir les erreurs
+
+3. **Si le texte ne s'affiche pas après sélection** :
+   - Rafraîchissez la page (F5)
+   - Vérifiez que le texte a bien un `type_acte` défini
+   - Vérifiez les logs dans la console développeur
+
+#### Différence entre "Éditer" et "Créer une modification" ?
+
+| Action | Bouton | Résultat | Quand l'utiliser ? |
+|--------|--------|----------|-------------------|
+| **Éditer l'article** | Pencil (✏️) | Modifie directement sans version | Corriger une faute de frappe |
+| **Créer une modification** | FileEdit (📝) | Crée une version liée à un texte source | Modification réglementaire officielle |
+
 ### Le sélecteur de texte source ne fonctionne pas
 
 **Symptôme** : Impossible de sélectionner un texte réglementaire lors de la création d'un effet juridique

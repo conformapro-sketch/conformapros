@@ -79,6 +79,17 @@ export function ArticleQuickEffetModal({
   // Initialiser le contenu modifié avec le contenu actuel de l'article cible
   useEffect(() => {
     if (open && targetArticle) {
+      console.log("🎯 Article cible:", {
+        id: targetArticle.id,
+        numero: targetArticle.numero_article,
+        texte_id: targetArticle.texte_id,
+        texte: targetArticle.texte,
+      });
+      
+      if (!targetArticle.texte) {
+        toast.warning("Attention : Les informations du texte parent sont manquantes");
+      }
+      
       setContenuModifie(targetArticle.contenu || "");
     }
   }, [open, targetArticle]);
@@ -214,11 +225,27 @@ export function ArticleQuickEffetModal({
 
   const canSubmit = () => {
     const texteSource = selectedTexteSource || sourceTexte;
-    if (!texteSource) return false;
-    if (createNewArticle && !newArticleNumero.trim()) return false;
-    if (!createNewArticle && !selectedArticleSource && !sourceArticle) return false;
-    if (hierarchyValidation?.severity === "error") return false;
-    if (typeEffet !== "ABROGE" && !contenuModifie.trim()) return false;
+    if (!texteSource) {
+      console.log("❌ Texte source manquant");
+      return false;
+    }
+    if (createNewArticle && !newArticleNumero.trim()) {
+      console.log("❌ Numéro de nouvel article manquant");
+      return false;
+    }
+    if (!createNewArticle && !selectedArticleSource && !sourceArticle) {
+      console.log("❌ Article source manquant");
+      return false;
+    }
+    if (hierarchyValidation?.severity === "error") {
+      console.log("❌ Validation hiérarchique échouée");
+      return false;
+    }
+    if (typeEffet !== "ABROGE" && !contenuModifie.trim()) {
+      console.log("❌ Contenu modifié manquant");
+      return false;
+    }
+    console.log("✅ Formulaire valide");
     return true;
   };
 
@@ -261,17 +288,43 @@ export function ArticleQuickEffetModal({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Aide contextuelle */}
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs space-y-1 mt-2">
+              <div><strong>Comment créer une modification réglementaire ?</strong></div>
+              <div>1️⃣ Sélectionnez le <strong>texte source</strong> (nouveau décret/loi qui modifie)</div>
+              <div>2️⃣ Choisissez ou créez l'<strong>article source</strong> (article du nouveau texte)</div>
+              <div>3️⃣ Définissez le <strong>type d'effet</strong> (MODIFIE, REMPLACE, ABROGE...)</div>
+              <div>4️⃣ Saisissez le <strong>nouveau contenu</strong> (sera créé automatiquement en version 2)</div>
+            </AlertDescription>
+          </Alert>
+
+          {/* Récapitulatif article cible */}
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">📌 Article cible</h4>
+            <div className="text-sm text-blue-700 dark:text-blue-300">
+              <div className="font-medium">{targetArticle?.numero_article}</div>
+              <div className="text-xs">{targetArticle?.texte?.reference_officielle}</div>
+            </div>
+          </div>
           {/* Sélection du texte source */}
           {!sourceTexte && (
             <div className="space-y-2">
-              <Label>Texte réglementaire source (qui fait la modification) *</Label>
+              <Label>
+                🔍 Texte réglementaire source (qui fait la modification) *
+                <span className="text-xs text-muted-foreground block mt-1">
+                  Exemple : Si un décret de 2024 modifie cet article, sélectionnez ce décret
+                </span>
+              </Label>
               <TexteAutocomplete
                 value={selectedTexteSource?.id}
                 onChange={(texte) => {
+                  console.log("📄 Texte source sélectionné:", texte);
                   setSelectedTexteSource(texte);
                   setSelectedArticleSource(null);
                 }}
-                placeholder="Ex: Décret n°2024-123"
+                placeholder="Ex: Décret n°2024-123 du 15 janvier 2024"
               />
               {selectedTexteSource && (
                 <div className="text-sm text-muted-foreground">
