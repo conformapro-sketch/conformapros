@@ -5,10 +5,8 @@ import {
   getSortedRowModel,
   type ColumnDef,
   type SortingState,
-  type RowSelectionState,
 } from "@tanstack/react-table";
 import { useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -34,9 +32,6 @@ interface BibliothequeDataGridProps {
   onDelete: (texte: any) => void;
   onViewPdf?: (texte: any) => void;
   onToggleFavorite?: (texte: any) => void;
-  selectedTextes: string[];
-  onSelectTexte: (id: string) => void;
-  onSelectAll: (selected: boolean) => void;
 }
 
 const TYPE_ICONS: Record<string, any> = {
@@ -71,36 +66,10 @@ export function BibliothequeDataGrid({
   onDelete,
   onViewPdf,
   onToggleFavorite,
-  selectedTextes,
-  onSelectTexte,
-  onSelectAll,
 }: BibliothequeDataGridProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const columns: ColumnDef<any>[] = [
-    {
-      id: "select",
-      size: 40,
-      header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
-          onCheckedChange={(value) => {
-            table.toggleAllPageRowsSelected(!!value);
-            onSelectAll(!!value);
-          }}
-          aria-label="Sélectionner tout"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={selectedTextes.includes(row.original.id)}
-          onCheckedChange={() => onSelectTexte(row.original.id)}
-          aria-label="Sélectionner la ligne"
-        />
-      ),
-      enableSorting: false,
-      enableResizing: false,
-    },
     {
       accessorKey: "type_acte",
       header: "Type",

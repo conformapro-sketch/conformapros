@@ -16,7 +16,6 @@ import { TexteFormModal } from "@/components/TexteFormModal";
 import { ImportCSVDialog } from "@/components/ImportCSVDialog";
 import { BibliothequeStatsCards } from "@/components/bibliotheque/BibliothequeStatsCards";
 import { BibliothequeActiveFilters } from "@/components/bibliotheque/BibliothequeActiveFilters";
-import { BibliothequeFloatingActions } from "@/components/bibliotheque/BibliothequeFloatingActions";
 import { BibliothequeDataGrid } from "@/components/bibliotheque/BibliothequeDataGrid";
 import { BibliothequeCardView } from "@/components/bibliotheque/BibliothequeCardView";
 import { BibliothequeHorizontalFilters } from "@/components/bibliotheque/BibliothequeHorizontalFilters";
@@ -57,7 +56,6 @@ function BibliothequeReglementaireContent() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingTexte, setEditingTexte] = useState<TexteReglementaire | null>(null);
   const [deleteTexteId, setDeleteTexteId] = useState<string | null>(null);
-  const [selectedTextes, setSelectedTextes] = useState<string[]>([]);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
   const [selectedPdfTitle, setSelectedPdfTitle] = useState<string>("");
@@ -126,20 +124,6 @@ function BibliothequeReglementaireContent() {
     },
   });
 
-  const bulkDeleteMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map(id => textesReglementairesQueries.softDelete(id)));
-    },
-    onSuccess: (_, ids) => {
-      queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
-      setSelectedTextes([]);
-      toast.success(`${ids.length} texte${ids.length > 1 ? 's supprimés' : ' supprimé'}`);
-    },
-    onError: () => {
-      toast.error("Erreur lors de la suppression");
-    },
-  });
-
   const textes = result?.data || [];
   const totalCount = result?.count || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -183,23 +167,6 @@ function BibliothequeReglementaireContent() {
     setFavoritesFilter(false);
     setSearchTerm("");
     setPage(1);
-  };
-
-  const handleSelectTexte = (id: string) => {
-    setSelectedTextes(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
-  const handleSelectAll = (selected: boolean) => {
-    setSelectedTextes(selected ? textes.map((t: any) => t.id) : []);
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedTextes.length === 0) return;
-    if (confirm(`Supprimer ${selectedTextes.length} texte${selectedTextes.length > 1 ? 's' : ''} ?`)) {
-      bulkDeleteMutation.mutate(selectedTextes);
-    }
   };
 
   const handleView = (texte: any) => {
@@ -374,19 +341,7 @@ function BibliothequeReglementaireContent() {
             </div>
           ) : (
             <>
-              {isDesktop ? (
-                <BibliothequeDataGrid
-                  data={textes}
-                  onView={handleView}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onViewPdf={handleViewPdf}
-                  onToggleFavorite={toggleFavorite}
-                  selectedTextes={selectedTextes}
-                  onSelectTexte={handleSelectTexte}
-                  onSelectAll={handleSelectAll}
-                />
-              ) : (
+              {isMobile ? (
                 <BibliothequeCardView
                   data={textes}
                   onView={handleView}
@@ -394,8 +349,17 @@ function BibliothequeReglementaireContent() {
                   onDelete={handleDelete}
                   onViewPdf={handleViewPdf}
                   onToggleFavorite={toggleFavorite}
-                  selectedTextes={selectedTextes}
-                  onSelectTexte={handleSelectTexte}
+                  selectedTextes={[]}
+                  onSelectTexte={() => {}}
+                />
+              ) : (
+                <BibliothequeDataGrid
+                  data={textes}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onViewPdf={handleViewPdf}
+                  onToggleFavorite={toggleFavorite}
                 />
               )}
 
@@ -489,16 +453,6 @@ function BibliothequeReglementaireContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Bulk Actions */}
-      {selectedTextes.length > 0 && (
-        <BibliothequeFloatingActions
-          selectedCount={selectedTextes.length}
-          onDelete={handleBulkDelete}
-          onClear={() => setSelectedTextes([])}
-          onArchive={() => toast.info("Archivage en cours de développement")}
-        />
-      )}
     </div>
   );
 }
