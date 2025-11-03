@@ -61,7 +61,7 @@ export function BibliothequeCardView({
       ) : (
         data.map((texte) => {
           const Icon = TYPE_ICONS[texte.type_acte] || FileText;
-          const statut = getStatutBadge(texte.statut);
+          const statut = getStatutBadge(texte.statut_vigueur);
           const isSelected = selectedTextes.includes(texte.id);
 
           return (
@@ -92,10 +92,10 @@ export function BibliothequeCardView({
 
                       <div>
                         <p className="font-semibold text-primary text-sm mb-1">
-                          {texte.reference}
+                          {texte.reference_officielle}
                         </p>
                         <h3 className="font-medium line-clamp-2 text-sm">
-                          {texte.titre}
+                          {texte.intitule}
                         </h3>
                       </div>
                     </div>
@@ -122,7 +122,7 @@ export function BibliothequeCardView({
                       : "Date inconnue"}
                   </div>
                   <span>
-                    {texte.articles_count || 0} article{texte.articles_count > 1 ? "s" : ""}
+                    {texte.articles?.[0]?.count || 0} article{(texte.articles?.[0]?.count || 0) > 1 ? "s" : ""}
                   </span>
                 </div>
               </CardContent>

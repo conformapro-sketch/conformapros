@@ -119,7 +119,7 @@ export function BibliothequeDataGrid({
       },
     },
     {
-      accessorKey: "reference",
+      accessorKey: "reference_officielle",
       header: "Référence",
       size: 150,
       minSize: 120,
@@ -128,14 +128,14 @@ export function BibliothequeDataGrid({
         <HoverCard openDelay={300}>
           <HoverCardTrigger asChild>
             <span className="font-semibold text-primary cursor-pointer hover:underline truncate block">
-              {row.original.reference}
+              {row.original.reference_officielle}
             </span>
           </HoverCardTrigger>
           <HoverCardContent className="w-80" side="right">
             <div className="space-y-2">
-              <p className="text-sm font-semibold">{row.original.reference}</p>
+              <p className="text-sm font-semibold">{row.original.reference_officielle}</p>
               <p className="text-xs text-muted-foreground">
-                {row.original.titre}
+                {row.original.intitule}
               </p>
             </div>
           </HoverCardContent>
@@ -143,7 +143,7 @@ export function BibliothequeDataGrid({
       ),
     },
     {
-      accessorKey: "titre",
+      accessorKey: "intitule",
       header: "Titre",
       size: 300,
       minSize: 200,
@@ -152,12 +152,12 @@ export function BibliothequeDataGrid({
         <HoverCard openDelay={300}>
           <HoverCardTrigger asChild>
             <div className="cursor-pointer">
-              <p className="line-clamp-2 text-sm">{row.original.titre}</p>
+              <p className="line-clamp-2 text-sm">{row.original.intitule}</p>
             </div>
           </HoverCardTrigger>
           <HoverCardContent className="w-96" side="right">
             <div className="space-y-2">
-              <p className="text-sm font-semibold">{row.original.titre}</p>
+              <p className="text-sm font-semibold">{row.original.intitule}</p>
               {row.original.resume && (
                 <p className="text-xs text-muted-foreground">{row.original.resume}</p>
               )}
@@ -171,8 +171,8 @@ export function BibliothequeDataGrid({
       header: "Statut & Articles",
       size: 160,
       cell: ({ row }) => {
-        const statut = getStatutBadge(row.original.statut);
-        const articlesCount = row.original.articles_count || 0;
+        const statut = getStatutBadge(row.original.statut_vigueur);
+        const articlesCount = row.original.articles?.[0]?.count || 0;
         return (
           <div className="flex flex-col gap-1.5">
             <Badge variant={statut.variant} className="w-fit">
