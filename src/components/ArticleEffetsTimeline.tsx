@@ -8,11 +8,12 @@ import {
   RefreshCw, 
   Hash,
   Calendar,
-  FileText 
+  FileText,
+  FileEdit
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import type { TypeEffet } from "@/types/actes";
+import type { TypeEffet, PorteeEffet } from "@/types/actes";
 
 interface ArticleEffet {
   id: string;
@@ -21,6 +22,8 @@ interface ArticleEffet {
   date_fin_effet?: string;
   reference_citation?: string;
   notes?: string;
+  portee?: PorteeEffet;
+  portee_detail?: string;
   article_source?: {
     id: string;
     numero_article: string;
@@ -49,6 +52,8 @@ const getEffetIcon = (type: TypeEffet) => {
       return <RefreshCw className="h-4 w-4" />;
     case "RENUMEROTE":
       return <Hash className="h-4 w-4" />;
+    case "COMPLETE":
+      return <FileEdit className="h-4 w-4" />;
     default:
       return <FileText className="h-4 w-4" />;
   }
@@ -66,6 +71,8 @@ const getEffetColor = (type: TypeEffet) => {
       return "text-blue-600 dark:text-blue-400";
     case "RENUMEROTE":
       return "text-purple-600 dark:text-purple-400";
+    case "COMPLETE":
+      return "text-cyan-600 dark:text-cyan-400";
     default:
       return "text-muted-foreground";
   }
@@ -170,6 +177,16 @@ export function ArticleEffetsTimeline({ effets, isLoading }: ArticleEffetsTimeli
                   <p className="text-xs text-muted-foreground italic">
                     "{effet.reference_citation}"
                   </p>
+                </div>
+              )}
+
+              {/* Portée de l'effet */}
+              {effet.portee && effet.portee !== 'article' && (
+                <div className="flex items-center gap-2 text-xs">
+                  <Badge variant="outline" className="font-normal">
+                    Portée: {effet.portee === 'alinea' ? 'Alinéa' : 'Point'}
+                    {effet.portee_detail && ` - ${effet.portee_detail}`}
+                  </Badge>
                 </div>
               )}
 

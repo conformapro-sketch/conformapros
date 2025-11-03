@@ -199,7 +199,10 @@ export type TypeEffet =
   | "MODIFIE" 
   | "ABROGE" 
   | "REMPLACE" 
-  | "RENUMEROTE";
+  | "RENUMEROTE"
+  | "COMPLETE";
+
+export type PorteeEffet = "article" | "alinea" | "point";
 
 export interface ArticleEffetJuridique {
   id: string;
@@ -212,6 +215,8 @@ export interface ArticleEffetJuridique {
   date_fin_effet?: string;
   reference_citation?: string;
   notes?: string;
+  portee?: PorteeEffet;
+  portee_detail?: string;
   created_at: string;
   updated_at: string;
   // Relations chargées

@@ -400,6 +400,8 @@ export type Database = {
           id: string
           notes: string | null
           nouvelle_numerotation: string | null
+          portee: string | null
+          portee_detail: string | null
           reference_citation: string | null
           texte_cible_id: string | null
           type_effet: string
@@ -414,6 +416,8 @@ export type Database = {
           id?: string
           notes?: string | null
           nouvelle_numerotation?: string | null
+          portee?: string | null
+          portee_detail?: string | null
           reference_citation?: string | null
           texte_cible_id?: string | null
           type_effet: string
@@ -428,6 +432,8 @@ export type Database = {
           id?: string
           notes?: string | null
           nouvelle_numerotation?: string | null
+          portee?: string | null
+          portee_detail?: string | null
           reference_citation?: string | null
           texte_cible_id?: string | null
           type_effet?: string
@@ -3697,6 +3703,14 @@ export type Database = {
       check_client_user_limit: {
         Args: { _client_id: string }
         Returns: boolean
+      }
+      check_legal_hierarchy: {
+        Args: {
+          p_effect_type: string
+          p_source_type: string
+          p_target_type: string
+        }
+        Returns: Json
       }
       get_all_client_users: {
         Args: {

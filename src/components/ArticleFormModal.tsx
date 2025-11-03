@@ -11,11 +11,12 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { textesArticlesQueries, textesReglementairesQueries } from "@/lib/textes-queries";
 import { articlesEffetsJuridiquesQueries } from "@/lib/actes-queries";
 import { toast } from "sonner";
-import { Loader2, Pencil, XCircle, RefreshCw, PlusCircle, Hash } from "lucide-react";
+import { Loader2, Pencil, XCircle, RefreshCw, PlusCircle, Hash, FileEdit } from "lucide-react";
 import { ArticleSousDomainesSelector } from "@/components/ArticleSousDomainesSelector";
 import { TexteAutocomplete } from "@/components/bibliotheque/TexteAutocomplete";
 import { ArticleAutocomplete } from "@/components/bibliotheque/ArticleAutocomplete";
-import type { TypeEffet } from "@/types/actes";
+import { HierarchyAlert } from "@/components/HierarchyAlert";
+import type { TypeEffet, PorteeEffet } from "@/types/actes";
 
 interface ArticleFormModalProps {
   open: boolean;
@@ -50,15 +51,30 @@ export function ArticleFormModal({
     article_cible_id: "",
     nouvelle_numerotation: "",
     date_effet: "",
+    date_fin_effet: "",
     reference_citation: "",
     notes: "",
+    portee: "article" as PorteeEffet,
+    portee_detail: "",
   });
+  const [hierarchyValidation, setHierarchyValidation] = useState<{
+    valid: boolean;
+    severity: "error" | "warning" | "info" | "success";
+    message: string;
+  } | null>(null);
 
-  // Load parent text to get its domains
+  // Load parent text to get its domains and type
   const { data: texteData } = useQuery({
     queryKey: ["texte", texteId],
     queryFn: () => textesReglementairesQueries.getById(texteId),
     enabled: !!texteId,
+  });
+
+  // Load target text data when selected
+  const { data: texteCibleData } = useQuery({
+    queryKey: ["texte-cible", effetData.texte_cible_id],
+    queryFn: () => textesReglementairesQueries.getById(effetData.texte_cible_id),
+    enabled: !!effetData.texte_cible_id && hasEffet,
   });
 
   // Extract domain IDs from parent text
@@ -94,11 +110,74 @@ export function ArticleFormModal({
         article_cible_id: "",
         nouvelle_numerotation: "",
         date_effet: "",
+        date_fin_effet: "",
         reference_citation: "",
         notes: "",
+        portee: "article" as PorteeEffet,
+        portee_detail: "",
       });
+      setHierarchyValidation(null);
     }
   }, [article, open]);
+
+  // Validate hierarchy when source/target/effect type changes
+  useEffect(() => {
+    if (!hasEffet || !effetData.texte_cible_id || !texteCibleData || !texteData) {
+      setHierarchyValidation(null);
+      return;
+    }
+
+    const sourceType = texteData.type;
+    const targetType = texteCibleData.type;
+    const effectType = effetData.type_effet;
+
+    // Call hierarchy validation function (client-side simplified version)
+    const hierarchy: Record<string, number> = {
+      "loi": 4,
+      "decret-loi": 3,
+      "decret": 2,
+      "arrete": 1,
+      "circulaire": 0
+    };
+
+    const sourceLevel = hierarchy[sourceType] || 0;
+    const targetLevel = hierarchy[targetType] || 0;
+
+    if (effectType === "ABROGE" || effectType === "MODIFIE" || effectType === "REMPLACE") {
+      if (sourceLevel < targetLevel) {
+        setHierarchyValidation({
+          valid: false,
+          severity: "error",
+          message: `Un ${sourceType} ne peut pas ${effectType.toLowerCase()} une ${targetType} (hiérarchie des normes)`
+        });
+        return;
+      }
+    } else if (effectType === "COMPLETE") {
+      if (sourceType === "circulaire" && sourceLevel < targetLevel) {
+        setHierarchyValidation({
+          valid: true,
+          severity: "info",
+          message: "Une circulaire peut compléter/interpréter des textes de niveau supérieur"
+        });
+        return;
+      }
+    } else if (effectType === "AJOUTE") {
+      if (sourceLevel < targetLevel) {
+        setHierarchyValidation({
+          valid: false,
+          severity: "warning",
+          message: `Attention: Un ${sourceType} ajoute un article à une ${targetType} (inhabituel)`
+        });
+        return;
+      }
+    }
+
+    setHierarchyValidation({
+      valid: true,
+      severity: "success",
+      message: "Effet juridique conforme à la hiérarchie des normes"
+    });
+  }, [hasEffet, effetData.texte_cible_id, effetData.type_effet, texteCibleData, texteData]);
 
   const resetForm = () => {
     setFormData({
@@ -129,8 +208,11 @@ export function ArticleFormModal({
           article_cible_id: effetData.article_cible_id || undefined,
           nouvelle_numerotation: effetData.nouvelle_numerotation || undefined,
           date_effet: effetData.date_effet,
+          date_fin_effet: effetData.date_fin_effet || undefined,
           reference_citation: effetData.reference_citation || undefined,
           notes: effetData.notes || undefined,
+          portee: effetData.portee || undefined,
+          portee_detail: effetData.portee_detail || undefined,
         });
       }
       
@@ -182,6 +264,12 @@ export function ArticleFormModal({
 
     if (!formData.contenu.trim() && !article) {
       toast.error("Le contenu de l'article est requis");
+      return;
+    }
+
+    // Validate hierarchy if has legal effect
+    if (hasEffet && hierarchyValidation && !hierarchyValidation.valid && hierarchyValidation.severity === "error") {
+      toast.error("Impossible de créer cet effet juridique : " + hierarchyValidation.message);
       return;
     }
 
@@ -412,9 +500,26 @@ export function ArticleFormModal({
                             </div>
                           </div>
                         </SelectItem>
+                        <SelectItem value="COMPLETE">
+                          <div className="flex items-center gap-2 py-1">
+                            <FileEdit className="h-4 w-4 text-cyan-600" />
+                            <div>
+                              <div className="font-medium">🔷 Complète</div>
+                              <div className="text-xs text-muted-foreground">ajoute des précisions</div>
+                            </div>
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Hierarchy validation alert */}
+                  {hierarchyValidation && (
+                    <HierarchyAlert 
+                      severity={hierarchyValidation.severity} 
+                      message={hierarchyValidation.message} 
+                    />
+                  )}
 
                   {/* Texte concerné */}
                   <div className="space-y-2">
@@ -458,14 +563,59 @@ export function ArticleFormModal({
                     </div>
                   )}
 
-                  {/* Date d'effet */}
-                  <div className="space-y-2">
-                    <Label>Date d'entrée en vigueur *</Label>
-                    <Input
-                      type="date"
-                      value={effetData.date_effet}
-                      onChange={(e) => setEffetData({ ...effetData, date_effet: e.target.value })}
-                    />
+                  {/* Portée de l'effet */}
+                  {effetData.type_effet !== 'AJOUTE' && effetData.article_cible_id && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Portée de l'effet</Label>
+                        <Select 
+                          value={effetData.portee} 
+                          onValueChange={(value) => setEffetData({ ...effetData, portee: value as PorteeEffet })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="article">Article entier</SelectItem>
+                            <SelectItem value="alinea">Alinéa spécifique</SelectItem>
+                            <SelectItem value="point">Point précis</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {(effetData.portee === "alinea" || effetData.portee === "point") && (
+                        <div className="space-y-2">
+                          <Label>Précision</Label>
+                          <Input
+                            value={effetData.portee_detail}
+                            onChange={(e) => setEffetData({ ...effetData, portee_detail: e.target.value })}
+                            placeholder={effetData.portee === "alinea" ? "Ex: alinéa 2" : "Ex: point b)"}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Dates d'effet */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Date d'entrée en vigueur *</Label>
+                      <Input
+                        type="date"
+                        value={effetData.date_effet}
+                        onChange={(e) => setEffetData({ ...effetData, date_effet: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date de fin (optionnel)</Label>
+                      <Input
+                        type="date"
+                        value={effetData.date_fin_effet}
+                        onChange={(e) => setEffetData({ ...effetData, date_fin_effet: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Pour les effets temporaires uniquement
+                      </p>
+                    </div>
                   </div>
 
                   {/* Référence de citation */}
