@@ -811,7 +811,6 @@ export default function BibliothequeTexteDetail() {
           open={showQuickEffetModal}
           onOpenChange={setShowQuickEffetModal}
           targetArticle={targetArticleForEffet}
-          sourceTexte={texte}
         />
       )}
 

@@ -37,23 +37,12 @@ interface ArticleQuickEffetModalProps {
       reference_officielle: string;
     };
   };
-  sourceTexte?: {
-    id: string;
-    reference_officielle: string;
-    type?: string;
-  };
-  sourceArticle?: {
-    id: string;
-    numero_article: string;
-  };
 }
 
 export function ArticleQuickEffetModal({
   open,
   onOpenChange,
   targetArticle,
-  sourceTexte,
-  sourceArticle,
 }: ArticleQuickEffetModalProps) {
   const queryClient = useQueryClient();
   
@@ -91,16 +80,10 @@ export function ArticleQuickEffetModal({
   }, [open, targetArticle]);
 
   // Réinitialiser le texte source si fourni
-  useEffect(() => {
-    if (open && sourceTexte) {
-      setSelectedTexteSource(sourceTexte);
-    }
-  }, [open, sourceTexte]);
 
   // Valider la hiérarchie des normes
   useEffect(() => {
-    const texteSource = selectedTexteSource || sourceTexte;
-    if (!texteSource?.type_acte && !texteSource?.type) {
+    if (!selectedTexteSource?.type_acte && !selectedTexteSource?.type) {
       setHierarchyValidation(null);
       return;
     }
@@ -110,7 +93,7 @@ export function ArticleQuickEffetModal({
       return;
     }
 
-    const sourceType = (texteSource.type_acte || texteSource.type || "").toLowerCase();
+    const sourceType = (selectedTexteSource.type_acte || selectedTexteSource.type || "").toLowerCase();
     const targetType = targetArticle.texte.type.toLowerCase();
 
     // Circulaire ne peut pas modifier/abroger loi ou décret
@@ -147,7 +130,7 @@ export function ArticleQuickEffetModal({
     }
     
     setHierarchyValidation(null);
-  }, [selectedTexteSource, sourceTexte, targetArticle, typeEffet]);
+  }, [selectedTexteSource, targetArticle, typeEffet]);
 
   const createEffetMutation = useMutation({
     mutationFn: async () => {
@@ -155,13 +138,12 @@ export function ArticleQuickEffetModal({
         throw new Error("Article cible manquant");
       }
 
-      const texteSource = selectedTexteSource || sourceTexte;
-      if (!texteSource) {
+      if (!selectedTexteSource) {
         throw new Error("Texte source manquant");
       }
 
       return articlesEffetsJuridiquesQueries.create({
-        texte_source_id: texteSource.id,
+        texte_source_id: selectedTexteSource.id,
         article_source_id: null,
         article_cible_id: targetArticle.id,
         texte_cible_id: targetArticle.texte_id,
@@ -187,7 +169,7 @@ export function ArticleQuickEffetModal({
   });
 
   const resetForm = () => {
-    if (!sourceTexte) setSelectedTexteSource(null);
+    setSelectedTexteSource(null);
     setTypeEffet("MODIFIE");
     setContenuModifie("");
     setDateEffet(new Date().toISOString().split("T")[0]);
@@ -198,8 +180,7 @@ export function ArticleQuickEffetModal({
   };
 
   const canSubmit = () => {
-    const texteSource = selectedTexteSource || sourceTexte;
-    if (!texteSource) {
+    if (!selectedTexteSource) {
       console.log("❌ Texte source manquant");
       return false;
     }
@@ -275,33 +256,31 @@ export function ArticleQuickEffetModal({
             </div>
           </div>
           {/* Sélection du texte source UNIQUEMENT */}
-          {!sourceTexte && (
-            <div className="space-y-2">
-              <Label>
-                📄 Texte réglementaire source *
-                <span className="text-xs text-muted-foreground block mt-1">
-                  Le texte qui crée cette modification (décret, loi, arrêté...)
+          <div className="space-y-2">
+            <Label>
+              📄 Texte réglementaire source *
+              <span className="text-xs text-muted-foreground block mt-1">
+                Le texte qui crée cette modification (décret, loi, arrêté...)
+              </span>
+            </Label>
+            <TexteAutocomplete
+              value={selectedTexteSource?.id}
+              onChange={(texte) => {
+                console.log("📄 Texte source sélectionné:", texte);
+                setSelectedTexteSource(texte);
+              }}
+              placeholder="Ex: Décret n°2024-123 du 15 janvier 2024"
+            />
+            {selectedTexteSource && (
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium">
+                  {selectedTexteSource.type_acte?.toUpperCase() || "Texte"}
                 </span>
-              </Label>
-              <TexteAutocomplete
-                value={selectedTexteSource?.id}
-                onChange={(texte) => {
-                  console.log("📄 Texte source sélectionné:", texte);
-                  setSelectedTexteSource(texte);
-                }}
-                placeholder="Ex: Décret n°2024-123 du 15 janvier 2024"
-              />
-              {selectedTexteSource && (
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">
-                    {selectedTexteSource.type_acte?.toUpperCase() || "Texte"}
-                  </span>
-                  {" - "}
-                  {selectedTexteSource.reference_officielle}
-                </div>
-              )}
-            </div>
-          )}
+                {" - "}
+                {selectedTexteSource.reference_officielle}
+              </div>
+            )}
+          </div>
 
           {/* Validation hiérarchique */}
           {hierarchyValidation && (
