@@ -158,10 +158,8 @@ export function ArticleVersionWizard({
     if (typeEffet === "ABROGE") {
       setPortee("article");
       setPorteeDetail("");
-    } else if (typeEffet === "COMPLETE" && portee === "article") {
-      // Si COMPLETE est sélectionné et portee était "article", forcer "alinea"
-      setPortee("alinea");
     }
+    // Pour COMPLETE, l'utilisateur doit choisir explicitement "alinea" ou "point"
   }, [typeEffet]);
 
   const handleDocumentUpload = async (file: File): Promise<string> => {
@@ -305,23 +303,35 @@ export function ArticleVersionWizard({
 
   const canProceedToStep = (step: number): boolean => {
     switch (step) {
+      case 1:
+        // Étape 1 est toujours valide (article passé en prop)
+        return !!targetArticle;
+        
       case 2:
-        return true; // Step 1 is always valid (article is passed as prop)
+        // Peut passer à l'étape 2 si étape 1 OK
+        return !!targetArticle;
+        
       case 3:
-        return !!selectedTexteSource && hierarchyValidation?.severity !== "error";
+        // Peut passer à l'étape 3 si texte source + type effet sélectionnés + pas d'erreur hiérarchique
+        return !!selectedTexteSource && 
+               !!typeEffet && 
+               hierarchyValidation?.severity !== "error";
+        
       case 4:
-        // Validation conditionnelle selon typeEffet
+        // Peut passer à l'étape 4 (récapitulatif) si étape 3 complète
         const hasValidContent = typeEffet === "ABROGE" || contenuModifie.trim().length > 0;
         const hasValidReason = raisonModification.trim().length > 0;
         const hasValidPorteeDetail = portee === "article" || porteeDetail.trim().length > 0;
+        const hasValidDate = !!dateEffet;
         
         // Si ABROGE, pas besoin de contenu ni de détail de portée
         if (typeEffet === "ABROGE") {
-          return hasValidReason && !!dateEffet;
+          return hasValidReason && hasValidDate;
         }
         
         // Pour autres types
-        return hasValidContent && hasValidReason && hasValidPorteeDetail && !!dateEffet;
+        return hasValidContent && hasValidReason && hasValidPorteeDetail && hasValidDate;
+        
       default:
         return false;
     }
@@ -877,7 +887,7 @@ export function ArticleVersionWizard({
             ) : (
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !canProceedToStep(4)}
+                disabled={isSubmitting || hierarchyValidation?.severity === "error"}
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Confirmer et créer
