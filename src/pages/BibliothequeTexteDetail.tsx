@@ -596,6 +596,7 @@ export default function BibliothequeTexteDetail() {
                               currentContent={article.contenu}
                               onCompare={handleCompareVersionsDetail}
                               onRestore={(version) => handleSetCurrentVersion(article.id, version)}
+                              onDelete={(version) => deleteVersionMutation.mutate(version.id)}
                             />
                           </div>
                         </CollapsibleContent>
