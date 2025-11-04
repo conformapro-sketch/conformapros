@@ -128,6 +128,30 @@ export const textesReglementairesQueries = {
       }
     }
 
+    // Get acte IDs that match type, statut, and année filters for articles filtering
+    let acteIdsForArticles: string[] | null = null;
+
+    if (filters?.typeFilter || filters?.statutFilter || filters?.anneeFilter) {
+      let acteFilterQuery = supabase
+        .from("actes_reglementaires")
+        .select("id");
+      
+      if (filters?.typeFilter && filters.typeFilter !== "all") {
+        acteFilterQuery = acteFilterQuery.eq("type_acte", filters.typeFilter);
+      }
+      
+      if (filters?.statutFilter && filters.statutFilter !== "all") {
+        acteFilterQuery = acteFilterQuery.eq("statut_vigueur", filters.statutFilter);
+      }
+      
+      if (filters?.anneeFilter && filters.anneeFilter !== "all") {
+        acteFilterQuery = acteFilterQuery.eq("annee", parseInt(filters.anneeFilter));
+      }
+      
+      const { data: matchingActes } = await acteFilterQuery;
+      acteIdsForArticles = matchingActes?.map(a => a.id) || [];
+    }
+
     // Search in articles
     let articlesQuery = supabase
       .from("textes_articles")
@@ -147,17 +171,8 @@ export const textesReglementairesQueries = {
       );
     }
 
-    if (filters?.typeFilter && filters.typeFilter !== "all") {
-      articlesQuery = articlesQuery.eq("texte.type_acte", filters.typeFilter as any);
-    }
-
-    if (filters?.statutFilter && filters.statutFilter !== "all") {
-      articlesQuery = articlesQuery.eq("texte.statut_vigueur", filters.statutFilter as any);
-    }
-
-    if (filters?.anneeFilter && filters.anneeFilter !== "all") {
-      articlesQuery = articlesQuery.eq("texte.annee", parseInt(filters.anneeFilter));
-    }
+    // Combine domaine/sous-domaine filters with type/statut/année filters
+    let finalActeIdsForArticles = acteIdsForArticles;
 
     // Filter articles by domaine if specified
     if (filters?.domaineFilter && filters.domaineFilter !== "all") {
@@ -166,11 +181,13 @@ export const textesReglementairesQueries = {
         .select("acte_id")
         .eq("domaine_id", filters.domaineFilter);
       
-      const acteIds = actesWithDomain?.map(a => a.acte_id) || [];
-      if (acteIds.length > 0) {
-        articlesQuery = articlesQuery.in("texte_id", acteIds);
+      const domaineActeIds = actesWithDomain?.map(a => a.acte_id) || [];
+      
+      if (finalActeIdsForArticles !== null) {
+        // Intersection of both filters
+        finalActeIdsForArticles = finalActeIdsForArticles.filter(id => domaineActeIds.includes(id));
       } else {
-        articlesQuery = articlesQuery.in("texte_id", []);
+        finalActeIdsForArticles = domaineActeIds;
       }
     }
 
@@ -181,9 +198,20 @@ export const textesReglementairesQueries = {
         .select("acte_id")
         .eq("sous_domaine_id", filters.sousDomaineFilter);
       
-      const acteIds = actesWithSousDomaine?.map(a => a.acte_id) || [];
-      if (acteIds.length > 0) {
-        articlesQuery = articlesQuery.in("texte_id", acteIds);
+      const sousDomaineActeIds = actesWithSousDomaine?.map(a => a.acte_id) || [];
+      
+      if (finalActeIdsForArticles !== null) {
+        // Intersection of both filters
+        finalActeIdsForArticles = finalActeIdsForArticles.filter(id => sousDomaineActeIds.includes(id));
+      } else {
+        finalActeIdsForArticles = sousDomaineActeIds;
+      }
+    }
+
+    // Apply final combined filters
+    if (finalActeIdsForArticles !== null) {
+      if (finalActeIdsForArticles.length > 0) {
+        articlesQuery = articlesQuery.in("texte_id", finalActeIdsForArticles);
       } else {
         articlesQuery = articlesQuery.in("texte_id", []);
       }

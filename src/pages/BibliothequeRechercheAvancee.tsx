@@ -421,8 +421,8 @@ export default function BibliothequeRechercheAvancee() {
                 if (result.type === 'texte') {
                   const texte = result.data;
                   const statutInfo = STATUT_LABELS[texte.statut_vigueur] || { label: texte.statut_vigueur, className: "" };
-                  const typeLabel = TYPE_LABELS[texte.type] || texte.type;
-                  const previewSource = texte.resume || texte.titre || "";
+                  const typeLabel = TYPE_LABELS[texte.type_acte] || texte.type_acte;
+                  const previewSource = texte.resume || texte.intitule || "";
                   const previewText = stripHtml(previewSource);
 
                   return (
@@ -462,7 +462,7 @@ export default function BibliothequeRechercheAvancee() {
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 space-y-1">
                                 <h3 className="font-semibold text-foreground text-base leading-snug group-hover:text-primary transition-colors">
-                                  {highlightText(texte.titre, debouncedSearch)}
+                                  {highlightText(texte.intitule, debouncedSearch)}
                                 </h3>
                                 <p className="text-sm text-muted-foreground">
                                   {highlightText(texte.reference_officielle, debouncedSearch)}
@@ -489,7 +489,7 @@ export default function BibliothequeRechercheAvancee() {
                   if (!texte) return null;
                   
                   const statutInfo = STATUT_LABELS[texte.statut_vigueur] || { label: texte.statut_vigueur, className: "" };
-                  const typeLabel = TYPE_LABELS[texte.type] || texte.type;
+                  const typeLabel = TYPE_LABELS[texte.type_acte] || texte.type_acte;
                   const previewSource = article.contenu || article.titre_court || "";
                   const previewText = stripHtml(previewSource);
 
@@ -530,7 +530,7 @@ export default function BibliothequeRechercheAvancee() {
                                   </h3>
                                 )}
                                 <p className="text-sm text-muted-foreground">
-                                  {highlightText(texte.titre, debouncedSearch)}
+                                  {highlightText(texte.intitule, debouncedSearch)}
                                   {" • "}
                                   <span className="text-xs">{highlightText(texte.reference_officielle, debouncedSearch)}</span>
                                 </p>
