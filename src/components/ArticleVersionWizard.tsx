@@ -220,7 +220,7 @@ export function ArticleVersionWizard({
        <p>Date d'effet : ${new Date(dateEffet).toLocaleDateString("fr-FR")}</p>
        <p>Raison : ${raisonModification}</p>
      </div>`
-            : contenuModifie,
+            : (contenuModifie.trim() || targetArticle.contenu || "<p>Contenu non spécifié</p>"),
           date_version: new Date().toISOString(),
           modification_type: typeEffet.toLowerCase(),
           source_text_id: selectedTexteSource.id,
@@ -282,7 +282,18 @@ export function ArticleVersionWizard({
     },
     onError: (error: any) => {
       console.error("❌ Erreur:", error);
-      toast.error(`Erreur: ${error.message}`);
+      
+      // Messages d'erreur spécifiques selon le code PostgreSQL
+      if (error.code === "23502") {
+        const match = error.message.match(/column "(\w+)"/);
+        const columnName = match ? match[1] : "inconnue";
+        toast.error(`Erreur : Le champ "${columnName}" est obligatoire mais n'a pas été renseigné.`);
+      } else if (error.code === "23503") {
+        toast.error("Erreur : Référence invalide à un texte ou article source.");
+      } else {
+        toast.error(`Erreur lors de la création de la version : ${error.message}`);
+      }
+      
       setIsSubmitting(false);
     },
   });
@@ -338,8 +349,32 @@ export function ArticleVersionWizard({
   };
 
   const handleSubmit = async () => {
+    // Validation hiérarchique
     if (hierarchyValidation?.severity === "error") {
       toast.error("Impossible de créer cette version en raison d'une incohérence hiérarchique");
+      return;
+    }
+    
+    // Validation des champs obligatoires
+    if (!raisonModification.trim()) {
+      toast.error("La raison de la modification est obligatoire");
+      return;
+    }
+    
+    if (!dateEffet) {
+      toast.error("La date d'entrée en vigueur est obligatoire");
+      return;
+    }
+    
+    // Pour les types autres que ABROGE, le contenu est obligatoire
+    if (typeEffet !== "ABROGE" && !contenuModifie.trim()) {
+      toast.error("Le nouveau contenu est obligatoire pour ce type de modification");
+      return;
+    }
+    
+    // Si portee n'est pas "article", le détail est obligatoire
+    if (portee !== "article" && !porteeDetail.trim()) {
+      toast.error("Le détail de la portée est obligatoire (ex: 'Alinéa 2')");
       return;
     }
     
@@ -568,10 +603,10 @@ export function ArticleVersionWizard({
             {typeEffet !== "ABROGE" && (
               <div className="space-y-2">
                 <Label htmlFor="contenu">
-                  {typeEffet === "MODIFIE" ? "Nouveau contenu (modifié)" : 
-                   typeEffet === "REMPLACE" ? "Nouveau contenu (remplacement)" :
-                   typeEffet === "COMPLETE" ? "Contenu à ajouter" :
-                   "Contenu"}
+                  {typeEffet === "MODIFIE" ? "Nouveau contenu (modifié) *" : 
+                   typeEffet === "REMPLACE" ? "Nouveau contenu (remplacement) *" :
+                   typeEffet === "COMPLETE" ? "Contenu à ajouter *" :
+                   "Contenu *"}
                 </Label>
                 {typeEffet === "MODIFIE" && (
                   <Alert>
@@ -587,7 +622,13 @@ export function ArticleVersionWizard({
                   value={contenuModifie}
                   onChange={(e) => setContenuModifie(e.target.value)}
                   placeholder="Saisissez le contenu..."
+                  className={!contenuModifie.trim() ? "border-destructive" : ""}
                 />
+                {!contenuModifie.trim() && (
+                  <p className="text-xs text-destructive">
+                    ⚠️ Le contenu est obligatoire pour ce type de modification
+                  </p>
+                )}
               </div>
             )}
 
