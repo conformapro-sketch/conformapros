@@ -6,7 +6,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Bold, Italic, Underline as UnderlineIcon, Strikethrough, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, AlignJustify, Link as LinkIcon, Undo, Redo } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 
 interface RichTextEditorProps {
   value: string;
@@ -34,6 +34,12 @@ export function RichTextEditor({ value, onChange, placeholder = 'Saisissez le co
       onChange(editor.getHTML());
     },
   });
+
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value || '');
+    }
+  }, [value, editor]);
 
   const setLink = useCallback(() => {
     if (!editor) return;
