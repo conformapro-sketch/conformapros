@@ -169,7 +169,9 @@ export default function BibliothequeTexteDetail() {
   const deleteVersionMutation = useMutation({
     mutationFn: (id: string) => textesArticlesVersionsQueries.softDelete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["article-versions"] });
+      queryClient.invalidateQueries({
+        predicate: (q) => q.queryKey[0] === "article-versions-map" && q.queryKey[1] === id
+      });
       toast.success("Version supprimée avec succès");
     },
     onError: () => {

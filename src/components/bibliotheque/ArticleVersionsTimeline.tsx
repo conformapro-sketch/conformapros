@@ -121,6 +121,21 @@ const calculateChangeStats = (oldText: string, newText: string) => {
   return { diff, percentChange, oldLength, newLength };
 };
 
+// Helper function to determine if a version is currently active based on dates
+const isVersionCurrentlyActive = (version: Version): boolean => {
+  // 1) If is_active is defined and reliable, use it
+  if (typeof version.is_active === "boolean") {
+    return version.is_active;
+  }
+  
+  // 2) Fallback to effective_from/effective_to date range
+  const today = new Date();
+  const from = version.effective_from ? new Date(version.effective_from) : null;
+  const to = version.effective_to ? new Date(version.effective_to) : null;
+  
+  return !!(from && from <= today && (!to || to > today));
+};
+
 export function ArticleVersionsTimeline({
   versions,
   currentContent,
@@ -180,6 +195,7 @@ export function ArticleVersionsTimeline({
             const TypeIcon = typeInfo.icon;
             const duration = calculateDuration(version.effective_from, version.effective_to);
             const previousVersion = sortedVersions[index + 1];
+            const isActive = isVersionCurrentlyActive(version);
             
             let changeStats = null;
             if (previousVersion) {
@@ -191,7 +207,7 @@ export function ArticleVersionsTimeline({
                 {/* Timeline dot */}
                 <div 
                   className={`absolute left-[18px] top-6 w-4 h-4 rounded-full border-2 z-10 ${
-                    version.is_active 
+                    isActive 
                       ? 'bg-success border-success' 
                       : 'bg-background border-muted'
                   }`}
@@ -213,7 +229,7 @@ export function ArticleVersionsTimeline({
                               Version {version.version_numero}
                             </span>
                           </div>
-                          {version.is_active && (
+                          {isActive && (
                             <Badge variant="outline" className="bg-success/10 text-success border-success/30">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                               Actuelle
@@ -374,7 +390,7 @@ export function ArticleVersionsTimeline({
 
                         {/* Actions */}
                         <div className="flex items-center gap-2 pt-2">
-                          {onRestore && !version.is_active && (
+                          {onRestore && !isActive && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -394,7 +410,7 @@ export function ArticleVersionsTimeline({
                               Comparer en détail
                             </Button>
                           )}
-                          {onDelete && !version.is_active && (
+                          {onDelete && !isActive && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
