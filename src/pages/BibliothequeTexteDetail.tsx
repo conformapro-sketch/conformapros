@@ -167,15 +167,16 @@ export default function BibliothequeTexteDetail() {
   });
 
   const deleteVersionMutation = useMutation({
-    mutationFn: (id: string) => textesArticlesVersionsQueries.softDelete(id),
+    mutationFn: (id: string) => textesArticlesVersionsQueries.deleteWithRepair(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         predicate: (q) => q.queryKey[0] === "article-versions-map" && q.queryKey[1] === id
       });
+      queryClient.invalidateQueries({ queryKey: ["texte-article"] });
       toast.success("Version supprimée avec succès");
     },
     onError: () => {
-      toast.error("Erreur lors de la suppression");
+      toast.error("Erreur lors de la suppression de la version");
     },
   });
 

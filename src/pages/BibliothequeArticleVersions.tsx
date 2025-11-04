@@ -71,14 +71,16 @@ export default function BibliothequeArticleVersions() {
   if (versionsError) toast.error("Erreur lors du chargement des versions");
 
   const deleteVersionMutation = useMutation({
-    mutationFn: (id: string) => textesArticlesVersionsQueries.softDelete(id),
+    mutationFn: (id: string) => textesArticlesVersionsQueries.deleteWithRepair(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["texte-article-versions"] });
+      queryClient.invalidateQueries({ queryKey: ["texte-article-versions", articleId] });
+      queryClient.invalidateQueries({ queryKey: ["texte-article", articleId] });
       toast.success("Version supprimée avec succès");
       setDeleteVersionId(null);
     },
-    onError: () => {
-      toast.error("Erreur lors de la suppression");
+    onError: (error) => {
+      console.error("Erreur lors de la suppression:", error);
+      toast.error("Erreur lors de la suppression de la version");
     },
   });
 
@@ -433,17 +435,15 @@ export default function BibliothequeArticleVersions() {
                             >
                               <GitCompare className="h-4 w-4" />
                             </Button>
-                            {!active && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeleteVersionId(version.id)}
-                                title="Supprimer"
-                                className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteVersionId(version.id)}
+                              title={active ? "Supprimer (version actuelle)" : "Supprimer"}
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       </CardHeader>
@@ -488,13 +488,26 @@ export default function BibliothequeArticleVersions() {
                 const versionToDelete = filteredVersions.find(v => v.id === deleteVersionId);
                 if (!versionToDelete) return "Êtes-vous sûr de vouloir supprimer cette version ?";
                 
+                const active = isVersionActive(versionToDelete);
+                
                 return (
                   <>
-                    Êtes-vous sûr de vouloir supprimer la <strong>version {versionToDelete.version_numero}</strong> ?<br />
-                    <span className="text-destructive font-medium">Cette action est irréversible.</span>
-                    <br /><br />
+                    Êtes-vous sûr de vouloir supprimer la <strong>version {versionToDelete.version_numero}</strong> ?
+                    {active && (
+                      <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-md">
+                        <p className="text-sm font-medium text-warning">
+                          ⚠️ Cette version est actuellement en vigueur.
+                        </p>
+                        <p className="text-sm mt-1">
+                          La version précédente sera automatiquement réactivée si elle existe.
+                        </p>
+                      </div>
+                    )}
+                    <div className="mt-2">
+                      <span className="text-destructive font-medium">Cette action est irréversible.</span>
+                    </div>
                     {versionToDelete.version_label && (
-                      <div className="text-sm">
+                      <div className="mt-2 text-sm">
                         <strong>Label :</strong> {versionToDelete.version_label}
                       </div>
                     )}

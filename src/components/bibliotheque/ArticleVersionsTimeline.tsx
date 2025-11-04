@@ -410,7 +410,7 @@ export function ArticleVersionsTimeline({
                               Comparer en détail
                             </Button>
                           )}
-                          {onDelete && !isActive && (
+                          {onDelete && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
@@ -419,17 +419,32 @@ export function ArticleVersionsTimeline({
                                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
-                                  Supprimer
+                                  Supprimer{isActive ? " (version actuelle)" : ""}
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Êtes-vous sûr de vouloir supprimer la <strong>version {version.version_numero}</strong> ?<br />
-                                    <span className="text-destructive font-medium">Cette action est irréversible.</span>
-                                    <br /><br />
-                                    {version.version_label && `Label : ${version.version_label}`}
+                                    Êtes-vous sûr de vouloir supprimer la <strong>version {version.version_numero}</strong> ?
+                                    {isActive && (
+                                      <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-md">
+                                        <p className="text-sm font-medium text-warning">
+                                          ⚠️ Cette version est actuellement en vigueur.
+                                        </p>
+                                        <p className="text-sm mt-1">
+                                          La version précédente sera automatiquement réactivée si elle existe.
+                                        </p>
+                                      </div>
+                                    )}
+                                    <div className="mt-2">
+                                      <span className="text-destructive font-medium">Cette action est irréversible.</span>
+                                    </div>
+                                    {version.version_label && (
+                                      <div className="mt-2 text-sm">
+                                        Label : {version.version_label}
+                                      </div>
+                                    )}
                                     {version.raison_modification && (
                                       <div className="mt-2 p-2 bg-muted rounded text-xs">
                                         <strong>Raison :</strong> {version.raison_modification}

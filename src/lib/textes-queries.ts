@@ -637,4 +637,11 @@ export const textesArticlesVersionsQueries = {
       .eq("id", id);
     if (error) throw error;
   },
+
+  async deleteWithRepair(versionId: string) {
+    const { error } = await supabase.rpc("delete_article_version", {
+      p_version_id: versionId,
+    });
+    if (error) throw error;
+  },
 };

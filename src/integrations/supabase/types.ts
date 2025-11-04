@@ -3850,6 +3850,10 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_article_version: {
+        Args: { p_version_id: string }
+        Returns: undefined
+      }
       get_all_client_users: {
         Args: {
           filter_client_id?: string
