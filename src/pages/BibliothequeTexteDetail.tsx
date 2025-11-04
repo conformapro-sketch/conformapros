@@ -47,7 +47,7 @@ import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { ArticleVersionComparison } from "@/components/ArticleVersionComparison";
-import { ArticleQuickEffetModal } from "@/components/ArticleQuickEffetModal";
+import { ArticleVersionWizard } from "@/components/ArticleVersionWizard";
 import { ArticleVersionsTimeline } from "@/components/bibliotheque/ArticleVersionsTimeline";
 import { VersionBeforeAfterView } from "@/components/bibliotheque/VersionBeforeAfterView";
 import { TimelineChangelog } from "@/components/TimelineChangelog";
@@ -825,12 +825,17 @@ export default function BibliothequeTexteDetail() {
         }}
       />
 
-      {/* Quick Effet Modal */}
+      {/* Article Version Wizard */}
       {targetArticleForEffet && (
-        <ArticleQuickEffetModal
+        <ArticleVersionWizard
           open={showQuickEffetModal}
           onOpenChange={setShowQuickEffetModal}
           targetArticle={targetArticleForEffet}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["article-versions"] });
+            queryClient.invalidateQueries({ queryKey: ["articles-effets"] });
+            queryClient.invalidateQueries({ queryKey: ["effets-juridiques-texte", id] });
+          }}
         />
       )}
 
