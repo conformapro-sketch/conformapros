@@ -193,23 +193,29 @@ export const textesReglementairesQueries = {
 
     // Filter articles by sous-domaine if specified
     if (filters?.sousDomaineFilter && filters.sousDomaineFilter !== "all") {
-      const { data: actesWithSousDomaine } = await supabase
-        .from("actes_reglementaires_sous_domaines")
-        .select("acte_id")
+      const { data: articlesWithSousDomaine } = await supabase
+        .from("articles_sous_domaines")
+        .select("article_id")
         .eq("sous_domaine_id", filters.sousDomaineFilter);
       
-      const sousDomaineActeIds = actesWithSousDomaine?.map(a => a.acte_id) || [];
+      const articleIdsWithSousDomaine = articlesWithSousDomaine?.map(a => a.article_id) || [];
       
-      if (finalActeIdsForArticles !== null) {
-        // Intersection of both filters
-        finalActeIdsForArticles = finalActeIdsForArticles.filter(id => sousDomaineActeIds.includes(id));
+      // Important: Pour les sous-domaines, on filtre directement par article_id
+      // car les sous-domaines sont liés aux articles, pas aux textes
+      if (articleIdsWithSousDomaine.length > 0) {
+        articlesQuery = articlesQuery.in("id", articleIdsWithSousDomaine);
       } else {
-        finalActeIdsForArticles = sousDomaineActeIds;
+        // Aucun article ne correspond à ce sous-domaine
+        articlesQuery = articlesQuery.in("id", []);
       }
+      
+      // Ne pas combiner avec finalActeIdsForArticles pour les sous-domaines
+      // car la relation est article->sous_domaine, pas texte->sous_domaine
     }
 
-    // Apply final combined filters
-    if (finalActeIdsForArticles !== null) {
+    // Apply final combined filters (type/statut/année/domaine)
+    // MAIS PAS si sous-domaine est filtré (car déjà appliqué directement sur les articles)
+    if (finalActeIdsForArticles !== null && (!filters?.sousDomaineFilter || filters.sousDomaineFilter === "all")) {
       if (finalActeIdsForArticles.length > 0) {
         articlesQuery = articlesQuery.in("texte_id", finalActeIdsForArticles);
       } else {
