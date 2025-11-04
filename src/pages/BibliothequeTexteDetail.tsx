@@ -55,7 +55,6 @@ import { TexteCodesDisplay } from "@/components/TexteCodesDisplay";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize-html";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
 import { BibliothequeSearchBar } from "@/components/bibliotheque/BibliothequeSearchBar";
-import { AbrogationModal } from "@/components/AbrogationModal";
 
 export default function BibliothequeTexteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -68,8 +67,6 @@ export default function BibliothequeTexteDetail() {
   const [deleteArticleId, setDeleteArticleId] = useState<string | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showAbrogationModal, setShowAbrogationModal] = useState(false);
-  const [currentArticleForAbrogation, setCurrentArticleForAbrogation] = useState<any>(null);
   
   // Version management
   const [expandedArticles, setExpandedArticles] = useState<string[]>([]);
@@ -472,20 +469,6 @@ export default function BibliothequeTexteDetail() {
             <div className="flex flex-wrap justify-between items-center gap-4">
               <h2 className="text-xl font-semibold">Articles réglementaires</h2>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    if (!articles || articles.length === 0) {
-                      toast.error("Veuillez d'abord créer un article dans ce texte");
-                      return;
-                    }
-                    setCurrentArticleForAbrogation(articles[0]);
-                    setShowAbrogationModal(true);
-                  }}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Abroger des articles
-                </Button>
                 <Button onClick={() => {
                   setEditingArticle(null);
                   setShowArticleModal(true);
@@ -848,20 +831,6 @@ export default function BibliothequeTexteDetail() {
           open={showQuickEffetModal}
           onOpenChange={setShowQuickEffetModal}
           targetArticle={targetArticleForEffet}
-        />
-      )}
-
-      {/* Abrogation Modal */}
-      {currentArticleForAbrogation && (
-        <AbrogationModal
-          open={showAbrogationModal}
-          onOpenChange={setShowAbrogationModal}
-          articleSourceId={currentArticleForAbrogation.id}
-          texteSourceRef={texte?.reference_officielle || ""}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["articles-effets"] });
-            queryClient.invalidateQueries({ queryKey: ["effets-juridiques-texte", id] });
-          }}
         />
       )}
 
