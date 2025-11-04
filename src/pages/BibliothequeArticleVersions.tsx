@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -433,14 +433,17 @@ export default function BibliothequeArticleVersions() {
                             >
                               <GitCompare className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteVersionId(version.id)}
-                              title="Supprimer"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {!active && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeleteVersionId(version.id)}
+                                title="Supprimer"
+                                className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardHeader>
@@ -476,27 +479,47 @@ export default function BibliothequeArticleVersions() {
       </Tabs>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteVersionId} onOpenChange={() => setDeleteVersionId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
-            <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette version ? Cette action est irréversible.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteVersionId(null)}>
-              Annuler
-            </Button>
-            <Button
-              variant="destructive"
+      <AlertDialog open={!!deleteVersionId} onOpenChange={() => setDeleteVersionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const versionToDelete = filteredVersions.find(v => v.id === deleteVersionId);
+                if (!versionToDelete) return "Êtes-vous sûr de vouloir supprimer cette version ?";
+                
+                return (
+                  <>
+                    Êtes-vous sûr de vouloir supprimer la <strong>version {versionToDelete.version_numero}</strong> ?<br />
+                    <span className="text-destructive font-medium">Cette action est irréversible.</span>
+                    <br /><br />
+                    {versionToDelete.version_label && (
+                      <div className="text-sm">
+                        <strong>Label :</strong> {versionToDelete.version_label}
+                      </div>
+                    )}
+                    {versionToDelete.raison_modification && (
+                      <div className="mt-2 p-2 bg-muted rounded text-xs">
+                        <strong>Raison :</strong> {versionToDelete.raison_modification}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
               onClick={() => deleteVersionId && deleteVersionMutation.mutate(deleteVersionId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Supprimer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Supprimer définitivement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -18,8 +18,10 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
-  Hash
+  Hash,
+  Trash2
 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import ReactDiffViewer from "react-diff-viewer-continued";
@@ -49,6 +51,7 @@ interface ArticleVersionsTimelineProps {
   currentContent?: string;
   onCompare?: (versionA: Version, versionB: Version) => void;
   onRestore?: (version: Version) => void;
+  onDelete?: (version: Version) => void;
 }
 
 const getModificationTypeBadge = (type?: string) => {
@@ -123,6 +126,7 @@ export function ArticleVersionsTimeline({
   currentContent,
   onCompare,
   onRestore,
+  onDelete,
 }: ArticleVersionsTimelineProps) {
   const [expandedVersions, setExpandedVersions] = useState<string[]>([]);
   const [showDiffFor, setShowDiffFor] = useState<string | null>(null);
@@ -389,6 +393,46 @@ export function ArticleVersionsTimeline({
                               <GitCompare className="h-4 w-4 mr-2" />
                               Comparer en détail
                             </Button>
+                          )}
+                          {onDelete && !version.is_active && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Supprimer
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Êtes-vous sûr de vouloir supprimer la <strong>version {version.version_numero}</strong> ?<br />
+                                    <span className="text-destructive font-medium">Cette action est irréversible.</span>
+                                    <br /><br />
+                                    {version.version_label && `Label : ${version.version_label}`}
+                                    {version.raison_modification && (
+                                      <div className="mt-2 p-2 bg-muted rounded text-xs">
+                                        <strong>Raison :</strong> {version.raison_modification}
+                                      </div>
+                                    )}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => onDelete(version)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Supprimer définitivement
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </CardContent>
