@@ -1,6 +1,6 @@
 // Extended queries for Bibliothèque Réglementaire module
 import { supabaseAny as supabase } from "@/lib/supabase-any";
-import type { ActeAnnexe, ApplicabiliteMapping } from "@/types/actes";
+import type { ActeAnnexe, ApplicabiliteMapping } from "@/types/textes";
 
 // Annexes queries
 export const annexesQueries = {
@@ -144,8 +144,8 @@ export const importHelpers = {
           throw new Error("Champs requis manquants: intitule, reference_officielle, type_acte");
         }
 
-        // Create acte
-        const acteData: any = {
+        // Create texte réglementaire
+        const texteData: any = {
           type_acte: record.type_acte,
           reference_officielle: record.reference_officielle,
           intitule: record.intitule,
@@ -161,7 +161,7 @@ export const importHelpers = {
 
         const { data, error } = await supabase
           .from('actes_reglementaires')
-          .insert([acteData])
+          .insert([texteData])
           .select()
           .single();
 
@@ -183,27 +183,27 @@ export const importHelpers = {
 
 // Versioning helpers
 export const versioningHelpers = {
-  async createNewVersion(acteId: string, changeReason: string) {
-    // Get current acte
-    const { data: currentActe, error: fetchError } = await supabase
+  async createNewVersion(texteId: string, changeReason: string) {
+    // Get current texte
+    const { data: currentTexte, error: fetchError } = await supabase
       .from('actes_reglementaires')
       .select('*')
-      .eq('id', acteId)
+      .eq('id', texteId)
       .single();
 
     if (fetchError) throw fetchError;
 
-    const newVersion = (currentActe.version || 1) + 1;
+    const newVersion = (currentTexte.version || 1) + 1;
 
-    // Update acte with new version
+    // Update texte with new version
     const { error: updateError } = await supabase
       .from('actes_reglementaires')
       .update({
         version: newVersion,
-        previous_version_id: acteId,
+        previous_version_id: texteId,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', acteId);
+      .eq('id', texteId);
 
     if (updateError) throw updateError;
 
@@ -211,7 +211,7 @@ export const versioningHelpers = {
     const { error: logError } = await supabase
       .from('changelog_reglementaire' as any)
       .insert([{
-        acte_id: acteId,
+        acte_id: texteId,
         type_changement: 'version_update',
         date_changement: new Date().toISOString(),
         version: newVersion,
@@ -226,32 +226,32 @@ export const versioningHelpers = {
 
 // Export helpers
 export const exportHelpers = {
-  async generateActePDF(acteId: string) {
-    // Fetch full acte data with relations
-    const { data: acte, error: acteError } = await supabase
+  async generateTextePDF(texteId: string) {
+    // Fetch full texte data with relations
+    const { data: texte, error: texteError } = await supabase
       .from('actes_reglementaires')
       .select(`
         *,
         articles(*)
       `)
-      .eq('id', acteId)
+      .eq('id', texteId)
       .single();
 
-    if (acteError) throw acteError;
+    if (texteError) throw texteError;
 
     const { data: annexes } = await supabase
       .from('actes_annexes')
       .select('*')
-      .eq('acte_id', acteId);
+      .eq('acte_id', texteId);
 
     const { data: changelog } = await supabase
       .from('changelog_reglementaire')
       .select('*')
-      .eq('acte_id', acteId)
+      .eq('acte_id', texteId)
       .order('date_changement', { ascending: false });
 
     return {
-      acte,
+      texte,
       annexes: annexes || [],
       changelog: changelog || []
     };

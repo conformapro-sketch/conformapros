@@ -16,7 +16,7 @@ import { ArticleSousDomainesSelector } from "@/components/ArticleSousDomainesSel
 import { TexteAutocomplete } from "@/components/bibliotheque/TexteAutocomplete";
 import { ArticleAutocomplete } from "@/components/bibliotheque/ArticleAutocomplete";
 import { HierarchyAlert } from "@/components/HierarchyAlert";
-import type { TypeEffet, PorteeEffet } from "@/types/actes";
+import type { TypeEffet, PorteeEffet } from "@/types/textes";
 
 interface ArticleFormModalProps {
   open: boolean;

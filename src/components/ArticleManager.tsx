@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Trash2, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { articlesQueries } from "@/lib/actes-queries";
-import type { Article } from "@/types/actes";
+import type { Article } from "@/types/textes";
 
 interface ArticleManagerProps {
   acteId: string;

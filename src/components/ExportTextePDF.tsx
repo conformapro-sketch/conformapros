@@ -4,21 +4,21 @@ import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { exportHelpers } from "@/lib/bibliotheque-queries";
 
-interface ExportActePDFProps {
-  acteId: string;
-  acteTitle: string;
+interface ExportTextePDFProps {
+  texteId: string;
+  texteTitle: string;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
 }
 
-export function ExportActePDF({ acteId, acteTitle, variant = "outline", size = "sm" }: ExportActePDFProps) {
+export function ExportTextePDF({ texteId, texteTitle, variant = "outline", size = "sm" }: ExportTextePDFProps) {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
       // Fetch data
-      const data = await exportHelpers.generateActePDF(acteId);
+      const data = await exportHelpers.generateTextePDF(texteId);
       
       // Generate PDF content (HTML structure)
       const htmlContent = generateHTMLContent(data);
@@ -44,14 +44,14 @@ export function ExportActePDF({ acteId, acteTitle, variant = "outline", size = "
   };
 
   const generateHTMLContent = (data: any) => {
-    const { acte, annexes, changelog } = data;
+    const { texte, annexes, changelog } = data;
     
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>${acte.intitule}</title>
+        <title>${texte.intitule}</title>
         <style>
           @page { margin: 2cm; }
           body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; }
@@ -87,63 +87,63 @@ export function ExportActePDF({ acteId, acteTitle, variant = "outline", size = "
           <div class="subtitle">Bibliothèque Réglementaire</div>
         </div>
 
-        <h1>${acte.intitule}</h1>
+        <h1>${texte.intitule}</h1>
 
         <table class="meta-table">
           <tr>
             <td>Référence officielle</td>
-            <td>${acte.reference_officielle || acte.numero_officiel || '—'}</td>
+            <td>${texte.reference_officielle || texte.numero_officiel || '—'}</td>
           </tr>
           <tr>
             <td>Type</td>
-            <td>${acte.type_acte || '—'}</td>
+            <td>${texte.type_acte || '—'}</td>
           </tr>
           <tr>
             <td>Autorité émettrice</td>
-            <td>${acte.autorite_emettrice || '—'}</td>
+            <td>${texte.autorite_emettrice || '—'}</td>
           </tr>
           <tr>
             <td>Date de signature</td>
-            <td>${acte.date_signature ? new Date(acte.date_signature).toLocaleDateString('fr-FR') : '—'}</td>
+            <td>${texte.date_signature ? new Date(texte.date_signature).toLocaleDateString('fr-FR') : '—'}</td>
           </tr>
           <tr>
             <td>Date de publication (JORT)</td>
-            <td>${acte.date_publication_jort ? new Date(acte.date_publication_jort).toLocaleDateString('fr-FR') : '—'}</td>
+            <td>${texte.date_publication_jort ? new Date(texte.date_publication_jort).toLocaleDateString('fr-FR') : '—'}</td>
           </tr>
           <tr>
             <td>Statut de vigueur</td>
-            <td><span class="badge ${getStatusClass(acte.statut_vigueur)}">${getStatusLabel(acte.statut_vigueur)}</span></td>
+            <td><span class="badge ${getStatusClass(texte.statut_vigueur)}">${getStatusLabel(texte.statut_vigueur)}</span></td>
           </tr>
           <tr>
             <td>Version</td>
-            <td>${acte.version || 1}</td>
+            <td>${texte.version || 1}</td>
           </tr>
         </table>
 
-        ${acte.tags && acte.tags.length > 0 ? `
+        ${texte.tags && texte.tags.length > 0 ? `
           <h2>Mots-clés</h2>
           <div class="tags">
-            ${acte.tags.map((tag: string) => `<span class="tag">${tag}</span>`).join('')}
+            ${texte.tags.map((tag: string) => `<span class="tag">${tag}</span>`).join('')}
           </div>
         ` : ''}
 
-        ${acte.objet_resume ? `
+        ${texte.objet_resume ? `
           <h2>Résumé</h2>
           <div class="content-section">
-            ${acte.objet_resume}
+            ${texte.objet_resume}
           </div>
         ` : ''}
 
-        ${acte.content ? `
+        ${texte.content ? `
           <h2>Contenu intégral</h2>
           <div class="content-section">
-            ${acte.content.replace(/\n/g, '<br>')}
+            ${texte.content.replace(/\n/g, '<br>')}
           </div>
         ` : ''}
 
-        ${acte.articles && acte.articles.length > 0 ? `
-          <h2>Articles (${acte.articles.length})</h2>
-          ${acte.articles.map((article: any) => `
+        ${texte.articles && texte.articles.length > 0 ? `
+          <h2>Articles (${texte.articles.length})</h2>
+          ${texte.articles.map((article: any) => `
             <div class="article-item">
               <div class="article-title">Article ${article.numero}${article.titre_court ? ` - ${article.titre_court}` : ''}</div>
               <div>${article.contenu_fr || article.contenu_ar || '—'}</div>

@@ -50,11 +50,10 @@ interface BibliothequeHorizontalFiltersProps {
 
 const TYPE_OPTIONS = [
   { value: "all", label: "Tous les types" },
-  { value: "loi", label: "Loi" },
-  { value: "decret", label: "Décret" },
-  { value: "arrete", label: "Arrêté" },
-  { value: "circulaire", label: "Circulaire" },
-  { value: "decision", label: "Décision" },
+  { value: "LOI", label: "Loi" },
+  { value: "DECRET", label: "Décret" },
+  { value: "ARRETE", label: "Arrêté" },
+  { value: "CIRCULAIRE", label: "Circulaire" },
 ];
 
 const STATUT_OPTIONS = [

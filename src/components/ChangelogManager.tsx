@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Calendar, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { changelogQueries } from "@/lib/actes-queries";
-import type { ChangelogEntry } from "@/types/actes";
+import type { ChangelogEntry } from "@/types/textes";
 
 interface ChangelogManagerProps {
   acteId: string;

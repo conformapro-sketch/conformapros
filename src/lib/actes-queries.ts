@@ -10,7 +10,7 @@ import type {
   DomaineApplication,
   SousDomaineApplication,
   ArticleVersion
-} from "@/types/actes";
+} from "@/types/textes";
 
 // Type-safe wrappers for actes_reglementaires queries
 export const actesQueries = {

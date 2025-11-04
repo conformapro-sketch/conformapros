@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { format, formatDistance } from "date-fns";
 import { fr } from "date-fns/locale";
-import type { TypeEffet, PorteeEffet } from "@/types/actes";
+import type { TypeEffet, PorteeEffet } from "@/types/textes";
 import { useState } from "react";
 
 interface ArticleEffet {

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Download, Upload, Loader2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { annexesQueries } from "@/lib/bibliotheque-queries";
-import type { ActeAnnexe } from "@/types/actes";
+import type { ActeAnnexe } from "@/types/textes";
 
 interface AnnexesTabProps {
   acteId: string;

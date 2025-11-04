@@ -13,7 +13,7 @@ import { Plus, Edit, Trash2, GitBranch, Save, X, GitCompare } from "lucide-react
 import { useToast } from "@/hooks/use-toast";
 import { articlesQueries, articleVersionsQueries } from "@/lib/actes-queries";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
-import type { Article } from "@/types/actes";
+import type { Article } from "@/types/textes";
 import { ArticleVersionComparison } from "./ArticleVersionComparison";
 
 interface ArticlesTabProps {

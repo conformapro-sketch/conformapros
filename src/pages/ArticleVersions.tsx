@@ -252,7 +252,7 @@ export default function ArticleVersions() {
     );
   }
 
-  const acte = article.actes_reglementaires as any;
+  const texte = article.actes_reglementaires as any;
   const version1 = versions?.find((v) => v.id === compareVersions[0]);
   const version2 = versions?.find((v) => v.id === compareVersions[1]);
 
@@ -268,7 +268,7 @@ export default function ArticleVersions() {
       <div>
         <h1 className="text-2xl font-bold">Versions - Article {article.numero}</h1>
         <p className="text-muted-foreground mt-2">
-          {acte?.numero_officiel} - {acte?.intitule}
+          {texte?.numero_officiel} - {texte?.intitule}
         </p>
         {article.titre_court && <p className="text-sm text-muted-foreground mt-1">{article.titre_court}</p>}
       </div>

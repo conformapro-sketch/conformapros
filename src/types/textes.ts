@@ -1,4 +1,18 @@
-// Type definitions for Actes Réglementaires (Regulatory Acts)
+/**
+ * Types pour les Textes Réglementaires (Regulatory Texts)
+ * 
+ * Modèle hiérarchique :
+ *   TEXTE RÉGLEMENTAIRE (Loi, Décret, Arrêté, Circulaire)
+ *     └─> ARTICLES (Contenu normatif)
+ *          └─> VERSIONS (Historique des modifications)
+ *     └─> CODES (Regroupements thématiques)
+ * 
+ * Note importante :
+ * Les tables de la base de données utilisent le terme "acte" pour des raisons historiques
+ * (ex: actes_reglementaires, actes_annexes). Dans le code, nous préférons "texte" qui est 
+ * plus précis et correspond à la terminologie juridique tunisienne.
+ * Les interfaces gardent "Acte" dans leur nom pour maintenir la compatibilité avec la DB.
+ */
 
 export type TypeActe = "loi" | "decret-loi" | "decret" | "arrete" | "circulaire";
 
@@ -47,6 +61,8 @@ export interface Applicability {
   risk_classes: string[];
 }
 
+// Interface principale pour un texte réglementaire
+// Note: Gardé comme "ActeReglementaire" pour compatibilité avec la table DB "actes_reglementaires"
 export interface ActeReglementaire {
   id: string;
   type_acte: TypeActe;
@@ -85,6 +101,7 @@ export interface ActeReglementaire {
   types_acte?: TypeActeRow;
 }
 
+// Annexe d'un texte réglementaire
 export interface ActeAnnexe {
   id: string;
   acte_id: string;
@@ -97,6 +114,7 @@ export interface ActeAnnexe {
   updated_at: string;
 }
 
+// Mapping d'applicabilité pour un site/établissement
 export interface ApplicabiliteMapping {
   id: string;
   acte_id: string;
@@ -106,6 +124,7 @@ export interface ApplicabiliteMapping {
   created_at: string;
 }
 
+// Article d'un texte réglementaire
 export interface Article {
   id: string;
   acte_id: string;
@@ -129,6 +148,7 @@ export type ModificationType =
   | "remplacement" 
   | "insertion";
 
+// Version d'un article (historique des modifications)
 export interface ArticleVersion {
   id: string;
   article_id: string;
@@ -160,6 +180,7 @@ export interface ArticleVersion {
   };
 }
 
+// Structure hiérarchique d'un code
 export interface StructureCode {
   id: string;
   acte_id: string;
@@ -171,6 +192,7 @@ export interface StructureCode {
   updated_at: string;
 }
 
+// Relation entre textes réglementaires
 export interface RelationActe {
   id: string;
   source_id: string;
@@ -184,6 +206,7 @@ export interface RelationActe {
   };
 }
 
+// Entrée du changelog d'un texte
 export interface ChangelogEntry {
   id: string;
   acte_id: string;
@@ -204,6 +227,7 @@ export type TypeEffet =
 
 export type PorteeEffet = "article" | "alinea" | "point";
 
+// Effet juridique d'un article sur un autre
 export interface ArticleEffetJuridique {
   id: string;
   article_source_id: string;

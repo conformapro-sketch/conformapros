@@ -16,8 +16,8 @@ export default function BibliothequeTexteArticles() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data: acte, isLoading: acteLoading } = useQuery({
-    queryKey: ["bibliotheque-acte", id],
+  const { data: texte, isLoading: texteLoading } = useQuery({
+    queryKey: ["bibliotheque-texte", id],
     queryFn: () => actesQueries.getById(id!),
     enabled: !!id,
   });
@@ -28,7 +28,7 @@ export default function BibliothequeTexteArticles() {
     enabled: !!id,
   });
 
-  if (acteLoading || articlesLoading) {
+  if (texteLoading || articlesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-muted-foreground">Chargement...</div>
@@ -36,7 +36,7 @@ export default function BibliothequeTexteArticles() {
     );
   }
 
-  if (!acte) {
+  if (!texte) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <FileText className="h-16 w-16 text-muted-foreground" />
@@ -63,9 +63,9 @@ export default function BibliothequeTexteArticles() {
       {/* En-tête */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-          Articles - {acte.numero_officiel}
+          Articles - {texte.numero_officiel}
         </h1>
-        <p className="text-muted-foreground mt-2">{acte.intitule}</p>
+        <p className="text-muted-foreground mt-2">{texte.intitule}</p>
       </div>
 
       {/* Liste des articles */}
