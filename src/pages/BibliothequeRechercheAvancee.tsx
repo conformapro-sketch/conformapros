@@ -18,6 +18,8 @@ import { textesReglementairesQueries, domainesQueries } from "@/lib/textes-queri
 import { fetchSousDomainesByDomaine } from "@/lib/domaines-queries";
 import { BibliothequeSearchBar } from "@/components/bibliotheque/BibliothequeSearchBar";
 import { stripHtml } from "@/lib/sanitize-html";
+import { ArticleViewModal } from "@/components/ArticleViewModal";
+import { TexteViewModal } from "@/components/TexteViewModal";
 
 const TYPE_LABELS: Record<string, string> = {
   LOI: "Loi",
@@ -80,6 +82,12 @@ export default function BibliothequeRechercheAvancee() {
   const [sousDomaineFilter, setSousDomaineFilter] = useState<string>("all");
   const [statutFilter, setStatutFilter] = useState<string>("all");
   const [anneeFilter, setAnneeFilter] = useState<string>("all");
+  
+  // Modal states
+  const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  const [selectedTexte, setSelectedTexte] = useState<string | null>(null);
+  const [articleModalOpen, setArticleModalOpen] = useState(false);
+  const [texteModalOpen, setTexteModalOpen] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -107,17 +115,26 @@ export default function BibliothequeRechercheAvancee() {
     }
   }, [domaineFilter]);
 
+  // Active filters count
+  const activeFiltersCount = [
+    typeFilter !== "all",
+    domaineFilter !== "all",
+    sousDomaineFilter !== "all",
+    statutFilter !== "all",
+    anneeFilter !== "all"
+  ].filter(Boolean).length;
+
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ["smart-search", debouncedSearch, typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter],
     queryFn: () => textesReglementairesQueries.smartSearch({
-      searchTerm: debouncedSearch,
+      searchTerm: debouncedSearch.length >= 2 ? debouncedSearch : "",
       typeFilter: typeFilter !== "all" ? typeFilter : undefined,
       domaineFilter: domaineFilter !== "all" ? domaineFilter : undefined,
       sousDomaineFilter: sousDomaineFilter !== "all" ? sousDomaineFilter : undefined,
       statutFilter: statutFilter !== "all" ? statutFilter : undefined,
       anneeFilter: anneeFilter !== "all" ? anneeFilter : undefined,
     }),
-    enabled: debouncedSearch.length >= 2,
+    enabled: debouncedSearch.length >= 2 || activeFiltersCount > 0,
   });
 
   const results = searchResults?.results || [];
@@ -132,15 +149,6 @@ export default function BibliothequeRechercheAvancee() {
         .filter((y): y is number => y !== null)
     )
   ).sort((a, b) => b - a);
-
-  // Active filters count
-  const activeFiltersCount = [
-    typeFilter !== "all",
-    domaineFilter !== "all",
-    sousDomaineFilter !== "all",
-    statutFilter !== "all",
-    anneeFilter !== "all"
-  ].filter(Boolean).length;
 
   const clearAllFilters = () => {
     setTypeFilter("all");
@@ -369,14 +377,14 @@ export default function BibliothequeRechercheAvancee() {
             Résultats de recherche
           </CardTitle>
           <CardDescription className="text-sm">
-            {debouncedSearch.length < 2 
-              ? "Entrez au moins 2 caractères pour lancer la recherche"
+            {debouncedSearch.length < 2 && activeFiltersCount === 0
+              ? "Utilisez la barre de recherche OU les filtres pour trouver des textes et articles"
               : `${totalCount} résultat${totalCount > 1 ? "s" : ""} trouvé${totalCount > 1 ? "s" : ""}`
             }
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          {debouncedSearch.length < 2 ? (
+          {debouncedSearch.length < 2 && activeFiltersCount === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
               <div className="rounded-full bg-primary/10 p-4">
                 <Search className="h-12 w-12 text-primary" />
@@ -386,7 +394,7 @@ export default function BibliothequeRechercheAvancee() {
                   Commencez votre recherche
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Utilisez la barre de recherche et les filtres pour trouver des textes et articles
+                  Utilisez la barre de recherche OU les filtres pour trouver des textes et articles
                 </p>
               </div>
             </div>
@@ -421,7 +429,10 @@ export default function BibliothequeRechercheAvancee() {
                     <Card 
                       key={`texte-${result.id}`}
                       className="hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group"
-                      onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
+                      onClick={() => {
+                        setSelectedTexte(texte.id);
+                        setTexteModalOpen(true);
+                      }}
                     >
                       <CardContent className="pt-5 pb-4">
                         <div className="space-y-3">
@@ -538,6 +549,20 @@ export default function BibliothequeRechercheAvancee() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <ArticleViewModal
+        open={articleModalOpen}
+        onOpenChange={setArticleModalOpen}
+        article={selectedArticle?.article}
+        texte={selectedArticle?.texte}
+      />
+
+      <TexteViewModal
+        open={texteModalOpen}
+        onOpenChange={setTexteModalOpen}
+        texteId={selectedTexte || ""}
+      />
     </div>
   );
 }
