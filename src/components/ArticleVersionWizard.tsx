@@ -153,6 +153,17 @@ export function ArticleVersionWizard({
     setHierarchyValidation(null);
   }, [selectedTexteSource, targetArticle, typeEffet]);
 
+  // Reset portee when typeEffet changes
+  useEffect(() => {
+    if (typeEffet === "ABROGE") {
+      setPortee("article");
+      setPorteeDetail("");
+    } else if (typeEffet === "COMPLETE" && portee === "article") {
+      // Si COMPLETE est sélectionné et portee était "article", forcer "alinea"
+      setPortee("alinea");
+    }
+  }, [typeEffet]);
+
   const handleDocumentUpload = async (file: File): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -205,7 +216,12 @@ export function ArticleVersionWizard({
           version_numero: nextVersionNumber,
           version_label: `v${nextVersionNumber}`,
           contenu: typeEffet === "ABROGE" 
-            ? `<p><em>Article abrogé par ${selectedTexteSource.reference_officielle}</em></p>`
+            ? `<div class="abrogation-notice">
+       <p><strong>Article abrogé</strong></p>
+       <p>Texte source : ${selectedTexteSource.reference_officielle}</p>
+       <p>Date d'effet : ${new Date(dateEffet).toLocaleDateString("fr-FR")}</p>
+       <p>Raison : ${raisonModification}</p>
+     </div>`
             : contenuModifie,
           date_version: new Date().toISOString(),
           modification_type: typeEffet.toLowerCase(),
@@ -294,9 +310,18 @@ export function ArticleVersionWizard({
       case 3:
         return !!selectedTexteSource && hierarchyValidation?.severity !== "error";
       case 4:
-        if (typeEffet !== "ABROGE" && !contenuModifie.trim()) return false;
-        if (!raisonModification.trim()) return false;
-        return true;
+        // Validation conditionnelle selon typeEffet
+        const hasValidContent = typeEffet === "ABROGE" || contenuModifie.trim().length > 0;
+        const hasValidReason = raisonModification.trim().length > 0;
+        const hasValidPorteeDetail = portee === "article" || porteeDetail.trim().length > 0;
+        
+        // Si ABROGE, pas besoin de contenu ni de détail de portée
+        if (typeEffet === "ABROGE") {
+          return hasValidReason && !!dateEffet;
+        }
+        
+        // Pour autres types
+        return hasValidContent && hasValidReason && hasValidPorteeDetail && !!dateEffet;
       default:
         return false;
     }
@@ -475,33 +500,48 @@ export function ArticleVersionWizard({
       case 3:
         return (
           <div className="space-y-4">
-            {/* Portée */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="portee">Portée de la modification</Label>
-                <Select value={portee} onValueChange={setPortee}>
-                  <SelectTrigger id="portee">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="article">Article complet</SelectItem>
-                    <SelectItem value="alinea">Alinéa spécifique</SelectItem>
-                    <SelectItem value="point">Point spécifique</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {portee !== "article" && (
+            {/* Portée - Cachée pour ABROGE */}
+            {typeEffet !== "ABROGE" && (
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="portee-detail">Détail de la portée</Label>
-                  <Input
-                    id="portee-detail"
-                    placeholder="Ex: Alinéa 2, Point c)"
-                    value={porteeDetail}
-                    onChange={(e) => setPorteeDetail(e.target.value)}
-                  />
+                  <Label htmlFor="portee">Portée de la modification</Label>
+                  <Select value={portee} onValueChange={setPortee}>
+                    <SelectTrigger id="portee">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Masquer "Article complet" pour COMPLETE */}
+                      {typeEffet !== "COMPLETE" && (
+                        <SelectItem value="article">Article complet</SelectItem>
+                      )}
+                      <SelectItem value="alinea">Alinéa spécifique</SelectItem>
+                      <SelectItem value="point">Point spécifique</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
+                {portee !== "article" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="portee-detail">Détail de la portée *</Label>
+                    <Input
+                      id="portee-detail"
+                      placeholder="Ex: Alinéa 2, Point c)"
+                      value={porteeDetail}
+                      onChange={(e) => setPorteeDetail(e.target.value)}
+                    />
+                    {!porteeDetail && (
+                      <p className="text-xs text-destructive">
+                        ⚠️ Veuillez préciser le détail (ex: "Alinéa 2")
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Champ caché pour forcer portee="article" si ABROGE */}
+            {typeEffet === "ABROGE" && (
+              <input type="hidden" name="portee" value="article" />
+            )}
 
             {/* Date d'effet */}
             <div className="space-y-2">
@@ -715,12 +755,23 @@ export function ArticleVersionWizard({
                 <p className="text-sm bg-muted/50 p-3 rounded-md">{raisonModification}</p>
               </div>
 
-              <div className="border-t pt-3 flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Portée</span>
-                <span className="text-sm font-medium">
-                  {portee === "article" ? "Article complet" : portee === "alinea" ? `Alinéa: ${porteeDetail}` : `Point: ${porteeDetail}`}
-                </span>
-              </div>
+              {typeEffet !== "ABROGE" ? (
+                <div className="border-t pt-3 flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Portée</span>
+                  <span className="text-sm font-medium">
+                    {portee === "article" ? "Article complet" : 
+                     portee === "alinea" ? `Alinéa: ${porteeDetail}` : 
+                     `Point: ${porteeDetail}`}
+                  </span>
+                </div>
+              ) : (
+                <div className="border-t pt-3 flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Portée</span>
+                  <Badge variant="outline" className="text-xs">
+                    Article complet (automatique)
+                  </Badge>
+                </div>
+              )}
 
               {notes && (
                 <div className="border-t pt-3">
