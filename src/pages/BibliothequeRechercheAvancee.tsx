@@ -504,7 +504,7 @@ export default function BibliothequeRechercheAvancee() {
                           {/* Badges */}
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge className="bg-primary text-primary-foreground font-medium">
-                              Article {highlightText(article.numero, debouncedSearch)}
+                              {highlightText(article.numero_article, debouncedSearch)}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
                               {typeLabel}
