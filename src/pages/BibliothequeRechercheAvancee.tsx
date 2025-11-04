@@ -484,6 +484,10 @@ export default function BibliothequeRechercheAvancee() {
                   // Article result
                   const article = result.data;
                   const texte = article.texte;
+                  
+                  // Skip if texte is null
+                  if (!texte) return null;
+                  
                   const statutInfo = STATUT_LABELS[texte.statut_vigueur] || { label: texte.statut_vigueur, className: "" };
                   const typeLabel = TYPE_LABELS[texte.type] || texte.type;
                   const previewSource = article.contenu || article.titre_court || "";
