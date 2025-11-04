@@ -113,15 +113,6 @@ export default function BibliothequeTexteDetail() {
     enabled: !!id,
   });
 
-  // Fetch effets juridiques (modifications reçues)
-  const { data: effetsRecus = [] } = useQuery({
-    queryKey: ["effets-juridiques-texte", id],
-    queryFn: async () => {
-      const { articlesEffetsJuridiquesQueries } = await import("@/lib/actes-queries");
-      return articlesEffetsJuridiquesQueries.getByTexteCibleId(id!);
-    },
-    enabled: !!id,
-  });
 
   // Sort and filter articles
   const sortedAndFilteredArticles = useMemo(() => {
@@ -462,7 +453,6 @@ export default function BibliothequeTexteDetail() {
         <TabsList>
           <TabsTrigger value="articles">Articles ({articles?.length || 0})</TabsTrigger>
           <TabsTrigger value="effets-crees">Versions créées</TabsTrigger>
-          <TabsTrigger value="modifications">Versions reçues ({effetsRecus?.length || 0})</TabsTrigger>
           <TabsTrigger value="changelog">Historique ({changelogEntries?.length || 0})</TabsTrigger>
           <TabsTrigger value="info">Informations</TabsTrigger>
         </TabsList>
@@ -642,101 +632,6 @@ export default function BibliothequeTexteDetail() {
           )}
         </TabsContent>
 
-        <TabsContent value="modifications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Modifications apportées par d'autres textes</CardTitle>
-              <CardDescription>
-                Liste des effets juridiques subis par ce texte réglementaire
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {effetsRecus && effetsRecus.length > 0 ? (
-                <div className="space-y-3">
-                  {effetsRecus.map((effet: any) => {
-                    const getEffetIcon = (type: string) => {
-                      switch (type) {
-                        case "MODIFIE": return <Pencil className="h-4 w-4" />;
-                        case "ABROGE": return <XCircle className="h-4 w-4" />;
-                        case "REMPLACE": return <RefreshCw className="h-4 w-4" />;
-                        case "AJOUTE": return <PlusCircle className="h-4 w-4" />;
-                        case "RENUMEROTE": return <Hash className="h-4 w-4" />;
-                        default: return <FileText className="h-4 w-4" />;
-                      }
-                    };
-
-                    const getEffetBadgeVariant = (type: string) => {
-                      switch (type) {
-                        case "MODIFIE": return "bg-warning/10 text-warning-foreground border-warning/20";
-                        case "ABROGE": return "bg-destructive/10 text-destructive-foreground border-destructive/20";
-                        case "REMPLACE": return "bg-primary/10 text-primary-foreground border-primary/20";
-                        case "AJOUTE": return "bg-success/10 text-success-foreground border-success/20";
-                        case "RENUMEROTE": return "bg-secondary/10 text-secondary-foreground border-secondary/20";
-                        default: return "";
-                      }
-                    };
-
-                    return (
-                      <Card key={effet.id} className="p-4 shadow-soft">
-                        <div className="flex items-start gap-4">
-                          <Badge variant="outline" className={getEffetBadgeVariant(effet.type_effet)}>
-                            <span className="flex items-center gap-1">
-                              {getEffetIcon(effet.type_effet)}
-                              {effet.type_effet}
-                            </span>
-                          </Badge>
-                          <div className="flex-1 space-y-2">
-                            <div>
-                              <p className="font-semibold text-sm">
-                                {effet.article_source?.texte?.reference_officielle || "Texte source"}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {effet.article_source?.texte?.intitule}
-                              </p>
-                            </div>
-                            <div className="flex items-start gap-6 text-xs text-muted-foreground">
-                              <div>
-                                <span className="font-medium">Article modificateur:</span>{" "}
-                                {effet.article_source?.numero_article}
-                              </div>
-                              {effet.article_cible && (
-                                <div>
-                                  <span className="font-medium">Article visé:</span>{" "}
-                                  {effet.article_cible.numero_article}
-                                </div>
-                              )}
-                              <div>
-                                <span className="font-medium">Date d'effet:</span>{" "}
-                                {new Date(effet.date_effet).toLocaleDateString("fr-TN")}
-                              </div>
-                            </div>
-                            {effet.reference_citation && (
-                              <p className="text-xs text-muted-foreground italic">
-                                📋 {effet.reference_citation}
-                              </p>
-                            )}
-                            {effet.notes && (
-                              <p className="text-xs text-muted-foreground p-2 bg-muted/50 rounded">
-                                {effet.notes}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Aucune modification apportée par d'autres textes
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="changelog" className="space-y-4">
           <Card>
