@@ -27,7 +27,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
-    type_acte: "loi" as "loi" | "decret-loi" | "arrete" | "decret" | "circulaire",
+    type_acte: "LOI" as "LOI" | "DECRET-LOI" | "ARRETE" | "DECRET" | "CIRCULAIRE",
     reference_officielle: "",
     intitule: "",
     autorite_emettrice: "",
@@ -60,7 +60,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   useEffect(() => {
     if (texte) {
       setFormData({
-        type_acte: texte.type_acte,
+        type_acte: texte.type_acte.toUpperCase() as "LOI" | "DECRET-LOI" | "ARRETE" | "DECRET" | "CIRCULAIRE",
         reference_officielle: texte.reference_officielle,
         intitule: texte.intitule,
         autorite_emettrice: texte.autorite_emettrice || "",
@@ -94,7 +94,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
       setPdfFile(null);
     } else {
       setFormData({
-        type_acte: "loi",
+        type_acte: "LOI",
         reference_officielle: "",
         intitule: "",
         autorite_emettrice: "",
@@ -267,11 +267,11 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="loi">Loi</SelectItem>
-                <SelectItem value="decret-loi">Décret-loi</SelectItem>
-                <SelectItem value="decret">Décret</SelectItem>
-                <SelectItem value="arrete">Arrêté</SelectItem>
-                <SelectItem value="circulaire">Circulaire</SelectItem>
+                <SelectItem value="LOI">Loi</SelectItem>
+                <SelectItem value="DECRET-LOI">Décret-loi</SelectItem>
+                <SelectItem value="DECRET">Décret</SelectItem>
+                <SelectItem value="ARRETE">Arrêté</SelectItem>
+                <SelectItem value="CIRCULAIRE">Circulaire</SelectItem>
               </SelectContent>
             </Select>
           </div>

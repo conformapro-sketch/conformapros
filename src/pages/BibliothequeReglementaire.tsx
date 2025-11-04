@@ -143,10 +143,10 @@ function BibliothequeReglementaireContent() {
     const favorites = textes.filter((t: any) => isFavorite(t.id)).length;
     
     const parType = {
-      loi: textes.filter((t: any) => t.type_acte === "loi").length,
-      decret: textes.filter((t: any) => t.type_acte === "decret").length,
-      arrete: textes.filter((t: any) => t.type_acte === "arrete").length,
-      circulaire: textes.filter((t: any) => t.type_acte === "circulaire").length,
+      loi: textes.filter((t: any) => t.type_acte === "LOI").length,
+      decret: textes.filter((t: any) => t.type_acte === "DECRET").length,
+      arrete: textes.filter((t: any) => t.type_acte === "ARRETE").length,
+      circulaire: textes.filter((t: any) => t.type_acte === "CIRCULAIRE").length,
     };
     
     return {

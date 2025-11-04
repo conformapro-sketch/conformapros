@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { textesReglementairesQueries, domainesQueries, sousDomainesQueries } from "@/lib/textes-queries";
-import { TexteReglementaireFormModal } from "@/components/TexteReglementaireFormModal";
+import { TexteFormModal } from "@/components/TexteFormModal";
 
 const TYPE_LABELS: Record<string, string> = {
   LOI: "Loi",
@@ -436,7 +436,7 @@ export default function BibliothequeNavigationTree() {
       </div>
 
       {/* Form Modal */}
-      <TexteReglementaireFormModal
+      <TexteFormModal
         open={showFormModal}
         onOpenChange={setShowFormModal}
         onSuccess={() => {
