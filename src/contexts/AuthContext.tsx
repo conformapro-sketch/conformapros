@@ -55,7 +55,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserAccessContext = async (userId: string) => {
     setLoading(true);
     try {
-      // 1. Check if user is a client user first
+      console.log('Fetching access context for user:', userId);
+
+      // PRIORITY 1: Check for team roles FIRST (ConformaPro staff users)
+      const { data: userRolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select(`
+          role_uuid,
+          client_id,
+          site_scope,
+          roles!inner(
+            id,
+            name,
+            description,
+            type,
+            is_system,
+            tenant_id,
+            role_permissions(
+              id,
+              module,
+              action,
+              decision,
+              scope
+            )
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('roles.type', 'team');
+
+      if (rolesError && rolesError.code !== 'PGRST116') {
+        console.error('Error fetching team roles:', rolesError);
+      }
+
+      // If user has team role(s), treat them as ConformaPro staff
+      if (userRolesData && userRolesData.length > 0) {
+        console.log('✓ User is ConformaPro staff with team role(s)');
+        
+        const roles: Role[] = userRolesData.map((ur: any) => ({
+          ...ur.roles,
+          user_count: 0,
+          created_at: ur.roles.created_at,
+          updated_at: ur.roles.updated_at,
+        }));
+
+        const allPermissions: RolePermission[] = userRolesData.flatMap((ur: any) => 
+          ur.roles.role_permissions || []
+        );
+
+        const primary = roles[0] || null;
+
+        // Get tenant_id from profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('tenant_id')
+          .eq('id', userId)
+          .maybeSingle();
+
+        setPrimaryRole(primary);
+        setAllRoles(roles);
+        setPermissions(allPermissions);
+        setUserRole(primary?.name || null);
+        setUserRoles(roles.map(r => r.name));
+        setTenantId(profile?.tenant_id || null);
+        setClientId(null); // Team users don't have client_id
+        setLoading(false);
+        
+        console.info(`✓ Staff identity: ${primary?.name} with ${roles.length} role(s)`);
+        return;
+      }
+
+      // PRIORITY 2: Check if user is a client user (only if no team roles)
       const { data: clientUser, error: clientError } = await supabase
         .from('client_users')
         .select('id, client_id, is_client_admin, tenant_id')
@@ -66,8 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw clientError;
       }
 
-      // 2. If client user, create synthetic role based on is_client_admin
+      // If client user, create synthetic role based on is_client_admin
       if (clientUser) {
+        console.log('✓ User is a client user');
+        
         const syntheticRole: Role = {
           id: clientUser.is_client_admin ? 'client_admin_synthetic' : 'client_user_synthetic',
           type: 'client',
@@ -89,11 +160,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTenantId(clientUser.tenant_id || null);
         setClientId(clientUser.client_id);
         setLoading(false);
+        
+        console.info(`✓ Client identity: ${syntheticRole.name} for client ${clientUser.client_id}`);
         return;
       }
 
-      // 3. If not client user, use existing team user role system
-      const { data: userRolesData, error: rolesError } = await supabase
+      // PRIORITY 3: No team roles and no client user - fetch all roles (fallback)
+      const { data: allUserRoles, error: allRolesError } = await supabase
         .from('user_roles')
         .select(`
           role_uuid,
@@ -117,17 +190,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         `)
         .eq('user_id', userId);
 
-      if (rolesError) throw rolesError;
+      if (allRolesError) throw allRolesError;
 
       // Extract roles and permissions
-      const roles: Role[] = userRolesData?.map((ur: any) => ({
+      const roles: Role[] = allUserRoles?.map((ur: any) => ({
         ...ur.roles,
         user_count: 0,
         created_at: ur.roles.created_at,
         updated_at: ur.roles.updated_at,
       })) || [];
 
-      const allPermissions: RolePermission[] = userRolesData?.flatMap((ur: any) => 
+      const allPermissions: RolePermission[] = allUserRoles?.flatMap((ur: any) => 
         ur.roles.role_permissions || []
       ) || [];
 
@@ -148,8 +221,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole(primary?.name || null);
       setUserRoles(roles.map(r => r.name));
       setTenantId(profile?.tenant_id || null);
-      setClientId(null); // Team users don't have client_id
+      setClientId(null);
       setLoading(false);
+      
+      console.info(`✓ User identity resolved: ${primary?.name || 'No role'}`);
     } catch (err) {
       console.error("Error fetching user access context:", err);
       setPrimaryRole(null);

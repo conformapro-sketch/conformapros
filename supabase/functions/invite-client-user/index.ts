@@ -74,6 +74,23 @@ Deno.serve(async (req) => {
       throw new Error('Missing required fields: email, nom, prenom, clientId')
     }
 
+    // GUARD: Prevent staff users from being added as client users
+    // Check if user with this email already has a team role
+    const { data: staffCheckData } = await supabaseAdmin.auth.admin.listUsers();
+    const staffUser = staffCheckData?.users?.find((u: any) => u.email === email);
+    
+    if (staffUser) {
+      const { data: teamRoles } = await supabaseAdmin
+        .from('user_roles')
+        .select('roles!inner(type)')
+        .eq('user_id', staffUser.id)
+        .eq('roles.type', 'team');
+      
+      if (teamRoles && teamRoles.length > 0) {
+        throw new Error('This email belongs to a ConformaPro staff member and cannot be added as a client user. Staff and client identities must be separate.');
+      }
+    }
+
     // Verify calling user has permission to invite users for this client
     const { data: hasAccess } = await supabaseClient.rpc('has_client_access', {
       _user_id: callingUser.id,

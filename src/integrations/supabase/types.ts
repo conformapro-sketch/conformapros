@@ -3966,6 +3966,8 @@ export type Database = {
         Args: { domaine_ids: string[]; target_user_id: string }
         Returns: undefined
       }
+      user_has_team_role: { Args: { p_user_id: string }; Returns: boolean }
+      user_is_client_user: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "gestionnaire" | "consultant" | "user"
