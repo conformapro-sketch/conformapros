@@ -115,6 +115,7 @@ export const MODULE_LABELS: Record<string, string> = {
   abonnements: 'Abonnements',
   utilisateurs: 'Utilisateurs',
   roles: 'Rôles & Permissions',
+  domaines: 'Domaines Réglementaires',
   rapports: 'Rapports',
 };
 
