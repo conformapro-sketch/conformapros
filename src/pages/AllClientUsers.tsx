@@ -22,7 +22,8 @@ import {
   Filter,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllClientUsers, fetchClients, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
@@ -37,6 +38,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import {
   Table,
   TableBody,
@@ -60,6 +72,8 @@ export default function AllClientUsers() {
   const [managementDrawerOpen, setManagementDrawerOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(undefined);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients"],
@@ -122,6 +136,53 @@ export default function AllClientUsers() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      // Authorization check
+      if (!isSuperAdmin()) {
+        throw new Error("Seuls les Super Admins peuvent supprimer des utilisateurs");
+      }
+
+      // Delete access_scopes first
+      await supabase
+        .from('access_scopes')
+        .delete()
+        .eq('user_id', userId);
+
+      // Delete client_users record
+      const { error } = await supabase
+        .from('client_users')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
+
+      // Call edge function to delete auth user
+      const { data, error: edgeFunctionError } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
+
+      if (edgeFunctionError) throw edgeFunctionError;
+      if (!data?.success) throw new Error('Failed to delete user');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-client-users"] });
+      toast({
+        title: "Utilisateur supprimé",
+        description: "L'utilisateur a été supprimé avec succès.",
+      });
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer l'utilisateur",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEdit = (user: any) => {
     setEditingUser(user);
     setUserFormOpen(true);
@@ -134,6 +195,8 @@ export default function AllClientUsers() {
   const handleResendInvite = (email: string) => {
     resendInviteMutation.mutate(email);
   };
+
+  const canDeleteUsers = isSuperAdmin();
 
   const roleLabels: Record<string, string> = {
     admin_client: "Admin client",
@@ -417,6 +480,25 @@ export default function AllClientUsers() {
                             >
                               <Mail className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setUserToDelete(user);
+                                setDeleteDialogOpen(true);
+                              }}
+                              disabled={!canDeleteUsers || user.is_client_admin}
+                              title={
+                                !canDeleteUsers 
+                                  ? "Seuls les Super Admins peuvent supprimer des utilisateurs"
+                                  : user.is_client_admin 
+                                    ? "Impossible de supprimer un Admin Client" 
+                                    : "Supprimer"
+                              }
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -496,6 +578,28 @@ export default function AllClientUsers() {
         user={selectedUser}
         clientId={selectedUser?.client_id || ""}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'utilisateur{" "}
+              <strong>{userToDelete?.email}</strong> ?<br />
+              Cette action est irréversible et supprimera toutes les données associées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => userToDelete && deleteMutation.mutate(userToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

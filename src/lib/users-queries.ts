@@ -177,24 +177,13 @@ export const usersQueries = {
   },
 
   delete: async (id: string) => {
-    // Delete user_roles first (foreign key constraint)
-    await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', id);
-
-    // Delete profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', id);
+    // Call edge function to delete user (requires service role for auth.admin)
+    const { data, error } = await supabase.functions.invoke('delete-user', {
+      body: { userId: id }
+    });
     
-    if (profileError) throw profileError;
-
-    // Delete auth user
-    const { error: authError } = await supabase.auth.admin.deleteUser(id);
-    
-    if (authError) throw authError;
+    if (error) throw error;
+    if (!data?.success) throw new Error('Failed to delete user');
   },
 };
 
