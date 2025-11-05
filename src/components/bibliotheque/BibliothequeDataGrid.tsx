@@ -199,7 +199,7 @@ export function BibliothequeDataGrid({
     <div className="rounded-md border bg-card w-full">
       <div className="overflow-x-auto">
         <Table className="table-fixed w-full">
-          <TableHeader className="sticky top-0 bg-card z-10 border-b">
+          <TableHeader className="sticky top-16 bg-card z-10 border-b">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {

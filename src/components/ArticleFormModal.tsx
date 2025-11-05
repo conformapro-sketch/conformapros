@@ -10,12 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { textesArticlesQueries, textesReglementairesQueries } from "@/lib/textes-queries";
 import { articlesEffetsJuridiquesQueries } from "@/lib/actes-queries";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Pencil, XCircle, RefreshCw, PlusCircle, Hash, FileEdit } from "lucide-react";
 import { ArticleSousDomainesSelector } from "@/components/ArticleSousDomainesSelector";
 import { TexteAutocomplete } from "@/components/bibliotheque/TexteAutocomplete";
 import { ArticleAutocomplete } from "@/components/bibliotheque/ArticleAutocomplete";
 import { HierarchyAlert } from "@/components/HierarchyAlert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 import type { TypeEffet, PorteeEffet } from "@/types/textes";
 
 interface ArticleFormModalProps {
@@ -199,10 +202,76 @@ export function ArticleFormModal({
         );
       }
       
-      // Si un effet juridique est défini, le créer
-      if (hasEffet) {
+      // Si un effet juridique est défini et qu'il cible un article spécifique
+      if (hasEffet && effetData.article_cible_id) {
+        // 1. Récupérer l'article cible et la version active actuelle
+        const { data: currentVersion } = await supabase
+          .from("article_versions")
+          .select("*")
+          .eq("article_id", effetData.article_cible_id)
+          .eq("is_active", true)
+          .order("version_numero", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        const nextVersionNumber = (currentVersion?.version_numero || 0) + 1;
+        
+        // 2. Créer la nouvelle version dans l'article cible
+        const newVersionContent = effetData.type_effet === "ABROGE" 
+          ? `<div class="abrogation-notice"><p><strong>Article abrogé</strong></p><p>Par : ${texteData?.reference_officielle} - Article ${formData.numero}</p><p>Date d'effet : ${new Date(effetData.date_effet).toLocaleDateString("fr-FR")}</p></div>`
+          : (effetData.type_effet === "MODIFIE" || effetData.type_effet === "REMPLACE")
+          ? formData.contenu
+          : currentVersion?.contenu || "";
+        
+        await supabase
+          .from("article_versions")
+          .insert({
+            article_id: effetData.article_cible_id,
+            version_numero: nextVersionNumber,
+            version_label: `v${nextVersionNumber}`,
+            contenu: newVersionContent,
+            date_version: new Date().toISOString(),
+            modification_type: effetData.type_effet.toLowerCase(),
+            source_text_id: texteId,
+            source_article_reference: formData.numero,
+            effective_from: effetData.date_effet,
+            is_active: true,
+            raison_modification: effetData.notes || `${effetData.type_effet} par ${texteData?.reference_officielle}`,
+            tags: [effetData.type_effet.toLowerCase(), "automatique"],
+            impact_estime: effetData.type_effet === "ABROGE" || effetData.type_effet === "REMPLACE" ? "high" : "medium",
+          });
+        
+        // 3. Désactiver l'ancienne version
+        if (currentVersion) {
+          await supabase
+            .from("article_versions")
+            .update({
+              is_active: false,
+              effective_to: effetData.date_effet,
+            })
+            .eq("id", currentVersion.id);
+        }
+        
+        // 4. Créer l'effet juridique avec le lien vers l'article source
         await articlesEffetsJuridiquesQueries.create({
           article_source_id: newArticle.id,
+          texte_source_id: texteId,
+          type_effet: effetData.type_effet,
+          texte_cible_id: effetData.texte_cible_id || undefined,
+          article_cible_id: effetData.article_cible_id,
+          nouvelle_numerotation: effetData.nouvelle_numerotation || undefined,
+          date_effet: effetData.date_effet,
+          date_fin_effet: effetData.date_fin_effet || undefined,
+          reference_citation: effetData.reference_citation || undefined,
+          notes: effetData.notes || undefined,
+          portee: effetData.portee || undefined,
+          portee_detail: effetData.portee_detail || undefined,
+        });
+      } else if (hasEffet) {
+        // Si l'effet cible un texte entier sans article spécifique
+        await articlesEffetsJuridiquesQueries.create({
+          article_source_id: newArticle.id,
+          texte_source_id: texteId,
           type_effet: effetData.type_effet,
           texte_cible_id: effetData.texte_cible_id || undefined,
           article_cible_id: effetData.article_cible_id || undefined,
@@ -223,7 +292,12 @@ export function ArticleFormModal({
       queryClient.invalidateQueries({ queryKey: ["bibliotheque-articles"] });
       queryClient.invalidateQueries({ queryKey: ["article-versions"] });
       queryClient.invalidateQueries({ queryKey: ["effets-juridiques"] });
-      toast.success(hasEffet ? "Article créé et effet juridique enregistré avec succès" : "Article créé avec succès");
+      const message = hasEffet && effetData.article_cible_id
+        ? "Article créé et version de l'article cible mise à jour automatiquement"
+        : hasEffet
+        ? "Article créé et effet juridique enregistré avec succès"
+        : "Article créé avec succès";
+      toast.success(message);
       onOpenChange(false);
       resetForm();
       setSelectedSousDomaines([]);
@@ -267,10 +341,29 @@ export function ArticleFormModal({
       return;
     }
 
-    // Validate hierarchy if has legal effect
-    if (hasEffet && hierarchyValidation && !hierarchyValidation.valid && hierarchyValidation.severity === "error") {
-      toast.error("Impossible de créer cet effet juridique : " + hierarchyValidation.message);
-      return;
+    // Validation des effets juridiques
+    if (hasEffet) {
+      if (!effetData.article_cible_id && !effetData.texte_cible_id) {
+        toast.error("Vous devez sélectionner un texte ou un article cible");
+        return;
+      }
+      
+      if (!effetData.date_effet) {
+        toast.error("La date d'effet est obligatoire pour les effets juridiques");
+        return;
+      }
+      
+      if ((effetData.type_effet === "MODIFIE" || effetData.type_effet === "REMPLACE") 
+          && !formData.contenu.trim()) {
+        toast.error("Le contenu est obligatoire pour ce type de modification");
+        return;
+      }
+      
+      // Validation hiérarchique
+      if (hierarchyValidation && !hierarchyValidation.valid && hierarchyValidation.severity === "error") {
+        toast.error("Impossible de créer cet effet juridique : " + hierarchyValidation.message);
+        return;
+      }
     }
 
     const cleanData = {
@@ -300,8 +393,8 @@ export function ArticleFormModal({
           </DialogTitle>
           <DialogDescription>
             {article 
-              ? "Modifiez les informations de l'article (corrections éditoriales uniquement)"
-              : "Remplissez les informations de l'article réglementaire"
+              ? "Modifiez les informations de l'article (corrections éditoriales uniquement). Pour créer une nouvelle version juridique, utilisez le bouton 'Versions' dans la liste des articles."
+              : "Remplissez les informations de l'article réglementaire. Si cet article modifie un texte existant, cochez l'option 'A un effet' pour créer automatiquement une version dans l'article cible."
             }
           </DialogDescription>
         </DialogHeader>
@@ -515,6 +608,17 @@ export function ArticleFormModal({
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Alert for automatic version creation */}
+                  {effetData.article_cible_id && (
+                    <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-sm">
+                        <strong>Création automatique :</strong> Une nouvelle version sera automatiquement 
+                        créée dans l'article cible pour documenter cette modification.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   {/* Hierarchy validation alert */}
                   {hierarchyValidation && (
