@@ -20,7 +20,8 @@ import {
   UserX, 
   Mail,
   Filter,
-  Settings
+  Settings,
+  Trash2
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClientUsers, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
@@ -30,6 +31,16 @@ import { useToast } from "@/hooks/use-toast";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -58,6 +69,8 @@ export default function ClientUsers() {
   const [editingUser, setEditingUser] = useState<any>(undefined);
   const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<any>(null);
   const [currentClientId, setCurrentClientId] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
 
   // Get client ID from URL or current user's profile
   useEffect(() => {
@@ -133,6 +146,44 @@ export default function ClientUsers() {
         title: "Invitation renvoyée",
         description: "Un email de réinitialisation a été envoyé.",
       });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      // Delete access_scopes first
+      await supabase
+        .from('access_scopes')
+        .delete()
+        .eq('user_id', userId);
+
+      // Delete client_user record
+      const { error } = await supabase
+        .from('client_users')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) throw error;
+
+      // Delete auth user
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      if (authError) throw authError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-users", currentClientId] });
+      toast({
+        title: "Utilisateur supprimé",
+        description: "L'utilisateur a été supprimé avec succès.",
+      });
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
     },
     onError: (error: any) => {
       toast({
@@ -397,6 +448,19 @@ export default function ClientUsers() {
                             >
                               <Mail className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setUserToDelete(user);
+                                setDeleteDialogOpen(true);
+                              }}
+                              disabled={user.is_client_admin}
+                              title={user.is_client_admin ? "Impossible de supprimer un Admin Client" : "Supprimer"}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -447,6 +511,34 @@ export default function ClientUsers() {
         user={selectedUserForPermissions}
         clientId={currentClientId}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{userToDelete?.nom} {userToDelete?.prenom}</strong> ({userToDelete?.email}) ?
+              <br /><br />
+              Cette action est <strong>irréversible</strong> et supprimera :
+              <ul className="list-disc list-inside mt-2">
+                <li>Le compte utilisateur</li>
+                <li>Tous les accès aux sites</li>
+                <li>Toutes les permissions associées</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => userToDelete && deleteMutation.mutate(userToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer définitivement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

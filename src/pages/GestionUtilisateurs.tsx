@@ -31,8 +31,18 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { UserPlus, Edit, Key, CheckCircle, XCircle, Search, Shield } from "lucide-react";
+import { UserPlus, Edit, Key, CheckCircle, XCircle, Search, Shield, Trash2 } from "lucide-react";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function GestionUtilisateurs() {
   const queryClient = useQueryClient();
@@ -40,6 +50,8 @@ export default function GestionUtilisateurs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     email: "",
@@ -165,6 +177,20 @@ export default function GestionUtilisateurs() {
     mutationFn: usersQueries.resetPassword,
     onSuccess: () => {
       toast.success('Email de réinitialisation envoyé');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: usersQueries.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Utilisateur supprimé avec succès');
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    },
+    onError: (error: any) => {
+      console.error('Error deleting user:', error);
+      toast.error(error?.message || 'Erreur lors de la suppression');
     },
   });
 
@@ -329,6 +355,7 @@ export default function GestionUtilisateurs() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEdit(user)}
+                          title="Modifier"
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -339,6 +366,7 @@ export default function GestionUtilisateurs() {
                             id: user.id, 
                             actif: user.actif === false 
                           })}
+                          title={user.actif !== false ? "Désactiver" : "Activer"}
                         >
                           {user.actif !== false ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                         </Button>
@@ -346,8 +374,21 @@ export default function GestionUtilisateurs() {
                           size="sm"
                           variant="outline"
                           onClick={() => resetPasswordMutation.mutate(user.email)}
+                          title="Réinitialiser le mot de passe"
                         >
                           <Key className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            setUserToDelete(user);
+                            setDeleteDialogOpen(true);
+                          }}
+                          disabled={user.user_roles?.[0]?.roles?.name === 'Super Admin'}
+                          title={user.user_roles?.[0]?.roles?.name === 'Super Admin' ? "Impossible de supprimer un Super Admin" : "Supprimer"}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -460,6 +501,34 @@ export default function GestionUtilisateurs() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{userToDelete?.nom} {userToDelete?.prenom}</strong> ({userToDelete?.email}) ?
+              <br /><br />
+              Cette action est <strong>irréversible</strong> et supprimera :
+              <ul className="list-disc list-inside mt-2">
+                <li>Le compte utilisateur</li>
+                <li>Tous les rôles et permissions associés</li>
+                <li>L'accès à la plateforme</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => userToDelete && deleteMutation.mutate(userToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer définitivement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

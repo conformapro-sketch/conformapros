@@ -175,6 +175,27 @@ export const usersQueries = {
     if (error) throw error;
     return data;
   },
+
+  delete: async (id: string) => {
+    // Delete user_roles first (foreign key constraint)
+    await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', id);
+
+    // Delete profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+    
+    if (profileError) throw profileError;
+
+    // Delete auth user
+    const { error: authError } = await supabase.auth.admin.deleteUser(id);
+    
+    if (authError) throw authError;
+  },
 };
 
 export const rolesQueries = {
