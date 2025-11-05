@@ -75,6 +75,7 @@ export const ADMIN_MODULES = [
   'abonnements',
   'utilisateurs',
   'roles',
+  'domaines',
 ] as const;
 
 // All modules combined

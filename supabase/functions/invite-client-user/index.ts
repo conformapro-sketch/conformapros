@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
       userId = newUser.user.id
       console.log('invite-client-user: Created new user', userId)
 
-      // Create client_users entry
+      // Create client_users entry (DO NOT create profiles - prevents dual identity)
       const { error: profileError } = await supabaseAdmin
         .from('client_users')
         .insert({
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
         })
 
       if (profileError) {
-        console.error('invite-client-user: Failed to create profile', profileError)
+        console.error('invite-client-user: Failed to create client_users entry', profileError)
         // Don't throw, user is already created
       }
 

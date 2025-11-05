@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw clientError;
       }
 
-      // If client user, create synthetic role based on is_client_admin
+      // If client user, create synthetic role and fetch individual permissions
       if (clientUser) {
         console.log('✓ User is a client user');
         
@@ -152,16 +152,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user_count: 0,
         };
 
+        // Fetch individual user permissions for client users
+        const { data: userPermissions } = await supabase
+          .from('user_permissions')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('client_id', clientUser.client_id);
+
+        const individualPermissions: RolePermission[] = (userPermissions || []).map((p: any) => ({
+          id: p.id,
+          role_id: syntheticRole.id,
+          module: p.module,
+          action: p.action,
+          decision: p.decision,
+          scope: p.scope,
+          created_at: p.created_at,
+          updated_at: p.updated_at,
+        }));
+
         setPrimaryRole(syntheticRole);
         setAllRoles([syntheticRole]);
-        setPermissions([]); // Client users don't use granular permissions
+        setPermissions(individualPermissions);
         setUserRole(syntheticRole.name);
         setUserRoles([syntheticRole.name]);
         setTenantId(clientUser.tenant_id || null);
         setClientId(clientUser.client_id);
         setLoading(false);
         
-        console.info(`✓ Client identity: ${syntheticRole.name} for client ${clientUser.client_id}`);
+        console.info(`✓ Client identity: ${syntheticRole.name} for client ${clientUser.client_id} with ${individualPermissions.length} permissions`);
         return;
       }
 

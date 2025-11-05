@@ -60,12 +60,31 @@ export function AppSidebar() {
   const [openItems, setOpenItems] = useState<string[]>([]);
   const location = useLocation();
   const { data: modules, isLoading } = useUserModules();
-  const { hasPermission, isSuperAdmin } = useAuth();
+  const { hasPermission, isSuperAdmin, primaryRole, isClientUser } = useAuth();
 
   const navigationItems = useMemo(() => {
     if (!modules) return [];
-    return buildNavigationFromModules(modules);
-  }, [modules]);
+    const items = buildNavigationFromModules(modules);
+    
+    // Filter out staff-only modules for client users
+    if (isClientUser()) {
+      // Remove "Domaines" subitem from BIBLIOTHEQUE and "Tableau de bord"
+      return items.map(item => {
+        if (item.code === 'BIBLIOTHEQUE' && item.subItems) {
+          return {
+            ...item,
+            subItems: item.subItems.filter(sub => 
+              !sub.url.includes('/domain') && 
+              !sub.url.includes('/dashbord')
+            )
+          };
+        }
+        return item;
+      }).filter(item => item.code !== 'DOMAINES'); // Remove standalone DOMAINES module
+    }
+    
+    return items;
+  }, [modules, isClientUser]);
 
   // Auto-open the submenu containing the active route
   useEffect(() => {

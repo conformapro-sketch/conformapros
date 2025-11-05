@@ -489,6 +489,7 @@ export const toggleUtilisateurActif = async (utilisateurId: string, actif: boole
   return data;
 };
 
+
 // ==================== ACCESS SCOPES ====================
 
 type AccessScopeRow = Database["public"]["Tables"]["access_scopes"]["Row"];

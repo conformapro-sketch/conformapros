@@ -184,8 +184,22 @@ const App = () => (
               <Route path="textes/:id/editer" element={<TexteForm />} />
               {/* Bibliothèque Routes - Module indépendant */}
               <Route path="bibliotheque" element={<BibliothequeReglementaire />} />
-              <Route path="bibliotheque/dashbord" element={<BibliothequeTableauDeBord />} />
-              <Route path="bibliotheque/domain" element={<DomainesPage />} />
+              <Route 
+                path="bibliotheque/dashbord" 
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                    <BibliothequeTableauDeBord />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="bibliotheque/domain" 
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                    <DomainesPage />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
               <Route path="bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
               <Route path="bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
