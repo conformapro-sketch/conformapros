@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -32,15 +31,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Shield, Copy } from "lucide-react";
+import { Plus, Edit, Trash2, Shield } from "lucide-react";
 import {
-  MODULES,
-  ACTIONS,
-  MODULE_LABELS,
-  ACTION_LABELS,
   type Role,
   type RolePermission,
+  type PermissionScope,
 } from "@/types/roles";
+import { PermissionMatrix } from "@/components/roles/PermissionMatrix";
 
 interface PermissionState {
   module: string;
@@ -64,11 +61,13 @@ export default function GestionRoles() {
     description: string;
     type: 'team' | 'client';
     permissions: PermissionState[];
+    scope: PermissionScope;
   }>({
     name: "",
     description: "",
     type: 'team',
     permissions: [],
+    scope: 'tenant',
   });
 
   // Fetch roles by type
@@ -161,16 +160,19 @@ export default function GestionRoles() {
     if (mode === 'edit' && roleId) {
       const role = await rolesQueries.getById(roleId);
       if (role) {
+        const permissions = (role.role_permissions || []).map(p => ({
+          module: p.module,
+          action: p.action,
+          decision: p.decision,
+          scope: p.scope,
+        }));
+        
         setFormData({
           name: role.name,
           description: role.description || "",
           type: role.type,
-          permissions: (role.role_permissions || []).map(p => ({
-            module: p.module,
-            action: p.action,
-            decision: p.decision,
-            scope: p.scope,
-          })),
+          permissions,
+          scope: permissions[0]?.scope || 'tenant',
         });
       }
     }
@@ -191,40 +193,8 @@ export default function GestionRoles() {
       description: "",
       type: roleType,
       permissions: [],
+      scope: 'tenant',
     });
-  };
-
-  const togglePermission = (module: string, action: string) => {
-    setFormData((prev) => {
-      const existing = prev.permissions.find(
-        p => p.module === module && p.action === action
-      );
-      
-      if (existing) {
-        // Remove permission
-        return {
-          ...prev,
-          permissions: prev.permissions.filter(
-            p => !(p.module === module && p.action === action)
-          ),
-        };
-      } else {
-        // Add permission
-        return {
-          ...prev,
-          permissions: [
-            ...prev.permissions,
-            { module, action, decision: 'allow' as const, scope: 'tenant' as const },
-          ],
-        };
-      }
-    });
-  };
-
-  const hasPermission = (module: string, action: string) => {
-    return formData.permissions.some(
-      p => p.module === module && p.action === action
-    );
   };
 
   const countPermissions = (permissions?: RolePermission[]) => {
@@ -347,7 +317,7 @@ export default function GestionRoles() {
         setRoleDialog({ ...roleDialog, open });
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {roleDialog.mode === 'create' ? 'Créer un rôle' : 'Modifier le rôle'}
@@ -396,35 +366,23 @@ export default function GestionRoles() {
             </div>
 
             <div>
-              <Label className="text-lg">Permissions par module</Label>
-              <div className="mt-4 space-y-4">
-                {MODULES.map((module) => (
-                  <Card key={module}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">{MODULE_LABELS[module]}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-4 gap-4">
-                        {ACTIONS.map((action) => (
-                          <div key={action} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${module}-${action}`}
-                              checked={hasPermission(module, action)}
-                              onCheckedChange={() => togglePermission(module, action)}
-                            />
-                            <Label
-                              htmlFor={`${module}-${action}`}
-                              className="cursor-pointer text-sm"
-                            >
-                              {ACTION_LABELS[action]}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <Label className="text-lg mb-4 block">Configuration des permissions</Label>
+              <PermissionMatrix
+                permissions={formData.permissions}
+                scope={formData.scope}
+                onPermissionsChange={(perms) => setFormData({ 
+                  ...formData, 
+                  permissions: perms.map(p => ({ ...p, scope: formData.scope }))
+                })}
+                onScopeChange={(newScope) => setFormData({ 
+                  ...formData, 
+                  scope: newScope,
+                  permissions: formData.permissions.map(p => ({ ...p, scope: newScope }))
+                })}
+                roleType={formData.type}
+                readOnly={false}
+                userType={formData.type}
+              />
             </div>
           </div>
 
