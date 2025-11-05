@@ -88,7 +88,7 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "reference_officielle",
       header: "Référence",
-      size: 180,
+      size: 300,
       cell: ({ row }) => (
         <HoverCard openDelay={200}>
           <HoverCardTrigger asChild>
@@ -110,7 +110,7 @@ export function BibliothequeDataGrid({
     {
       accessorKey: "intitule",
       header: "Titre",
-      size: 420,
+      size: 300,
       cell: ({ row }) => (
         <HoverCard openDelay={200}>
           <HoverCardTrigger asChild>
