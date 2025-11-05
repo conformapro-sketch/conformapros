@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +61,7 @@ export default function ClientUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { clientId: urlClientId } = useParams<{ clientId: string }>();
+  const { isSuperAdmin, loading: authLoading } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -158,6 +160,11 @@ export default function ClientUsers() {
 
   const deleteMutation = useMutation({
     mutationFn: async (userId: string) => {
+      // Server-side authorization check
+      if (!isSuperAdmin()) {
+        throw new Error("Seuls les Super Admins peuvent supprimer des utilisateurs");
+      }
+
       // Delete access_scopes first
       await supabase
         .from('access_scopes')
@@ -226,6 +233,18 @@ export default function ClientUsers() {
   const handleResendInvite = (email: string) => {
     resendInviteMutation.mutate(email);
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Only Super Admins can delete users
+  const canDeleteUsers = isSuperAdmin();
 
   if (!currentClientId) {
     return (
@@ -455,8 +474,14 @@ export default function ClientUsers() {
                                 setUserToDelete(user);
                                 setDeleteDialogOpen(true);
                               }}
-                              disabled={user.is_client_admin}
-                              title={user.is_client_admin ? "Impossible de supprimer un Admin Client" : "Supprimer"}
+                              disabled={!canDeleteUsers || user.is_client_admin}
+                              title={
+                                !canDeleteUsers 
+                                  ? "Seuls les Super Admins peuvent supprimer des utilisateurs"
+                                  : user.is_client_admin 
+                                    ? "Impossible de supprimer un Admin Client" 
+                                    : "Supprimer"
+                              }
                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="h-4 w-4" />
