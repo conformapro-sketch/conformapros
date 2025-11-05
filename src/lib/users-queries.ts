@@ -68,45 +68,22 @@ export const usersQueries = {
     role_uuid: string;
     telephone?: string;
   }) => {
-    // 1. Create auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
-          nom: userData.nom,
-          prenom: userData.prenom,
-        },
-        emailRedirectTo: `${window.location.origin}/`,
-      },
-    });
-
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('User creation failed');
-
-    // 2. Update profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
+    // Use edge function to create user without affecting current session
+    const { data, error } = await supabase.functions.invoke('create-team-user', {
+      body: {
+        email: userData.email,
+        password: userData.password,
         nom: userData.nom,
         prenom: userData.prenom,
-        telephone: userData.telephone,
-      })
-      .eq('id', authData.user.id);
-
-    if (profileError) throw profileError;
-
-    // 3. Create user_roles record
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: authData.user.id,
         role_uuid: userData.role_uuid,
-      });
+        telephone: userData.telephone,
+      }
+    });
 
-    if (roleError) throw roleError;
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'User creation failed');
 
-    return authData.user;
+    return data.user;
   },
 
   update: async (id: string, userData: {
