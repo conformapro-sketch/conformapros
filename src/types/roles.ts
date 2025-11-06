@@ -70,7 +70,13 @@ export interface RoleAuditLog {
   created_at: string;
 }
 
-// Client-facing operational modules
+// ==========================================
+// DEPRECATED: Hard-coded arrays below
+// These will be removed in Phase 5 after full migration
+// Use usePermissionStructure() hook instead
+// ==========================================
+
+/** @deprecated Use usePermissionStructure() from @/hooks/usePermissionStructure instead */
 export const CLIENT_MODULES = [
   'bibliotheque',
   'veille',
@@ -91,7 +97,7 @@ export const CLIENT_MODULES = [
   'rapports',
 ] as const;
 
-// Admin/ConformaPro only modules
+/** @deprecated Use usePermissionStructure() from @/hooks/usePermissionStructure instead */
 export const ADMIN_MODULES = [
   'clients',
   'sites',
@@ -102,9 +108,10 @@ export const ADMIN_MODULES = [
   'domaines',
 ] as const;
 
-// All modules combined
+/** @deprecated Use usePermissionStructure() from @/hooks/usePermissionStructure instead */
 export const MODULES = [...CLIENT_MODULES, ...ADMIN_MODULES] as const;
 
+/** @deprecated Use usePermissionStructure() from @/hooks/usePermissionStructure instead */
 export const ACTIONS = [
   'view',
   'create',
@@ -116,6 +123,7 @@ export const ACTIONS = [
   'upload_proof',
 ] as const;
 
+/** @deprecated Use usePermissionStructure() from @/hooks/usePermissionStructure instead */
 export const MODULE_LABELS: Record<string, string> = {
   bibliotheque: 'Bibliothèque Réglementaire',
   veille: 'Veille Réglementaire',
@@ -143,6 +151,7 @@ export const MODULE_LABELS: Record<string, string> = {
   rapports: 'Rapports',
 };
 
+/** @deprecated Use usePermissionStructure() from @/hooks/usePermissionStructure instead */
 export const ACTION_LABELS: Record<string, string> = {
   view: 'Voir',
   create: 'Créer',

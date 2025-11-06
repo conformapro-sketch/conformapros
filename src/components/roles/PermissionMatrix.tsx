@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -14,9 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, ChevronDown, ChevronRight, Lock } from "lucide-react";
-import { MODULES, CLIENT_MODULES, ADMIN_MODULES, ACTIONS, MODULE_LABELS, ACTION_LABELS } from "@/types/roles";
 import type { PermissionDecision, PermissionScope } from "@/types/roles";
 import { cn } from "@/lib/utils";
+import { usePermissionStructure, useClientModules, useAdminModules } from "@/hooks/usePermissionStructure";
 
 interface Permission {
   module: string;
@@ -50,60 +51,64 @@ export function PermissionMatrix({
   const [searchTerm, setSearchTerm] = useState('');
   const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
 
+  // Load permission structure dynamically
+  const { modules: allModules, actions: allActions, isLoading } = usePermissionStructure();
+  const clientModules = useClientModules();
+  const adminModules = useAdminModules();
+
   // Filter modules based on user type and optional allowed modules list
-  const availableModules = useMemo(() => {
-    let baseModules: readonly string[] = userType === 'client' ? CLIENT_MODULES : MODULES;
+  const availableModulesData = useMemo(() => {
+    let baseModules = userType === 'client' ? clientModules : allModules;
     
     // If a specific list of allowed modules is provided, filter to only those
     if (modules && modules.length > 0) {
-      const filtered = Array.from(baseModules).filter(module => 
-        modules.includes(module.toLowerCase())
+      return baseModules.filter(module => 
+        modules.includes(module.code.toLowerCase())
       );
-      return filtered;
     }
     
-    return Array.from(baseModules);
-  }, [userType, modules]);
+    return baseModules;
+  }, [userType, modules, allModules, clientModules]);
 
   const filteredModules = useMemo(() => {
-    return availableModules.filter(module =>
-      MODULE_LABELS[module].toLowerCase().includes(searchTerm.toLowerCase())
+    return availableModulesData.filter(module =>
+      module.libelle.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, availableModules]);
+  }, [searchTerm, availableModulesData]);
 
-  const getPermission = (module: string, action: string): PermissionDecision => {
-    const perm = permissions.find(p => p.module === module && p.action === action);
+  const getPermission = (moduleCode: string, actionCode: string): PermissionDecision => {
+    const perm = permissions.find(p => p.module === moduleCode && p.action === actionCode);
     return perm?.decision || 'inherit';
   };
 
-  const setPermission = (module: string, action: string, decision: PermissionDecision) => {
+  const setPermission = (moduleCode: string, actionCode: string, decision: PermissionDecision) => {
     const newPermissions = permissions.filter(
-      p => !(p.module === module && p.action === action)
+      p => !(p.module === moduleCode && p.action === actionCode)
     );
 
     if (decision !== 'inherit') {
-      newPermissions.push({ module, action, decision });
+      newPermissions.push({ module: moduleCode, action: actionCode, decision });
     }
 
     onPermissionsChange(newPermissions);
   };
 
-  const toggleModule = (module: string) => {
+  const toggleModule = (moduleCode: string) => {
     const newCollapsed = new Set(collapsedModules);
-    if (newCollapsed.has(module)) {
-      newCollapsed.delete(module);
+    if (newCollapsed.has(moduleCode)) {
+      newCollapsed.delete(moduleCode);
     } else {
-      newCollapsed.add(module);
+      newCollapsed.add(moduleCode);
     }
     setCollapsedModules(newCollapsed);
   };
 
-  const toggleModuleActions = (module: string, allow: boolean) => {
-    const newPermissions = permissions.filter(p => p.module !== module);
+  const toggleModuleActions = (moduleCode: string, allow: boolean) => {
+    const newPermissions = permissions.filter(p => p.module !== moduleCode);
     
     if (allow) {
-      ACTIONS.forEach(action => {
-        newPermissions.push({ module, action, decision: 'allow' });
+      allActions.forEach(action => {
+        newPermissions.push({ module: moduleCode, action: action.code, decision: 'allow' });
       });
     }
 
@@ -118,10 +123,9 @@ export function PermissionMatrix({
 
     if (preset === 'all') {
       const allPermissions: Permission[] = [];
-      // Use availableModules instead of MODULES to respect allowed modules filter
-      availableModules.forEach(module => {
-        ACTIONS.forEach(action => {
-          allPermissions.push({ module, action, decision: 'allow' });
+      availableModulesData.forEach(module => {
+        allActions.forEach(action => {
+          allPermissions.push({ module: module.code.toLowerCase(), action: action.code, decision: 'allow' });
         });
       });
       onPermissionsChange(allPermissions);
@@ -130,10 +134,16 @@ export function PermissionMatrix({
 
     if (preset === 'read_only') {
       const readPermissions: Permission[] = [];
-      // Use availableModules instead of MODULES to respect allowed modules filter
-      availableModules.forEach(module => {
-        readPermissions.push({ module, action: 'view', decision: 'allow' });
-        readPermissions.push({ module, action: 'export', decision: 'allow' });
+      const viewAction = allActions.find(a => a.code === 'view');
+      const exportAction = allActions.find(a => a.code === 'export');
+      
+      availableModulesData.forEach(module => {
+        if (viewAction) {
+          readPermissions.push({ module: module.code.toLowerCase(), action: viewAction.code, decision: 'allow' });
+        }
+        if (exportAction) {
+          readPermissions.push({ module: module.code.toLowerCase(), action: exportAction.code, decision: 'allow' });
+        }
       });
       onPermissionsChange(readPermissions);
     }
@@ -181,6 +191,17 @@ export function PermissionMatrix({
         return 'inherit';
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -267,21 +288,22 @@ export function PermissionMatrix({
                 <th className="text-left p-3 font-medium sticky left-0 bg-muted/50 z-10 min-w-[200px]">
                   Module
                 </th>
-                {ACTIONS.map(action => (
-                  <th key={action} className="text-center p-3 font-medium min-w-[100px]">
-                    {ACTION_LABELS[action]}
+                {allActions.map(action => (
+                  <th key={action.id} className="text-center p-3 font-medium min-w-[100px]">
+                    {action.label}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filteredModules.map(module => {
-                const isCollapsed = collapsedModules.has(module);
-                const modulePerms = permissions.filter(p => p.module === module);
+                const moduleCode = module.code.toLowerCase();
+                const isCollapsed = collapsedModules.has(moduleCode);
+                const modulePerms = permissions.filter(p => p.module === moduleCode);
                 const hasAnyAllow = modulePerms.some(p => p.decision === 'allow');
 
                 return (
-                  <tr key={module} className="border-b hover:bg-muted/30">
+                  <tr key={module.id} className="border-b hover:bg-muted/30">
                     <td className="sticky left-0 bg-background z-10 p-3">
                       <div className="flex items-center gap-2">
                         <Button
@@ -289,7 +311,7 @@ export function PermissionMatrix({
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => toggleModule(module)}
+                          onClick={() => toggleModule(moduleCode)}
                           disabled={readOnly}
                         >
                           {isCollapsed ? (
@@ -298,23 +320,23 @@ export function PermissionMatrix({
                             <ChevronDown className="h-4 w-4" />
                           )}
                         </Button>
-                        <span className="font-medium">{MODULE_LABELS[module]}</span>
+                        <span className="font-medium">{module.libelle}</span>
                         {readOnly && <Lock className="h-3 w-3 ml-1 text-muted-foreground" />}
                         <Switch
                           checked={hasAnyAllow}
-                          onCheckedChange={(checked) => toggleModuleActions(module, checked)}
+                          onCheckedChange={(checked) => toggleModuleActions(moduleCode, checked)}
                           className="ml-2"
                           disabled={readOnly}
                         />
                       </div>
                     </td>
-                    {!isCollapsed && ACTIONS.map(action => {
-                      const decision = getPermission(module, action);
+                    {!isCollapsed && allActions.map(action => {
+                      const decision = getPermission(moduleCode, action.code);
                       return (
-                        <td key={action} className="text-center p-3">
+                        <td key={action.id} className="text-center p-3">
                           <button
                             type="button"
-                            onClick={() => !readOnly && setPermission(module, action, cycleDecision(decision))}
+                            onClick={() => !readOnly && setPermission(moduleCode, action.code, cycleDecision(decision))}
                             className={cn(
                               "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
                               getDecisionColor(decision),
@@ -328,7 +350,7 @@ export function PermissionMatrix({
                       );
                     })}
                     {isCollapsed && (
-                      <td colSpan={ACTIONS.length} className="text-center text-muted-foreground text-sm p-3">
+                      <td colSpan={allActions.length} className="text-center text-muted-foreground text-sm p-3">
                         <Badge variant="outline">
                           {modulePerms.length} permission(s) configurée(s)
                         </Badge>
