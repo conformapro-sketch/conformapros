@@ -2428,6 +2428,50 @@ export type Database = {
           },
         ]
       }
+      module_features: {
+        Row: {
+          actif: boolean | null
+          code: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          module_id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          code: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          module_id: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          module_id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_features_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules_systeme"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modules_systeme: {
         Row: {
           actif: boolean | null
@@ -2488,6 +2532,33 @@ export type Database = {
           id?: string
           nom?: string
           telephone?: string | null
+        }
+        Relationships: []
+      }
+      permission_actions: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          label: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          label: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          label?: string
         }
         Relationships: []
       }
@@ -2817,32 +2888,62 @@ export type Database = {
       role_permissions: {
         Row: {
           action: string
+          action_id: string | null
           created_at: string
           decision: Database["public"]["Enums"]["permission_decision"]
+          feature_id: string | null
           id: string
           module: string
+          module_id: string | null
           role_id: string
           scope: Database["public"]["Enums"]["permission_scope"]
         }
         Insert: {
           action: string
+          action_id?: string | null
           created_at?: string
           decision?: Database["public"]["Enums"]["permission_decision"]
+          feature_id?: string | null
           id?: string
           module: string
+          module_id?: string | null
           role_id: string
           scope?: Database["public"]["Enums"]["permission_scope"]
         }
         Update: {
           action?: string
+          action_id?: string | null
           created_at?: string
           decision?: Database["public"]["Enums"]["permission_decision"]
+          feature_id?: string | null
           id?: string
           module?: string
+          module_id?: string | null
           role_id?: string
           scope?: Database["public"]["Enums"]["permission_scope"]
         }
         Relationships: [
+          {
+            foreignKeyName: "role_permissions_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "permission_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "module_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules_systeme"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "role_permissions_role_id_fkey"
             columns: ["role_id"]
@@ -3550,12 +3651,15 @@ export type Database = {
       user_permissions: {
         Row: {
           action: string
+          action_id: string | null
           client_id: string
           created_at: string
           created_by: string | null
           decision: Database["public"]["Enums"]["permission_decision"]
+          feature_id: string | null
           id: string
           module: string
+          module_id: string | null
           scope: Database["public"]["Enums"]["permission_scope"]
           site_id: string | null
           updated_at: string
@@ -3564,12 +3668,15 @@ export type Database = {
         }
         Insert: {
           action: string
+          action_id?: string | null
           client_id: string
           created_at?: string
           created_by?: string | null
           decision?: Database["public"]["Enums"]["permission_decision"]
+          feature_id?: string | null
           id?: string
           module: string
+          module_id?: string | null
           scope?: Database["public"]["Enums"]["permission_scope"]
           site_id?: string | null
           updated_at?: string
@@ -3578,12 +3685,15 @@ export type Database = {
         }
         Update: {
           action?: string
+          action_id?: string | null
           client_id?: string
           created_at?: string
           created_by?: string | null
           decision?: Database["public"]["Enums"]["permission_decision"]
+          feature_id?: string | null
           id?: string
           module?: string
+          module_id?: string | null
           scope?: Database["public"]["Enums"]["permission_scope"]
           site_id?: string | null
           updated_at?: string
@@ -3591,6 +3701,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_permissions_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "permission_actions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_permissions_client_id_fkey"
             columns: ["client_id"]
@@ -3603,6 +3720,20 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "module_features"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules_systeme"
             referencedColumns: ["id"]
           },
           {
