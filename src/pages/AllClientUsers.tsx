@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,11 +27,11 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllClientUsers, fetchClients, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ClientUserFormModal } from "@/components/ClientUserFormModal";
 import { ClientUserManagementDrawer } from "@/components/ClientUserManagementDrawer";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -63,9 +63,14 @@ export default function AllClientUsers() {
   const queryClient = useQueryClient();
   const { isSuperAdmin, hasRole } = useAuth();
   const isAdminGlobal = hasRole("admin_global");
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [clientFilter, setClientFilter] = useState<string>("all");
+  const [clientFilter, setClientFilter] = useState<string>(() => {
+    const clientParam = searchParams.get("client");
+    return clientParam || "all";
+  });
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [userFormOpen, setUserFormOpen] = useState(false);
@@ -87,6 +92,15 @@ export default function AllClientUsers() {
       setCurrentPage(1);
     }
   }, [clients, clientFilter, isAdminGlobal, isSuperAdmin]);
+
+  // Sync clientFilter changes to URL
+  useEffect(() => {
+    if (clientFilter !== "all") {
+      setSearchParams({ client: clientFilter });
+    } else {
+      setSearchParams({});
+    }
+  }, [clientFilter, setSearchParams]);
 
   const { data: usersData, isLoading, error: usersError } = useQuery({
     queryKey: ["all-client-users", searchQuery, clientFilter, statusFilter, currentPage],
@@ -244,6 +258,30 @@ export default function AllClientUsers() {
           Nouvel utilisateur
         </Button>
       </div>
+
+      {/* Active Filter Indicator */}
+      {clientFilter !== "all" && (
+        <Card className="border-l-4 border-l-primary shadow-soft">
+          <CardContent className="py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-primary" />
+              <span className="text-sm">
+                Filtré par client: <strong>{clients.find(c => c.id === clientFilter)?.nom || "Inconnu"}</strong>
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setClientFilter("all");
+                navigate("/clients/utilisateurs");
+              }}
+            >
+              Voir tous les utilisateurs
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card className="shadow-soft">

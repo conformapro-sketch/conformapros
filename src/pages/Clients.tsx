@@ -481,7 +481,7 @@ export default function Clients() {
                               <Building2 className="h-4 w-4 mr-2" />
                               Voir sites ({sitesCount})
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/clients/${client.id}/users`)}>
+                            <DropdownMenuItem onClick={() => navigate(`/clients/utilisateurs?client=${client.id}`)}>
                               <Users className="h-4 w-4 mr-2" />
                               Utilisateurs client
                             </DropdownMenuItem>
@@ -570,7 +570,7 @@ export default function Clients() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/clients/${client.id}/users`)}
+                          onClick={() => navigate(`/clients/utilisateurs?client=${client.id}`)}
                           title="Utilisateurs client"
                         >
                           <Users className="h-4 w-4" />
