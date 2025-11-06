@@ -169,14 +169,18 @@ export const rolesQueries = {
 
     if (roleError) throw roleError;
 
-    // Clone permissions
+    // Clone permissions (using FK columns, with legacy fallback)
     if (original.role_permissions && original.role_permissions.length > 0) {
       const permissions = original.role_permissions.map(p => ({
         role_id: newRole.id,
-        module: p.module,
-        action: p.action,
+        module_id: p.module_id,
+        feature_id: p.feature_id,
+        action_id: p.action_id,
         decision: p.decision,
         scope: p.scope,
+        // Legacy fallback (will be removed in Phase 5)
+        module: p.module,
+        action: p.action,
       }));
 
       const { error: permError } = await supabase
@@ -236,25 +240,34 @@ export const rolesQueries = {
     });
   },
 
-  // Get permissions for role
+  // Get permissions for role (with FK joins)
   getPermissions: async (roleId: string) => {
     const { data, error } = await supabase
       .from('role_permissions')
-      .select('*')
+      .select(`
+        *,
+        modules_systeme!module_id (id, code, libelle, icone, couleur),
+        module_features!feature_id (id, code, name),
+        permission_actions!action_id (id, code, label)
+      `)
       .eq('role_id', roleId);
 
     if (error) throw error;
     return data as RolePermission[];
   },
 
-  // Update permissions for role
+  // Update permissions for role (FK-based with legacy support)
   updatePermissions: async (
     roleId: string,
     permissions: Array<{
-      module: string;
-      action: string;
+      module_id?: string;
+      feature_id?: string;
+      action_id?: string;
       decision: 'allow' | 'deny' | 'inherit';
       scope: 'global' | 'tenant' | 'site';
+      // Legacy TEXT support (Phase 2 backward compatibility)
+      module?: string;
+      action?: string;
     }>
   ) => {
     // Check if this is a system role
@@ -279,7 +292,12 @@ export const rolesQueries = {
       const { data, error } = await supabase
         .from('role_permissions')
         .insert(permissions.map(p => ({ ...p, role_id: roleId })))
-        .select();
+        .select(`
+          *,
+          modules_systeme!module_id (id, code, libelle),
+          module_features!feature_id (id, code, name),
+          permission_actions!action_id (id, code, label)
+        `);
 
       if (error) throw error;
 
