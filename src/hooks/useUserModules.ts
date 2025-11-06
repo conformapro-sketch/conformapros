@@ -35,8 +35,9 @@ export const useUserModules = () => {
       // Team users see modules based on permissions
       if (isTeamUser()) {
         const allowedModuleCodes = permissions
-          .filter(p => p.action === "view" && p.decision === "allow")
-          .map(p => p.module.toUpperCase());
+          .filter(p => p.permission_actions?.code === "view" && p.decision === "allow")
+          .map(p => p.modules_systeme?.code.toUpperCase())
+          .filter((code): code is string => !!code);
 
         if (allowedModuleCodes.length === 0) return [];
 
@@ -68,8 +69,9 @@ export const useUserModules = () => {
 
       // Get enabled modules for these sites with permissions check
       const allowedModuleCodes = permissions
-        .filter(p => p.action === "view" && p.decision === "allow")
-        .map(p => p.module.toUpperCase());
+        .filter(p => p.permission_actions?.code === "view" && p.decision === "allow")
+        .map(p => p.modules_systeme?.code.toUpperCase())
+        .filter((code): code is string => !!code);
 
       const { data: siteModules, error: siteModulesError } = await supabase
         .from("site_modules")

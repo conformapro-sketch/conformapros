@@ -169,7 +169,7 @@ export const rolesQueries = {
 
     if (roleError) throw roleError;
 
-    // Clone permissions (using FK columns, with legacy fallback)
+    // Clone permissions (FK-based only)
     if (original.role_permissions && original.role_permissions.length > 0) {
       const permissions = original.role_permissions.map(p => ({
         role_id: newRole.id,
@@ -178,9 +178,6 @@ export const rolesQueries = {
         action_id: p.action_id,
         decision: p.decision,
         scope: p.scope,
-        // Legacy fallback (will be removed in Phase 5)
-        module: p.module,
-        action: p.action,
       }));
 
       const { error: permError } = await supabase
@@ -256,18 +253,15 @@ export const rolesQueries = {
     return data as RolePermission[];
   },
 
-  // Update permissions for role (FK-based with legacy support)
+  // Update permissions for role (FK-based only)
   updatePermissions: async (
     roleId: string,
     permissions: Array<{
-      module_id?: string;
+      module_id: string;
       feature_id?: string;
-      action_id?: string;
+      action_id: string;
       decision: 'allow' | 'deny' | 'inherit';
       scope: 'global' | 'tenant' | 'site';
-      // Legacy TEXT support (Phase 2 backward compatibility)
-      module?: string;
-      action?: string;
     }>
   ) => {
     // Check if this is a system role

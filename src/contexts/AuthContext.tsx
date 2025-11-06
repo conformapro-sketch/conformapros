@@ -353,7 +353,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasPermission = (module: string, action: string): boolean => {
     return permissions.some(
-      p => p.module === module && p.action === action && p.decision === 'allow'
+      p => {
+        const moduleCode = p.modules_systeme?.code.toLowerCase();
+        const actionCode = p.permission_actions?.code;
+        return moduleCode === module.toLowerCase() && 
+               actionCode === action && 
+               p.decision === 'allow';
+      }
     );
   };
 

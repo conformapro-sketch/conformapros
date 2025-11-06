@@ -31,6 +31,8 @@ import { PermissionMatrix } from "./PermissionMatrix";
 import { UserAssignmentDialog } from "./UserAssignmentDialog";
 import type { Role, PermissionScope } from "@/types/roles";
 
+import { convertPermissionsToDb } from "@/lib/permission-helpers";
+
 const roleSchema = z.object({
   name: z.string().min(1, "Le nom est requis").max(100),
   description: z.string().optional(),
@@ -93,12 +95,22 @@ export function RoleFormDrawer({
 
   useEffect(() => {
     if (existingPermissions && existingPermissions.length > 0) {
-      setPermissions(existingPermissions.map(p => ({
-        module: p.module,
-        action: p.action,
-        decision: p.decision,
-      })));
-      setScope(existingPermissions[0].scope);
+      // Convert FK-based permissions to code-based for UI
+      const modules = existingPermissions
+        .map(p => p.modules_systeme)
+        .filter((m): m is NonNullable<typeof m> => !!m);
+      const actions = existingPermissions
+        .map(p => p.permission_actions)
+        .filter((a): a is NonNullable<typeof a> => !!a);
+
+      if (modules.length > 0 && actions.length > 0) {
+        setPermissions(existingPermissions.map((p, index) => ({
+          module: modules[index]?.code.toLowerCase() || '',
+          action: actions[index]?.code || '',
+          decision: p.decision,
+        })).filter(p => p.module && p.action));
+        setScope(existingPermissions[0].scope);
+      }
     } else {
       setPermissions([]);
       setScope('tenant');
@@ -114,12 +126,10 @@ export function RoleFormDrawer({
         tenant_id: type === 'client' ? tenantId : undefined,
       });
 
-      // Save permissions
+      // Convert code-based permissions to FK-based and save
       if (permissions.length > 0) {
-        await rolesQueries.updatePermissions(
-          newRole.id,
-          permissions.map(p => ({ ...p, scope }))
-        );
+        const dbPermissions = await convertPermissionsToDb(permissions, scope);
+        await rolesQueries.updatePermissions(newRole.id, dbPermissions);
       }
 
       return newRole;
@@ -145,11 +155,9 @@ export function RoleFormDrawer({
         description: data.description,
       });
 
-      // Update permissions
-      await rolesQueries.updatePermissions(
-        role.id,
-        permissions.map(p => ({ ...p, scope }))
-      );
+      // Convert code-based permissions to FK-based and update
+      const dbPermissions = await convertPermissionsToDb(permissions, scope);
+      await rolesQueries.updatePermissions(role.id, dbPermissions);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles', type] });

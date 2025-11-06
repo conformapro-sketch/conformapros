@@ -18,14 +18,9 @@ export interface Role {
 export interface RolePermission {
   id: string;
   role_id: string;
-  // FK-based (Phase 2+)
-  module_id?: string;
+  module_id: string;
   feature_id?: string;
-  action_id?: string;
-  // Legacy TEXT columns (will be removed in Phase 5)
-  module?: string;
-  action?: string;
-  // Common fields
+  action_id: string;
   decision: PermissionDecision;
   scope: PermissionScope;
   created_at: string;

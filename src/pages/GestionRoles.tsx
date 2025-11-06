@@ -39,6 +39,8 @@ import {
 } from "@/types/roles";
 import { PermissionMatrix } from "@/components/roles/PermissionMatrix";
 
+import { convertPermissionsToDb } from "@/lib/permission-helpers";
+
 interface PermissionState {
   module: string;
   action: string;
@@ -86,7 +88,8 @@ export default function GestionRoles() {
       });
       
       if (data.permissions.length > 0) {
-        await rolesQueries.updatePermissions(role.id, data.permissions);
+        const dbPermissions = await convertPermissionsToDb(data.permissions, data.scope);
+        await rolesQueries.updatePermissions(role.id, dbPermissions);
       }
       
       return role;
@@ -117,7 +120,8 @@ export default function GestionRoles() {
         description: data.description,
       });
       
-      await rolesQueries.updatePermissions(id, data.permissions);
+      const dbPermissions = await convertPermissionsToDb(data.permissions, data.scope);
+      await rolesQueries.updatePermissions(id, dbPermissions);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
@@ -160,12 +164,13 @@ export default function GestionRoles() {
     if (mode === 'edit' && roleId) {
       const role = await rolesQueries.getById(roleId);
       if (role) {
+        // Convert FK-based permissions to code-based for UI
         const permissions = (role.role_permissions || []).map(p => ({
-          module: p.module,
-          action: p.action,
+          module: p.modules_systeme?.code.toLowerCase() || '',
+          action: p.permission_actions?.code || '',
           decision: p.decision,
           scope: p.scope,
-        }));
+        })).filter(p => p.module && p.action);
         
         setFormData({
           name: role.name,
