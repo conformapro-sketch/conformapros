@@ -1910,12 +1910,15 @@ export const saveSitePermissions = async (
   clientId: string,
   permissions: Array<{ module: string; action: string; decision: 'allow' | 'deny'; scope: PermissionScope }>
 ) => {
+  // Filter out 'full' action - it's UI-only and all real actions are already included
+  const permissionsToSave = permissions.filter(p => p.action !== 'full');
+  
   // Use secure RPC function to save permissions with proper authorization
   const { error } = await supabase.rpc('set_user_site_permissions', {
     target_user_id: userId,
     target_client_id: clientId,
     target_site_id: siteId,
-    permissions: permissions
+    permissions: permissionsToSave
   });
   
   if (error) throw error;
@@ -1926,7 +1929,7 @@ export const saveSitePermissions = async (
     actorId,
     clientId,
     "user_site_permissions_updated",
-    { user_id: userId, site_id: siteId, permission_count: permissions.length },
+    { user_id: userId, site_id: siteId, permission_count: permissionsToSave.length },
     { siteId, entity: "user_permissions", entityId: userId }
   );
 };
