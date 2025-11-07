@@ -131,11 +131,14 @@ export function ClientUserManagementDrawer({
         .from("domaines_reglementaires")
         .select("*")
         .eq("actif", true)
+        .is("deleted_at", null)
         .order("libelle");
       if (error) throw error;
       return data || [];
     },
     enabled: open,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   // Initialize states when data loads
