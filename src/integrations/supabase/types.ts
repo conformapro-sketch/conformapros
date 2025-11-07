@@ -3657,7 +3657,7 @@ export type Database = {
             foreignKeyName: "user_domain_scopes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "client_users"
             referencedColumns: ["id"]
           },
         ]

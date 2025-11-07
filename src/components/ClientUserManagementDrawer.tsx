@@ -142,10 +142,17 @@ export function ClientUserManagementDrawer({
     staleTime: 0,
   });
 
+  // Filter displayed domains to only enabled ones
+  const displayDomaines = useMemo(
+    () => allDomaines.filter(d => enabledDomainIds.includes(d.id)),
+    [allDomaines, enabledDomainIds]
+  );
+
   // Initialize states when data loads
   useEffect(() => {
     if (userDomains) {
-      setSelectedDomaines(userDomains);
+      const safeSelection = userDomains.filter((id) => enabledDomainIds.includes(id));
+      setSelectedDomaines(safeSelection);
     }
     if (user) {
       setProfileData({
@@ -156,7 +163,7 @@ export function ClientUserManagementDrawer({
       });
       setAvatarPreview(user.avatar_url || "");
     }
-  }, [userDomains, user]);
+  }, [userDomains, user, enabledDomainIds]);
 
   // Save site permissions mutation
   const saveSitePermissionsMutation = useMutation({
@@ -208,10 +215,11 @@ export function ClientUserManagementDrawer({
         description: "Les domaines de veille réglementaire ont été enregistrés.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Domain save error:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de sauvegarder les domaines.",
+        description: error?.message || "Impossible de sauvegarder les domaines.",
         variant: "destructive",
       });
     },
@@ -462,7 +470,7 @@ export function ClientUserManagementDrawer({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setSelectedDomaines(allDomaines.map(d => d.id))}
+                    onClick={() => setSelectedDomaines(displayDomaines.map(d => d.id))}
                   >
                     Tout sélectionner
                   </Button>
@@ -476,28 +484,34 @@ export function ClientUserManagementDrawer({
                 </div>
 
                 <ScrollArea className="h-[400px] border rounded-lg p-4">
-                  <div className="space-y-3">
-                    {allDomaines.map((domaine) => (
-                      <div key={domaine.id} className="flex items-center gap-3 py-2">
-                        <Checkbox
-                          id={`domaine-${domaine.id}`}
-                          checked={selectedDomaines.includes(domaine.id)}
-                          onCheckedChange={() => toggleDomaine(domaine.id)}
-                        />
-                        <label
-                          htmlFor={`domaine-${domaine.id}`}
-                          className="flex-1 cursor-pointer text-sm font-medium"
-                        >
-                          {domaine.libelle}
-                          {domaine.description && (
-                            <span className="text-muted-foreground block text-xs">
-                              {domaine.description}
-                            </span>
-                          )}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                  {displayDomaines.length > 0 ? (
+                    <div className="space-y-3">
+                      {displayDomaines.map((domaine) => (
+                        <div key={domaine.id} className="flex items-center gap-3 py-2">
+                          <Checkbox
+                            id={`domaine-${domaine.id}`}
+                            checked={selectedDomaines.includes(domaine.id)}
+                            onCheckedChange={() => toggleDomaine(domaine.id)}
+                          />
+                          <label
+                            htmlFor={`domaine-${domaine.id}`}
+                            className="flex-1 cursor-pointer text-sm font-medium"
+                          >
+                            {domaine.libelle}
+                            {domaine.description && (
+                              <span className="text-muted-foreground block text-xs">
+                                {domaine.description}
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Aucun domaine activé par le staff pour les sites de cet utilisateur.
+                    </p>
+                  )}
                 </ScrollArea>
 
                 <div className="flex justify-end">
