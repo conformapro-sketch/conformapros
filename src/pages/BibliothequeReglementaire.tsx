@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-queries";
 import { domainesQueries, sousDomainesQueries } from "@/lib/actes-queries";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { TexteFormModal } from "@/components/TexteFormModal";
 import { ImportCSVDialog } from "@/components/ImportCSVDialog";
 import { BibliothequeStatsCards } from "@/components/bibliotheque/BibliothequeStatsCards";
@@ -40,6 +41,10 @@ function BibliothequeReglementaireContent() {
   const queryClient = useQueryClient();
   const { isMobile, isDesktop } = useMediaQuery();
   const { toggleFavorite, isFavorite, preferences, setView } = useBibliothequePreferences();
+  const { hasPermission } = useAuth();
+  
+  // Check if user can manage textes (create/edit/delete)
+  const canManageTextes = hasPermission('BIBLIOTHEQUE', 'create');
   
   // View state from preferences
   const view = preferences.view;
@@ -259,17 +264,21 @@ function BibliothequeReglementaireContent() {
         </div>
         <div className="flex items-center gap-3">
           {!isMobile && <BibliothequeViewToggle view={view} onViewChange={setView} />}
-          <Button
-            variant="outline"
-            onClick={() => setShowImportDialog(true)}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Importer
-          </Button>
-          <Button onClick={() => { setEditingTexte(null); setShowFormModal(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un texte
-          </Button>
+          {canManageTextes && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowImportDialog(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Importer
+              </Button>
+              <Button onClick={() => { setEditingTexte(null); setShowFormModal(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un texte
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -356,6 +365,7 @@ function BibliothequeReglementaireContent() {
                   onDelete={handleDelete}
                   onViewPdf={handleViewPdf}
                   onToggleFavorite={toggleFavorite}
+                  canEdit={canManageTextes}
                 />
               ) : (
                 <BibliothequeDataGrid
@@ -365,6 +375,7 @@ function BibliothequeReglementaireContent() {
                   onDelete={handleDelete}
                   onViewPdf={handleViewPdf}
                   onToggleFavorite={toggleFavorite}
+                  canEdit={canManageTextes}
                 />
               )}
 

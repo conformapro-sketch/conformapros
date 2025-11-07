@@ -10,6 +10,7 @@ interface BibliothequeCardViewProps {
   onDelete: (texte: any) => void;
   onViewPdf?: (texte: any) => void;
   onToggleFavorite?: (texte: any) => void;
+  canEdit?: boolean;
 }
 
 const TYPE_ICONS: Record<string, any> = {
@@ -44,6 +45,7 @@ export function BibliothequeCardView({
   onDelete,
   onViewPdf,
   onToggleFavorite,
+  canEdit = true,
 }: BibliothequeCardViewProps) {
   return (
     <div className="grid gap-4">
@@ -93,6 +95,7 @@ export function BibliothequeCardView({
                     onViewPdf={onViewPdf}
                     onToggleFavorite={onToggleFavorite}
                     isFavorite={false}
+                    canEdit={canEdit}
                   />
                 </div>
               </CardHeader>

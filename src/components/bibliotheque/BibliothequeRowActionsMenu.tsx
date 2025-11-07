@@ -17,6 +17,7 @@ interface BibliothequeRowActionsMenuProps {
   onViewPdf?: (texte: any) => void;
   onToggleFavorite?: (texte: any) => void;
   isFavorite?: boolean;
+  canEdit?: boolean;
 }
 
 export function BibliothequeRowActionsMenu({
@@ -27,6 +28,7 @@ export function BibliothequeRowActionsMenu({
   onViewPdf,
   onToggleFavorite,
   isFavorite = false,
+  canEdit = true,
 }: BibliothequeRowActionsMenuProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -81,40 +83,44 @@ export function BibliothequeRowActionsMenu({
             {isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
           </DropdownMenuItem>
         )}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem 
-          onClick={() => handleAction(() => onEdit(texte))} 
-          className="cursor-pointer"
-          disabled={isLoading}
-        >
-          <Pencil className="h-4 w-4 mr-2" />
-          Modifier
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => handleAction(() => console.log("Dupliquer:", texte.id))} 
-          className="cursor-pointer"
-          disabled={isLoading}
-        >
-          <Copy className="h-4 w-4 mr-2" />
-          Dupliquer
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => handleAction(() => console.log("Archiver:", texte.id))} 
-          className="cursor-pointer"
-          disabled={isLoading}
-        >
-          <Archive className="h-4 w-4 mr-2" />
-          Archiver
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => handleAction(() => onDelete(texte))}
-          className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-          disabled={isLoading}
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Supprimer
-        </DropdownMenuItem>
+        {canEdit && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => handleAction(() => onEdit(texte))} 
+              className="cursor-pointer"
+              disabled={isLoading}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Modifier
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => handleAction(() => console.log("Dupliquer:", texte.id))} 
+              className="cursor-pointer"
+              disabled={isLoading}
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Dupliquer
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => handleAction(() => console.log("Archiver:", texte.id))} 
+              className="cursor-pointer"
+              disabled={isLoading}
+            >
+              <Archive className="h-4 w-4 mr-2" />
+              Archiver
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => handleAction(() => onDelete(texte))}
+              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+              disabled={isLoading}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Supprimer
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

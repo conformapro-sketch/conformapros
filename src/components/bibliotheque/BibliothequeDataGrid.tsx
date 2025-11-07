@@ -32,6 +32,7 @@ interface BibliothequeDataGridProps {
   onDelete: (texte: any) => void;
   onViewPdf?: (texte: any) => void;
   onToggleFavorite?: (texte: any) => void;
+  canEdit?: boolean;
 }
 
 const TYPE_ICONS: Record<string, any> = {
@@ -66,6 +67,7 @@ export function BibliothequeDataGrid({
   onDelete,
   onViewPdf,
   onToggleFavorite,
+  canEdit = true,
 }: BibliothequeDataGridProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -178,6 +180,7 @@ export function BibliothequeDataGrid({
           onViewPdf={onViewPdf}
           onToggleFavorite={onToggleFavorite}
           isFavorite={false}
+          canEdit={canEdit}
         />
       ),
       enableSorting: false,
