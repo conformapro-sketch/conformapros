@@ -117,6 +117,33 @@ export function ClientUserManagementDrawer({
     }
   }, [currentSitePerms, expandedSite]);
 
+  // Pre-populate permission matrix with 'inherit' for all available modules/actions
+  // This ensures clicking cells works even when no permissions exist yet
+  useEffect(() => {
+    if (expandedSite && enabledModulesForSite.length > 0) {
+      // Only initialize if no permissions exist for this site yet
+      if (!sitePermissions[expandedSite] || sitePermissions[expandedSite].length === 0) {
+        const actions = ['view', 'create', 'edit', 'delete', 'approve', 'export'];
+        const initialPerms: any[] = [];
+        
+        enabledModulesForSite.forEach(moduleCode => {
+          actions.forEach(actionCode => {
+            initialPerms.push({
+              module: moduleCode.toLowerCase(),
+              action: actionCode,
+              decision: 'inherit',
+            });
+          });
+        });
+        
+        setSitePermissions(prev => ({
+          ...prev,
+          [expandedSite]: initialPerms,
+        }));
+      }
+    }
+  }, [expandedSite, enabledModulesForSite, sitePermissions]);
+
   // Fetch user domain scopes
   const { data: userDomains } = useQuery({
     queryKey: ["user-domains", user?.id],
@@ -177,14 +204,20 @@ export function ClientUserManagementDrawer({
     mutationFn: async ({ siteId }: { siteId: string }) => {
       const perms = sitePermissions[siteId] || [];
       const scope = siteScopes[siteId] || 'site';
-      const permissionsToSave = perms
-        .filter(p => p.decision !== 'inherit')
-        .map(p => ({
-          module: p.module,
-          action: p.action,
-          decision: p.decision,
-          scope: scope,
-        }));
+      
+      // Send ALL permissions to RPC - it will filter out 'inherit' on the backend
+      const permissionsToSave = perms.map(p => ({
+        module: p.module,
+        action: p.action,
+        decision: p.decision,
+        scope: scope,
+      }));
+      
+      // Check if user has actually configured any permissions (at least one non-inherit)
+      const hasActualPermissions = perms.some(p => p.decision !== 'inherit');
+      if (!hasActualPermissions) {
+        throw new Error("Aucune permission configurée. Cliquez sur les cellules pour autoriser ou refuser des permissions.");
+      }
       
       await saveSitePermissions(user.id, siteId, clientId, permissionsToSave);
     },
@@ -448,7 +481,16 @@ export function ClientUserManagementDrawer({
                                 siteId={site.site_id}
                                 modules={expandedSite === site.site_id ? enabledModulesForSite : []}
                               />
-                              <div className="flex justify-end">
+                              <div className="flex justify-end gap-2">
+                                <div className="text-sm text-muted-foreground self-center">
+                                  {(() => {
+                                    const perms = sitePermissions[site.site_id] || [];
+                                    const configuredCount = perms.filter(p => p.decision !== 'inherit').length;
+                                    return configuredCount > 0 
+                                      ? `${configuredCount} permission(s) configurée(s)` 
+                                      : 'Aucune permission configurée';
+                                  })()}
+                                </div>
                                 <Button
                                   onClick={() => saveSitePermissionsMutation.mutate({ siteId: site.site_id })}
                                   disabled={saveSitePermissionsMutation.isPending}

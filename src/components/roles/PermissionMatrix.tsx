@@ -443,12 +443,25 @@ export function PermissionMatrix({
         </div>
       </Card>
 
-      <p className="text-sm text-muted-foreground">
-        {userType === 'client' 
-          ? "Cliquez sur une cellule pour alterner entre: Autorisé ↔ Refusé"
-          : "Cliquez sur une cellule pour alterner entre: Hérité → Autorisé → Refusé"
-        }
-      </p>
+      {/* Instructions */}
+      {filteredModules.length > 0 && (
+        <Card className="p-4 bg-muted/30">
+          <div className="space-y-2 text-sm">
+            <p className="font-medium text-foreground">Instructions:</p>
+            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+              <li>
+                {userType === 'client' 
+                  ? "Cliquez sur une cellule pour alterner entre: Autorisé ↔ Refusé"
+                  : "Cliquez sur une cellule pour alterner entre: Hérité → Autorisé → Refusé"
+                }
+              </li>
+              <li>Utilisez le switch à gauche pour activer/désactiver tous les droits d'un module</li>
+              <li>Les permissions avec "Hérité" ne seront pas sauvegardées dans la base de données</li>
+              <li>N'oubliez pas de cliquer sur "Enregistrer les permissions" après vos modifications</li>
+            </ul>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
