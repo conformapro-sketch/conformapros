@@ -450,7 +450,7 @@ export default function BibliothequeRechercheAvancee() {
                                 {new Date(texte.date_publication).toLocaleDateString("fr-FR")}
                               </Badge>
                             )}
-                            {texte.domaines?.map((d: any) => (
+                            {texte.domaines?.filter((d: any) => d.domaine).map((d: any) => (
                               <Badge key={d.domaine.id} variant="secondary" className="text-xs">
                                 {d.domaine.libelle}
                               </Badge>
