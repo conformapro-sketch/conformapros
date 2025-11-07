@@ -56,6 +56,20 @@ export const useUserModules = () => {
       const clientId = getClientId();
       if (!clientId) return [];
 
+      // Get modules from user permissions (TEXT-based module codes)
+      const allowedModuleCodes = permissions
+        .filter(p => {
+          const action = (p as any).action || p.permission_actions?.code;
+          return action === "view" && p.decision === "allow";
+        })
+        .map(p => {
+          const moduleCode = (p as any).module || p.modules_systeme?.code;
+          return moduleCode?.toUpperCase();
+        })
+        .filter((code): code is string => !!code);
+
+      if (allowedModuleCodes.length === 0) return [];
+
       // Get sites for this client
       const { data: sites, error: sitesError } = await supabase
         .from("sites")
@@ -65,39 +79,41 @@ export const useUserModules = () => {
       if (sitesError) throw sitesError;
       const siteIds = sites?.map(s => s.id) || [];
 
-      if (siteIds.length === 0) return [];
+      // If client has sites, filter modules by site_modules
+      if (siteIds.length > 0) {
+        const { data: siteModules, error: siteModulesError } = await supabase
+          .from("site_modules")
+          .select("module_id, modules_systeme!inner(*)")
+          .in("site_id", siteIds)
+          .eq("enabled", true)
+          .eq("modules_systeme.actif", true);
 
-      // Get enabled modules for these sites with permissions check
-      const allowedModuleCodes = permissions
-        .filter(p => p.permission_actions?.code === "view" && p.decision === "allow")
-        .map(p => p.modules_systeme?.code.toUpperCase())
-        .filter((code): code is string => !!code);
+        if (siteModulesError) throw siteModulesError;
 
-      const { data: siteModules, error: siteModulesError } = await supabase
-        .from("site_modules")
-        .select("module_id, modules_systeme!inner(*)")
-        .in("site_id", siteIds)
-        .eq("enabled", true)
-        .eq("modules_systeme.actif", true);
+        // Extract unique modules and filter by permissions
+        const modulesMap = new Map<string, ModuleSysteme>();
+        siteModules?.forEach((sm: any) => {
+          const module = sm.modules_systeme;
+          if (module && allowedModuleCodes.includes(module.code)) {
+            modulesMap.set(module.id, module);
+          }
+        });
 
-      if (siteModulesError) throw siteModulesError;
+        return Array.from(modulesMap.values()).sort((a, b) =>
+          a.libelle.localeCompare(b.libelle)
+        );
+      }
 
-      // Extract unique modules and filter by permissions (strict mode)
-      const modulesMap = new Map<string, ModuleSysteme>();
-      siteModules?.forEach((sm: any) => {
-        const module = sm.modules_systeme;
-        if (
-          module &&
-          allowedModuleCodes.length > 0 &&
-          allowedModuleCodes.includes(module.code)
-        ) {
-          modulesMap.set(module.id, module);
-        }
-      });
+      // If client has no sites, show modules based on permissions only
+      const { data: allModules, error: modulesError } = await supabase
+        .from("modules_systeme")
+        .select("*")
+        .eq("actif", true)
+        .in("code", allowedModuleCodes)
+        .order("libelle");
 
-      return Array.from(modulesMap.values()).sort((a, b) =>
-        a.libelle.localeCompare(b.libelle)
-      );
+      if (modulesError) throw modulesError;
+      return allModules || [];
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
