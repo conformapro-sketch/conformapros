@@ -82,13 +82,14 @@ export const useUserModules = () => {
 
       if (siteModulesError) throw siteModulesError;
 
-      // Extract unique modules and filter by permissions
+      // Extract unique modules and filter by permissions (strict mode)
       const modulesMap = new Map<string, ModuleSysteme>();
       siteModules?.forEach((sm: any) => {
         const module = sm.modules_systeme;
         if (
           module &&
-          (allowedModuleCodes.length === 0 || allowedModuleCodes.includes(module.code))
+          allowedModuleCodes.length > 0 &&
+          allowedModuleCodes.includes(module.code)
         ) {
           modulesMap.set(module.id, module);
         }

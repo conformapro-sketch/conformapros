@@ -86,6 +86,13 @@ export function AppSidebar() {
     return items;
   }, [modules, isClientUser]);
 
+  // Log warning if client user has no accessible modules
+  useEffect(() => {
+    if (!isLoading && isClientUser() && (!modules || modules.length === 0)) {
+      console.warn('Client user has no accessible modules. Permissions may not be set.');
+    }
+  }, [modules, isLoading, isClientUser]);
+
   // Auto-open the submenu containing the active route
   useEffect(() => {
     const activeModule = findActiveModule(location.pathname, navigationItems);
@@ -142,6 +149,11 @@ export function AppSidebar() {
             {isLoading ? (
               <div className="flex items-center justify-center p-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : navigationItems.length === 0 && isClientUser() ? (
+              <div className="p-4 text-sm text-muted-foreground space-y-1">
+                <p className="font-medium">Aucun module accessible.</p>
+                <p className="text-xs">Contactez votre administrateur.</p>
               </div>
             ) : (
               <SidebarMenu>
