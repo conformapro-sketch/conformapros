@@ -2478,8 +2478,10 @@ export type Database = {
           code: string
           created_at: string
           description: string | null
+          display_order: number | null
           id: string
           libelle: string
+          parent_module_id: string | null
           updated_at: string
         }
         Insert: {
@@ -2487,8 +2489,10 @@ export type Database = {
           code: string
           created_at?: string
           description?: string | null
+          display_order?: number | null
           id?: string
           libelle: string
+          parent_module_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -2496,11 +2500,21 @@ export type Database = {
           code?: string
           created_at?: string
           description?: string | null
+          display_order?: number | null
           id?: string
           libelle?: string
+          parent_module_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "modules_systeme_parent_module_id_fkey"
+            columns: ["parent_module_id"]
+            isOneToOne: false
+            referencedRelation: "modules_systeme"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organismes_controle: {
         Row: {
@@ -3719,7 +3733,7 @@ export type Database = {
             foreignKeyName: "user_permissions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "client_users"
             referencedColumns: ["id"]
           },
           {
@@ -3747,14 +3761,14 @@ export type Database = {
             foreignKeyName: "user_permissions_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "client_users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "user_permissions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "client_users"
             referencedColumns: ["id"]
           },
         ]

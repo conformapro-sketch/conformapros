@@ -21,6 +21,7 @@ import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Briefcase, User as UserIcon, Upload, ChevronRight } from "lucide-react";
 import { PermissionMatrix } from "@/components/roles/PermissionMatrix";
+import { cn } from "@/lib/utils";
 import {
   fetchUserSitesWithPermissions,
   fetchSitePermissions,
@@ -304,6 +305,16 @@ export function ClientUserManagementDrawer({
     }));
   };
 
+  // Check if user has access to Bibliothèque réglementaire module
+  const hasBibliothequeAccess = useMemo(() => {
+    return Object.values(sitePermissions).some(perms => 
+      perms.some(p => 
+        p.module === 'bibliotheque' && 
+        p.decision === 'allow'
+      )
+    );
+  }, [sitePermissions]);
+
   if (!user) return null;
 
   const userInitials = `${user.prenom?.charAt(0) || ""}${user.nom?.charAt(0) || ""}`.toUpperCase() || "U";
@@ -319,15 +330,20 @@ export function ClientUserManagementDrawer({
         </SheetHeader>
 
         <Tabs defaultValue="sites" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={cn(
+            "grid w-full",
+            hasBibliothequeAccess ? "grid-cols-3" : "grid-cols-2"
+          )}>
             <TabsTrigger value="sites">
               <MapPin className="h-4 w-4 mr-2" />
               Sites & Permissions
             </TabsTrigger>
-            <TabsTrigger value="domaines">
-              <Briefcase className="h-4 w-4 mr-2" />
-              Domaines
-            </TabsTrigger>
+            {hasBibliothequeAccess && (
+              <TabsTrigger value="domaines">
+                <Briefcase className="h-4 w-4 mr-2" />
+                Domaines
+              </TabsTrigger>
+            )}
             <TabsTrigger value="profile">
               <UserIcon className="h-4 w-4 mr-2" />
               Profil
@@ -430,68 +446,70 @@ export function ClientUserManagementDrawer({
             </div>
           </TabsContent>
 
-          {/* Domaines Tab */}
-          <TabsContent value="domaines" className="space-y-4">
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2">Domaines de veille réglementaire</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Sélectionnez les domaines réglementaires auxquels cet utilisateur a accès.
-                </p>
-              </div>
-
-              <div className="flex gap-2 mb-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedDomaines(allDomaines.map(d => d.id))}
-                >
-                  Tout sélectionner
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedDomaines([])}
-                >
-                  Tout effacer
-                </Button>
-              </div>
-
-              <ScrollArea className="h-[400px] border rounded-lg p-4">
-                <div className="space-y-3">
-                  {allDomaines.map((domaine) => (
-                    <div key={domaine.id} className="flex items-center gap-3 py-2">
-                      <Checkbox
-                        id={`domaine-${domaine.id}`}
-                        checked={selectedDomaines.includes(domaine.id)}
-                        onCheckedChange={() => toggleDomaine(domaine.id)}
-                      />
-                      <label
-                        htmlFor={`domaine-${domaine.id}`}
-                        className="flex-1 cursor-pointer text-sm font-medium"
-                      >
-                        {domaine.libelle}
-                        {domaine.description && (
-                          <span className="text-muted-foreground block text-xs">
-                            {domaine.description}
-                          </span>
-                        )}
-                      </label>
-                    </div>
-                  ))}
+          {/* Domaines Tab - Only show if user has Bibliothèque access */}
+          {hasBibliothequeAccess && (
+            <TabsContent value="domaines" className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Domaines de veille réglementaire</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Sélectionnez les domaines réglementaires auxquels cet utilisateur a accès.
+                  </p>
                 </div>
-              </ScrollArea>
 
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => saveDomainsMutation.mutate()}
-                  disabled={saveDomainsMutation.isPending}
-                >
-                  {saveDomainsMutation.isPending ? "Enregistrement..." : "Enregistrer les domaines"}
-                </Button>
+                <div className="flex gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedDomaines(allDomaines.map(d => d.id))}
+                  >
+                    Tout sélectionner
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedDomaines([])}
+                  >
+                    Tout effacer
+                  </Button>
+                </div>
+
+                <ScrollArea className="h-[400px] border rounded-lg p-4">
+                  <div className="space-y-3">
+                    {allDomaines.map((domaine) => (
+                      <div key={domaine.id} className="flex items-center gap-3 py-2">
+                        <Checkbox
+                          id={`domaine-${domaine.id}`}
+                          checked={selectedDomaines.includes(domaine.id)}
+                          onCheckedChange={() => toggleDomaine(domaine.id)}
+                        />
+                        <label
+                          htmlFor={`domaine-${domaine.id}`}
+                          className="flex-1 cursor-pointer text-sm font-medium"
+                        >
+                          {domaine.libelle}
+                          {domaine.description && (
+                            <span className="text-muted-foreground block text-xs">
+                              {domaine.description}
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => saveDomainsMutation.mutate()}
+                    disabled={saveDomainsMutation.isPending}
+                  >
+                    {saveDomainsMutation.isPending ? "Enregistrement..." : "Enregistrer les domaines"}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          )}
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-4">

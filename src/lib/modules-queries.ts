@@ -8,6 +8,8 @@ export interface ModuleSysteme {
   actif: boolean;
   icone?: string;
   couleur?: string;
+  display_order: number;
+  parent_module_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +46,7 @@ export const modulesQueries = {
       .from('modules_systeme')
       .select('*')
       .eq('actif', true)
+      .order('display_order')
       .order('libelle');
     
     if (error) throw error;

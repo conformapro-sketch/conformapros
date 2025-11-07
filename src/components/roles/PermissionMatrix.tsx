@@ -62,12 +62,26 @@ export function PermissionMatrix({
     
     // If a specific list of allowed modules is provided, filter to only those
     if (modules && modules.length > 0) {
-      return baseModules.filter(module => 
+      baseModules = baseModules.filter(module => 
         modules.includes(module.code.toLowerCase())
       );
     }
     
-    return baseModules;
+    // Filter child modules if their parent is not authorized
+    const allowedModuleCodes = new Set(baseModules.map(m => m.code.toLowerCase()));
+    
+    return baseModules.filter(module => {
+      // If the module has a parent
+      if (module.parent_module_id) {
+        // Find the parent module
+        const parent = allModules.find(m => m.id === module.parent_module_id);
+        // Check if parent is authorized
+        if (parent && !allowedModuleCodes.has(parent.code.toLowerCase())) {
+          return false; // Hide child module
+        }
+      }
+      return true;
+    });
   }, [userType, modules, allModules, clientModules]);
 
   const filteredModules = useMemo(() => {
