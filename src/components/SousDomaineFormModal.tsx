@@ -38,7 +38,7 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
   const queryClient = useQueryClient();
   
   const { data: domaines } = useQuery({
-    queryKey: ["domaines"],
+    queryKey: ["domaines-reglementaires"],
     queryFn: fetchDomaines,
   });
 
@@ -90,7 +90,7 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
     mutationFn: createSousDomaine,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sous-domaines"] });
-      queryClient.invalidateQueries({ queryKey: ["domaines"] });
+      queryClient.invalidateQueries({ queryKey: ["domaines-reglementaires"] });
       toast({ title: "Sous-domaine créé avec succès" });
       reset();
       onOpenChange(false);
@@ -108,7 +108,7 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
     mutationFn: ({ id, data }: { id: string; data: any }) => updateSousDomaine(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sous-domaines"] });
-      queryClient.invalidateQueries({ queryKey: ["domaines"] });
+      queryClient.invalidateQueries({ queryKey: ["domaines-reglementaires"] });
       toast({ title: "Sous-domaine modifié avec succès" });
       onOpenChange(false);
     },

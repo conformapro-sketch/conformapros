@@ -77,7 +77,7 @@ export function DomaineFormModal({ open, onOpenChange, domaine }: DomaineFormMod
   const createMutation = useMutation({
     mutationFn: createDomaine,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["domaines"] });
+      queryClient.invalidateQueries({ queryKey: ["domaines-reglementaires"] });
       toast({ title: "Domaine créé avec succès" });
       reset();
       onOpenChange(false);
@@ -94,7 +94,7 @@ export function DomaineFormModal({ open, onOpenChange, domaine }: DomaineFormMod
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => updateDomaine(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["domaines"] });
+      queryClient.invalidateQueries({ queryKey: ["domaines-reglementaires"] });
       toast({ title: "Domaine modifié avec succès" });
       onOpenChange(false);
     },

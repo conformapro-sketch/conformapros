@@ -40,14 +40,14 @@ export default function DomainesPage() {
   const [selectedDomaineForSousDomaine, setSelectedDomaineForSousDomaine] = useState<string | undefined>();
 
   const { data: domaines, isLoading } = useQuery({
-    queryKey: ["domaines"],
+    queryKey: ["domaines-reglementaires"],
     queryFn: fetchDomaines,
   });
 
   const deleteDomaineMutation = useMutation({
     mutationFn: softDeleteDomaine,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["domaines"] });
+      queryClient.invalidateQueries({ queryKey: ["domaines-reglementaires"] });
       toast({ title: "Domaine supprimé avec succès" });
       setDeletingDomaine(null);
     },
@@ -64,7 +64,7 @@ export default function DomainesPage() {
     mutationFn: softDeleteSousDomaine,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sous-domaines"] });
-      queryClient.invalidateQueries({ queryKey: ["domaines"] });
+      queryClient.invalidateQueries({ queryKey: ["domaines-reglementaires"] });
       toast({ title: "Sous-domaine supprimé avec succès" });
       setDeleteingSousDomaine(null);
     },
@@ -82,7 +82,7 @@ export default function DomainesPage() {
       return type === 'domaine' ? toggleDomaineActif(id, actif) : toggleSousDomaineActif(id, actif);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["domaines"] });
+      queryClient.invalidateQueries({ queryKey: ["domaines-reglementaires"] });
       queryClient.invalidateQueries({ queryKey: ["sous-domaines"] });
     },
     onError: (error: any) => {
