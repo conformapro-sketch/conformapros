@@ -182,10 +182,11 @@ export function ClientUserManagementDrawer({
         description: "Les permissions pour ce site ont été enregistrées.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Permission save error:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de sauvegarder les permissions.",
+        description: error?.message || "Impossible de sauvegarder les permissions.",
         variant: "destructive",
       });
     },

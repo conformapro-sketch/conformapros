@@ -1910,37 +1910,18 @@ export const saveSitePermissions = async (
   clientId: string,
   permissions: Array<{ module: string; action: string; decision: 'allow' | 'deny'; scope: PermissionScope }>
 ) => {
+  // Use secure RPC function to save permissions with proper authorization
+  const { error } = await supabase.rpc('set_user_site_permissions', {
+    target_user_id: userId,
+    target_client_id: clientId,
+    target_site_id: siteId,
+    permissions: permissions
+  });
+  
+  if (error) throw error;
+
+  // Log audit trail
   const actorId = await getCurrentUserId();
-  
-  // Delete existing site-specific permissions
-  const { error: deleteError } = await supabase
-    .from("user_permissions")
-    .delete()
-    .eq("user_id", userId)
-    .eq("site_id", siteId);
-  
-  if (deleteError) throw deleteError;
-
-  // Insert new permissions (only explicit allow/deny, not inherit)
-  if (permissions.length > 0) {
-    const permissionsToInsert = permissions.map(p => ({
-      user_id: userId,
-      client_id: clientId,
-      site_id: siteId,
-      module: p.module,
-      action: p.action,
-      decision: p.decision,
-      scope: p.scope,
-      created_by: actorId,
-    }));
-
-    const { error: insertError } = await supabase
-      .from("user_permissions")
-      .insert(permissionsToInsert);
-    
-    if (insertError) throw insertError;
-  }
-
   await logAudit(
     actorId,
     clientId,

@@ -67,7 +67,7 @@ export function PermissionMatrix({
       );
     }
     
-    // Filter child modules if their parent is not authorized
+    // Filter child modules based on parent authorization in current permissions
     const allowedModuleCodes = new Set(baseModules.map(m => m.code.toLowerCase()));
     
     return baseModules.filter(module => {
@@ -75,14 +75,24 @@ export function PermissionMatrix({
       if (module.parent_module_id) {
         // Find the parent module
         const parent = allModules.find(m => m.id === module.parent_module_id);
-        // Check if parent is authorized
-        if (parent && !allowedModuleCodes.has(parent.code.toLowerCase())) {
-          return false; // Hide child module
+        if (parent) {
+          const parentCode = parent.code.toLowerCase();
+          // Check if parent is in base allowed modules
+          if (!allowedModuleCodes.has(parentCode)) {
+            return false;
+          }
+          // Check if parent has at least one 'allow' permission in current state
+          const hasParentAllow = permissions.some(
+            p => p.module === parentCode && p.decision === 'allow'
+          );
+          if (!hasParentAllow) {
+            return false;
+          }
         }
       }
       return true;
     });
-  }, [userType, modules, allModules, clientModules]);
+  }, [userType, modules, allModules, clientModules, permissions]);
 
   const filteredModules = useMemo(() => {
     return availableModulesData.filter(module =>

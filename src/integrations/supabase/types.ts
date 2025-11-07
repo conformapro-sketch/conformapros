@@ -4111,6 +4111,15 @@ export type Database = {
         Args: { domaine_ids: string[]; target_user_id: string }
         Returns: undefined
       }
+      set_user_site_permissions: {
+        Args: {
+          permissions: Json
+          target_client_id: string
+          target_site_id: string
+          target_user_id: string
+        }
+        Returns: undefined
+      }
       user_has_team_role: { Args: { p_user_id: string }; Returns: boolean }
       user_is_client_user: { Args: { p_user_id: string }; Returns: boolean }
     }
