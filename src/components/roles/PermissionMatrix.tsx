@@ -105,13 +105,53 @@ export function PermissionMatrix({
     return perm?.decision || 'inherit';
   };
 
+  const isFullAction = (actionCode: string) => actionCode === 'full';
+
   const setPermission = (moduleCode: string, actionCode: string, decision: PermissionDecision) => {
-    const newPermissions = permissions.filter(
+    let newPermissions = permissions.filter(
       p => !(p.module === moduleCode && p.action === actionCode)
     );
 
-    if (decision !== 'inherit') {
-      newPermissions.push({ module: moduleCode, action: actionCode, decision });
+    // Handle "Full" action specially
+    if (isFullAction(actionCode)) {
+      if (decision === 'allow') {
+        // Enable ALL actions for this module
+        newPermissions = newPermissions.filter(p => p.module !== moduleCode);
+        allActions.forEach(action => {
+          newPermissions.push({ module: moduleCode, action: action.code, decision: 'allow' });
+        });
+      } else {
+        // Disable ALL actions for this module
+        newPermissions = newPermissions.filter(p => p.module !== moduleCode);
+      }
+    } else {
+      // Normal action
+      if (decision !== 'inherit') {
+        newPermissions.push({ module: moduleCode, action: actionCode, decision });
+      }
+      
+      // Auto-update "Full" based on other actions
+      const fullAction = allActions.find(a => a.code === 'full');
+      if (fullAction) {
+        const otherActions = allActions.filter(a => a.code !== 'full');
+        const allOthersAllowed = otherActions.every(action => 
+          newPermissions.some(p => 
+            p.module === moduleCode && 
+            p.action === action.code && 
+            p.decision === 'allow'
+          )
+        );
+        
+        // Remove existing "full" for this module
+        newPermissions = newPermissions.filter(
+          p => !(p.module === moduleCode && p.action === 'full')
+        );
+        
+        // Add "full" if all others are allowed
+        if (allOthersAllowed) {
+          newPermissions.push({ module: moduleCode, action: 'full', decision: 'allow' });
+        }
+      }
     }
 
     onPermissionsChange(newPermissions);
@@ -313,7 +353,14 @@ export function PermissionMatrix({
                   Module
                 </th>
                 {allActions.map(action => (
-                  <th key={action.id} className="text-center p-3 font-medium min-w-[100px]">
+                  <th 
+                    key={action.id} 
+                    className={cn(
+                      "text-center p-3 font-medium min-w-[100px]",
+                      action.code === 'full' && "bg-primary/5 font-semibold"
+                    )}
+                    title={action.code === 'full' ? action.description : undefined}
+                  >
                     {action.label}
                   </th>
                 ))}
@@ -357,16 +404,24 @@ export function PermissionMatrix({
                     {!isCollapsed && allActions.map(action => {
                       const decision = getPermission(moduleCode, action.code);
                       return (
-                        <td key={action.id} className="text-center p-3">
+                        <td 
+                          key={action.id} 
+                          className={cn(
+                            "text-center p-3",
+                            action.code === 'full' && "bg-primary/5"
+                          )}
+                        >
                           <button
                             type="button"
                             onClick={() => !readOnly && setPermission(moduleCode, action.code, cycleDecision(decision))}
                             className={cn(
                               "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
                               getDecisionColor(decision),
+                              action.code === 'full' && decision === 'allow' && "ring-2 ring-primary/50",
                               readOnly ? "cursor-not-allowed opacity-75" : "cursor-pointer"
                             )}
                             disabled={readOnly}
+                            title={action.code === 'full' ? "Active toutes les permissions pour ce module" : undefined}
                           >
                             {getDecisionLabel(decision)}
                           </button>
