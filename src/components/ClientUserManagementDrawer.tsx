@@ -89,6 +89,13 @@ export function ClientUserManagementDrawer({
     enabled: !!user?.id && !!expandedSite && open,
   });
 
+  // Fetch enabled modules for the expanded site
+  const { data: enabledModulesForSite = [] } = useQuery({
+    queryKey: ["site-enabled-modules", expandedSite],
+    queryFn: () => listEnabledModuleCodesForSite(expandedSite!),
+    enabled: !!expandedSite && open,
+  });
+
   // Update site permissions when fetched
   useEffect(() => {
     if (currentSitePerms && expandedSite) {
@@ -422,6 +429,13 @@ export function ClientUserManagementDrawer({
                             <div className="text-center py-4 text-muted-foreground">
                               Chargement des permissions...
                             </div>
+                          ) : expandedSite === site.site_id && enabledModulesForSite.length === 0 ? (
+                            <Card>
+                              <CardContent className="pt-6 text-center text-muted-foreground">
+                                <p>Aucun module activé pour ce site.</p>
+                                <p className="text-sm mt-2">Contactez un administrateur ConformaPro.</p>
+                              </CardContent>
+                            </Card>
                           ) : (
                             <>
                               <PermissionMatrix
@@ -432,6 +446,7 @@ export function ClientUserManagementDrawer({
                                 roleType="client"
                                 userType="client"
                                 siteId={site.site_id}
+                                modules={expandedSite === site.site_id ? enabledModulesForSite : []}
                               />
                               <div className="flex justify-end">
                                 <Button
