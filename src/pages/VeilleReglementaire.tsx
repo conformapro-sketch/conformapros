@@ -28,12 +28,19 @@ import {
 import { AlertBadge } from "@/components/AlertBadge";
 import { useQuery } from "@tanstack/react-query";
 import { actesQueries } from "@/lib/actes-queries";
+import { fetchDomaines } from "@/lib/domaines-queries";
 
 export default function VeilleReglementaire() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
   const [statutFilter, setStatutFilter] = useState<string>("all");
+
+  // Fetch domaines from database
+  const { data: domaines = [] } = useQuery({
+    queryKey: ["domaines-reglementaires"],
+    queryFn: fetchDomaines,
+  });
 
   // Fetch actes réglementaires
   const { data: result, isLoading } = useQuery({
@@ -79,17 +86,6 @@ export default function VeilleReglementaire() {
     }
   };
 
-  const domaines = [
-    "Sécurité",
-    "Incendie",
-    "Environnement",
-    "Travail",
-    "RH",
-    "Santé",
-    "Marchés publics",
-    "Investissement",
-    "Autre",
-  ];
 
   return (
     <div className="space-y-8">
@@ -226,11 +222,13 @@ export default function VeilleReglementaire() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les domaines</SelectItem>
-                  {domaines.map((domaine) => (
-                    <SelectItem key={domaine} value={domaine}>
-                      {domaine}
-                    </SelectItem>
-                  ))}
+                  {domaines
+                    .filter((d) => d.actif)
+                    .map((domaine) => (
+                      <SelectItem key={domaine.id} value={domaine.libelle}>
+                        {domaine.libelle}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
 
