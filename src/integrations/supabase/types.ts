@@ -3733,7 +3733,7 @@ export type Database = {
             foreignKeyName: "user_permissions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "client_users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3761,7 +3761,7 @@ export type Database = {
             foreignKeyName: "user_permissions_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "client_users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
