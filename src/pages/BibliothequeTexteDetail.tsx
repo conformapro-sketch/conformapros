@@ -196,10 +196,8 @@ export default function BibliothequeTexteDetail() {
       const hasAbrogation = futureEffects?.some(e => e.type_effet === 'ABROGE');
       if (hasAbrogation) {
         const abrogationEffect = futureEffects.find(e => e.type_effet === 'ABROGE');
-        const sourceRef = abrogationEffect?.textes_articles?.actes_reglementaires?.reference_officielle;
         throw new Error(
-          `Impossible de restaurer cette version : l'article a été abrogé ultérieurement le ${new Date(abrogationEffect.date_effet).toLocaleDateString('fr-FR')}` +
-          (sourceRef ? ` par ${sourceRef}` : '')
+          `Impossible de restaurer cette version : l'article a été abrogé ultérieurement le ${new Date(abrogationEffect.date_effet).toLocaleDateString('fr-FR')}`
         );
       }
 

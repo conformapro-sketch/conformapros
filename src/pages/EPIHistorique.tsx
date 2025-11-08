@@ -23,11 +23,11 @@ export default function EPIHistorique() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("epi_articles")
-        .select(`
+          .select(`
           *,
           type:epi_types(*),
           site:sites(nom_site),
-          employe:employes(nom, prenom, matricule)
+          employe:employes!epi_articles_employe_id_fkey(nom, prenom, matricule)
         `)
         .eq("id", id)
         .single();
@@ -111,11 +111,11 @@ export default function EPIHistorique() {
               <p className="text-sm text-muted-foreground">Site</p>
               <p className="font-medium">{article.site?.nom_site}</p>
             </div>
-            {article.employe && !Array.isArray(article.employe) && (
+            {article.employe && typeof article.employe === 'object' && !Array.isArray(article.employe) && (
               <div>
                 <p className="text-sm text-muted-foreground">Attribué à</p>
                 <p className="font-medium">
-                  {article.employe.prenom} {article.employe.nom}
+                  {(article.employe as any).prenom} {(article.employe as any).nom}
                 </p>
               </div>
             )}

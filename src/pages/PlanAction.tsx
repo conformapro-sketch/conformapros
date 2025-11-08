@@ -63,11 +63,10 @@ export default function PlanAction() {
           *,
           conformite:conformite_id (
             id,
-            etat,
-            status:status_id (
-              site_id,
-              article_id
-            )
+            status,
+            site_id,
+            article_id,
+            manquement
           )
         `, { count: 'exact' });
 
@@ -97,8 +96,8 @@ export default function PlanAction() {
       }
 
       // Récupérer les IDs uniques pour les lookups
-      const siteIds = [...new Set(actions.map(a => a.conformite?.status?.site_id).filter(Boolean))];
-      const articleIds = [...new Set(actions.map(a => a.conformite?.status?.article_id).filter(Boolean))];
+      const siteIds = [...new Set(actions.map(a => a.conformite?.site_id).filter(Boolean))];
+      const articleIds = [...new Set(actions.map(a => a.conformite?.article_id).filter(Boolean))];
       const responsableIds = [...new Set(actions.map(a => a.responsable_id).filter(Boolean))];
 
       // Récupérer les sites avec clients
@@ -134,8 +133,8 @@ export default function PlanAction() {
 
       // Enrichir les actions avec les données jointes
       const enrichedActions = actions.map(action => {
-        const siteId = action.conformite?.status?.site_id;
-        const articleId = action.conformite?.status?.article_id;
+        const siteId = action.conformite?.site_id;
+        const articleId = action.conformite?.article_id;
         const site = siteId ? sitesMap.get(siteId) : null;
         const article = articleId ? articlesMap.get(articleId) : null;
         const texte = article?.texte_id ? textesMap.get(article.texte_id) : null;
@@ -147,6 +146,7 @@ export default function PlanAction() {
           article,
           texte,
           responsable,
+          manquement: action.conformite?.manquement || action.description,
         };
       });
 

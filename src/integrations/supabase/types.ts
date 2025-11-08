@@ -65,6 +65,48 @@ export type Database = {
           },
         ]
       }
+      actes_reglementaires: {
+        Row: {
+          created_at: string | null
+          date_entree_vigueur: string | null
+          date_publication: string | null
+          description: string | null
+          id: string
+          intitule: string
+          numero_jort: string | null
+          reference_officielle: string
+          statut_vigueur: string | null
+          type_acte: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_entree_vigueur?: string | null
+          date_publication?: string | null
+          description?: string | null
+          id?: string
+          intitule: string
+          numero_jort?: string | null
+          reference_officielle: string
+          statut_vigueur?: string | null
+          type_acte?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_entree_vigueur?: string | null
+          date_publication?: string | null
+          description?: string | null
+          id?: string
+          intitule?: string
+          numero_jort?: string | null
+          reference_officielle?: string
+          statut_vigueur?: string | null
+          type_acte?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       actions_correctives: {
         Row: {
           conformite_id: string | null
@@ -106,6 +148,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "actions_correctives_conformite_id_fkey"
+            columns: ["conformite_id"]
+            isOneToOne: false
+            referencedRelation: "conformite_evaluations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "actions_correctives_incident_id_fkey"
             columns: ["incident_id"]
@@ -436,6 +485,70 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      conformite_evaluations: {
+        Row: {
+          article_id: string | null
+          client_id: string
+          created_at: string | null
+          date_evaluation: string
+          evaluateur_id: string | null
+          id: string
+          manquement: string | null
+          observations: string | null
+          site_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          client_id: string
+          created_at?: string | null
+          date_evaluation: string
+          evaluateur_id?: string | null
+          id?: string
+          manquement?: string | null
+          observations?: string | null
+          site_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          client_id?: string
+          created_at?: string | null
+          date_evaluation?: string
+          evaluateur_id?: string | null
+          id?: string
+          manquement?: string | null
+          observations?: string | null
+          site_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conformite_evaluations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conformite_evaluations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conformite_evaluations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dechets: {
         Row: {
@@ -2377,6 +2490,7 @@ export type Database = {
       }
       textes_articles: {
         Row: {
+          acte_id: string | null
           contenu: string
           created_at: string
           id: string
@@ -2391,6 +2505,7 @@ export type Database = {
           version_active: string | null
         }
         Insert: {
+          acte_id?: string | null
           contenu: string
           created_at?: string
           id?: string
@@ -2405,6 +2520,7 @@ export type Database = {
           version_active?: string | null
         }
         Update: {
+          acte_id?: string | null
           contenu?: string
           created_at?: string
           id?: string
@@ -2419,6 +2535,13 @@ export type Database = {
           version_active?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "textes_articles_acte_id_fkey"
+            columns: ["acte_id"]
+            isOneToOne: false
+            referencedRelation: "actes_reglementaires"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "textes_articles_parent_article_id_fkey"
             columns: ["parent_article_id"]
