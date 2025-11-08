@@ -2354,57 +2354,84 @@ export type Database = {
       }
       sites: {
         Row: {
+          activite: string | null
           adresse: string
+          classification: string | null
           client_id: string
           code_postal: string
           code_site: string | null
           created_at: string
+          delegation: string | null
           email: string | null
+          est_siege: boolean | null
+          gouvernorat: string | null
           id: string
           latitude: number | null
+          localite: string | null
           longitude: number | null
+          niveau_risque: string | null
           nom: string
           nom_site: string
           nombre_employes: number | null
           pays: string | null
+          responsable_site: string | null
+          secteur_activite: string | null
           surface: number | null
           telephone: string | null
           updated_at: string
           ville: string
         }
         Insert: {
+          activite?: string | null
           adresse: string
+          classification?: string | null
           client_id: string
           code_postal: string
           code_site?: string | null
           created_at?: string
+          delegation?: string | null
           email?: string | null
+          est_siege?: boolean | null
+          gouvernorat?: string | null
           id?: string
           latitude?: number | null
+          localite?: string | null
           longitude?: number | null
+          niveau_risque?: string | null
           nom: string
           nom_site: string
           nombre_employes?: number | null
           pays?: string | null
+          responsable_site?: string | null
+          secteur_activite?: string | null
           surface?: number | null
           telephone?: string | null
           updated_at?: string
           ville: string
         }
         Update: {
+          activite?: string | null
           adresse?: string
+          classification?: string | null
           client_id?: string
           code_postal?: string
           code_site?: string | null
           created_at?: string
+          delegation?: string | null
           email?: string | null
+          est_siege?: boolean | null
+          gouvernorat?: string | null
           id?: string
           latitude?: number | null
+          localite?: string | null
           longitude?: number | null
+          niveau_risque?: string | null
           nom?: string
           nom_site?: string
           nombre_employes?: number | null
           pays?: string | null
+          responsable_site?: string | null
+          secteur_activite?: string | null
           surface?: number | null
           telephone?: string | null
           updated_at?: string

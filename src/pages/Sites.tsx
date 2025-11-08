@@ -193,7 +193,7 @@ export default function Sites() {
         escapeValue(site.gouvernorat),
         escapeValue(site.secteur_activite),
         escapeValue(site.classification),
-        escapeValue(site.effectif ?? ""),
+        escapeValue(site.nombre_employes ?? ""),
         escapeValue(site.responsable_site ?? ""),
         escapeValue(site.niveau_risque ?? ""),
       ].join(";");
@@ -241,7 +241,7 @@ export default function Sites() {
           <td>${site.gouvernorat ?? ""}</td>
           <td>${site.secteur_activite ?? ""}</td>
           <td>${site.classification ?? ""}</td>
-          <td>${site.effectif ?? ""}</td>
+          <td>${site.nombre_employes ?? ""}</td>
           <td>${site.responsable_site ?? ""}</td>
           <td>${site.niveau_risque ?? ""}</td>
         </tr>`;
@@ -300,7 +300,7 @@ export default function Sites() {
     }
   };
 
-  const totalEffectif = sites?.reduce((sum, site) => sum + (site.effectif || 0), 0) || 0;
+  const totalEffectif = sites?.reduce((sum, site) => sum + (site.nombre_employes || 0), 0) || 0;
   const highRiskSites = sites?.filter(s => s.niveau_risque && ["Critique", "Élevé"].includes(s.niveau_risque)).length || 0;
 
   return (
@@ -530,7 +530,7 @@ export default function Sites() {
                     <TableCell className="text-sm">{site.secteur_activite || "—"}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="font-mono">
-                        {site.effectif || 0}
+                        {site.nombre_employes || 0}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
@@ -620,10 +620,10 @@ export default function Sites() {
                         <span className="text-muted-foreground truncate">{site.secteur_activite}</span>
                       </div>
                     )}
-                    {site.effectif !== null && (
+                    {site.nombre_employes !== null && (
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{site.effectif} employés</span>
+                        <span className="text-muted-foreground">{site.nombre_employes} employés</span>
                       </div>
                     )}
                   </div>

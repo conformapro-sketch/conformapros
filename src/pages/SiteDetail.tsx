@@ -24,7 +24,7 @@ export default function SiteDetail() {
     responsable_site: "Mohamed Ben Ali",
     telephone: "+216 73 123 456",
     email: "sousse@conformatech.tn",
-    effectif: 150,
+    nombre_employes: 150,
     activite: "Fabrication de composants automobiles",
     niveau_risque: "Élevé",
     autorite_protection_civile: "Protection Civile Sousse Centre",
@@ -85,7 +85,7 @@ export default function SiteDetail() {
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
             <CardDescription>Effectif</CardDescription>
-            <CardTitle className="text-3xl">{site.effectif}</CardTitle>
+            <CardTitle className="text-3xl">{site.nombre_employes}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="shadow-soft">
@@ -149,7 +149,7 @@ export default function SiteDetail() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Effectif</p>
-                  <p className="text-sm mt-1">{site.effectif} employés</p>
+                  <p className="text-sm mt-1">{site.nombre_employes} employés</p>
                 </div>
                 <div className="sm:col-span-2">
                   <p className="text-sm font-medium text-muted-foreground">Autorité Protection Civile</p>

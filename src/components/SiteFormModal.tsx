@@ -52,7 +52,7 @@ const siteSchema = z.object({
   nom_site: z.string().min(1, "Le nom du site est requis"),
   code_site: z.string().min(1, "Le code site est requis"),
   
-  // All other fields are optional
+  // All other fields are optional - using actual DB column names
   classification: z.string().optional(),
   secteur_activite: z.string().optional(),
   est_siege: z.boolean().default(false),
@@ -62,11 +62,13 @@ const siteSchema = z.object({
   localite: z.string().optional(),
   code_postal: z.string().optional(),
   ville: z.string().optional(),
-  coordonnees_gps_lat: z.coerce.number().optional().nullable(),
-  coordonnees_gps_lng: z.coerce.number().optional().nullable(),
-  effectif: z.coerce.number().int().min(0).optional().nullable(),
-  superficie: z.coerce.number().min(0).optional().nullable(),
+  latitude: z.coerce.number().optional().nullable(),
+  longitude: z.coerce.number().optional().nullable(),
+  nombre_employes: z.coerce.number().int().min(0).optional().nullable(),
+  surface: z.coerce.number().min(0).optional().nullable(),
   activite: z.string().optional(),
+  responsable_site: z.string().optional(),
+  niveau_risque: z.string().optional(),
 });
 
 type SiteFormData = z.infer<typeof siteSchema>;
@@ -238,11 +240,13 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
           localite: site.localite || "",
           code_postal: site.code_postal || "",
           ville: site.ville || "",
-          coordonnees_gps_lat: site.coordonnees_gps_lat ? Number(site.coordonnees_gps_lat) : null,
-          coordonnees_gps_lng: site.coordonnees_gps_lng ? Number(site.coordonnees_gps_lng) : null,
-          effectif: site.effectif || 0,
-          superficie: site.superficie ? Number(site.superficie) : null,
+          latitude: site.latitude ? Number(site.latitude) : null,
+          longitude: site.longitude ? Number(site.longitude) : null,
+          nombre_employes: site.nombre_employes || 0,
+          surface: site.surface ? Number(site.surface) : null,
           activite: site.activite || "",
+          responsable_site: site.responsable_site || "",
+          niveau_risque: site.niveau_risque || "",
         });
       } else {
         reset({
@@ -258,11 +262,13 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
           localite: "",
           code_postal: "",
           ville: "",
-          effectif: null,
-          superficie: null,
+          nombre_employes: null,
+          surface: null,
           activite: "",
-          coordonnees_gps_lat: null,
-          coordonnees_gps_lng: null,
+          latitude: null,
+          longitude: null,
+          responsable_site: "",
+          niveau_risque: "",
         });
       }
       setActiveTab("essentiels");
@@ -288,11 +294,13 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       if (data.localite?.trim()) cleanData.localite = data.localite.trim();
       if (data.ville?.trim()) cleanData.ville = data.ville.trim();
       if (data.code_postal?.trim()) cleanData.code_postal = data.code_postal.trim();
-      if (data.coordonnees_gps_lat) cleanData.coordonnees_gps_lat = data.coordonnees_gps_lat;
-      if (data.coordonnees_gps_lng) cleanData.coordonnees_gps_lng = data.coordonnees_gps_lng;
-      if (data.superficie) cleanData.superficie = data.superficie;
+      if (data.latitude) cleanData.latitude = data.latitude;
+      if (data.longitude) cleanData.longitude = data.longitude;
+      if (data.surface) cleanData.surface = data.surface;
       if (data.activite?.trim()) cleanData.activite = data.activite.trim();
-      if (data.effectif !== null && data.effectif !== undefined) cleanData.effectif = data.effectif;
+      if (data.responsable_site?.trim()) cleanData.responsable_site = data.responsable_site.trim();
+      if (data.niveau_risque?.trim()) cleanData.niveau_risque = data.niveau_risque.trim();
+      if (data.nombre_employes !== null && data.nombre_employes !== undefined) cleanData.nombre_employes = data.nombre_employes;
 
       return createSite(cleanData);
     },
@@ -332,11 +340,13 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       if (data.localite?.trim()) cleanData.localite = data.localite.trim();
       if (data.ville?.trim()) cleanData.ville = data.ville.trim();
       if (data.code_postal?.trim()) cleanData.code_postal = data.code_postal.trim();
-      if (data.coordonnees_gps_lat) cleanData.coordonnees_gps_lat = data.coordonnees_gps_lat;
-      if (data.coordonnees_gps_lng) cleanData.coordonnees_gps_lng = data.coordonnees_gps_lng;
-      if (data.superficie) cleanData.superficie = data.superficie;
+      if (data.latitude) cleanData.latitude = data.latitude;
+      if (data.longitude) cleanData.longitude = data.longitude;
+      if (data.surface) cleanData.surface = data.surface;
       if (data.activite?.trim()) cleanData.activite = data.activite.trim();
-      if (data.effectif !== null && data.effectif !== undefined) cleanData.effectif = data.effectif;
+      if (data.responsable_site?.trim()) cleanData.responsable_site = data.responsable_site.trim();
+      if (data.niveau_risque?.trim()) cleanData.niveau_risque = data.niveau_risque.trim();
+      if (data.nombre_employes !== null && data.nombre_employes !== undefined) cleanData.nombre_employes = data.nombre_employes;
 
       return updateSite(id, cleanData);
     },
@@ -691,23 +701,23 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
             <TabsContent value="activite" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="effectif">Effectif</Label>
+                  <Label htmlFor="nombre_employes">Effectif</Label>
                   <Input
-                    id="effectif"
+                    id="nombre_employes"
                     type="number"
                     min="0"
-                    {...register("effectif")}
+                    {...register("nombre_employes")}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="superficie">Superficie (m²)</Label>
+                  <Label htmlFor="surface">Superficie (m²)</Label>
                   <Input
-                    id="superficie"
+                    id="surface"
                     type="number"
                     min="0"
                     step="0.01"
-                    {...register("superficie")}
+                    {...register("surface")}
                   />
                 </div>
               </div>
@@ -723,11 +733,11 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
               </div>
 
               <LocationPicker
-                lat={watch("coordonnees_gps_lat")}
-                lng={watch("coordonnees_gps_lng")}
+                lat={watch("latitude")}
+                lng={watch("longitude")}
                 onLocationChange={(lat, lng) => {
-                  setValue("coordonnees_gps_lat", lat);
-                  setValue("coordonnees_gps_lng", lng);
+                  setValue("latitude", lat);
+                  setValue("longitude", lng);
                 }}
               />
             </TabsContent>

@@ -148,10 +148,10 @@ export function SitesDrawer({ open, onOpenChange, clientId, clientName, brandCol
                           ) : "-"}
                         </TableCell>
                         <TableCell>
-                          {site.effectif ? (
+                          {site.nombre_employes ? (
                             <div className="flex items-center gap-1">
                               <Users className="h-3 w-3" />
-                              {site.effectif}
+                              {site.nombre_employes}
                             </div>
                           ) : "-"}
                         </TableCell>
