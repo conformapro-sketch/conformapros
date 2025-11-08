@@ -26,9 +26,6 @@ export default function Clients() {
   const queryClient = useQueryClient();
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [statutFilter, setStatutFilter] = useState<string>("all");
-  const [secteurFilter, setSecteurFilter] = useState<string>("all");
-  const [gouvernoratFilter, setGouvernoratFilter] = useState<string>("all");
   const [clientFormOpen, setClientFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientRow | undefined>();
   const [sitesDrawerOpen, setSitesDrawerOpen] = useState(false);
@@ -71,15 +68,11 @@ export default function Clients() {
 
   const filteredClients = clients?.filter(client => {
     const matchesSearch = 
-      client.nom_legal.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (client.matricule_fiscale && client.matricule_fiscale.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (client.rne_rc && client.rne_rc.toLowerCase().includes(searchQuery.toLowerCase()));
+      client.nom_legal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (client.nom && client.nom.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (client.siret && client.siret.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesStatut = statutFilter === "all" || client.statut === statutFilter;
-    const matchesSecteur = secteurFilter === "all" || client.secteur === secteurFilter;
-    const matchesGouvernorat = gouvernoratFilter === "all" || client.gouvernorat === gouvernoratFilter;
-    
-    return matchesSearch && matchesStatut && matchesSecteur && matchesGouvernorat;
+    return matchesSearch;
   }) || [];
 
   const handleEdit = (client: ClientRow) => {
@@ -312,64 +305,6 @@ export default function Clients() {
                   <List className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Select value={gouvernoratFilter} onValueChange={setGouvernoratFilter}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Gouvernorat" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                  <SelectItem value="all">Tous les gouvernorats</SelectItem>
-                  <SelectItem value="Ariana">Ariana</SelectItem>
-                  <SelectItem value="Béja">Béja</SelectItem>
-                  <SelectItem value="Ben Arous">Ben Arous</SelectItem>
-                  <SelectItem value="Bizerte">Bizerte</SelectItem>
-                  <SelectItem value="Gabès">Gabès</SelectItem>
-                  <SelectItem value="Gafsa">Gafsa</SelectItem>
-                  <SelectItem value="Jendouba">Jendouba</SelectItem>
-                  <SelectItem value="Kairouan">Kairouan</SelectItem>
-                  <SelectItem value="Kasserine">Kasserine</SelectItem>
-                  <SelectItem value="Kébili">Kébili</SelectItem>
-                  <SelectItem value="Le Kef">Le Kef</SelectItem>
-                  <SelectItem value="Mahdia">Mahdia</SelectItem>
-                  <SelectItem value="La Manouba">La Manouba</SelectItem>
-                  <SelectItem value="Médenine">Médenine</SelectItem>
-                  <SelectItem value="Monastir">Monastir</SelectItem>
-                  <SelectItem value="Nabeul">Nabeul</SelectItem>
-                  <SelectItem value="Sfax">Sfax</SelectItem>
-                  <SelectItem value="Sidi Bouzid">Sidi Bouzid</SelectItem>
-                  <SelectItem value="Siliana">Siliana</SelectItem>
-                  <SelectItem value="Sousse">Sousse</SelectItem>
-                  <SelectItem value="Tataouine">Tataouine</SelectItem>
-                  <SelectItem value="Tozeur">Tozeur</SelectItem>
-                  <SelectItem value="Tunis">Tunis</SelectItem>
-                  <SelectItem value="Zaghouan">Zaghouan</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={secteurFilter} onValueChange={setSecteurFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Secteur" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50">
-                  <SelectItem value="all">Tous les secteurs</SelectItem>
-                  <SelectItem value="Industriel">Industriel</SelectItem>
-                  <SelectItem value="Services">Services</SelectItem>
-                  <SelectItem value="Commerce">Commerce</SelectItem>
-                  <SelectItem value="Administration">Administration</SelectItem>
-                  <SelectItem value="Autre">Autre</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statutFilter} onValueChange={setStatutFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50">
-                  <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="actif">Actif</SelectItem>
-                  <SelectItem value="suspendu">Suspendu</SelectItem>
-                  <SelectItem value="archivé">Archivé</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </CardContent>
@@ -606,11 +541,11 @@ export default function Clients() {
           <CardContent className="py-12 text-center">
             <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">
-              {searchQuery || statutFilter !== "all" || secteurFilter !== "all" || gouvernoratFilter !== "all"
+              {searchQuery
                 ? "Aucun client ne correspond aux filtres" 
                 : "Aucun client enregistré"}
             </p>
-            {!searchQuery && statutFilter === "all" && secteurFilter === "all" && gouvernoratFilter === "all" && (
+            {!searchQuery && (
               <Button 
                 onClick={() => {
                   setEditingClient(undefined);
