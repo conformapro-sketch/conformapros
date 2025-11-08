@@ -67,6 +67,7 @@ export type Database = {
       }
       actions_correctives: {
         Row: {
+          conformite_id: string | null
           created_at: string
           date_echeance: string | null
           description: string | null
@@ -79,6 +80,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          conformite_id?: string | null
           created_at?: string
           date_echeance?: string | null
           description?: string | null
@@ -91,6 +93,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          conformite_id?: string | null
           created_at?: string
           date_echeance?: string | null
           description?: string | null
@@ -159,6 +162,7 @@ export type Database = {
       articles_effets_juridiques: {
         Row: {
           article_id: string
+          article_source_id: string | null
           created_at: string
           date_effet: string
           id: string
@@ -167,6 +171,7 @@ export type Database = {
         }
         Insert: {
           article_id: string
+          article_source_id?: string | null
           created_at?: string
           date_effet: string
           id?: string
@@ -175,6 +180,7 @@ export type Database = {
         }
         Update: {
           article_id?: string
+          article_source_id?: string | null
           created_at?: string
           date_effet?: string
           id?: string
@@ -185,6 +191,13 @@ export type Database = {
           {
             foreignKeyName: "articles_effets_juridiques_article_id_fkey"
             columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "articles_effets_juridiques_article_source_id_fkey"
+            columns: ["article_source_id"]
             isOneToOne: false
             referencedRelation: "textes_articles"
             referencedColumns: ["id"]
@@ -316,6 +329,7 @@ export type Database = {
           id: string
           logo_url: string | null
           nom: string
+          nom_legal: string | null
           pays: string | null
           siret: string | null
           telephone: string | null
@@ -330,6 +344,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           nom: string
+          nom_legal?: string | null
           pays?: string | null
           siret?: string | null
           telephone?: string | null
@@ -344,6 +359,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           nom?: string
+          nom_legal?: string | null
           pays?: string | null
           siret?: string | null
           telephone?: string | null
@@ -575,6 +591,7 @@ export type Database = {
           id: string
           marque: string | null
           modele: string | null
+          observations: string | null
           reference: string
           site_id: string | null
           statut: string | null
@@ -590,6 +607,7 @@ export type Database = {
           id?: string
           marque?: string | null
           modele?: string | null
+          observations?: string | null
           reference: string
           site_id?: string | null
           statut?: string | null
@@ -605,6 +623,7 @@ export type Database = {
           id?: string
           marque?: string | null
           modele?: string | null
+          observations?: string | null
           reference?: string
           site_id?: string | null
           statut?: string | null
@@ -814,36 +833,51 @@ export type Database = {
           client_id: string
           created_at: string | null
           date_mise_service: string | null
+          derniere_verification: string | null
           equipement_type_id: string | null
           id: string
+          localisation: string | null
           nom: string
           numero_serie: string | null
+          observations: string | null
+          prochaine_verification: string | null
           site_id: string | null
           statut: string | null
+          type_equipement: string | null
           updated_at: string | null
         }
         Insert: {
           client_id: string
           created_at?: string | null
           date_mise_service?: string | null
+          derniere_verification?: string | null
           equipement_type_id?: string | null
           id?: string
+          localisation?: string | null
           nom: string
           numero_serie?: string | null
+          observations?: string | null
+          prochaine_verification?: string | null
           site_id?: string | null
           statut?: string | null
+          type_equipement?: string | null
           updated_at?: string | null
         }
         Update: {
           client_id?: string
           created_at?: string | null
           date_mise_service?: string | null
+          derniere_verification?: string | null
           equipement_type_id?: string | null
           id?: string
+          localisation?: string | null
           nom?: string
           numero_serie?: string | null
+          observations?: string | null
+          prochaine_verification?: string | null
           site_id?: string | null
           statut?: string | null
+          type_equipement?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1505,6 +1539,59 @@ export type Database = {
         }
         Relationships: []
       }
+      med_visites: {
+        Row: {
+          created_at: string | null
+          date_prochaine_visite: string | null
+          date_visite: string
+          employe_id: string
+          id: string
+          medecin_nom: string | null
+          medecin_organisme: string | null
+          observations: string | null
+          resultat_aptitude: string | null
+          statut_visite: string | null
+          type_visite: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_prochaine_visite?: string | null
+          date_visite: string
+          employe_id: string
+          id?: string
+          medecin_nom?: string | null
+          medecin_organisme?: string | null
+          observations?: string | null
+          resultat_aptitude?: string | null
+          statut_visite?: string | null
+          type_visite?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_prochaine_visite?: string | null
+          date_visite?: string
+          employe_id?: string
+          id?: string
+          medecin_nom?: string | null
+          medecin_organisme?: string | null
+          observations?: string | null
+          resultat_aptitude?: string | null
+          statut_visite?: string | null
+          type_visite?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "med_visites_employe_id_fkey"
+            columns: ["employe_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mesures_environnementales: {
         Row: {
           commentaire: string | null
@@ -1656,6 +1743,7 @@ export type Database = {
           date_echeance: string | null
           description: string | null
           id: string
+          manquement: string | null
           priorite: Database["public"]["Enums"]["priorite"]
           responsable_id: string | null
           site_id: string
@@ -1671,6 +1759,7 @@ export type Database = {
           date_echeance?: string | null
           description?: string | null
           id?: string
+          manquement?: string | null
           priorite?: Database["public"]["Enums"]["priorite"]
           responsable_id?: string | null
           site_id: string
@@ -1686,6 +1775,7 @@ export type Database = {
           date_echeance?: string | null
           description?: string | null
           id?: string
+          manquement?: string | null
           priorite?: Database["public"]["Enums"]["priorite"]
           responsable_id?: string | null
           site_id?: string
@@ -2154,6 +2244,7 @@ export type Database = {
           adresse: string
           client_id: string
           code_postal: string
+          code_site: string | null
           created_at: string
           email: string | null
           id: string
@@ -2172,6 +2263,7 @@ export type Database = {
           adresse: string
           client_id: string
           code_postal: string
+          code_site?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -2190,6 +2282,7 @@ export type Database = {
           adresse?: string
           client_id?: string
           code_postal?: string
+          code_site?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -2287,11 +2380,13 @@ export type Database = {
           contenu: string
           created_at: string
           id: string
+          numero: string | null
           numero_article: string
           ordre: number | null
           parent_article_id: string | null
           texte_id: string
           titre: string | null
+          titre_court: string | null
           updated_at: string
           version_active: string | null
         }
@@ -2299,11 +2394,13 @@ export type Database = {
           contenu: string
           created_at?: string
           id?: string
+          numero?: string | null
           numero_article: string
           ordre?: number | null
           parent_article_id?: string | null
           texte_id: string
           titre?: string | null
+          titre_court?: string | null
           updated_at?: string
           version_active?: string | null
         }
@@ -2311,11 +2408,13 @@ export type Database = {
           contenu?: string
           created_at?: string
           id?: string
+          numero?: string | null
           numero_article?: string
           ordre?: number | null
           parent_article_id?: string | null
           texte_id?: string
           titre?: string | null
+          titre_court?: string | null
           updated_at?: string
           version_active?: string | null
         }
@@ -2384,6 +2483,7 @@ export type Database = {
           id: string
           lien_officiel: string | null
           numero: string
+          reference_officielle: string | null
           resume: string | null
           statut: string
           titre: string
@@ -2398,6 +2498,7 @@ export type Database = {
           id?: string
           lien_officiel?: string | null
           numero: string
+          reference_officielle?: string | null
           resume?: string | null
           statut?: string
           titre: string
@@ -2412,6 +2513,7 @@ export type Database = {
           id?: string
           lien_officiel?: string | null
           numero?: string
+          reference_officielle?: string | null
           resume?: string | null
           statut?: string
           titre?: string

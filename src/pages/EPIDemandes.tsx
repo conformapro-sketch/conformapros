@@ -91,7 +91,11 @@ export default function EPIDemandes() {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase.from("epi_demandes").insert([data]);
+      const { error } = await supabase.from("epi_demandes").insert([{
+        epi_type_id: data.type_id,
+        employe_id: data.employe_id,
+        quantite: data.quantite,
+      }]);
       if (error) throw error;
     },
     onSuccess: () => {

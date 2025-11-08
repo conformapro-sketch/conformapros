@@ -86,9 +86,10 @@ export const codesQueries = {
     const { data, error } = await supabase
       .from("codes_juridiques")
       .insert({
+        code: code.code || code.abreviation || '',
+        titre: code.nom_officiel || '',
         nom_officiel: code.nom_officiel,
         abreviation: code.abreviation,
-        reference_jort: code.reference_jort,
         description: code.description,
       })
       .select()
@@ -118,9 +119,10 @@ export const codesQueries = {
     const { data, error } = await supabase
       .from("codes_juridiques")
       .update({
+        code: code.code || code.abreviation,
+        titre: code.nom_officiel,
         nom_officiel: code.nom_officiel,
         abreviation: code.abreviation,
-        reference_jort: code.reference_jort,
         description: code.description,
       })
       .eq("id", id)

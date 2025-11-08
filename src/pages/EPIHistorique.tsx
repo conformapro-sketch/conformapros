@@ -111,7 +111,7 @@ export default function EPIHistorique() {
               <p className="text-sm text-muted-foreground">Site</p>
               <p className="font-medium">{article.site?.nom_site}</p>
             </div>
-            {article.employe && (
+            {article.employe && !Array.isArray(article.employe) && (
               <div>
                 <p className="text-sm text-muted-foreground">Attribué à</p>
                 <p className="font-medium">

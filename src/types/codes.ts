@@ -4,6 +4,8 @@ export type TypeRelationCode = 'appartient_a' | 'modifie' | 'abroge_partiellemen
 
 export interface CodeJuridique {
   id: string;
+  code: string;
+  titre: string;
   nom_officiel: string;
   abreviation: string;
   domaine_reglementaire_id?: string; // Déprécié - gardé pour transition
