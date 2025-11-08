@@ -49,7 +49,7 @@ export default function CodesJuridiques() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => codesQueries.softDelete(id),
+    mutationFn: (id: string) => codesQueries.deleteCode(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["codes-juridiques"] });
       toast.success("Code juridique supprimé avec succès");

@@ -10,8 +10,8 @@ export async function fetchIncidents(siteId?: string) {
     .from("incidents")
     .select(`
       *,
-      sites (nom_site),
-      employes (nom, prenom)
+      sites (nom_site, nom),
+      incidents_types (nom, description)
     `)
     .order("date_incident", { ascending: false });
 
@@ -29,8 +29,8 @@ export async function fetchIncidentById(id: string) {
     .from("incidents")
     .select(`
       *,
-      sites (nom_site),
-      employes (nom, prenom)
+      sites (nom_site, nom),
+      incidents_types (nom, description)
     `)
     .eq("id", id)
     .single();

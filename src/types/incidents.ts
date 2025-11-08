@@ -21,20 +21,23 @@ export type StatutIncident = "en_cours" | "cloture";
 
 export interface Incident {
   id: string;
+  client_id: string;
+  titre: string;
   numero_incident: string;
   
   // Informations de base
   date_incident: string;
   heure_incident?: string;
-  site_id: string;
+  site_id: string | null;
   zone?: string;
   batiment?: string;
   atelier?: string;
   
   // Type et classification
-  type_incident: TypeIncident;
+  type_incident?: TypeIncident;
   categorie?: CategorieIncident;
   gravite: GraviteIncident;
+  incident_type_id?: string | null;
   
   // Personnes impliquées
   personne_impliquee_id?: string;
@@ -44,7 +47,7 @@ export interface Incident {
   declarant_fonction?: string;
   
   // Description
-  description: string;
+  description: string | null;
   circonstances?: string;
   
   // Analyse
@@ -76,10 +79,11 @@ export interface Incident {
   // Relations (joined)
   sites?: {
     nom_site: string;
-  };
-  employes?: {
     nom: string;
-    prenom: string;
+  };
+  incidents_types?: {
+    nom: string;
+    description: string | null;
   };
 }
 

@@ -154,11 +154,11 @@ export const codesQueries = {
     return data as CodeJuridique;
   },
 
-  // Soft delete d'un code
-  async softDelete(id: string) {
+  // Delete a code (hard delete since no soft delete column exists)
+  async deleteCode(id: string) {
     const { error } = await supabase
       .from("codes_juridiques")
-      .update({ deleted_at: new Date().toISOString() })
+      .delete()
       .eq("id", id);
 
     if (error) throw error;

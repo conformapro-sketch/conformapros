@@ -122,7 +122,7 @@ export function EPIEmployeeFiche({ employeId }: EPIEmployeeFicheProps) {
           <div>
             <CardTitle>Fiche EPI - {employe.prenom} {employe.nom}</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              {employe.site?.nom_site} • Matricule: {employe.matricule}
+              {employe.site?.nom_site} • Matricule: {employe.matricule || 'N/A'}
             </p>
           </div>
           <div className="flex gap-2">

@@ -65,6 +65,53 @@ export type Database = {
           },
         ]
       }
+      actions_correctives: {
+        Row: {
+          created_at: string
+          date_echeance: string | null
+          description: string | null
+          id: string
+          incident_id: string | null
+          priorite: string | null
+          responsable_id: string | null
+          statut: string | null
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_echeance?: string | null
+          description?: string | null
+          id?: string
+          incident_id?: string | null
+          priorite?: string | null
+          responsable_id?: string | null
+          statut?: string | null
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_echeance?: string | null
+          description?: string | null
+          id?: string
+          incident_id?: string | null
+          priorite?: string | null
+          responsable_id?: string | null
+          statut?: string | null
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actions_correctives_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_versions: {
         Row: {
           article_id: string
@@ -102,6 +149,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "article_versions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      articles_effets_juridiques: {
+        Row: {
+          article_id: string
+          created_at: string
+          date_effet: string
+          id: string
+          textes_articles: string[] | null
+          type_effet: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          date_effet: string
+          id?: string
+          textes_articles?: string[] | null
+          type_effet: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          date_effet?: string
+          id?: string
+          textes_articles?: string[] | null
+          type_effet?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_effets_juridiques_article_id_fkey"
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "textes_articles"
@@ -486,10 +568,13 @@ export type Database = {
       epi_articles: {
         Row: {
           client_id: string
+          code_article: string | null
           created_at: string | null
           date_achat: string | null
           epi_type_id: string | null
           id: string
+          marque: string | null
+          modele: string | null
           reference: string
           site_id: string | null
           statut: string | null
@@ -498,10 +583,13 @@ export type Database = {
         }
         Insert: {
           client_id: string
+          code_article?: string | null
           created_at?: string | null
           date_achat?: string | null
           epi_type_id?: string | null
           id?: string
+          marque?: string | null
+          modele?: string | null
           reference: string
           site_id?: string | null
           statut?: string | null
@@ -510,10 +598,13 @@ export type Database = {
         }
         Update: {
           client_id?: string
+          code_article?: string | null
           created_at?: string | null
           date_achat?: string | null
           epi_type_id?: string | null
           id?: string
+          marque?: string | null
+          modele?: string | null
           reference?: string
           site_id?: string | null
           statut?: string | null
@@ -687,26 +778,32 @@ export type Database = {
       }
       epi_types: {
         Row: {
+          categorie: string | null
           created_at: string | null
           description: string | null
           duree_vie_mois: number | null
           id: string
+          libelle: string | null
           nom: string
           norme: string | null
         }
         Insert: {
+          categorie?: string | null
           created_at?: string | null
           description?: string | null
           duree_vie_mois?: number | null
           id?: string
+          libelle?: string | null
           nom: string
           norme?: string | null
         }
         Update: {
+          categorie?: string | null
           created_at?: string | null
           description?: string | null
           duree_vie_mois?: number | null
           id?: string
+          libelle?: string | null
           nom?: string
           norme?: string | null
         }
@@ -1063,45 +1160,243 @@ export type Database = {
           },
         ]
       }
+      incident_causes: {
+        Row: {
+          created_at: string
+          id: string
+          incident_id: string
+          niveau: number
+          question: string
+          reponse: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          incident_id: string
+          niveau: number
+          question: string
+          reponse: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          incident_id?: string
+          niveau?: number
+          question?: string
+          reponse?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_causes_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_history: {
+        Row: {
+          created_at: string
+          field_name: string
+          id: string
+          incident_id: string
+          modified_by: string | null
+          new_value: string | null
+          old_value: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_name: string
+          id?: string
+          incident_id: string
+          modified_by?: string | null
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_name?: string
+          id?: string
+          incident_id?: string
+          modified_by?: string | null
+          new_value?: string | null
+          old_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_history_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_photos: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string
+          id: string
+          incident_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          incident_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          incident_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_photos_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
+          analyse_causes: string | null
+          arret_travail: boolean | null
+          atelier: string | null
+          batiment: string | null
+          categorie: string | null
+          circonstances: string | null
           client_id: string
           created_at: string | null
+          created_by: string | null
+          date_cloture: string | null
           date_incident: string
+          date_validation: string | null
+          declarant_fonction: string | null
+          declarant_id: string | null
+          declarant_nom: string | null
           description: string | null
+          est_recurrent: boolean | null
+          facteur_environnemental: boolean | null
+          facteur_humain: boolean | null
+          facteur_materiel: boolean | null
+          facteur_organisationnel: boolean | null
           gravite: string | null
+          heure_incident: string | null
+          hospitalisation: boolean | null
           id: string
           incident_type_id: string | null
+          jours_arret: number | null
+          mesures_correctives: string | null
+          numero_incident: string | null
+          personne_impliquee_id: string | null
+          personne_impliquee_nom: string | null
+          responsable_suivi_id: string | null
           site_id: string | null
           statut: string | null
           titre: string
+          type_incident: string | null
           updated_at: string | null
+          validateur_id: string | null
+          zone: string | null
         }
         Insert: {
+          analyse_causes?: string | null
+          arret_travail?: boolean | null
+          atelier?: string | null
+          batiment?: string | null
+          categorie?: string | null
+          circonstances?: string | null
           client_id: string
           created_at?: string | null
+          created_by?: string | null
+          date_cloture?: string | null
           date_incident: string
+          date_validation?: string | null
+          declarant_fonction?: string | null
+          declarant_id?: string | null
+          declarant_nom?: string | null
           description?: string | null
+          est_recurrent?: boolean | null
+          facteur_environnemental?: boolean | null
+          facteur_humain?: boolean | null
+          facteur_materiel?: boolean | null
+          facteur_organisationnel?: boolean | null
           gravite?: string | null
+          heure_incident?: string | null
+          hospitalisation?: boolean | null
           id?: string
           incident_type_id?: string | null
+          jours_arret?: number | null
+          mesures_correctives?: string | null
+          numero_incident?: string | null
+          personne_impliquee_id?: string | null
+          personne_impliquee_nom?: string | null
+          responsable_suivi_id?: string | null
           site_id?: string | null
           statut?: string | null
           titre: string
+          type_incident?: string | null
           updated_at?: string | null
+          validateur_id?: string | null
+          zone?: string | null
         }
         Update: {
+          analyse_causes?: string | null
+          arret_travail?: boolean | null
+          atelier?: string | null
+          batiment?: string | null
+          categorie?: string | null
+          circonstances?: string | null
           client_id?: string
           created_at?: string | null
+          created_by?: string | null
+          date_cloture?: string | null
           date_incident?: string
+          date_validation?: string | null
+          declarant_fonction?: string | null
+          declarant_id?: string | null
+          declarant_nom?: string | null
           description?: string | null
+          est_recurrent?: boolean | null
+          facteur_environnemental?: boolean | null
+          facteur_humain?: boolean | null
+          facteur_materiel?: boolean | null
+          facteur_organisationnel?: boolean | null
           gravite?: string | null
+          heure_incident?: string | null
+          hospitalisation?: boolean | null
           id?: string
           incident_type_id?: string | null
+          jours_arret?: number | null
+          mesures_correctives?: string | null
+          numero_incident?: string | null
+          personne_impliquee_id?: string | null
+          personne_impliquee_nom?: string | null
+          responsable_suivi_id?: string | null
           site_id?: string | null
           statut?: string | null
           titre?: string
+          type_incident?: string | null
           updated_at?: string | null
+          validateur_id?: string | null
+          zone?: string | null
         }
         Relationships: [
           {
@@ -1112,10 +1407,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "incidents_declarant_id_fkey"
+            columns: ["declarant_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "incidents_incident_type_id_fkey"
             columns: ["incident_type_id"]
             isOneToOne: false
             referencedRelation: "incidents_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_personne_impliquee_id_fkey"
+            columns: ["personne_impliquee_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_responsable_suivi_id_fkey"
+            columns: ["responsable_suivi_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
             referencedColumns: ["id"]
           },
           {
@@ -1844,6 +2160,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           nom: string
+          nom_site: string
           nombre_employes: number | null
           pays: string | null
           surface: number | null
@@ -1861,6 +2178,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           nom: string
+          nom_site: string
           nombre_employes?: number | null
           pays?: string | null
           surface?: number | null
@@ -1878,6 +2196,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           nom?: string
+          nom_site?: string
           nombre_employes?: number | null
           pays?: string | null
           surface?: number | null
