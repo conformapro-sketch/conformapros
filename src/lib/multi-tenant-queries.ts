@@ -16,43 +16,9 @@ supabase.auth.onAuthStateChange(() => {
   resetTenantCache();
 });
 
+// Tenant ID system not used - using client_id based access control instead
 export const getCurrentTenantId = async (): Promise<string> => {
-  if (cachedTenantId) {
-    return cachedTenantId;
-  }
-
-  if (!tenantIdPromise) {
-    tenantIdPromise = (async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) {
-        resetTenantCache();
-        throw userError;
-      }
-
-      if (!user) {
-        resetTenantCache();
-        throw new Error("Utilisateur non authentifié");
-      }
-
-      const { data, error } = await (supabase as any).rpc("get_user_tenant_id", {
-        _user_id: user.id,
-      });
-
-      if (error || !data) {
-        resetTenantCache();
-        throw error ?? new Error("Impossible de récupérer le tenant courant");
-      }
-
-      cachedTenantId = data as string;
-      return data as string;
-    })();
-  }
-
-  return tenantIdPromise;
+  throw new Error("Tenant system not implemented - use client_id based access");
 };
 
 const getCurrentUserId = async (): Promise<string | null> => {
@@ -85,26 +51,20 @@ type ClientInsert = Database["public"]["Tables"]["clients"]["Insert"];
 type ClientUpdate = Database["public"]["Tables"]["clients"]["Update"];
 
 export const fetchClients = async () => {
-  const tenantId = await getCurrentTenantId();
-
   const { data, error } = await (supabase as any)
     .from("clients")
     .select("*")
-    .eq("tenant_id", tenantId)
-    .order("nom_legal");
+    .order("nom");
   
   if (error) throw error;
   return data;
 };
 
 export const fetchClientById = async (clientId: string) => {
-  const tenantId = await getCurrentTenantId();
-
   const { data, error } = await supabase
     .from("clients")
     .select("*")
     .eq("id", clientId)
-    .eq("tenant_id", tenantId)
     .single();
   
   if (error) throw error;
@@ -112,16 +72,10 @@ export const fetchClientById = async (clientId: string) => {
 };
 
 export const createClient = async (client: ClientInsert) => {
-  const tenantId = await getCurrentTenantId();
-
   const payload: ClientInsert = {
     ...client,
-    tenant_id: tenantId,
     nom: client.nom ?? client.nom_legal ?? `Client ${new Date().getTime()}`,
     nom_legal: client.nom_legal ?? client.nom ?? "",
-    billing_mode: client.billing_mode ?? "client",
-    currency: client.currency ?? "TND",
-    is_active: client.is_active ?? true,
   };
 
   const { data, error } = await supabase
@@ -136,7 +90,6 @@ export const createClient = async (client: ClientInsert) => {
   await logAudit(actorId, data.id, "client_created", {
     client_id: data.id,
     nom_legal: data.nom_legal,
-    billing_mode: data.billing_mode,
   });
 
   return data;
@@ -197,7 +150,7 @@ type SiteUpdate = Database["public"]["Tables"]["sites"]["Update"];
 export const fetchSites = async () => {
   const { data, error } = await supabase
     .from("sites")
-    .select("*, clients!inner(nom_legal, tenant_id)")
+    .select("*, clients!inner(nom_legal)")
     .order("nom_site");
   
   if (error) throw error;
@@ -227,19 +180,10 @@ export const fetchSiteById = async (siteId: string) => {
 };
 
 export const createSite = async (site: SiteInsert) => {
-  // Fetch client's tenant_id for multi-tenant isolation
-  const { data: client } = await supabase
-    .from("clients")
-    .select("tenant_id")
-    .eq("id", site.client_id)
-    .single();
-
   const payload: SiteInsert = {
     ...site,
     nom: site.nom_site ?? site.nom ?? "",
     nom_site: site.nom_site ?? site.nom ?? "",
-    
-    tenant_id: client?.tenant_id ?? null,
   };
 
   const { data, error } = await supabase
