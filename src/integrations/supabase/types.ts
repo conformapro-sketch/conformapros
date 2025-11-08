@@ -73,6 +73,7 @@ export type Database = {
           created_by: string | null
           date_version: string
           id: string
+          is_active: boolean | null
           raison_modification: string | null
           version_numero: number
         }
@@ -83,6 +84,7 @@ export type Database = {
           created_by?: string | null
           date_version: string
           id?: string
+          is_active?: boolean | null
           raison_modification?: string | null
           version_numero: number
         }
@@ -93,6 +95,7 @@ export type Database = {
           created_by?: string | null
           date_version?: string
           id?: string
+          is_active?: boolean | null
           raison_modification?: string | null
           version_numero?: number
         }
@@ -267,27 +270,72 @@ export type Database = {
         }
         Relationships: []
       }
+      codes_domaines: {
+        Row: {
+          code_id: string
+          created_at: string
+          domaine_id: string
+          id: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          domaine_id: string
+          id?: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          domaine_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "codes_domaines_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "codes_juridiques"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "codes_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       codes_juridiques: {
         Row: {
+          abreviation: string | null
           code: string
           created_at: string | null
           description: string | null
           id: string
+          nom_officiel: string | null
           titre: string
+          updated_at: string | null
         }
         Insert: {
+          abreviation?: string | null
           code: string
           created_at?: string | null
           description?: string | null
           id?: string
+          nom_officiel?: string | null
           titre: string
+          updated_at?: string | null
         }
         Update: {
+          abreviation?: string | null
           code?: string
           created_at?: string | null
           description?: string | null
           id?: string
+          nom_officiel?: string | null
           titre?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -379,6 +427,7 @@ export type Database = {
           date_embauche: string | null
           email: string | null
           id: string
+          matricule: string | null
           nom: string
           numero_securite_sociale: string | null
           poste: string | null
@@ -393,6 +442,7 @@ export type Database = {
           date_embauche?: string | null
           email?: string | null
           id?: string
+          matricule?: string | null
           nom: string
           numero_securite_sociale?: string | null
           poste?: string | null
@@ -407,6 +457,7 @@ export type Database = {
           date_embauche?: string | null
           email?: string | null
           id?: string
+          matricule?: string | null
           nom?: string
           numero_securite_sociale?: string | null
           poste?: string | null
@@ -579,6 +630,54 @@ export type Database = {
           },
           {
             foreignKeyName: "epi_dotations_epi_article_id_fkey"
+            columns: ["epi_article_id"]
+            isOneToOne: false
+            referencedRelation: "epi_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epi_mouvements: {
+        Row: {
+          created_at: string
+          date_mouvement: string
+          employe_id: string
+          epi_article_id: string
+          id: string
+          quantite: number
+          remarque: string | null
+          type_mouvement: string
+        }
+        Insert: {
+          created_at?: string
+          date_mouvement?: string
+          employe_id: string
+          epi_article_id: string
+          id?: string
+          quantite?: number
+          remarque?: string | null
+          type_mouvement: string
+        }
+        Update: {
+          created_at?: string
+          date_mouvement?: string
+          employe_id?: string
+          epi_article_id?: string
+          id?: string
+          quantite?: number
+          remarque?: string | null
+          type_mouvement?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epi_mouvements_employe_id_fkey"
+            columns: ["employe_id"]
+            isOneToOne: false
+            referencedRelation: "employes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epi_mouvements_epi_article_id_fkey"
             columns: ["epi_article_id"]
             isOneToOne: false
             referencedRelation: "epi_articles"
@@ -1340,6 +1439,59 @@ export type Database = {
           },
         ]
       }
+      prestataires: {
+        Row: {
+          adresse: string | null
+          client_id: string
+          code_postal: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nom: string
+          siret: string | null
+          telephone: string | null
+          type_prestation: string
+          updated_at: string
+          ville: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          client_id: string
+          code_postal?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nom: string
+          siret?: string | null
+          telephone?: string | null
+          type_prestation: string
+          updated_at?: string
+          ville?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          client_id?: string
+          code_postal?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nom?: string
+          siret?: string | null
+          telephone?: string | null
+          type_prestation?: string
+          updated_at?: string
+          ville?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prestataires_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1865,6 +2017,45 @@ export type Database = {
           },
         ]
       }
+      textes_codes: {
+        Row: {
+          code_id: string
+          created_at: string
+          id: string
+          texte_id: string
+          type_relation: string | null
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          id?: string
+          texte_id: string
+          type_relation?: string | null
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          id?: string
+          texte_id?: string
+          type_relation?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textes_codes_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "codes_juridiques"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textes_codes_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       textes_reglementaires: {
         Row: {
           created_at: string
@@ -2058,9 +2249,90 @@ export type Database = {
           },
         ]
       }
+      visites_medicales_documents: {
+        Row: {
+          created_at: string
+          date_document: string | null
+          id: string
+          titre: string
+          type_document: string
+          uploaded_by: string | null
+          url_document: string
+          visite_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_document?: string | null
+          id?: string
+          titre: string
+          type_document: string
+          uploaded_by?: string | null
+          url_document: string
+          visite_id: string
+        }
+        Update: {
+          created_at?: string
+          date_document?: string | null
+          id?: string
+          titre?: string
+          type_document?: string
+          uploaded_by?: string | null
+          url_document?: string
+          visite_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visites_medicales_documents_visite_id_fkey"
+            columns: ["visite_id"]
+            isOneToOne: false
+            referencedRelation: "visites_medicales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      equipements_controle: {
+        Row: {
+          created_at: string | null
+          date_controle: string | null
+          date_prochain_controle: string | null
+          equipement_id: string | null
+          id: string | null
+          organisme_controle: string | null
+          resultat: string | null
+          type_controle: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_controle?: string | null
+          date_prochain_controle?: string | null
+          equipement_id?: string | null
+          id?: string | null
+          organisme_controle?: string | null
+          resultat?: string | null
+          type_controle?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_controle?: string | null
+          date_prochain_controle?: string | null
+          equipement_id?: string | null
+          id?: string | null
+          organisme_controle?: string | null
+          resultat?: string | null
+          type_controle?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipements_controles_equipement_id_fkey"
+            columns: ["equipement_id"]
+            isOneToOne: false
+            referencedRelation: "equipements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_client_access: {
