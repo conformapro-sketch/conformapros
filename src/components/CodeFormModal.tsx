@@ -27,7 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { codesQueries } from "@/lib/codes-queries";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { CodeJuridique } from "@/types/codes";
 
 const codeSchema = z.object({

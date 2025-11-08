@@ -42,7 +42,7 @@ import { EffetsCreesTab } from "@/components/EffetsCreesTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
 import { changelogQueries } from "@/lib/actes-queries";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";

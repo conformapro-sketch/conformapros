@@ -8,7 +8,7 @@ import { Stethoscope, AlertCircle, Calendar, CheckCircle2, TrendingUp, Users } f
 import { useState } from "react";
 import { MedicalVisitFormDrawer } from "@/components/MedicalVisitFormDrawer";
 import { fetchMedicalVisitsStats, fetchUpcomingVisits } from "@/lib/medical-queries";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { format } from "date-fns";
@@ -141,7 +141,7 @@ export default function VisitesMedicalesDashboard() {
 
   const medecinData = dashboardStats?.statsByMedecin
     ? Object.entries(dashboardStats.statsByMedecin)
-        .sort(([, a], [, b]) => b - a)
+        .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 10)
     : [];
 
@@ -285,7 +285,7 @@ export default function VisitesMedicalesDashboard() {
                     className="flex items-center justify-between"
                   >
                     <span className="text-sm">{medecin}</span>
-                    <Badge variant="secondary">{count}</Badge>
+                    <Badge variant="secondary">{count as number}</Badge>
                   </div>
                 ))
               ) : (
