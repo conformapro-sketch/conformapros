@@ -601,6 +601,35 @@ export type Database = {
           },
         ]
       }
+      delegations: {
+        Row: {
+          created_at: string | null
+          gouvernorat_id: string
+          id: string
+          nom: string
+        }
+        Insert: {
+          created_at?: string | null
+          gouvernorat_id: string
+          id?: string
+          nom: string
+        }
+        Update: {
+          created_at?: string | null
+          gouvernorat_id?: string
+          id?: string
+          nom?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delegations_gouvernorat_id_fkey"
+            columns: ["gouvernorat_id"]
+            isOneToOne: false
+            referencedRelation: "gouvernorats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       domaines_reglementaires: {
         Row: {
           code: string
@@ -1306,6 +1335,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gouvernorats: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          nom: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          nom: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          nom?: string
+        }
+        Relationships: []
       }
       incident_causes: {
         Row: {
