@@ -383,7 +383,6 @@ export type Database = {
           siret: string | null
           telephone: string | null
           updated_at: string
-          ville: string | null
         }
         Insert: {
           adresse?: string | null
@@ -398,7 +397,6 @@ export type Database = {
           siret?: string | null
           telephone?: string | null
           updated_at?: string
-          ville?: string | null
         }
         Update: {
           adresse?: string | null
@@ -413,7 +411,6 @@ export type Database = {
           siret?: string | null
           telephone?: string | null
           updated_at?: string
-          ville?: string | null
         }
         Relationships: []
       }
@@ -2021,7 +2018,6 @@ export type Database = {
           telephone: string | null
           type_prestation: string
           updated_at: string
-          ville: string | null
         }
         Insert: {
           adresse?: string | null
@@ -2035,7 +2031,6 @@ export type Database = {
           telephone?: string | null
           type_prestation: string
           updated_at?: string
-          ville?: string | null
         }
         Update: {
           adresse?: string | null
@@ -2049,7 +2044,6 @@ export type Database = {
           telephone?: string | null
           type_prestation?: string
           updated_at?: string
-          ville?: string | null
         }
         Relationships: [
           {
@@ -2429,7 +2423,6 @@ export type Database = {
           surface: number | null
           telephone: string | null
           updated_at: string
-          ville: string
         }
         Insert: {
           activite?: string | null
@@ -2457,7 +2450,6 @@ export type Database = {
           surface?: number | null
           telephone?: string | null
           updated_at?: string
-          ville: string
         }
         Update: {
           activite?: string | null
@@ -2485,7 +2477,6 @@ export type Database = {
           surface?: number | null
           telephone?: string | null
           updated_at?: string
-          ville?: string
         }
         Relationships: [
           {

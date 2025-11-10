@@ -61,7 +61,6 @@ const siteSchema = z.object({
   delegation: z.string().optional(),
   localite: z.string().optional(),
   code_postal: z.string().optional(),
-  ville: z.string().optional(),
   latitude: z.coerce.number().optional().nullable(),
   longitude: z.coerce.number().optional().nullable(),
   nombre_employes: z.coerce.number().int().min(0).optional().nullable(),
@@ -239,7 +238,6 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
           delegation: site.delegation || "",
           localite: site.localite || "",
           code_postal: site.code_postal || "",
-          ville: site.ville || "",
           latitude: site.latitude ? Number(site.latitude) : null,
           longitude: site.longitude ? Number(site.longitude) : null,
           nombre_employes: site.nombre_employes || 0,
@@ -261,7 +259,6 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
           delegation: "",
           localite: "",
           code_postal: "",
-          ville: "",
           nombre_employes: null,
           surface: null,
           activite: "",
@@ -292,7 +289,6 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       if (data.gouvernorat?.trim()) cleanData.gouvernorat = data.gouvernorat.trim();
       if (data.delegation?.trim()) cleanData.delegation = data.delegation.trim();
       if (data.localite?.trim()) cleanData.localite = data.localite.trim();
-      if (data.ville?.trim()) cleanData.ville = data.ville.trim();
       if (data.code_postal?.trim()) cleanData.code_postal = data.code_postal.trim();
       if (data.latitude) cleanData.latitude = data.latitude;
       if (data.longitude) cleanData.longitude = data.longitude;
@@ -338,7 +334,6 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       if (data.gouvernorat?.trim()) cleanData.gouvernorat = data.gouvernorat.trim();
       if (data.delegation?.trim()) cleanData.delegation = data.delegation.trim();
       if (data.localite?.trim()) cleanData.localite = data.localite.trim();
-      if (data.ville?.trim()) cleanData.ville = data.ville.trim();
       if (data.code_postal?.trim()) cleanData.code_postal = data.code_postal.trim();
       if (data.latitude) cleanData.latitude = data.latitude;
       if (data.longitude) cleanData.longitude = data.longitude;
@@ -669,11 +664,16 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                     )}
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="localite">Localité</Label>
+                  <Input id="localite" {...register("localite")} placeholder="Ex: Bardo" />
+                </div>
               </div>
 
               <div>
                 <Label htmlFor="code_postal">Code postal</Label>
-                <Input id="code_postal" {...register("code_postal")} />
+                <Input id="code_postal" {...register("code_postal")} placeholder="Ex: 1000" />
               </div>
 
               <div className="flex items-center space-x-2 pt-2">

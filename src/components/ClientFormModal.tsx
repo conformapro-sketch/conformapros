@@ -21,7 +21,6 @@ const clientSchema = z.object({
   telephone: z.string().optional(),
   email: z.string().email("Format email invalide").optional().or(z.literal("")),
   adresse: z.string().optional(),
-  ville: z.string().optional(),
   code_postal: z.string().optional(),
   pays: z.string().optional(),
   logo_url: z.string().optional(),
@@ -58,7 +57,6 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
         telephone: client.telephone || "",
         email: client.email || "",
         adresse: client.adresse || "",
-        ville: client.ville || "",
         code_postal: client.code_postal || "",
         pays: client.pays || "Tunisie",
         logo_url: client.logo_url || "",
@@ -177,15 +175,6 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
                 {...register("adresse")} 
                 placeholder="Adresse complète"
                 rows={2}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="ville">Ville</Label>
-              <Input 
-                id="ville" 
-                {...register("ville")} 
-                placeholder="Ex: Tunis"
               />
             </div>
 

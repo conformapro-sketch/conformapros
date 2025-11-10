@@ -120,7 +120,6 @@ export default function ClientDetail() {
             <div>
               <h1 className="text-3xl font-semibold">{client.nom_legal}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                {client.ville && <Badge variant="outline">{client.ville}</Badge>}
                 {client.pays && <Badge variant="secondary">{client.pays}</Badge>}
               </div>
             </div>
@@ -252,10 +251,12 @@ export default function ClientDetail() {
                     <Users className="h-6 w-6 text-muted-foreground" />
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{site.ville ?? "—"}</span>
-                    </div>
+                    {site.gouvernorat && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{site.gouvernorat}{site.delegation ? ` - ${site.delegation}` : ""}</span>
+                      </div>
+                    )}
                     {site.nombre_employes && (
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4" />

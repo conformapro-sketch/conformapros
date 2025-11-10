@@ -224,7 +224,6 @@ export interface Prestataire {
   siret?: string;
   adresse?: string;
   code_postal?: string;
-  ville?: string;
   telephone?: string;
   email?: string;
   contact_principal?: string;
