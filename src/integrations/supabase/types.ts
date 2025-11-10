@@ -2399,10 +2399,10 @@ export type Database = {
       sites: {
         Row: {
           activite: string | null
-          adresse: string
+          adresse: string | null
           classification: string | null
           client_id: string
-          code_postal: string
+          code_postal: string | null
           code_site: string | null
           created_at: string
           delegation: string | null
@@ -2426,10 +2426,10 @@ export type Database = {
         }
         Insert: {
           activite?: string | null
-          adresse: string
+          adresse?: string | null
           classification?: string | null
           client_id: string
-          code_postal: string
+          code_postal?: string | null
           code_site?: string | null
           created_at?: string
           delegation?: string | null
@@ -2453,10 +2453,10 @@ export type Database = {
         }
         Update: {
           activite?: string | null
-          adresse?: string
+          adresse?: string | null
           classification?: string | null
           client_id?: string
-          code_postal?: string
+          code_postal?: string | null
           code_site?: string | null
           created_at?: string
           delegation?: string | null
