@@ -138,7 +138,9 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
             </div>
 
             <div>
-              <Label htmlFor="siret">SIRET / Matricule fiscal</Label>
+              <Label htmlFor="siret">
+                SIRET / Matricule fiscal <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+              </Label>
               <Input 
                 id="siret" 
                 {...register("siret")} 
@@ -147,7 +149,9 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
             </div>
 
             <div>
-              <Label htmlFor="telephone">Téléphone</Label>
+              <Label htmlFor="telephone">
+                Téléphone <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+              </Label>
               <Input 
                 id="telephone" 
                 {...register("telephone")} 
@@ -156,7 +160,9 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
             </div>
 
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">
+                Email <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+              </Label>
               <Input 
                 id="email" 
                 type="email"
@@ -169,7 +175,9 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
             </div>
 
             <div className="col-span-2">
-              <Label htmlFor="adresse">Adresse</Label>
+              <Label htmlFor="adresse">
+                Adresse <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+              </Label>
               <Textarea 
                 id="adresse" 
                 {...register("adresse")} 
@@ -179,7 +187,9 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
             </div>
 
             <div>
-              <Label htmlFor="code_postal">Code postal</Label>
+              <Label htmlFor="code_postal">
+                Code postal <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+              </Label>
               <Input 
                 id="code_postal" 
                 {...register("code_postal")} 
@@ -188,7 +198,9 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
             </div>
 
             <div>
-              <Label htmlFor="pays">Pays</Label>
+              <Label htmlFor="pays">
+                Pays <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+              </Label>
               <Input 
                 id="pays" 
                 {...register("pays")} 

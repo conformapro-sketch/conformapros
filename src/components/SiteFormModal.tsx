@@ -542,7 +542,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="nom_site">Nom du site *</Label>
+                  <Label htmlFor="nom_site">
+                    Nom du site <span className="text-destructive">*</span>
+                  </Label>
                   <Input id="nom_site" {...register("nom_site")} />
                   {errors.nom_site && (
                     <p className="text-sm text-destructive mt-1">{errors.nom_site.message}</p>
@@ -550,7 +552,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                 </div>
 
                 <div>
-                  <Label htmlFor="code_site">Code site *</Label>
+                  <Label htmlFor="code_site">
+                    Code site <span className="text-destructive">*</span>
+                  </Label>
                   <Input id="code_site" {...register("code_site")} placeholder="SITE-001" />
                   {errors.code_site && (
                     <p className="text-sm text-destructive mt-1">{errors.code_site.message}</p>
@@ -558,7 +562,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                 </div>
 
                 <div>
-                  <Label htmlFor="classification">Classification</Label>
+                  <Label htmlFor="classification">
+                    Classification <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                  </Label>
                   <Controller
                     name="classification"
                     control={control}
@@ -580,7 +586,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                 </div>
 
                 <div>
-                  <Label htmlFor="secteur_activite">Secteur d'activité</Label>
+                  <Label htmlFor="secteur_activite">
+                    Secteur d'activité <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                  </Label>
                   <Controller
                     name="secteur_activite"
                     control={control}
@@ -603,13 +611,17 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
               </div>
 
               <div>
-                <Label htmlFor="adresse">Adresse</Label>
+                <Label htmlFor="adresse">
+                  Adresse <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                </Label>
                 <Textarea id="adresse" {...register("adresse")} rows={2} />
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="gouvernorat">Gouvernorat</Label>
+                  <Label htmlFor="gouvernorat">
+                    Gouvernorat <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                  </Label>
                   <Controller
                     name="gouvernorat"
                     control={control}
@@ -637,7 +649,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                 </div>
 
                 <div>
-                  <Label htmlFor="delegation">Délégation</Label>
+                  <Label htmlFor="delegation">
+                    Délégation <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                  </Label>
                   <Controller
                     name="delegation"
                     control={control}
@@ -666,13 +680,17 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                 </div>
 
                 <div>
-                  <Label htmlFor="localite">Localité</Label>
+                  <Label htmlFor="localite">
+                    Localité <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                  </Label>
                   <Input id="localite" {...register("localite")} placeholder="Ex: Bardo" />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="code_postal">Code postal</Label>
+                <Label htmlFor="code_postal">
+                  Code postal <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                </Label>
                 <Input id="code_postal" {...register("code_postal")} placeholder="Ex: 1000" />
               </div>
 
@@ -701,7 +719,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
             <TabsContent value="activite" className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="nombre_employes">Effectif</Label>
+                  <Label htmlFor="nombre_employes">
+                    Effectif <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                  </Label>
                   <Input
                     id="nombre_employes"
                     type="number"
@@ -711,7 +731,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                 </div>
 
                 <div>
-                  <Label htmlFor="surface">Superficie (m²)</Label>
+                  <Label htmlFor="surface">
+                    Superficie (m²) <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                  </Label>
                   <Input
                     id="surface"
                     type="number"
@@ -723,7 +745,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
               </div>
 
               <div>
-                <Label htmlFor="activite">Activités</Label>
+                <Label htmlFor="activite">
+                  Activités <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+                </Label>
                 <Textarea
                   id="activite"
                   {...register("activite")}
