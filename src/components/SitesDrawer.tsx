@@ -2,11 +2,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, MapPin, Users, Factory, Pencil, Trash2, FileText } from "lucide-react";
+import { Plus, MapPin, Users, Factory, Pencil, Trash2, FileText, Package } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSitesByClient, deleteSite } from "@/lib/multi-tenant-queries";
 import { SiteFormModal } from "./SiteFormModal";
+import { SiteModulesManager } from "./SiteModulesManager";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { Database } from "@/types/db";
@@ -27,6 +28,8 @@ export function SitesDrawer({ open, onOpenChange, clientId, clientName, brandCol
   const [siteFormOpen, setSiteFormOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<SiteRow | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [modulesManagerOpen, setModulesManagerOpen] = useState(false);
+  const [selectedSiteForModules, setSelectedSiteForModules] = useState<{ id: string; name: string } | null>(null);
 
   const { data: sites, isLoading } = useQuery({
     queryKey: ["sites", clientId],
@@ -54,6 +57,11 @@ export function SitesDrawer({ open, onOpenChange, clientId, clientName, brandCol
   const handleEdit = (site: SiteRow) => {
     setEditingSite(site);
     setSiteFormOpen(true);
+  };
+
+  const handleManageModules = (site: SiteRow) => {
+    setSelectedSiteForModules({ id: site.id, name: site.nom_site });
+    setModulesManagerOpen(true);
   };
 
   const handleDelete = (id: string) => {
@@ -161,7 +169,16 @@ export function SitesDrawer({ open, onOpenChange, clientId, clientName, brandCol
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleManageModules(site)}
+                              title="Gérer les modules"
+                            >
+                              <Package className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEdit(site)}
+                              title="Modifier"
                             >
                               <Pencil className="h-3 w-3" />
                             </Button>
@@ -170,6 +187,7 @@ export function SitesDrawer({ open, onOpenChange, clientId, clientName, brandCol
                               size="sm"
                               onClick={() => handleDelete(site.id)}
                               className="text-destructive hover:text-destructive"
+                              title="Supprimer"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -210,6 +228,18 @@ export function SitesDrawer({ open, onOpenChange, clientId, clientName, brandCol
         site={editingSite}
         clientId={clientId}
       />
+
+      {selectedSiteForModules && (
+        <SiteModulesManager
+          siteId={selectedSiteForModules.id}
+          siteName={selectedSiteForModules.name}
+          open={modulesManagerOpen}
+          onOpenChange={(open) => {
+            setModulesManagerOpen(open);
+            if (!open) setSelectedSiteForModules(null);
+          }}
+        />
+      )}
 
       <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
         <AlertDialogContent>
