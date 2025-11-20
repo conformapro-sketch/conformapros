@@ -2361,23 +2361,32 @@ export type Database = {
         Row: {
           actif: boolean | null
           created_at: string | null
+          disabled_at: string | null
+          enabled_at: string | null
           id: string
           module_id: string
           site_id: string
+          updated_at: string | null
         }
         Insert: {
           actif?: boolean | null
           created_at?: string | null
+          disabled_at?: string | null
+          enabled_at?: string | null
           id?: string
           module_id: string
           site_id: string
+          updated_at?: string | null
         }
         Update: {
           actif?: boolean | null
           created_at?: string | null
+          disabled_at?: string | null
+          enabled_at?: string | null
           id?: string
           module_id?: string
           site_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -2802,6 +2811,35 @@ export type Database = {
           },
         ]
       }
+      user_sites: {
+        Row: {
+          created_at: string
+          id: string
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sites_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visites_medicales: {
         Row: {
           commentaires: string | null
@@ -2947,6 +2985,27 @@ export type Database = {
       }
     }
     Functions: {
+      get_site_enabled_modules: {
+        Args: { _site_id: string }
+        Returns: {
+          code: string
+          couleur: string
+          description: string
+          icon: string
+          libelle: string
+          module_id: string
+          ordre: number
+        }[]
+      }
+      get_user_sites: {
+        Args: { _user_id: string }
+        Returns: {
+          client_id: string
+          client_name: string
+          site_id: string
+          site_name: string
+        }[]
+      }
       has_client_access: {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean
@@ -2954,6 +3013,10 @@ export type Database = {
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       has_site_access: {
         Args: { _site_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_module_enabled_for_site: {
+        Args: { _module_id: string; _site_id: string }
         Returns: boolean
       }
     }

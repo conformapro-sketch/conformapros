@@ -38,6 +38,7 @@ import {
   UserPlus,
   UserX,
 } from "lucide-react";
+import { UserSitesManager } from "@/components/UserSitesManager";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -76,6 +77,8 @@ export function ClientUserManagementSection({ clientId, clientName }: ClientUser
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [sitesManagerOpen, setSitesManagerOpen] = useState(false);
+  const [selectedUserForSites, setSelectedUserForSites] = useState<{ id: string; email: string } | null>(null);
 
   const { data: sites = [] } = useQuery({
     queryKey: ["client-sites", clientId],
@@ -343,12 +346,19 @@ export function ClientUserManagementSection({ clientId, clientName }: ClientUser
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUserForSites({ id: user.id, email: user.email });
+                              setSitesManagerOpen(true);
+                            }}
+                          >
+                            <Building2 className="h-4 w-4 mr-1" />
                             <span>
                               {sitesCount} site{sitesCount > 1 ? "s" : ""}
                             </span>
-                          </div>
+                          </Button>
                         </TableCell>
                         <TableCell>
                           {user.actif ? (
@@ -441,6 +451,19 @@ export function ClientUserManagementSection({ clientId, clientName }: ClientUser
         clientId={clientId}
         user={editingUser}
       />
+
+      {selectedUserForSites && (
+        <UserSitesManager
+          userId={selectedUserForSites.id}
+          userEmail={selectedUserForSites.email}
+          clientId={clientId}
+          open={sitesManagerOpen}
+          onOpenChange={(open) => {
+            setSitesManagerOpen(open);
+            if (!open) setSelectedUserForSites(null);
+          }}
+        />
+      )}
     </div>
   );
 }
