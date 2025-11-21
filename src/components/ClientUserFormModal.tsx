@@ -149,7 +149,8 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       }
       setEmailCheckStatus('idle');
     }
-  }, [open, user, effectiveClientId, reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user, effectiveClientId]);
 
   const selectedClientId = watch("client_id");
   const selectedSiteIds = watch("siteIds");
@@ -197,7 +198,8 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
 
     const timer = setTimeout(checkEmail, 500);
     return () => clearTimeout(timer);
-  }, [emailValue, user, setError, clearErrors]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailValue, user]);
 
   // Fetch sites for the selected client
   const { data: sites = [] } = useQuery({
