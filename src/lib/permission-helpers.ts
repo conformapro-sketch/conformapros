@@ -129,3 +129,14 @@ export async function getActionId(actionCode: string): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Check if user can access client management functionality
+ * This centralizes the permission check for CLIENTS module
+ */
+export function canAccessClientManagement(
+  hasPermission: (module: string, action: string) => boolean,
+  isSuperAdmin: () => boolean
+): boolean {
+  return isSuperAdmin() || hasPermission('CLIENTS', 'view');
+}

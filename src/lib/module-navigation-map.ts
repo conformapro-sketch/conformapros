@@ -39,7 +39,7 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
   BIBLIOTHEQUE: {
     icon: Library,
     subItems: [
-      { title: "Tableau de bord", url: "/bibliotheque/dashbord" },
+      { title: "Tableau de bord", url: "/bibliotheque/dashboard" },
       { title: "Domaines", url: "/bibliotheque/domain" },
       { title: "Textes & articles", url: "/bibliotheque/" },
       { title: "Codes juridiques", url: "/codes-juridiques" },
