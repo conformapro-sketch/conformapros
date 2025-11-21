@@ -102,10 +102,10 @@ Deno.serve(async (req) => {
       throw new Error('You do not have permission to invite users for this client')
     }
 
-    // Get client to retrieve tenant_id
+    // Verify client exists
     const { data: client, error: clientError } = await supabaseClient
       .from('clients')
-      .select('tenant_id, nom')
+      .select('id, nom')
       .eq('id', clientId)
       .single()
 
@@ -114,8 +114,7 @@ Deno.serve(async (req) => {
       throw new Error('Client not found')
     }
 
-    const finalTenantId = tenantId || client.tenant_id
-    console.log('invite-client-user: Using tenant_id', finalTenantId)
+    console.log('invite-client-user: Client verified', client.nom)
 
     // Check if user already exists
     const { data: existingUser, error: checkError } = await supabaseAdmin.auth.admin.listUsers()
@@ -144,7 +143,6 @@ Deno.serve(async (req) => {
         .upsert({ 
           id: userId,
           email,
-          tenant_id: finalTenantId,
           client_id: clientId,
           is_client_admin: is_client_admin || false,
           nom,
@@ -190,7 +188,6 @@ Deno.serve(async (req) => {
           nom,
           prenom,
           telephone: telephone || null,
-          tenant_id: finalTenantId,
           client_id: clientId,
           is_client_admin: is_client_admin || false,
           actif: true
@@ -234,12 +231,11 @@ Deno.serve(async (req) => {
 
     // Create access_scopes for specified sites
     if (siteIds && siteIds.length > 0) {
-      console.log('invite-client-user: Creating access scopes', { userId, siteIds, tenantId: finalTenantId })
+      console.log('invite-client-user: Creating access scopes', { userId, siteIds })
       
       const accessScopes = siteIds.map(siteId => ({
         user_id: userId,
         site_id: siteId,
-        tenant_id: finalTenantId,
         created_by: callingUser.id,
         read_only: false
       }))
@@ -271,7 +267,7 @@ Deno.serve(async (req) => {
     // Get admin user info for audit logging
     const { data: adminUser, error: adminUserError } = await supabaseAdmin
       .from('client_users')
-      .select('id, email, client_id, tenant_id')
+      .select('id, email, client_id')
       .eq('id', callingUser.id)
       .single()
 
@@ -279,7 +275,7 @@ Deno.serve(async (req) => {
       console.error('invite-client-user: Failed to get admin user for audit', adminUserError)
     }
 
-    // Log audit trail to role_audit_logs using actual tenant_id
+    // Log audit trail to role_audit_logs
     const { error: auditError } = await supabaseAdmin
       .from('role_audit_logs')
       .insert({
@@ -294,10 +290,8 @@ Deno.serve(async (req) => {
           clientId,
           is_client_admin: is_client_admin || false,
           siteIds: siteIds || [],
-          tenantId: finalTenantId,
           passwordSet: !!password
-        },
-        tenant_id: finalTenantId
+        }
       })
 
     if (auditError) {
