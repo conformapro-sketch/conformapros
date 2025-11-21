@@ -3026,6 +3026,32 @@ export type Database = {
       }
     }
     Functions: {
+      get_all_client_users: {
+        Args: {
+          filter_client_id?: string
+          filter_status?: string
+          page_num?: number
+          page_size?: number
+          search_term?: string
+        }
+        Returns: {
+          actif: boolean
+          avatar_url: string
+          client_data: Json
+          client_id: string
+          created_at: string
+          email: string
+          id: string
+          is_client_admin: boolean
+          nom: string
+          prenom: string
+          roles_data: Json
+          sites_data: Json
+          telephone: string
+          total_count: number
+          updated_at: string
+        }[]
+      }
       get_site_enabled_modules: {
         Args: { _site_id: string }
         Returns: {

@@ -461,7 +461,7 @@ export const fetchAccessScopesByUser = async (utilisateurId: string) => {
       *,
       sites(nom_site, client_id, clients(nom_legal))
     `)
-    .eq("utilisateur_id", utilisateurId);
+    .eq("user_id", utilisateurId);
   
   if (error) throw error;
   return data;
@@ -514,7 +514,7 @@ export const deleteAccessScope = async (scopeId: string) => {
 
 export const grantSiteAccess = async (utilisateurId: string, siteId: string, readOnly: boolean = false) => {
   return createAccessScope({
-    utilisateur_id: utilisateurId,
+    user_id: utilisateurId,
     site_id: siteId,
     read_only: readOnly,
   });
@@ -524,7 +524,7 @@ export const revokeSiteAccess = async (utilisateurId: string, siteId: string) =>
   const { error } = await supabase
     .from("access_scopes")
     .delete()
-    .eq("utilisateur_id", utilisateurId)
+    .eq("user_id", utilisateurId)
     .eq("site_id", siteId);
   
   if (error) throw error;
@@ -1169,8 +1169,7 @@ export const updateClientUserAccess = async (
 export const fetchAllClients = async () => {
   const { data, error } = await supabase
     .from("clients")
-    .select("id, nom, nom_legal, is_active")
-    .eq("is_active", true)
+    .select("id, nom, nom_legal")
     .order("nom");
   
   if (error) throw error;
