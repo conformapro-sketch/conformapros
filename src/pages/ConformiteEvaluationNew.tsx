@@ -435,7 +435,6 @@ export default function ConformiteEvaluationNew() {
       const { data, error } = await supabase
         .from('clients')
         .select('id, nom, nom_legal')
-        .eq('is_active', true)
         .order('nom');
       if (error) throw error;
       return data || [];
