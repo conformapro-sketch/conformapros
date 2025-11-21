@@ -21,7 +21,10 @@ import {
   Mail,
   Filter,
   Settings,
-  Trash2
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  Clock
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClientUsers, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
@@ -56,6 +59,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UserAvatar } from "@/components/UserAvatar";
+import { UserTableSkeleton } from "@/components/UserTableSkeleton";
+import { cn } from "@/lib/utils";
 
 export default function ClientUsers() {
   const { toast } = useToast();
@@ -358,9 +364,7 @@ export default function ClientUsers() {
 
       {/* Users table */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
+        <UserTableSkeleton />
       ) : filteredUsers.length > 0 ? (
         <Card className="shadow-soft">
           <CardContent className="p-0">
@@ -378,114 +382,226 @@ export default function ClientUsers() {
                 <TableBody>
                   {filteredUsers.map((user) => {
                     const userSites = user.access_scopes || [];
+                    const siteCount = userSites.length;
 
                     return (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {user.nom} {user.prenom}
-                            {user.is_client_admin && (
-                              <Badge variant="default" className="text-xs">
-                                <Shield className="h-3 w-3 mr-1" />
-                                Admin
-                              </Badge>
+                      <TableRow 
+                        key={user.id}
+                        className="group hover:bg-muted/50 transition-colors"
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <UserAvatar
+                              nom={user.nom}
+                              prenom={user.prenom}
+                              avatarUrl={user.avatar_url}
+                            />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">
+                                  {user.prenom} {user.nom}
+                                </span>
+                                {user.is_client_admin && (
+                                  <Badge variant="default" className="text-xs bg-primary/10 text-primary border-primary/20">
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    Admin
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Créé le {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="text-sm">{user.email}</div>
+                            {user.telephone && (
+                              <div className="text-xs text-muted-foreground">{user.telephone}</div>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-2 cursor-help">
                                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm">
-                                    {userSites.length} site{userSites.length > 1 ? 's' : ''}
-                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium">{siteCount}</span>
+                                    <Badge 
+                                      variant="secondary" 
+                                      className={cn(
+                                        "text-xs",
+                                        siteCount === 0 && "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
+                                      )}
+                                    >
+                                      {siteCount === 0 ? "Aucun accès" : `${siteCount} site${siteCount > 1 ? 's' : ''}`}
+                                    </Badge>
+                                  </div>
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                {userSites.length > 0 ? (
-                                  <ul className="space-y-1">
-                                    {userSites.map((as: any) => (
-                                      <li key={as.site_id} className="text-sm">
-                                        • {as.sites?.nom_site}
-                                        {as.read_only && (
-                                          <span className="text-muted-foreground ml-1">(lecture seule)</span>
-                                        )}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="text-sm">Aucun site</p>
-                                )}
+                              <TooltipContent side="left" className="max-w-md bg-background border shadow-lg">
+                                <div className="space-y-3 p-1">
+                                  <div className="flex items-center gap-2 pb-2 border-b">
+                                    <Building2 className="h-4 w-4 text-primary" />
+                                    <h4 className="font-semibold text-sm">Sites autorisés</h4>
+                                  </div>
+                                  {siteCount > 0 ? (
+                                    <ul className="space-y-2">
+                                      {userSites.map((as: any) => (
+                                        <li key={as.site_id} className="flex items-start gap-2 text-sm">
+                                          <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                                          <div className="flex-1">
+                                            <div className="font-medium">{as.sites?.nom_site}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                              Code: {as.sites?.code_site}
+                                              {as.read_only && " • Lecture seule"}
+                                            </div>
+                                          </div>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                                      <XCircle className="h-4 w-4 text-orange-500" />
+                                      <span>Aucun site assigné</span>
+                                    </div>
+                                  )}
+                                </div>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </TableCell>
                         <TableCell>
-                          {user.actif ? (
-                            <Badge variant="default" className="bg-green-500">Actif</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inactif</Badge>
-                          )}
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div>
+                                  {user.actif ? (
+                                    <Badge className="bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20 hover:bg-green-500/20">
+                                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                                      Actif
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Inactif
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="text-xs">
+                                  {user.actif 
+                                    ? "Cet utilisateur peut se connecter" 
+                                    : "Cet utilisateur ne peut pas se connecter"}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedUserForPermissions(user);
-                                setPermissionDrawerOpen(true);
-                              }}
-                              title="Gérer les permissions"
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(user)}
-                              title="Modifier l'accès"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleToggleActive(user.id, user.actif)}
-                              title={user.actif ? "Désactiver" : "Activer"}
-                            >
-                              <UserX className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleResendInvite(user.email)}
-                              title="Réinitialiser l'invitation"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setUserToDelete(user);
-                                setDeleteDialogOpen(true);
-                              }}
-                              disabled={!canDeleteUsers || user.is_client_admin}
-                              title={
-                                !canDeleteUsers 
-                                  ? "Seuls les Super Admins peuvent supprimer des utilisateurs"
-                                  : user.is_client_admin 
-                                    ? "Impossible de supprimer un Admin Client" 
-                                    : "Supprimer"
-                              }
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedUserForPermissions(user);
+                                      setPermissionDrawerOpen(true);
+                                    }}
+                                    className="hover:bg-primary/10 hover:text-primary"
+                                  >
+                                    <Settings className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Gérer les permissions</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEdit(user)}
+                                    className="hover:bg-blue-500/10 hover:text-blue-600"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Modifier l'accès</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleToggleActive(user.id, user.actif)}
+                                    className={cn(
+                                      user.actif 
+                                        ? "hover:bg-orange-500/10 hover:text-orange-600" 
+                                        : "hover:bg-green-500/10 hover:text-green-600"
+                                    )}
+                                  >
+                                    {user.actif ? <UserX className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {user.actif ? "Désactiver le compte" : "Activer le compte"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleResendInvite(user.email)}
+                                    className="hover:bg-purple-500/10 hover:text-purple-600"
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Renvoyer l'invitation</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setUserToDelete(user);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                    disabled={!canDeleteUsers || user.is_client_admin}
+                                    className="hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {!canDeleteUsers 
+                                    ? "Seuls les Super Admins peuvent supprimer" 
+                                    : user.is_client_admin 
+                                      ? "Impossible de supprimer un Admin Client" 
+                                      : "Supprimer l'utilisateur"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </TableCell>
                       </TableRow>
