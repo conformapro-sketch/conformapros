@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Monitor, Moon, Sun } from "lucide-react";
 
@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import logo from "@/assets/conforma-pro-logo.png";
+import { useTheme } from "@/hooks/useTheme";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email invalide" }),
@@ -28,29 +29,15 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-type ThemeMode = "light" | "dark" | "system";
-
-const THEME_KEY = "cp_theme";
-
-const readInitialTheme = (): ThemeMode => {
-  try {
-    const raw = localStorage.getItem(THEME_KEY);
-    if (!raw) return "system";
-    const parsed = JSON.parse(raw);
-    return (parsed?.mode as ThemeMode) || "system";
-  } catch {
-    return "system";
-  }
-};
 
 export default function Login() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
+  const { mode, setMode } = useTheme();
 
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [language, setLanguage] = useState("fr");
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => readInitialTheme());
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -60,21 +47,13 @@ export default function Login() {
     },
   });
 
-  useEffect(() => {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const dark = themeMode === "dark" || (themeMode === "system" && prefersDark);
-    document.documentElement.classList.toggle("dark", dark);
-    document.documentElement.setAttribute("data-theme-mode", themeMode);
-    localStorage.setItem(THEME_KEY, JSON.stringify({ mode: themeMode }));
-  }, [themeMode]);
-
   const themeIcon = useMemo(() => {
-    if (themeMode === "system") return Monitor;
-    return themeMode === "light" ? Sun : Moon;
-  }, [themeMode]);
+    if (mode === "system") return Monitor;
+    return mode === "light" ? Sun : Moon;
+  }, [mode]);
 
   const handleToggleTheme = () => {
-    setThemeMode((prev) => (prev === "light" ? "dark" : prev === "dark" ? "system" : "light"));
+    setMode((prev) => (prev === "light" ? "dark" : prev === "dark" ? "system" : "light"));
   };
 
   const onSubmit = async (values: LoginFormValues) => {

@@ -32,39 +32,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import { supabaseAny as supabase } from "@/lib/supabase-any";
-
-type ThemeMode = "light" | "dark" | "system";
-
-type ThemePrefs = {
-  mode: ThemeMode;
-};
-
-const THEME_KEY = "cp_theme";
-
-function readPrefs(): ThemePrefs {
-  try {
-    const raw = localStorage.getItem(THEME_KEY);
-    if (!raw) return { mode: "system" };
-    const parsed = JSON.parse(raw) as Partial<ThemePrefs> & { mode?: ThemeMode };
-    return { mode: parsed.mode ?? "system" };
-  } catch {
-    return { mode: "system" };
-  }
-}
-
-function writePrefs(next: ThemePrefs) {
-  localStorage.setItem(THEME_KEY, JSON.stringify(next));
-}
-
-function applyMode(mode: ThemeMode) {
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const dark = mode === "dark" || (mode === "system" && prefersDark);
-  const root = document.documentElement;
-  root.classList.toggle("dark", dark);
-  root.setAttribute("data-theme-mode", mode);
-}
+import { useTheme } from "@/hooks/useTheme";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 export type TopNavBarProps = {
   className?: string;
@@ -87,48 +56,12 @@ export default function TopNavBar({
   onPreferencesClick,
   onLogout,
 }: TopNavBarProps) {
-  const [prefs, setPrefs] = useState<ThemePrefs>(() => readPrefs());
+  const { mode, setMode } = useTheme();
   const { state, isMobile, toggleSidebar } = useSidebar();
   const { user: authUser, userRole, primaryRole, signOut, isTeamUser } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Fetch current user's client info (for client users)
-  const { data: userProfile } = useQuery({
-    queryKey: ["user-profile", authUser?.id],
-    queryFn: async () => {
-      if (!authUser?.id) return null;
-      const { data, error } = await supabase
-        .from("client_users")
-        .select("client_id, avatar_url, clients!client_users_client_id_fkey(logo_url, nom)")
-        .eq("id", authUser.id)
-        .single();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!authUser?.id,
-  });
-
-  // Fetch avatar from profiles table (for team users)
-  const { data: teamProfile } = useQuery({
-    queryKey: ["team-profile-avatar", authUser?.id],
-    queryFn: async () => {
-      if (!authUser?.id) return null;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("avatar_url")
-        .eq("id", authUser.id)
-        .maybeSingle();
-      if (error) return null;
-      return data;
-    },
-    enabled: !!authUser?.id,
-  });
-
-  useEffect(() => {
-    applyMode(prefs.mode);
-    writePrefs(prefs);
-  }, [prefs]);
+  const { data: userProfile } = useUserProfile();
 
   useEffect(() => {
     if (searchOpen) {
@@ -136,7 +69,7 @@ export default function TopNavBar({
     }
   }, [searchOpen]);
 
-  const ModeIcon = prefs.mode === "light" ? Sun : prefs.mode === "dark" ? Moon : Monitor;
+  const ModeIcon = mode === "light" ? Sun : mode === "dark" ? Moon : Monitor;
   const authMetadata = (authUser?.user_metadata as Record<string, unknown>) ?? {};
   const metaPrenom = typeof authMetadata.prenom === "string" ? authMetadata.prenom : "";
   const metaNom = typeof authMetadata.nom === "string" ? authMetadata.nom : "";
@@ -146,11 +79,7 @@ export default function TopNavBar({
   const fallbackName = authUser?.email ?? "Utilisateur";
   const resolvedName = (primaryName && primaryName.trim().length > 0 ? primaryName : fallbackName).trim();
   const resolvedRole = user?.role ?? primaryRole?.name ?? userRole ?? undefined;
-  
-  // Priority: props → client DB → team DB → auth metadata
-  const clientAvatar = userProfile?.avatar_url;
-  const teamAvatar = teamProfile?.avatar_url;
-  const resolvedAvatarUrl = user?.avatarUrl ?? clientAvatar ?? teamAvatar ?? metaAvatar;
+  const resolvedAvatarUrl = user?.avatarUrl ?? userProfile?.avatarUrl ?? metaAvatar;
   const initials = resolvedName
     .replace(/\s+/g, " ")
     .trim()
@@ -205,10 +134,10 @@ export default function TopNavBar({
               to="/"
               className="group flex items-center gap-2 rounded-md p-1 transition-colors hover:text-[#2FB200]"
             >
-              {userProfile?.clients?.logo_url ? (
+              {userProfile?.clientLogo ? (
                 <img 
-                  src={userProfile.clients.logo_url} 
-                  alt={userProfile.clients.nom || "Client logo"} 
+                  src={userProfile.clientLogo} 
+                  alt={userProfile.clientName || "Client logo"} 
                   className="h-8 w-auto max-w-[120px] object-contain"
                 />
               ) : null}
@@ -273,8 +202,8 @@ export default function TopNavBar({
                   <SunMoon className="h-4 w-4" /> Theme
                 </DropdownMenuLabel>
                 <DropdownMenuRadioGroup
-                  value={prefs.mode}
-                  onValueChange={(value) => setPrefs({ mode: value as ThemeMode })}
+                  value={mode}
+                  onValueChange={(value) => setMode(value as "light" | "dark" | "system")}
                 >
                   <DropdownMenuRadioItem value="light">
                     <span className="flex items-center gap-2"><Sun className="h-4 w-4" /> Clair</span>

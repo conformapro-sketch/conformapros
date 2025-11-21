@@ -1,15 +1,7 @@
 import {
   Menu,
   ChevronDown,
-  Settings,
   Loader2,
-  Building2,
-  MapPin,
-  Calendar,
-  FileText,
-  Receipt,
-  FileCheck,
-  Users,
   ChevronRight,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -43,16 +35,7 @@ import conformaProLogo from "@/assets/conforma-pro-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserModules } from "@/hooks/useUserModules";
 import { buildNavigationFromModules, findActiveModule, type MenuItem } from "@/lib/module-navigation-map";
-
-const administrationItems: MenuItem[] = [
-  { title: "Clients", url: "/clients", icon: Building2 },
-  { title: "Sites", url: "/sites", icon: MapPin },
-  { title: "Utilisateurs client", url: "/clients/utilisateurs", icon: Users },
-  { title: "Abonnements", url: "/abonnement", icon: Calendar },
-  { title: "Devis", url: "/devis", icon: FileText },
-  { title: "Factures", url: "/facture", icon: Receipt },
-  { title: "Factures d'avoir", url: "/facture/avoir", icon: FileCheck },
-];
+import { canAccessClientManagement } from "@/lib/permission-helpers";
 
 export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
@@ -64,27 +47,12 @@ export function AppSidebar() {
 
   const navigationItems = useMemo(() => {
     if (!modules) return [];
-    const items = buildNavigationFromModules(modules);
-    
-    // Filter out staff-only modules for client users
-    if (isClientUser()) {
-      // Remove "Domaines" subitem from BIBLIOTHEQUE and "Tableau de bord"
-      return items.map(item => {
-        if (item.code === 'BIBLIOTHEQUE' && item.subItems) {
-          return {
-            ...item,
-            subItems: item.subItems.filter(sub => 
-              !sub.url.includes('/domain') && 
-              !sub.url.includes('/dashbord')
-            )
-          };
-        }
-        return item;
-      }).filter(item => item.code !== 'DOMAINES'); // Remove standalone DOMAINES module
-    }
-    
-    return items;
-  }, [modules, isClientUser]);
+    return buildNavigationFromModules(modules);
+  }, [modules]);
+
+  const canManageClients = useMemo(() => {
+    return canAccessClientManagement(hasPermission, isSuperAdmin);
+  }, [hasPermission, isSuperAdmin]);
 
   // Log warning if client user has no accessible modules
   useEffect(() => {
@@ -313,67 +281,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {(isSuperAdmin() || hasPermission('CLIENTS', 'view')) && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="sidebar-transition">
-              <Settings className={`${isCollapsed ? "h-5 w-5" : "mr-2 h-4 w-4"}`} />
-              {!isCollapsed && "Gestion Client"}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {administrationItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    {isCollapsed ? (
-                      <HoverCard openDelay={100} closeDelay={100}>
-                        <HoverCardTrigger asChild>
-                          <SidebarMenuButton asChild>
-                            <NavLink
-                              to={item.url!}
-                              className={({ isActive }) =>
-                                `sidebar-hover justify-center ${
-                                  isActive
-                                    ? "bg-sidebar-accent font-medium text-sidebar-primary"
-                                    : "hover:bg-sidebar-accent/50"
-                                }`
-                              }
-                            >
-                              <item.icon className="h-6 w-6" />
-                            </NavLink>
-                          </SidebarMenuButton>
-                        </HoverCardTrigger>
-                        <HoverCardContent 
-                          side="right" 
-                          align="center"
-                          className="w-auto bg-popover text-popover-foreground border-2 border-sidebar-primary/20 shadow-medium ml-2 px-3 py-2"
-                        >
-                          <span className="text-sm font-medium text-sidebar-foreground">
-                            {item.title}
-                          </span>
-                        </HoverCardContent>
-                      </HoverCard>
-                    ) : (
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url!}
-                          className={({ isActive }) =>
-                            `sidebar-hover ${
-                              isActive
-                                ? "bg-sidebar-accent font-medium text-sidebar-primary"
-                                : "hover:bg-sidebar-accent/50"
-                            }`
-                          }
-                        >
-                          <item.icon className="h-5 w-5" />
-                          <span>{item.title}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
       {/* Bouton flottant pour réouvrir la sidebar en mode collapsed */}

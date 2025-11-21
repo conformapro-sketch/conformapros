@@ -13,7 +13,7 @@ export interface ModuleSysteme {
 }
 
 export const useUserModules = () => {
-  const { user, getClientId, isSuperAdmin, isTeamUser, permissions } = useAuth();
+  const { user, getClientId, isSuperAdmin, isTeamUser, isClientUser, permissions } = useAuth();
 
   return useQuery({
     queryKey: ["user-modules", user?.id],
@@ -52,11 +52,11 @@ export const useUserModules = () => {
         return data || [];
       }
 
-      // Client users see modules enabled for their sites
+      // Client users see modules enabled for their sites + filtered by permissions
       const clientId = getClientId();
       if (!clientId) return [];
 
-      // Get modules from user permissions (TEXT-based module codes)
+      // Get modules from user permissions
       const allowedModuleCodes = permissions
         .filter(p => {
           const action = (p as any).action || p.permission_actions?.code;
@@ -116,7 +116,7 @@ export const useUserModules = () => {
       return allModules || [];
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };

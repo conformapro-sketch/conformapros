@@ -185,7 +185,7 @@ const App = () => (
               {/* Bibliothèque Routes - Module indépendant */}
               <Route path="bibliotheque" element={<BibliothequeReglementaire />} />
               <Route 
-                path="bibliotheque/dashbord" 
+                path="bibliotheque/dashboard" 
                 element={
                   <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
                     <BibliothequeTableauDeBord />
@@ -210,8 +210,8 @@ const App = () => (
               {/* Redirections pour compatibilité - ancien chemin vers nouveau */}
               <Route path="veille/bibliotheque" element={<Navigate to="/bibliotheque/" replace />} />
               <Route path="veille/bibliotheque-ancienne" element={<BibliothequeTextes />} />
-              <Route path="veille/bibliotheque/dashbord" element={<Navigate to="/bibliotheque/dashbord" replace />} />
-              <Route path="veille/bibliotheque/tableau-de-bord" element={<Navigate to="/bibliotheque/dashbord" replace />} />
+              <Route path="veille/bibliotheque/dashbord" element={<Navigate to="/bibliotheque/dashboard" replace />} />
+              <Route path="veille/bibliotheque/tableau-de-bord" element={<Navigate to="/bibliotheque/dashboard" replace />} />
               <Route path="veille/bibliotheque/domain" element={<Navigate to="/bibliotheque/domain" replace />} />
               <Route path="veille/bibliotheque/textes/:id" element={<Navigate to="/bibliotheque/textes/:id" replace />} />
               <Route path="veille/bibliotheque/textes/:id/articles" element={<Navigate to="/bibliotheque/textes/:id/articles" replace />} />
