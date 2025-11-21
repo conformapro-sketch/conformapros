@@ -18,12 +18,14 @@ import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { inviteClientUser, fetchSitesByClient, toggleUtilisateurActif, fetchAllClients } from "@/lib/multi-tenant-queries";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Loader2 } from "lucide-react";
+import { Building2, Loader2, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const userSchema = z.object({
   client_id: z.string().min(1, "Le client est requis"),
-  email: z.string().trim().email("Email invalide").min(1, "L'email est requis"),
+  email: z.string().trim().email("Email invalide").min(1, "L'email est requis").max(255, "L'email doit faire moins de 255 caractères"),
   fullName: z.string().trim().min(1, "Le nom complet est requis").max(100, "Le nom doit faire moins de 100 caractères"),
   is_client_admin: z.boolean().default(false),
   siteIds: z.array(z.string()).default([]),
@@ -39,23 +41,45 @@ type UserFormData = z.infer<typeof userSchema>;
 interface ClientUserFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  clientId?: string; // Optional - can be pre-selected or chosen in form
-  user?: any; // Existing user for editing
+  clientId?: string;
+  user?: any;
 }
+
+// Password strength calculator
+const calculatePasswordStrength = (password: string): { score: number; label: string; color: string } => {
+  if (!password) return { score: 0, label: "", color: "" };
+  
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+  if (/\d/.test(password)) score++;
+  if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+  if (score <= 2) return { score, label: "Faible", color: "text-destructive" };
+  if (score <= 3) return { score, label: "Moyen", color: "text-orange-500" };
+  return { score, label: "Fort", color: "text-green-500" };
+};
 
 export function ClientUserFormModal({ open, onOpenChange, clientId, user }: ClientUserFormModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [emailCheckStatus, setEmailCheckStatus] = React.useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
-  // Use provided clientId or fallback to user's client_id for editing
   const effectiveClientId = clientId || user?.client_id;
 
-  // Fetch all clients (for selection)
+  // Fetch all clients
   const { data: clients = [] } = useQuery({
     queryKey: ["all-clients"],
     queryFn: fetchAllClients,
-    enabled: !user, // Only fetch when creating new user
+    enabled: !user,
   });
+
+  // Get selected client details
+  const selectedClient = React.useMemo(() => {
+    return clients?.find((c: any) => c.id === effectiveClientId);
+  }, [clients, effectiveClientId]);
 
   // Check if current user is super admin
   const { data: currentUserRole } = useQuery({
@@ -83,6 +107,8 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     control,
     watch,
     reset,
+    setError,
+    clearErrors,
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -95,23 +121,21 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     },
   });
 
-  // Reset form when user data changes or modal opens
+  // Reset form when modal opens/closes
   React.useEffect(() => {
     if (open) {
       if (user) {
-        // Editing existing user - populate form with user data
         reset({
           client_id: user.client_id || effectiveClientId || "",
           email: user.email || "",
           fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
           is_client_admin: user.is_client_admin || false,
-          siteIds: user.sites_data?.map((site: any) => site.id) || [],
+          siteIds: user.access_scopes?.map((as: any) => as.site_id) || [],
           actif: user.actif ?? true,
           password: "",
           send_reset: true,
         });
       } else {
-        // Creating new user - reset to empty form
         reset({
           client_id: effectiveClientId || "",
           email: "",
@@ -123,12 +147,57 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
           send_reset: true,
         });
       }
+      setEmailCheckStatus('idle');
     }
   }, [open, user, effectiveClientId, reset]);
 
   const selectedClientId = watch("client_id");
   const selectedSiteIds = watch("siteIds");
   const passwordValue = watch("password");
+  const emailValue = watch("email");
+  const passwordStrength = calculatePasswordStrength(passwordValue || "");
+
+  // Real-time email validation
+  React.useEffect(() => {
+    if (!emailValue || user?.email === emailValue) {
+      setEmailCheckStatus('idle');
+      return;
+    }
+
+    const checkEmail = async () => {
+      if (!emailValue.includes('@')) {
+        setEmailCheckStatus('idle');
+        return;
+      }
+
+      setEmailCheckStatus('checking');
+      
+      try {
+        const { data } = await supabase
+          .from('client_users')
+          .select('id')
+          .eq('email', emailValue.toLowerCase())
+          .maybeSingle();
+
+        if (data) {
+          setEmailCheckStatus('taken');
+          setError('email', { 
+            type: 'manual', 
+            message: 'Cet email est déjà utilisé' 
+          });
+        } else {
+          setEmailCheckStatus('available');
+          clearErrors('email');
+        }
+      } catch (error) {
+        console.error('Error checking email:', error);
+        setEmailCheckStatus('idle');
+      }
+    };
+
+    const timer = setTimeout(checkEmail, 500);
+    return () => clearTimeout(timer);
+  }, [emailValue, user, setError, clearErrors]);
 
   // Fetch sites for the selected client
   const { data: sites = [] } = useQuery({
@@ -141,6 +210,11 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     mutationFn: async (data: UserFormData) => {
       if (!data.client_id) {
         throw new Error("Veuillez sélectionner un client");
+      }
+
+      // Block submission if email is taken
+      if (emailCheckStatus === 'taken') {
+        throw new Error("Cet email est déjà utilisé");
       }
 
       const result = await inviteClientUser(
@@ -188,7 +262,6 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
   });
   
   const onSubmit = (data: UserFormData) => {
-    // Explicit validation before submission
     if (!data.client_id) {
       toast({
         title: "Erreur de validation",
@@ -198,24 +271,16 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
       return;
     }
 
-    if (!data.email || !data.email.includes('@')) {
+    if (emailCheckStatus === 'taken') {
       toast({
         title: "Erreur de validation",
-        description: "Veuillez saisir une adresse email valide",
+        description: "Cet email est déjà utilisé",
         variant: "destructive",
       });
       return;
     }
 
-    console.log('Submitting user data:', { ...data, password: data.password ? '[REDACTED]' : undefined });
     saveMutation.mutate(data);
-  };
-
-  const roleLabels: Record<string, string> = {
-    admin_client: "Administrateur client",
-    gestionnaire_hse: "Gestionnaire HSE",
-    chef_site: "Chef de site",
-    lecteur: "Lecteur",
   };
 
   return (
@@ -226,19 +291,22 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Client Selection (only for new users) */}
-          {!user && (
+          {/* Client Selection/Display */}
+          {!user ? (
             <div>
-              <Label htmlFor="client_id">Client * <span className="text-xs text-muted-foreground">(obligatoire)</span></Label>
+              <Label htmlFor="client_id">
+                Client * 
+                <span className="text-xs text-muted-foreground ml-2">(obligatoire)</span>
+              </Label>
               <Controller
                 name="client_id"
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange} disabled={!!clientId}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Sélectionner un client..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background z-50">
                       {clients?.map((client: any) => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.nom} {client.nom_legal && `(${client.nom_legal})`}
@@ -252,20 +320,49 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
                 <p className="text-sm text-destructive mt-1">{errors.client_id.message}</p>
               )}
             </div>
+          ) : (
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
+              <Label className="text-xs text-muted-foreground">Client</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{selectedClient?.nom || "Client"}</span>
+              </div>
+            </div>
           )}
 
-          {/* Email */}
+          {/* Email with validation indicator */}
           <div>
             <Label htmlFor="email">Email *</Label>
-            <Input 
-              id="email" 
-              type="email" 
-              {...register("email")} 
-              disabled={!!user}
-              placeholder="utilisateur@exemple.com"
-            />
+            <div className="relative">
+              <Input 
+                id="email" 
+                type="email" 
+                {...register("email")} 
+                disabled={!!user}
+                placeholder="utilisateur@exemple.com"
+                className={cn(
+                  "pr-10",
+                  emailCheckStatus === 'taken' && "border-destructive",
+                  emailCheckStatus === 'available' && "border-green-500"
+                )}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {emailCheckStatus === 'checking' && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+                {emailCheckStatus === 'available' && !errors.email && (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                )}
+                {emailCheckStatus === 'taken' && (
+                  <XCircle className="h-4 w-4 text-destructive" />
+                )}
+              </div>
+            </div>
             {errors.email && (
-              <p className="text-sm text-destructive mt-1">{errors.email.message}</p>
+              <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.email.message}
+              </p>
             )}
           </div>
 
@@ -282,17 +379,58 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
             )}
           </div>
 
-          {/* Password fields - only for new users */}
+          {/* Password with strength indicator */}
           {!user && (
             <div className="space-y-4">
               <div>
                 <Label htmlFor="password">Mot de passe (optionnel)</Label>
-                <Input 
-                  id="password" 
-                  type="password"
-                  {...register("password")} 
-                  placeholder="Minimum 8 caractères"
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"}
+                    {...register("password")} 
+                    placeholder="Minimum 8 caractères"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+                
+                {/* Password strength indicator */}
+                {passwordValue && (
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full transition-all duration-300",
+                            passwordStrength.score <= 2 && "bg-destructive w-1/3",
+                            passwordStrength.score === 3 && "bg-orange-500 w-2/3",
+                            passwordStrength.score >= 4 && "bg-green-500 w-full"
+                          )}
+                        />
+                      </div>
+                      <span className={cn("text-xs font-medium", passwordStrength.color)}>
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Conseil: utilisez des majuscules, minuscules, chiffres et caractères spéciaux
+                    </p>
+                  </div>
+                )}
+                
                 {errors.password && (
                   <p className="text-sm text-destructive mt-1">{errors.password.message}</p>
                 )}
@@ -301,7 +439,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
                 </p>
               </div>
 
-              <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4">
+              <div className="flex items-center justify-between py-2 border border-border rounded-lg px-4 bg-muted/20">
                 <div>
                   <Label htmlFor="send_reset" className="cursor-pointer">
                     Envoyer un email de réinitialisation
@@ -325,9 +463,9 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
             </div>
           )}
 
-          {/* Client Admin Toggle (Super Admin only) */}
+          {/* Client Admin Toggle */}
           {isSuperAdmin && (
-            <div className="flex items-center justify-between py-3 border border-border rounded-lg px-4">
+            <div className="flex items-center justify-between py-3 border border-border rounded-lg px-4 bg-muted/20">
               <div>
                 <Label htmlFor="is_client_admin" className="cursor-pointer">Administrateur client</Label>
                 <p className="text-sm text-muted-foreground">
@@ -348,59 +486,90 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
             </div>
           )}
 
-          {/* Info message about individual permissions */}
-          <div className="bg-muted/50 border border-border rounded-lg p-3">
-            <p className="text-sm text-muted-foreground">
+          {/* Info message */}
+          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-3">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
               Les permissions seront configurées individuellement après la création du compte.
             </p>
           </div>
 
-          {/* Sites autorisés */}
+          {/* Enhanced Sites Selection */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Building2 className="h-5 w-5" />
-              <Label>Sites autorisés</Label>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                <Label>Sites autorisés</Label>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {selectedSiteIds.length} sélectionné(s)
+              </Badge>
             </div>
 
             {!selectedClientId ? (
-              <div className="bg-muted/30 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground">
+              <div className="bg-muted/30 rounded-lg p-6 border-2 border-dashed border-border">
+                <p className="text-sm text-muted-foreground text-center">
                   Veuillez d'abord sélectionner un client pour voir les sites disponibles
                 </p>
               </div>
             ) : (
               <>
-                <div className="space-y-3 bg-muted/30 rounded-lg p-4 max-h-60 overflow-y-auto">
+                <div className="space-y-2 bg-muted/20 rounded-lg p-4 max-h-60 overflow-y-auto border border-border">
                   {sites.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Aucun site disponible pour ce client</p>
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground">Aucun site disponible pour ce client</p>
+                    </div>
                   ) : (
                     <Controller
                       name="siteIds"
                       control={control}
                       render={({ field }) => (
                         <>
-                          {sites.map((site: any) => (
-                            <div key={site.id} className="flex items-center gap-3 py-2">
-                              <Checkbox
-                                id={`site-${site.id}`}
-                                checked={field.value.includes(site.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([...field.value, site.id]);
-                                  } else {
+                          {sites.map((site: any) => {
+                            const isSelected = field.value.includes(site.id);
+                            return (
+                              <div 
+                                key={site.id} 
+                                className={cn(
+                                  "flex items-center gap-3 py-3 px-3 rounded-md transition-all cursor-pointer border",
+                                  isSelected 
+                                    ? "bg-primary/10 border-primary/30 shadow-sm" 
+                                    : "bg-background border-transparent hover:bg-muted/50"
+                                )}
+                                onClick={() => {
+                                  if (isSelected) {
                                     field.onChange(field.value.filter((id: string) => id !== site.id));
+                                  } else {
+                                    field.onChange([...field.value, site.id]);
                                   }
                                 }}
-                              />
-                              <label
-                                htmlFor={`site-${site.id}`}
-                                className="flex-1 cursor-pointer text-sm font-medium"
                               >
-                                {site.nom_site}
-                                <span className="text-muted-foreground ml-2">({site.code_site})</span>
-                              </label>
-                            </div>
-                          ))}
+                                <Checkbox
+                                  id={`site-${site.id}`}
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, site.id]);
+                                    } else {
+                                      field.onChange(field.value.filter((id: string) => id !== site.id));
+                                    }
+                                  }}
+                                  className="pointer-events-none"
+                                />
+                                <label
+                                  htmlFor={`site-${site.id}`}
+                                  className="flex-1 cursor-pointer"
+                                >
+                                  <div className="font-medium text-sm">{site.nom_site}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Code: {site.code_site}
+                                  </div>
+                                </label>
+                                {isSelected && (
+                                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                                )}
+                              </div>
+                            );
+                          })}
                         </>
                       )}
                     />
@@ -409,16 +578,13 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
                 {errors.siteIds && (
                   <p className="text-sm text-destructive mt-1">{errors.siteIds.message}</p>
                 )}
-                <p className="text-xs text-muted-foreground mt-2">
-                  {selectedSiteIds.length} site(s) sélectionné(s)
-                </p>
               </>
             )}
           </div>
 
-          {/* Actif */}
+          {/* Active Status */}
           {user && (
-            <div className="flex items-center justify-between py-3 border-t border-border">
+            <div className="flex items-center justify-between py-3 border-t border-border pt-4">
               <div>
                 <Label htmlFor="actif" className="cursor-pointer">Compte actif</Label>
                 <p className="text-sm text-muted-foreground">
@@ -439,13 +605,14 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-4">
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
             <Button 
               type="submit" 
-              disabled={saveMutation.isPending}
+              disabled={saveMutation.isPending || emailCheckStatus === 'taken' || emailCheckStatus === 'checking'}
             >
               {saveMutation.isPending ? (
                 <>
@@ -462,13 +629,3 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
     </Dialog>
   );
 }
-
-
-
-
-
-
-
-
-
-
