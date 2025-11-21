@@ -486,6 +486,21 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
             </div>
           )}
 
+          {/* Warning when no client is selected */}
+          {!selectedClientId && !user && (
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Sélectionnez d'abord un client
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                  Choisissez un client ci-dessus pour voir les sites disponibles et pouvoir créer l'utilisateur.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Info message */}
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-3">
             <p className="text-sm text-blue-700 dark:text-blue-300">
