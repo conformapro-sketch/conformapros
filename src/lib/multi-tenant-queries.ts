@@ -1034,44 +1034,62 @@ export const createUserProfile = async (
   clientId: string,
   siteIds: string[]
 ) => {
-  // Create profile
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .upsert({
-      id: userId,
-      email,
-      nom: fullName.split(' ')[0] || fullName,
-      prenom: fullName.split(' ').slice(1).join(' ') || '',
-      client_id: clientId,
-    });
+  try {
+    // Create profile
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({
+        id: userId,
+        email,
+        nom: fullName.split(' ')[0] || fullName,
+        prenom: fullName.split(' ').slice(1).join(' ') || '',
+        client_id: clientId,
+      });
 
-  if (profileError) throw profileError;
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
+      throw new Error(`Failed to create profile: ${profileError.message}`);
+    }
 
-  // Delete existing roles
-  await supabase
-    .from("user_roles")
-    .delete()
-    .eq("user_id", userId);
+    // Delete existing roles
+    await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId);
 
-  // Insert new role using role_uuid
-  const { error: roleError } = await supabase
-    .from("user_roles")
-    .insert([{ user_id: userId, role_uuid: roleUuid, client_id: clientId }]);
+    // Insert new role using role_uuid
+    const { error: roleError } = await supabase
+      .from("user_roles")
+      .insert([{ user_id: userId, role_uuid: roleUuid, client_id: clientId }]);
 
-  if (roleError) throw roleError;
+    if (roleError) {
+      console.error('Error assigning role:', roleError);
+      throw new Error(`Failed to assign role: ${roleError.message}`);
+    }
 
-  // Create access scopes
-  const scopes = siteIds.map(siteId => ({
-    user_id: userId,
-    site_id: siteId,
-    read_only: false,
-  }));
+    // Create access scopes
+    if (siteIds && siteIds.length > 0) {
+      const scopes = siteIds.map(siteId => ({
+        user_id: userId,
+        site_id: siteId,
+        read_only: false,
+      }));
 
-  const { error: scopesError } = await supabase
-    .from("access_scopes")
-    .insert(scopes);
+      const { error: scopesError } = await supabase
+        .from("access_scopes")
+        .insert(scopes);
 
-  if (scopesError) throw scopesError;
+      if (scopesError) {
+        console.error('Error creating access scopes:', scopesError);
+        throw new Error(`Failed to assign sites: ${scopesError.message}`);
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Exception in createUserProfile:', error);
+    throw error;
+  }
 };
 
 export const updateClientUserAccess = async (
@@ -1080,45 +1098,72 @@ export const updateClientUserAccess = async (
   clientId: string,
   siteIds: string[]
 ) => {
-  // Update user role - delete and re-insert
-  await supabase
-    .from("user_roles")
-    .delete()
-    .eq("user_id", userId)
-    .eq("client_id", clientId);
-
-  // Insert new role using role_uuid
-  const { error: roleError } = await supabase
-    .from("user_roles")
-    .insert([{ user_id: userId, role_uuid: roleUuid, client_id: clientId }]);
-
-  if (roleError) throw roleError;
-
-  // Delete existing access scopes for this client's sites
-  const { data: clientSites } = await supabase
-    .from("sites")
-    .select("id")
-    .eq("client_id", clientId);
-
-  if (clientSites) {
-    const siteIdsList = clientSites.map(s => s.id);
+  try {
+    // Update user role - delete and re-insert
     await supabase
-      .from("access_scopes")
+      .from("user_roles")
       .delete()
       .eq("user_id", userId)
-      .in("site_id", siteIdsList);
+      .eq("client_id", clientId);
+
+    // Insert new role using role_uuid
+    const { error: roleError } = await supabase
+      .from("user_roles")
+      .insert([{ user_id: userId, role_uuid: roleUuid, client_id: clientId }]);
+
+    if (roleError) {
+      console.error('Error updating role:', roleError);
+      throw new Error(`Failed to update role: ${roleError.message}`);
+    }
+
+    // Delete existing access scopes for this client's sites
+    const { data: clientSites, error: sitesError } = await supabase
+      .from("sites")
+      .select("id")
+      .eq("client_id", clientId);
+
+    if (sitesError) {
+      console.error('Error fetching client sites:', sitesError);
+      throw new Error(`Failed to fetch sites: ${sitesError.message}`);
+    }
+
+    if (clientSites && clientSites.length > 0) {
+      const siteIdsList = clientSites.map(s => s.id);
+      const { error: deleteError } = await supabase
+        .from("access_scopes")
+        .delete()
+        .eq("user_id", userId)
+        .in("site_id", siteIdsList);
+
+      if (deleteError) {
+        console.error('Error deleting access scopes:', deleteError);
+        // Continue anyway, upsert will handle conflicts
+      }
+    }
+
+    // Create new access scopes
+    if (siteIds && siteIds.length > 0) {
+      const scopes = siteIds.map(siteId => ({
+        user_id: userId,
+        site_id: siteId,
+        read_only: false,
+      }));
+
+      const { error: upsertError } = await supabase
+        .from("access_scopes")
+        .upsert(scopes);
+
+      if (upsertError) {
+        console.error('Error upserting access scopes:', upsertError);
+        throw new Error(`Failed to update site access: ${upsertError.message}`);
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Exception in updateClientUserAccess:', error);
+    throw error;
   }
-
-  // Create new access scopes
-  const scopes = siteIds.map(siteId => ({
-    user_id: userId,
-    site_id: siteId,
-    read_only: false,
-  }));
-
-  await supabase
-    .from("access_scopes")
-    .upsert(scopes);
 };
 
 export const fetchAllClients = async () => {
@@ -1133,21 +1178,43 @@ export const fetchAllClients = async () => {
 };
 
 export const fetchClientUsers = async (clientId: string) => {
-  const { data, error } = await supabase
-    .from("client_users")
-    .select(`
-      *,
-      access_scopes(
-        site_id,
-        read_only,
-        sites(nom_site)
-      )
-    `)
-    .eq("client_id", clientId)
-    .order("nom");
+  try {
+    const { data, error } = await supabase
+      .from("client_users")
+      .select(`
+        *,
+        access_scopes(
+          id,
+          site_id,
+          read_only,
+          created_at,
+          sites(
+            id,
+            nom_site,
+            code_site,
+            client_id
+          )
+        )
+      `)
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false });
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.error('Error fetching client users:', error);
+      throw new Error(`Failed to fetch users: ${error.message}`);
+    }
+
+    // Transform data to ensure access_scopes is always an array
+    const usersWithScopes = (data || []).map(user => ({
+      ...user,
+      access_scopes: Array.isArray(user.access_scopes) ? user.access_scopes : []
+    }));
+
+    return usersWithScopes;
+  } catch (error) {
+    console.error('Exception in fetchClientUsers:', error);
+    throw error;
+  }
 };
 
 
@@ -1164,62 +1231,83 @@ export const fetchClientUsersPaginated = async (
   clientId: string,
   filters: ClientUserFilters = {},
 ) => {
-  const page = Math.max(1, filters.page ?? 1);
-  const pageSize = Math.min(Math.max(filters.pageSize ?? 10, 1), 100);
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  try {
+    const page = Math.max(1, filters.page ?? 1);
+    const pageSize = Math.min(Math.max(filters.pageSize ?? 10, 1), 100);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
-  let query = supabase
-    .from("client_users")
-    .select(
-      `
-        *,
-        access_scopes(
-          site_id,
-          read_only,
-          sites(nom_site)
-        )
-      `,
-      { count: "exact" },
-    )
-    .eq("client_id", clientId);
+    let query = supabase
+      .from("client_users")
+      .select(
+        `
+          *,
+          access_scopes(
+            id,
+            site_id,
+            read_only,
+            created_at,
+            sites(
+              id,
+              nom_site,
+              code_site,
+              client_id
+            )
+          )
+        `,
+        { count: "exact" },
+      )
+      .eq("client_id", clientId);
 
-  const searchTerm = filters.search?.trim();
-  if (searchTerm) {
-    const sanitized = searchTerm.replace(/[%]/g, "").replace(/,/g, "");
-    const pattern = `%${sanitized}%`;
-    query = query.or(
-      `nom.ilike.${pattern},prenom.ilike.${pattern},email.ilike.${pattern}`,
-    );
+    const searchTerm = filters.search?.trim();
+    if (searchTerm) {
+      const sanitized = searchTerm.replace(/[%]/g, "").replace(/,/g, "");
+      const pattern = `%${sanitized}%`;
+      query = query.or(
+        `nom.ilike.${pattern},prenom.ilike.${pattern},email.ilike.${pattern}`,
+      );
+    }
+
+    if (filters.role) {
+      query = query.eq("user_roles.role", filters.role);
+    }
+
+    if (filters.site) {
+      query = query.eq("access_scopes.site_id", filters.site);
+    }
+
+    if (filters.status === "active") {
+      query = query.eq("actif", true);
+    } else if (filters.status === "inactive") {
+      query = query.eq("actif", false);
+    }
+
+    const { data, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error('Error in fetchClientUsersPaginated:', error);
+      throw new Error(`Failed to fetch users: ${error.message}`);
+    }
+
+    // Transform data to ensure access_scopes is always an array
+    const usersWithScopes = (data || []).map(user => ({
+      ...user,
+      access_scopes: Array.isArray(user.access_scopes) ? user.access_scopes : []
+    }));
+
+    return {
+      data: usersWithScopes,
+      count: count ?? 0,
+      page,
+      pageSize,
+      totalPages: count ? Math.max(Math.ceil(count / pageSize), 1) : 0,
+    };
+  } catch (error) {
+    console.error('Exception in fetchClientUsersPaginated:', error);
+    throw error;
   }
-
-  if (filters.role) {
-    query = query.eq("user_roles.role", filters.role);
-  }
-
-  if (filters.site) {
-    query = query.eq("access_scopes.site_id", filters.site);
-  }
-
-  if (filters.status === "active") {
-    query = query.eq("actif", true);
-  } else if (filters.status === "inactive") {
-    query = query.eq("actif", false);
-  }
-
-  const { data, error, count } = await query
-    .order("nom", { ascending: true })
-    .range(from, to);
-
-  if (error) throw error;
-
-  return {
-    data: data ?? [],
-    count: count ?? 0,
-    page,
-    pageSize,
-    totalPages: count ? Math.max(Math.ceil(count / pageSize), 1) : 0,
-  };
 };
 
 export const resendInvite = async (email: string) => {
