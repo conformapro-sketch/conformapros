@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -24,7 +25,12 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
-  Clock
+  Clock,
+  Download,
+  RefreshCw,
+  FilterX,
+  ArrowUpDown,
+  CheckCheck
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClientUsers, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
@@ -79,6 +85,9 @@ export default function ClientUsers() {
   const [currentClientId, setCurrentClientId] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<'nom' | 'email' | 'created_at' | 'sites'>('nom');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Get client ID from URL or current user's profile
   useEffect(() => {
@@ -227,6 +236,28 @@ export default function ClientUsers() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  // Sort users
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    let comparison = 0;
+    
+    switch (sortField) {
+      case 'nom':
+        comparison = `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`);
+        break;
+      case 'email':
+        comparison = (a.email || '').localeCompare(b.email || '');
+        break;
+      case 'created_at':
+        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        break;
+      case 'sites':
+        comparison = (a.access_scopes?.length || 0) - (b.access_scopes?.length || 0);
+        break;
+    }
+    
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+
   const handleEdit = (user: any) => {
     setEditingUser(user);
     setUserFormOpen(true);
@@ -239,6 +270,117 @@ export default function ClientUsers() {
   const handleResendInvite = (email: string) => {
     resendInviteMutation.mutate(email);
   };
+
+  // Bulk actions
+  const handleSelectAll = () => {
+    if (selectedUserIds.size === sortedUsers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(sortedUsers.map(u => u.id)));
+    }
+  };
+
+  const handleSelectUser = (userId: string) => {
+    const newSelection = new Set(selectedUserIds);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedUserIds(newSelection);
+  };
+
+  const handleBulkActivate = async () => {
+    try {
+      await Promise.all(
+        Array.from(selectedUserIds).map(userId => 
+          toggleUtilisateurActif(userId, true)
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ["client-users", currentClientId] });
+      toast({ 
+        title: "Utilisateurs activés",
+        description: `${selectedUserIds.size} utilisateur(s) activé(s) avec succès.`
+      });
+      setSelectedUserIds(new Set());
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    try {
+      await Promise.all(
+        Array.from(selectedUserIds).map(userId => 
+          toggleUtilisateurActif(userId, false)
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ["client-users", currentClientId] });
+      toast({ 
+        title: "Utilisateurs désactivés",
+        description: `${selectedUserIds.size} utilisateur(s) désactivé(s) avec succès.`
+      });
+      setSelectedUserIds(new Set());
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Export to CSV
+  const handleExport = () => {
+    const headers = ['Nom', 'Prénom', 'Email', 'Téléphone', 'Admin', 'Statut', 'Sites', 'Date création'];
+    const rows = sortedUsers.map(user => [
+      user.nom || '',
+      user.prenom || '',
+      user.email || '',
+      user.telephone || '',
+      user.is_client_admin ? 'Oui' : 'Non',
+      user.actif ? 'Actif' : 'Inactif',
+      (user.access_scopes?.length || 0).toString(),
+      new Date(user.created_at).toLocaleDateString('fr-FR'),
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `utilisateurs-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+
+    toast({
+      title: "Export réussi",
+      description: `${sortedUsers.length} utilisateur(s) exporté(s).`
+    });
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setRoleFilter('all');
+    setStatusFilter('all');
+  };
+
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const hasActiveFilters = searchQuery || roleFilter !== 'all' || statusFilter !== 'all';
 
   // Show loading while checking auth
   if (authLoading) {
@@ -292,7 +434,7 @@ export default function ClientUsers() {
       {/* Filters */}
       <Card className="shadow-soft">
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -326,9 +468,71 @@ export default function ClientUsers() {
                 <SelectItem value="inactif">Inactifs</SelectItem>
               </SelectContent>
             </Select>
+
+            <div className="flex gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearFilters}
+                  className="flex-1"
+                >
+                  <FilterX className="h-4 w-4 mr-2" />
+                  Effacer
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["client-users", currentClientId] })}
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk actions bar */}
+      {selectedUserIds.size > 0 && (
+        <Card className="shadow-soft border-primary/50">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CheckCheck className="h-5 w-5 text-primary" />
+                <span className="font-medium">
+                  {selectedUserIds.size} utilisateur{selectedUserIds.size > 1 ? 's' : ''} sélectionné{selectedUserIds.size > 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkActivate}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Activer
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkDeactivate}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Désactiver
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedUserIds(new Set())}
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
@@ -357,7 +561,7 @@ export default function ClientUsers() {
         <Card className="shadow-soft">
           <CardHeader className="pb-3">
             <CardDescription>Résultats filtrés</CardDescription>
-            <CardTitle className="text-3xl">{filteredUsers.length}</CardTitle>
+            <CardTitle className="text-3xl">{sortedUsers.length}</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -365,22 +569,76 @@ export default function ClientUsers() {
       {/* Users table */}
       {isLoading ? (
         <UserTableSkeleton />
-      ) : filteredUsers.length > 0 ? (
+      ) : sortedUsers.length > 0 ? (
         <Card className="shadow-soft">
+          <CardHeader className="border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Utilisateurs</CardTitle>
+                <CardDescription className="mt-1">
+                  {sortedUsers.length} utilisateur{sortedUsers.length > 1 ? 's' : ''}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exporter CSV
+              </Button>
+            </div>
+          </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Utilisateur</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Sites autorisés</TableHead>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedUserIds.size === sortedUsers.length && sortedUsers.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('nom')}
+                        className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      >
+                        Utilisateur
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('email')}
+                        className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      >
+                        Email
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSort('sites')}
+                        className="-ml-3 h-8 data-[state=open]:bg-accent"
+                      >
+                        Sites
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((user) => {
+                  {sortedUsers.map((user) => {
                     const userSites = user.access_scopes || [];
                     const siteCount = userSites.length;
 
@@ -389,6 +647,12 @@ export default function ClientUsers() {
                         key={user.id}
                         className="group hover:bg-muted/50 transition-colors"
                       >
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedUserIds.has(user.id)}
+                            onCheckedChange={() => handleSelectUser(user.id)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <UserAvatar
@@ -617,11 +881,11 @@ export default function ClientUsers() {
           <CardContent className="py-12 text-center">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">
-              {searchQuery || roleFilter !== "all" || statusFilter !== "all"
+              {hasActiveFilters
                 ? "Aucun utilisateur ne correspond aux filtres"
                 : "Aucun utilisateur enregistré"}
             </p>
-            {!searchQuery && roleFilter === "all" && statusFilter === "all" && (
+            {!hasActiveFilters && (
               <Button 
                 onClick={() => {
                   setEditingUser(undefined);
