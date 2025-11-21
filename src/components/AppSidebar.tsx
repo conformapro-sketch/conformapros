@@ -119,9 +119,11 @@ export function AppSidebar() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : navigationItems.length === 0 && isClientUser() ? (
-              <div className="p-4 text-sm text-muted-foreground space-y-1">
-                <p className="font-medium">Aucun module accessible.</p>
-                <p className="text-xs">Contactez votre administrateur.</p>
+              <div className="mx-3 rounded-lg border border-warning/20 bg-warning/5 p-4">
+                <p className="text-sm font-medium text-foreground">Aucun module accessible</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Votre administrateur doit vous assigner des modules pour accéder à cette plateforme.
+                </p>
               </div>
             ) : (
               <SidebarMenu>
