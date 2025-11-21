@@ -250,6 +250,14 @@ export default function AllClientUsers() {
         <Button 
           className="bg-gradient-primary shadow-medium"
           onClick={() => {
+            if (clientFilter === "all") {
+              toast({
+                title: "Sélection requise",
+                description: "Veuillez filtrer par client avant d'ajouter un utilisateur",
+                variant: "destructive",
+              });
+              return;
+            }
             setEditingUser(undefined);
             setUserFormOpen(true);
           }}
@@ -588,8 +596,11 @@ export default function AllClientUsers() {
             {!searchQuery && clientFilter === "all" && statusFilter === "all" && (
               <Button 
                 onClick={() => {
-                  setEditingUser(undefined);
-                  setUserFormOpen(true);
+                  toast({
+                    title: "Sélection requise",
+                    description: "Veuillez filtrer par client avant d'ajouter un utilisateur",
+                    variant: "destructive",
+                  });
                 }}
               >
                 <UserPlus className="h-4 w-4 mr-2" />
@@ -607,7 +618,7 @@ export default function AllClientUsers() {
           if (!open) setEditingUser(undefined);
         }}
         user={editingUser}
-        clientId={editingUser?.client_id}
+        clientId={editingUser?.client_id || (clientFilter !== "all" ? clientFilter : undefined)}
       />
 
       <ClientUserManagementDrawer
