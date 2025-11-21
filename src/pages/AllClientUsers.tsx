@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -236,6 +236,15 @@ export default function AllClientUsers() {
 
   const activeUsers = users.filter(u => u.actif).length;
   const inactiveUsers = users.filter(u => !u.actif).length;
+
+  // Stabilize clientId to prevent infinite re-renders
+  const modalClientId = useMemo(() => {
+    return editingUser?.client_id || (clientFilter !== "all" ? clientFilter : undefined);
+  }, [editingUser?.client_id, clientFilter]);
+
+  const drawerClientId = useMemo(() => {
+    return selectedUser?.client_id || "";
+  }, [selectedUser?.client_id]);
 
   return (
     <div className="space-y-6">
@@ -618,14 +627,14 @@ export default function AllClientUsers() {
           if (!open) setEditingUser(undefined);
         }}
         user={editingUser}
-        clientId={editingUser?.client_id || (clientFilter !== "all" ? clientFilter : undefined)}
+        clientId={modalClientId}
       />
 
       <ClientUserManagementDrawer
         open={managementDrawerOpen}
         onOpenChange={setManagementDrawerOpen}
         user={selectedUser}
-        clientId={selectedUser?.client_id || ""}
+        clientId={drawerClientId}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
