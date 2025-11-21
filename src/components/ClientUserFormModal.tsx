@@ -547,18 +547,11 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
                               <div 
                                 key={site.id} 
                                 className={cn(
-                                  "flex items-center gap-3 py-3 px-3 rounded-md transition-all cursor-pointer border",
+                                  "flex items-center gap-3 py-3 px-3 rounded-md transition-all border",
                                   isSelected 
                                     ? "bg-primary/10 border-primary/30 shadow-sm" 
                                     : "bg-background border-transparent hover:bg-muted/50"
                                 )}
-                                onClick={() => {
-                                  if (isSelected) {
-                                    field.onChange(field.value.filter((id: string) => id !== site.id));
-                                  } else {
-                                    field.onChange([...field.value, site.id]);
-                                  }
-                                }}
                               >
                                 <Checkbox
                                   id={`site-${site.id}`}
@@ -570,7 +563,6 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
                                       field.onChange(field.value.filter((id: string) => id !== site.id));
                                     }
                                   }}
-                                  className="pointer-events-none"
                                 />
                                 <label
                                   htmlFor={`site-${site.id}`}
