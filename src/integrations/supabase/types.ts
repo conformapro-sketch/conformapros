@@ -1881,6 +1881,7 @@ export type Database = {
           libelle: string
           nom: string
           ordre: number | null
+          type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1894,6 +1895,7 @@ export type Database = {
           libelle: string
           nom: string
           ordre?: number | null
+          type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1907,6 +1909,7 @@ export type Database = {
           libelle?: string
           nom?: string
           ordre?: number | null
+          type?: string | null
           updated_at?: string | null
         }
         Relationships: []
