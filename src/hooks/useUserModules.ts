@@ -85,7 +85,7 @@ export const useUserModules = () => {
           .from("site_modules")
           .select("module_id, modules_systeme!inner(*)")
           .in("site_id", siteIds)
-          .eq("enabled", true)
+          .eq("actif", true)
           .eq("modules_systeme.actif", true);
 
         if (siteModulesError) throw siteModulesError;

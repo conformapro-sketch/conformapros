@@ -187,12 +187,13 @@ export const siteModulesQueries = {
     return data;
   },
 
-  // Get all available modules (for selection)
+  // Get all available modules (for selection) - only business modules, not system modules
   async getAllAvailableModules() {
     const { data, error } = await supabase
       .from("modules_systeme")
       .select("*")
       .eq("actif", true)
+      .eq("type", "metier") // Only show business modules assignable to sites
       .order("ordre", { ascending: true });
 
     if (error) throw error;
