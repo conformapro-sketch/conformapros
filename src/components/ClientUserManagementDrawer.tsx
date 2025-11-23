@@ -90,7 +90,11 @@ export function ClientUserManagementDrawer({
   });
 
   // Fetch enabled modules for the expanded site
-  const { data: enabledModulesForSite = [] } = useQuery({
+  const { 
+    data: enabledModulesForSite = [], 
+    error: modulesError,
+    isLoading: loadingModules 
+  } = useQuery({
     queryKey: ["site-enabled-modules", expandedSite],
     queryFn: async () => {
       const modules = await listEnabledModuleCodesForSite(expandedSite!);
@@ -146,7 +150,7 @@ export function ClientUserManagementDrawer({
         }));
       }
     }
-  }, [expandedSite, enabledModulesForSite, sitePermissions]);
+  }, [expandedSite, enabledModulesForSite]);
 
   // Fetch user domain scopes
   const { data: userDomains } = useQuery({
@@ -465,6 +469,19 @@ export function ClientUserManagementDrawer({
                           {loadingCurrentSitePerms && expandedSite === site.site_id ? (
                             <div className="text-center py-4 text-muted-foreground">
                               Chargement des permissions...
+                            </div>
+                          ) : modulesError && expandedSite === site.site_id ? (
+                            <Card className="border-destructive">
+                              <CardContent className="pt-6 text-center">
+                                <p className="text-destructive font-medium">Erreur lors du chargement des modules</p>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  {modulesError instanceof Error ? modulesError.message : 'Erreur inconnue'}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ) : loadingModules && expandedSite === site.site_id ? (
+                            <div className="text-center py-4 text-muted-foreground">
+                              Chargement des modules...
                             </div>
                           ) : expandedSite === site.site_id && enabledModulesForSite.length === 0 ? (
                             <Card>
