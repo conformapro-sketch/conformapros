@@ -1,11 +1,12 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Layout } from "@/components/Layout";
+import { createOptimizedQueryClient } from "@/lib/query-config";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -83,8 +84,10 @@ import NotFound from "./pages/NotFound";
 import UserProfile from "./pages/UserProfile";
 import CodesJuridiques from "./pages/CodesJuridiques";
 import CodeDetail from "./pages/CodeDetail";
+import StaffUserManagement from "./pages/StaffUserManagement";
+import ClientAdminUserManagement from "./pages/ClientAdminUserManagement";
 
-const queryClient = new QueryClient();
+const queryClient = createOptimizedQueryClient();
 
 function RootRedirect() {
   const { user, loading } = useAuth();
@@ -235,6 +238,20 @@ const App = () => (
               <Route path="roles" element={<GestionRoles />} />
               <Route path="client-users" element={<ClientUsers />} />
               <Route path="clients/:clientId/users" element={<ClientUsers />} />
+              
+              {/* Staff User Management */}
+              <Route
+                path="staff/user-management"
+                element={
+                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
+                    <StaffUserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Client Admin User Management */}
+              <Route path="client-admin/users" element={<ClientAdminUserManagement />} />
+              
               <Route path="dossier" element={<DossierReglementaire />} />
               
               {/* Contrôles Routes */}
