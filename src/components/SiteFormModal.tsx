@@ -457,9 +457,10 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
   };
 
   const isModuleEnabled = (moduleCode: string) => {
-    return siteModules.find((sm: any) => 
+    const module = siteModules.find((sm: any) => 
       sm.modules_systeme?.code === moduleCode
-    )?.enabled || false;
+    );
+    return module?.enabled || module?.actif || false;
   };
 
   const isDomaineEnabled = (domaineId: string) => {
@@ -780,51 +781,118 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
 
                 {/* Modules du site */}
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    <h3 className="font-semibold">Modules du site</h3>
-                  </div>
-                  
-                  <Card className="p-4">
-                    <div className="space-y-3">
-                      {modulesSysteme
-                        .filter((module: any) => module.code !== 'CONFORMITE')
-                        .map((module: any) => {
-                        const IconComponent = MODULE_ICONS[module.code] || Settings;
-                        const isEnabled = isModuleEnabled(module.code);
-                        const isVeilleDisabled = module.code === 'VEILLE' && !isBibliothequeEnabled && !isEnabled;
-                        
-                        return (
-                          <div key={module.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                            <div className="flex items-center gap-3 flex-1">
-                              <IconComponent className="h-5 w-5 text-primary flex-shrink-0" />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-medium">{module.libelle}</p>
-                                  {isEnabled && (
-                                    <Badge variant="default" className="text-xs">Activé</Badge>
-                                  )}
-                                </div>
-                                {module.description && (
-                                  <p className="text-sm text-muted-foreground">{module.description}</p>
-                                )}
-                                {module.code === 'VEILLE' && !isBibliothequeEnabled && !isEnabled && (
-                                  <Badge variant="outline" className="text-xs mt-1">
-                                    Nécessite: Bibliothèque réglementaire
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <Switch
-                              checked={isEnabled}
-                              onCheckedChange={(checked) => handleToggleModule(module.code, checked)}
-                              disabled={!isAdmin || isVeilleDisabled}
-                            />
+                  {(() => {
+                    const MODULE_CATEGORIES: Record<string, string[]> = {
+                      'Réglementation': ['BIBLIOTHEQUE', 'VEILLE', 'DOSSIER', 'EVALUATION'],
+                      'Santé & Sécurité': ['INCIDENTS', 'EPI', 'EQUIPEMENTS', 'CONTROLES', 'VISITES_MED'],
+                      'Formation & Compétences': ['FORMATIONS', 'AUDITS', 'PERMIS'],
+                      'Environnement': ['ENVIRONNEMENT'],
+                      'Gestion': ['PLAN_ACTION'],
+                    };
+
+                    const filteredModules = modulesSysteme.filter((m: any) => m.code !== 'CONFORMITE');
+                    const enabledCount = filteredModules.filter((m: any) => isModuleEnabled(m.code)).length;
+                    const totalCount = filteredModules.length;
+
+                    const handleSelectAll = () => {
+                      filteredModules
+                        .filter((m: any) => !isModuleEnabled(m.code))
+                        .forEach((m: any) => {
+                          const isVeilleDisabled = m.code === 'VEILLE' && !isBibliothequeEnabled;
+                          if (!isVeilleDisabled) {
+                            handleToggleModule(m.code, true);
+                          }
+                        });
+                    };
+
+                    const handleDeselectAll = () => {
+                      filteredModules
+                        .filter((m: any) => isModuleEnabled(m.code))
+                        .forEach((m: any) => handleToggleModule(m.code, false));
+                    };
+
+                    return (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Settings className="h-5 w-5" />
+                            <h3 className="font-semibold">Modules du site</h3>
+                            <Badge variant="secondary">{enabledCount} / {totalCount}</Badge>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </Card>
+                          {isAdmin && (
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={handleSelectAll}
+                                type="button"
+                              >
+                                Tout sélectionner
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={handleDeselectAll}
+                                type="button"
+                              >
+                                Tout désélectionner
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        {Object.entries(MODULE_CATEGORIES).map(([category, moduleCodes]) => {
+                          const categoryModules = filteredModules.filter((m: any) => 
+                            moduleCodes.includes(m.code)
+                          );
+
+                          if (categoryModules.length === 0) return null;
+
+                          return (
+                            <Card key={category} className="p-4">
+                              <h4 className="font-medium text-sm mb-3">{category}</h4>
+                              <div className="space-y-3">
+                                {categoryModules.map((module: any) => {
+                                  const IconComponent = MODULE_ICONS[module.code] || Settings;
+                                  const isEnabled = isModuleEnabled(module.code);
+                                  const isVeilleDisabled = module.code === 'VEILLE' && !isBibliothequeEnabled && !isEnabled;
+                                  
+                                  return (
+                                    <div key={module.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                                      <div className="flex items-center gap-3 flex-1">
+                                        <IconComponent className="h-5 w-5 text-primary flex-shrink-0" />
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2">
+                                            <p className="font-medium">{module.libelle}</p>
+                                            {isEnabled && (
+                                              <Badge variant="default" className="text-xs">Activé</Badge>
+                                            )}
+                                          </div>
+                                          {module.description && (
+                                            <p className="text-sm text-muted-foreground">{module.description}</p>
+                                          )}
+                                          {module.code === 'VEILLE' && !isBibliothequeEnabled && !isEnabled && (
+                                            <Badge variant="outline" className="text-xs mt-1">
+                                              Nécessite: Bibliothèque réglementaire
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Switch
+                                        checked={isEnabled}
+                                        onCheckedChange={(checked) => handleToggleModule(module.code, checked)}
+                                        disabled={!isAdmin || isVeilleDisabled}
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Domaines réglementaires (visible if BIBLIOTHEQUE module is enabled) */}
