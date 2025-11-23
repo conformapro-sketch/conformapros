@@ -2795,6 +2795,69 @@ export type Database = {
           },
         ]
       }
+      user_management_audit: {
+        Row: {
+          action_type: string
+          after_state: Json | null
+          before_state: Json | null
+          changes: Json | null
+          client_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          performed_by: string
+          session_id: string | null
+          site_id: string | null
+          target_user_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action_type: string
+          after_state?: Json | null
+          before_state?: Json | null
+          changes?: Json | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          performed_by: string
+          session_id?: string | null
+          site_id?: string | null
+          target_user_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action_type?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          changes?: Json | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          performed_by?: string
+          session_id?: string | null
+          site_id?: string | null
+          target_user_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_management_audit_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_management_audit_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           action: string
@@ -3066,8 +3129,125 @@ export type Database = {
           },
         ]
       }
+      v_client_admin_users_overview: {
+        Row: {
+          actif: boolean | null
+          avatar_url: string | null
+          client_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string | null
+          is_client_admin: boolean | null
+          nom: string | null
+          permission_count: number | null
+          prenom: string | null
+          roles: Json | null
+          site_count: number | null
+          sites: Json | null
+          telephone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          avatar_url?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          is_client_admin?: boolean | null
+          nom?: string | null
+          permission_count?: never
+          prenom?: string | null
+          roles?: never
+          site_count?: never
+          sites?: never
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          avatar_url?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          is_client_admin?: boolean | null
+          nom?: string | null
+          permission_count?: never
+          prenom?: string | null
+          roles?: never
+          site_count?: never
+          sites?: never
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_users_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_staff_client_users_overview: {
+        Row: {
+          actif: boolean | null
+          avatar_url: string | null
+          client_id: string | null
+          client_logo: string | null
+          client_name: string | null
+          created_at: string | null
+          email: string | null
+          id: string | null
+          is_client_admin: boolean | null
+          last_login: string | null
+          nom: string | null
+          permission_count: number | null
+          prenom: string | null
+          roles: Json | null
+          site_count: number | null
+          sites: Json | null
+          telephone: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_users_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      client_admin_get_user_overview: {
+        Args: {
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+          p_site_id?: string
+          p_status?: string
+        }
+        Returns: {
+          actif: boolean
+          avatar_url: string
+          email: string
+          id: string
+          is_client_admin: boolean
+          nom: string
+          permission_count: number
+          prenom: string
+          roles: Json
+          site_count: number
+          sites: Json
+          telephone: string
+          total_count: number
+        }[]
+      }
       get_all_client_users: {
         Args: {
           filter_client_id?: string
@@ -3146,6 +3326,18 @@ export type Database = {
         Args: { _module_id: string; _site_id: string }
         Returns: boolean
       }
+      log_user_management_action: {
+        Args: {
+          p_action_type: string
+          p_after_state?: Json
+          p_before_state?: Json
+          p_changes?: Json
+          p_client_id?: string
+          p_site_id?: string
+          p_target_user_id: string
+        }
+        Returns: string
+      }
       save_site_permissions: {
         Args: {
           p_client_id: string
@@ -3158,6 +3350,37 @@ export type Database = {
       set_user_domain_scopes: {
         Args: { domaine_ids: string[]; target_user_id: string }
         Returns: undefined
+      }
+      staff_get_user_overview: {
+        Args: {
+          p_client_id?: string
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+          p_status?: string
+        }
+        Returns: {
+          actif: boolean
+          avatar_url: string
+          client_id: string
+          client_logo: string
+          client_name: string
+          email: string
+          id: string
+          is_client_admin: boolean
+          nom: string
+          permission_count: number
+          prenom: string
+          roles: Json
+          site_count: number
+          sites: Json
+          telephone: string
+          total_count: number
+        }[]
+      }
+      validate_site_permissions: {
+        Args: { p_permissions: Json; p_site_id: string; p_user_id: string }
+        Returns: Json
       }
     }
     Enums: {
