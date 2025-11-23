@@ -227,7 +227,19 @@ export function ClientUserManagementDrawer({
         throw new Error("Aucune permission configurée. Cliquez sur les cellules pour autoriser ou refuser des permissions.");
       }
       
-      await saveSitePermissions(user.id, siteId, clientId, permissionsToSave);
+      console.log('💾 Saving site permissions:', {
+        userId: user.id,
+        siteId,
+        clientId,
+        permissions: permissionsToSave,
+        permissionCount: permissionsToSave.length,
+        nonInheritCount: permissionsToSave.filter(p => p.decision !== 'inherit').length,
+        timestamp: new Date().toISOString()
+      });
+
+      const result = await saveSitePermissions(user.id, siteId, clientId, permissionsToSave);
+      console.log('✅ Permissions saved successfully:', result);
+      return result;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["user-sites-permissions", user.id] });
@@ -238,10 +250,10 @@ export function ClientUserManagementDrawer({
       });
     },
     onError: (error: any) => {
-      console.error("Permission save error:", error);
+      console.error('❌ Permission save mutation error:', error);
       toast({
         title: "Erreur",
-        description: error?.message || "Impossible de sauvegarder les permissions.",
+        description: error?.message || error?.details || "Impossible de sauvegarder les permissions.",
         variant: "destructive",
       });
     },
@@ -250,11 +262,30 @@ export function ClientUserManagementDrawer({
   // Save domains mutation
   const saveDomainsMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc("set_user_domain_scopes", {
+      console.log('💾 Saving user domains:', {
+        userId: user.id,
+        domaineIds: selectedDomaines,
+        domainCount: selectedDomaines.length,
+        timestamp: new Date().toISOString()
+      });
+
+      const { data, error } = await supabase.rpc("set_user_domain_scopes", {
         target_user_id: user.id,
         domaine_ids: selectedDomaines,
       });
-      if (error) throw error;
+
+      if (error) {
+        console.error('❌ Error saving domains:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+
+      console.log('✅ Domains saved successfully:', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-domains", user.id] });
@@ -264,10 +295,10 @@ export function ClientUserManagementDrawer({
       });
     },
     onError: (error: any) => {
-      console.error("Domain save error:", error);
+      console.error('❌ Domain save mutation error:', error);
       toast({
         title: "Erreur",
-        description: error?.message || "Impossible de sauvegarder les domaines.",
+        description: error?.message || error?.details || "Impossible de sauvegarder les domaines.",
         variant: "destructive",
       });
     },
