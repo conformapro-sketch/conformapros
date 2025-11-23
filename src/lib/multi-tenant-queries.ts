@@ -381,7 +381,16 @@ export const fetchAllClientUsers = async (filters?: {
       ...row,
       clients: row.client_data,
       user_roles: row.roles_data,
-      access_scopes: row.sites_data,
+      access_scopes: row.sites_data?.map((s: any) => ({
+        ...s,
+        site_id: s.site_id || s.id,
+        nom_site: s.nom_site || s.nom,
+      })) || [],
+      sites_data: row.sites_data?.map((s: any) => ({
+        ...s,
+        site_id: s.site_id || s.id,
+        nom_site: s.nom_site || s.nom,
+      })) || [],
     })),
     count: totalCount,
     page,

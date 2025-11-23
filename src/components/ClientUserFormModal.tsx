@@ -130,7 +130,7 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
           email: user.email || "",
           fullName: `${user.nom || ""} ${user.prenom || ""}`.trim(),
           is_client_admin: user.is_client_admin || false,
-          siteIds: user.access_scopes?.map((as: any) => as.site_id) || [],
+          siteIds: user.access_scopes?.map((as: any) => as.site_id || as.id) || [],
           actif: user.actif ?? true,
           password: "",
           send_reset: true,
