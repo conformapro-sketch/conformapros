@@ -2766,6 +2766,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_domain_scopes: {
+        Row: {
+          created_at: string | null
+          domaine_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          domaine_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          domaine_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_domain_scopes_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           action: string
@@ -2775,6 +2804,7 @@ export type Database = {
           id: string
           module: string
           scope: Database["public"]["Enums"]["permission_scope"]
+          site_id: string | null
           updated_at: string
           user_id: string
         }
@@ -2786,6 +2816,7 @@ export type Database = {
           id?: string
           module: string
           scope?: Database["public"]["Enums"]["permission_scope"]
+          site_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2797,6 +2828,7 @@ export type Database = {
           id?: string
           module?: string
           scope?: Database["public"]["Enums"]["permission_scope"]
+          site_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2806,6 +2838,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
@@ -3067,11 +3106,29 @@ export type Database = {
           ordre: number
         }[]
       }
+      get_site_permissions: {
+        Args: { p_site_id: string; p_user_id: string }
+        Returns: {
+          action: string
+          decision: Database["public"]["Enums"]["permission_decision"]
+          module: string
+          scope: Database["public"]["Enums"]["permission_scope"]
+        }[]
+      }
       get_user_sites: {
         Args: { _user_id: string }
         Returns: {
           client_id: string
           client_name: string
+          site_id: string
+          site_name: string
+        }[]
+      }
+      get_user_sites_with_permissions: {
+        Args: { p_user_id: string }
+        Returns: {
+          permission_count: number
+          site_active: boolean
           site_id: string
           site_name: string
         }[]
@@ -3088,6 +3145,19 @@ export type Database = {
       is_module_enabled_for_site: {
         Args: { _module_id: string; _site_id: string }
         Returns: boolean
+      }
+      save_site_permissions: {
+        Args: {
+          p_client_id: string
+          p_permissions: Json
+          p_site_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      set_user_domain_scopes: {
+        Args: { domaine_ids: string[]; target_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
