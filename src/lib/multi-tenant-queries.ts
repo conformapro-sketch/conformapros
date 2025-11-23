@@ -1957,12 +1957,12 @@ export const saveSitePermissions = async (
   // Filter out 'full' action - it's UI-only and all real actions are already included
   const permissionsToSave = permissions.filter(p => p.action !== 'full');
   
-  // Use secure RPC function to save permissions with proper authorization
-  const { error } = await supabase.rpc('set_user_site_permissions', {
-    target_user_id: userId,
-    target_client_id: clientId,
-    target_site_id: siteId,
-    permissions: permissionsToSave
+  // Use existing secure RPC function to save permissions with proper authorization
+  const { error } = await supabase.rpc('save_site_permissions', {
+    p_user_id: userId,
+    p_site_id: siteId,
+    p_client_id: clientId,
+    p_permissions: permissionsToSave
   });
   
   if (error) throw error;
