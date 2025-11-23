@@ -467,21 +467,21 @@ export default function AllClientUsers() {
                                 </div>
                               </TooltipTrigger>
                                <TooltipContent className="max-w-xs">
-                                {userSites.length > 0 ? (
-                                  <ul className="space-y-1">
-                                    {userSites.map((site: any) => (
-                                      <li key={site.site_id} className="text-sm">
-                                        • {site.nom_site}
-                                        {site.read_only && (
-                                          <span className="text-muted-foreground ml-1">(lecture seule)</span>
-                                        )}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="text-sm">Aucun site</p>
-                                )}
-                              </TooltipContent>
+                                 {userSites.length > 0 ? (
+                                   <ul className="space-y-1">
+                                     {userSites.map((site: any) => (
+                                       <li key={site.site_id || site.id} className="text-sm">
+                                         • {site.nom_site || site.nom}
+                                         {site.read_only && (
+                                           <span className="text-muted-foreground ml-1">(lecture seule)</span>
+                                         )}
+                                       </li>
+                                     ))}
+                                   </ul>
+                                 ) : (
+                                   <p className="text-sm">Aucun site</p>
+                                 )}
+                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </TableCell>
