@@ -1907,17 +1907,15 @@ export const fetchUserSitesWithPermissions = async (userId: string) => {
 
 // Fetch enabled module codes for a specific site (staff-authorized modules)
 export const listEnabledModuleCodesForSite = async (siteId: string): Promise<string[]> => {
-  const { data, error } = await supabase
-    .from("site_modules")
-    .select("modules_systeme!inner(code)")
-    .eq("site_id", siteId)
-    .eq("actif", true);
+  const { data, error } = await supabase.rpc("get_site_enabled_modules", {
+    _site_id: siteId,
+  });
 
   if (error) throw error;
   
   // Extract and normalize module codes to lowercase
   return (data || []).map((row: any) => 
-    row.modules_systeme?.code?.toLowerCase() || ''
+    row.code?.toLowerCase() || ''
   ).filter(Boolean);
 };
 
