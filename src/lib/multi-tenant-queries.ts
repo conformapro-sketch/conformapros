@@ -1911,7 +1911,7 @@ export const listEnabledModuleCodesForSite = async (siteId: string): Promise<str
     .from("site_modules")
     .select("modules_systeme!inner(code)")
     .eq("site_id", siteId)
-    .eq("enabled", true);
+    .eq("actif", true);
 
   if (error) throw error;
   

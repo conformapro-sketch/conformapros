@@ -92,7 +92,11 @@ export function ClientUserManagementDrawer({
   // Fetch enabled modules for the expanded site
   const { data: enabledModulesForSite = [] } = useQuery({
     queryKey: ["site-enabled-modules", expandedSite],
-    queryFn: () => listEnabledModuleCodesForSite(expandedSite!),
+    queryFn: async () => {
+      const modules = await listEnabledModuleCodesForSite(expandedSite!);
+      console.log('🔍 Modules enabled for site', expandedSite, ':', modules);
+      return modules;
+    },
     enabled: !!expandedSite && open,
   });
 
