@@ -63,15 +63,33 @@ export function PermissionMatrixV2({
 
   const saveMutation = useMutation({
     mutationFn: async (perms: Permission[]) => {
-      const { data, error } = await supabase.functions.invoke('staff-user-management', {
-        body: {
-          action: 'set_permissions',
-          userId,
-          siteId,
-          permissions: perms,
-        },
+      console.log('💾 Calling save_site_permissions RPC:', {
+        p_user_id: userId,
+        p_site_id: siteId,
+        p_client_id: clientId,
+        p_permissions: perms,
+        permissionCount: perms.length
       });
-      if (error) throw error;
+
+      const { data, error } = await supabase.rpc('save_site_permissions', {
+        p_user_id: userId,
+        p_site_id: siteId,
+        p_client_id: clientId,
+        p_permissions: perms as any,
+      });
+
+      if (error) {
+        console.error('❌ Error saving permissions:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+
+      console.log('✅ Permissions saved successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -79,7 +97,8 @@ export function PermissionMatrixV2({
       onUpdate();
     },
     onError: (error: any) => {
-      toast.error(`Failed to save permissions: ${error.message}`);
+      console.error('❌ Save mutation error:', error);
+      toast.error(`Failed to save permissions: ${error.message || error.details || 'Unknown error'}`);
     },
   });
 
@@ -147,6 +166,15 @@ export function PermissionMatrixV2({
   };
 
   const handleSave = () => {
+    console.log('🔐 Saving permissions from PermissionMatrixV2:', {
+      userId,
+      siteId,
+      clientId,
+      permissions,
+      permissionCount: permissions.length,
+      nonInheritCount: permissions.filter(p => p.decision !== 'inherit').length,
+      timestamp: new Date().toISOString()
+    });
     saveMutation.mutate(permissions);
   };
 
