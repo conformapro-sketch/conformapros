@@ -561,7 +561,8 @@ export const listModulesSysteme = async () => {
     .from("modules_systeme")
     .select("*")
     .eq("actif", true)
-    .order("libelle");
+    .eq("type", "metier")
+    .order("ordre");
   
   if (error) throw error;
   return data;
@@ -577,7 +578,12 @@ export const listSiteModules = async (siteId: string) => {
     .eq("site_id", siteId);
   
   if (error) throw error;
-  return data;
+  
+  // Map 'actif' to 'enabled' for UI compatibility
+  return data?.map(sm => ({
+    ...sm,
+    enabled: sm.actif
+  })) || [];
 };
 
 export const toggleSiteModule = async (
@@ -602,9 +608,9 @@ export const toggleSiteModule = async (
     .upsert({
       site_id: siteId,
       module_id: module.id,
-      enabled,
-      enabled_by: userId,
-      enabled_at: new Date().toISOString(),
+      actif: enabled,
+      enabled_at: enabled ? new Date().toISOString() : null,
+      disabled_at: enabled ? null : new Date().toISOString(),
     }, {
       onConflict: "site_id,module_id"
     })
