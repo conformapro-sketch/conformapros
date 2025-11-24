@@ -22,6 +22,10 @@ import { Building2, Loader2, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } f
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  Alert,
+  AlertDescription,
+} from "@/components/ui/alert";
 
 const userSchema = z.object({
   client_id: z.string().min(1, "Le client est requis"),
@@ -293,44 +297,77 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Client Selection/Display */}
-          {!user ? (
-            <div>
-              <Label htmlFor="client_id">
-                Client * 
-                <span className="text-xs text-muted-foreground ml-2">(obligatoire)</span>
-              </Label>
-              <Controller
-                name="client_id"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange} disabled={!!clientId}>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Sélectionner un client..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      {clients?.map((client: any) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.nom} {client.nom_legal && `(${client.nom_legal})`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          {/* Client Selection/Display - Always shown with prominent guidance */}
+          <div className={cn(
+            "p-4 rounded-lg border-2 transition-all",
+            !selectedClientId && !user ? "border-primary bg-primary/5" : "border-border bg-muted/30"
+          )}>
+            {!user ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="client_id" className="text-base font-semibold">
+                    Étape 1: Sélectionner le client *
+                  </Label>
+                  {!selectedClientId && (
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary">
+                      Obligatoire
+                    </Badge>
+                  )}
+                </div>
+                <Controller
+                  name="client_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange} 
+                      disabled={!!clientId}
+                    >
+                      <SelectTrigger className={cn(
+                        "bg-background h-12",
+                        !field.value && "border-primary"
+                      )}>
+                        <SelectValue placeholder="🏢 Choisir une organisation client..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        {clients?.map((client: any) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span>{client.nom}</span>
+                              {client.nom_legal && (
+                                <span className="text-xs text-muted-foreground">({client.nom_legal})</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.client_id && (
+                  <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.client_id.message}
+                  </p>
                 )}
-              />
-              {errors.client_id && (
-                <p className="text-sm text-destructive mt-1">{errors.client_id.message}</p>
-              )}
-            </div>
-          ) : (
-            <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <Label className="text-xs text-muted-foreground">Client</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{selectedClient?.nom || "Client"}</span>
+                {selectedClientId && selectedClient && (
+                  <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span>Client sélectionné: <strong className="text-foreground">{selectedClient.nom}</strong></span>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            ) : (
+              <div>
+                <Label className="text-xs text-muted-foreground">Client</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{selectedClient?.nom || "Client"}</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Email with validation indicator */}
           <div>

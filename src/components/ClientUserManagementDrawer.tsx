@@ -31,6 +31,8 @@ import {
   listEnabledDomainIdsForSites,
 } from "@/lib/multi-tenant-queries";
 import type { PermissionScope } from "@/types/roles";
+import { SiteModulesQuickConfig } from "@/components/permissions/SiteModulesQuickConfig";
+import { Badge } from "@/components/ui/badge";
 
 interface ClientUserManagementDrawerProps {
   open: boolean;
@@ -477,88 +479,99 @@ export function ClientUserManagementDrawer({
                   value={expandedSite || undefined}
                   onValueChange={setExpandedSite}
                 >
-                  {userSites.map((site: any) => (
-                    <AccordionItem key={site.site_id} value={site.site_id}>
-                      <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center justify-between w-full pr-4">
-                          <div className="flex items-center gap-3">
-                            <MapPin className="h-5 w-5 text-primary" />
-                            <div className="text-left">
-                              <div className="font-medium">{site.site_name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {site.permission_count || 0} permission(s) configurée(s)
-                              </div>
-                            </div>
-                          </div>
-                          {!site.site_active && (
-                            <span className="text-xs bg-muted px-2 py-1 rounded">Inactif</span>
-                          )}
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="pt-4 space-y-4">
-                          {loadingCurrentSitePerms && expandedSite === site.site_id ? (
-                            <div className="text-center py-4 text-muted-foreground">
-                              Chargement des permissions...
-                            </div>
-                          ) : modulesError && expandedSite === site.site_id ? (
-                            <Card className="border-destructive">
-                              <CardContent className="pt-6 text-center">
-                                <p className="text-destructive font-medium">Erreur lors du chargement des modules</p>
-                                <p className="text-sm text-muted-foreground mt-2">
-                                  {modulesError instanceof Error ? modulesError.message : 'Erreur inconnue'}
-                                </p>
-                              </CardContent>
-                            </Card>
-                          ) : loadingModules && expandedSite === site.site_id ? (
-                            <div className="text-center py-4 text-muted-foreground">
-                              Chargement des modules...
-                            </div>
-                          ) : expandedSite === site.site_id && enabledModulesForSite.length === 0 ? (
-                            <Card>
-                              <CardContent className="pt-6 text-center text-muted-foreground">
-                                <p>Aucun module activé pour ce site.</p>
-                                <p className="text-sm mt-2">Contactez un administrateur ConformaPro.</p>
-                              </CardContent>
-                            </Card>
-                          ) : (
-                            <>
-                              <PermissionMatrix
-                                permissions={sitePermissions[site.site_id] || []}
-                                onPermissionsChange={(perms) => updateSitePermissions(site.site_id, perms)}
-                                scope={siteScopes[site.site_id] || 'site'}
-                                onScopeChange={(scope) => updateSiteScope(site.site_id, scope)}
-                                roleType="client"
-                                userType="client"
-                                siteId={site.site_id}
-                                modules={expandedSite === site.site_id ? enabledModulesForSite : []}
-                              />
-                              <div className="flex justify-end gap-2">
-                                <div className="text-sm text-muted-foreground self-center">
-                                  {(() => {
-                                    const perms = sitePermissions[site.site_id] || [];
-                                    const configuredCount = perms.filter(p => p.decision !== 'inherit').length;
-                                    return configuredCount > 0 
-                                      ? `${configuredCount} permission(s) configurée(s)` 
-                                      : 'Aucune permission configurée';
-                                  })()}
+                  {userSites.map((site: any) => {
+                    const siteModuleCount = enabledModulesForSite.length;
+                    const isCurrentSite = expandedSite === site.site_id;
+                    
+                    return (
+                      <AccordionItem key={site.site_id} value={site.site_id}>
+                        <AccordionTrigger className="hover:no-underline">
+                          <div className="flex items-center justify-between w-full pr-4">
+                            <div className="flex items-center gap-3">
+                              <MapPin className="h-5 w-5 text-primary" />
+                              <div className="text-left">
+                                <div className="font-medium">{site.site_name}</div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                  {site.permission_count || 0} permission(s) configurée(s)
+                                  {isCurrentSite && siteModuleCount > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {siteModuleCount} module{siteModuleCount > 1 ? 's' : ''}
+                                    </Badge>
+                                  )}
                                 </div>
-                                <Button
-                                  onClick={() => saveSitePermissionsMutation.mutate({ siteId: site.site_id })}
-                                  disabled={saveSitePermissionsMutation.isPending}
-                                >
-                                  {saveSitePermissionsMutation.isPending 
-                                    ? "Enregistrement..." 
-                                    : "Enregistrer les permissions"
-                                  }
-                                </Button>
                               </div>
-                            </>
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
+                            </div>
+                            {!site.site_active && (
+                              <span className="text-xs bg-muted px-2 py-1 rounded">Inactif</span>
+                            )}
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="pt-4 space-y-4">
+                            {loadingCurrentSitePerms && expandedSite === site.site_id ? (
+                              <div className="text-center py-4 text-muted-foreground">
+                                Chargement des permissions...
+                              </div>
+                            ) : modulesError && expandedSite === site.site_id ? (
+                              <Card className="border-destructive">
+                                <CardContent className="pt-6 text-center">
+                                  <p className="text-destructive font-medium">Erreur lors du chargement des modules</p>
+                                  <p className="text-sm text-muted-foreground mt-2">
+                                    {modulesError instanceof Error ? modulesError.message : 'Erreur inconnue'}
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            ) : loadingModules && expandedSite === site.site_id ? (
+                              <div className="text-center py-4 text-muted-foreground">
+                                Chargement des modules...
+                              </div>
+                            ) : expandedSite === site.site_id && enabledModulesForSite.length === 0 ? (
+                              <SiteModulesQuickConfig 
+                                siteId={site.site_id}
+                                siteName={site.site_name}
+                                onModulesEnabled={() => {
+                                  queryClient.invalidateQueries({ queryKey: ["site-enabled-modules", site.site_id] });
+                                }}
+                              />
+                            ) : (
+                              <>
+                                <PermissionMatrix
+                                  permissions={sitePermissions[site.site_id] || []}
+                                  onPermissionsChange={(perms) => updateSitePermissions(site.site_id, perms)}
+                                  scope={siteScopes[site.site_id] || 'site'}
+                                  onScopeChange={(scope) => updateSiteScope(site.site_id, scope)}
+                                  roleType="client"
+                                  userType="client"
+                                  siteId={site.site_id}
+                                  modules={expandedSite === site.site_id ? enabledModulesForSite : []}
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <div className="text-sm text-muted-foreground self-center">
+                                    {(() => {
+                                      const perms = sitePermissions[site.site_id] || [];
+                                      const configuredCount = perms.filter(p => p.decision !== 'inherit').length;
+                                      return configuredCount > 0 
+                                        ? `${configuredCount} permission(s) configurée(s)` 
+                                        : 'Aucune permission configurée';
+                                    })()}
+                                  </div>
+                                  <Button
+                                    onClick={() => saveSitePermissionsMutation.mutate({ siteId: site.site_id })}
+                                    disabled={saveSitePermissionsMutation.isPending}
+                                  >
+                                    {saveSitePermissionsMutation.isPending 
+                                      ? "Enregistrement..." 
+                                      : "Enregistrer les permissions"
+                                    }
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
                 </Accordion>
               )}
             </div>
