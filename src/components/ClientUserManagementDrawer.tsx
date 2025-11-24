@@ -58,7 +58,7 @@ export function ClientUserManagementDrawer({
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
-  const [expandedSite, setExpandedSite] = useState<string | null>(null);
+  const [expandedSite, setExpandedSite] = useState<string>("");
   const [sitePermissions, setSitePermissions] = useState<Record<string, any[]>>({});
   const [siteScopes, setSiteScopes] = useState<Record<string, PermissionScope>>({});
 
@@ -502,12 +502,12 @@ export function ClientUserManagementDrawer({
                 <Accordion
                   type="single"
                   collapsible
-                  value={expandedSite || undefined}
+                  value={expandedSite}
                   onValueChange={setExpandedSite}
                 >
                   {userSites.map((site: any) => {
-                    const siteModuleCount = enabledModulesForSite.length;
                     const isCurrentSite = expandedSite === site.site_id;
+                    const siteModuleCount = isCurrentSite ? enabledModulesForSite.length : 0;
                     
                     return (
                       <AccordionItem key={site.site_id} value={site.site_id}>
