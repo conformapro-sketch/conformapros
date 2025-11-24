@@ -10,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { createClient, updateClient } from "@/lib/multi-tenant-queries";
+import { clientsQueryService } from "@/lib/clients-query-service";
+import { LogoUpload } from "@/components/shared/LogoUpload";
 import type { Database } from "@/types/db";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type ClientRow = Database["public"]["Tables"]["clients"]["Row"];
 
@@ -38,6 +40,7 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const {
     register,
@@ -61,8 +64,10 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
         pays: client.pays || "Tunisie",
         logo_url: client.logo_url || "",
       });
+      setLogoFile(null);
     } else if (open && !client) {
       reset({ pays: "Tunisie" });
+      setLogoFile(null);
     }
   }, [open, client, reset]);
 
@@ -156,10 +161,28 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
   });
 
   const onSubmit = async (data: ClientFormData) => {
-    if (client) {
-      updateMutation.mutate({ clientId: client.id, updates: data as any });
-    } else {
-      createMutation.mutate(data);
+    try {
+      let logoUrl = client?.logo_url;
+
+      // Upload logo if a new file was selected
+      if (logoFile) {
+        const tempId = client?.id || `temp-${Date.now()}`;
+        logoUrl = await clientsQueryService.uploadLogo(tempId, logoFile);
+      }
+
+      const dataWithLogo = { ...data, logo_url: logoUrl };
+
+      if (client) {
+        updateMutation.mutate({ clientId: client.id, updates: dataWithLogo as any });
+      } else {
+        createMutation.mutate(dataWithLogo);
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur de téléchargement",
+        description: "Impossible de télécharger le logo. Réessayez.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -171,6 +194,15 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="col-span-2">
+            <LogoUpload
+              currentUrl={client?.logo_url}
+              onFileSelect={setLogoFile}
+              label="Logo du client"
+              description="PNG, JPG jusqu'à 2MB"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label htmlFor="nom_legal">Nom légal *</Label>

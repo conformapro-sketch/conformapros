@@ -2537,6 +2537,7 @@ export type Database = {
           id: string
           latitude: number | null
           localite: string | null
+          logo_url: string | null
           longitude: number | null
           niveau_risque: string | null
           nom: string
@@ -2564,6 +2565,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           localite?: string | null
+          logo_url?: string | null
           longitude?: number | null
           niveau_risque?: string | null
           nom: string
@@ -2591,6 +2593,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           localite?: string | null
+          logo_url?: string | null
           longitude?: number | null
           niveau_risque?: string | null
           nom?: string
