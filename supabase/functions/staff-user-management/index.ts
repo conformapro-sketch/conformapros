@@ -213,6 +213,35 @@ Deno.serve(async (req) => {
           throw new Error('userId and siteIds required');
         }
 
+        // Get user's client_id
+        const { data: userData, error: userError } = await supabase
+          .from('client_users')
+          .select('client_id')
+          .eq('id', request.userId)
+          .single();
+
+        if (userError || !userData) {
+          throw new Error('User not found');
+        }
+
+        // CRITICAL SECURITY FIX: Validate all sites belong to user's client
+        if (request.siteIds.length > 0) {
+          const { data: validSites, error: sitesError } = await supabase
+            .from('sites')
+            .select('id')
+            .eq('client_id', userData.client_id)
+            .in('id', request.siteIds);
+
+          if (sitesError) throw sitesError;
+
+          const validSiteIds = validSites?.map(s => s.id) || [];
+          const invalidSites = request.siteIds.filter(id => !validSiteIds.includes(id));
+
+          if (invalidSites.length > 0) {
+            throw new Error(`Invalid sites: Cannot assign sites from different clients. Invalid site IDs: ${invalidSites.join(', ')}`);
+          }
+        }
+
         // Get before state
         const { data: beforeSites } = await supabase
           .from('access_scopes')
@@ -241,16 +270,10 @@ Deno.serve(async (req) => {
         }
 
         // Log audit
-        const { data: userData } = await supabase
-          .from('client_users')
-          .select('client_id')
-          .eq('id', request.userId)
-          .single();
-
         await supabase.rpc('log_user_management_action', {
           p_action_type: 'site_assignment',
           p_target_user_id: request.userId,
-          p_client_id: userData?.client_id,
+          p_client_id: userData.client_id,
           p_before_state: { sites: beforeSites },
           p_after_state: { sites: request.siteIds },
         });
