@@ -175,8 +175,6 @@ export function ClientUserManagementDrawer({
       const { data, error } = await supabase
         .from("domaines_reglementaires")
         .select("*")
-        .eq("actif", true)
-        .is("deleted_at", null)
         .order("libelle");
       if (error) throw error;
       return data || [];
@@ -192,22 +190,30 @@ export function ClientUserManagementDrawer({
     [allDomaines, enabledDomainIds]
   );
 
-  // Initialize states when data loads
+  // Initialize states when data loads - FIXED to prevent infinite loop
   useEffect(() => {
-    if (userDomains) {
-      const safeSelection = userDomains.filter((id) => enabledDomainIds.includes(id));
-      setSelectedDomaines(safeSelection);
-    }
-    if (user) {
-      setProfileData({
-        nom: user.nom || "",
-        prenom: user.prenom || "",
-        telephone: user.telephone || "",
-        actif: user.actif ?? true,
+    if (!user?.id) return;
+    
+    // Only initialize domains once when user changes
+    if (userDomains && userDomains.length > 0) {
+      setSelectedDomaines(prev => {
+        // Only update if we haven't set it yet or user changed
+        if (prev.length === 0) {
+          return userDomains;
+        }
+        return prev;
       });
-      setAvatarPreview(user.avatar_url || "");
     }
-  }, [userDomains, user, enabledDomainIds]);
+    
+    // Update profile data
+    setProfileData({
+      nom: user.nom || "",
+      prenom: user.prenom || "",
+      telephone: user.telephone || "",
+      actif: user.actif ?? true,
+    });
+    setAvatarPreview(user.avatar_url || "");
+  }, [user?.id, userDomains]); // Removed enabledDomainIds to fix infinite loop
 
   // Save site permissions mutation
   const saveSitePermissionsMutation = useMutation({

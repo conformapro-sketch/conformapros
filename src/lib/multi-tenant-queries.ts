@@ -1923,19 +1923,28 @@ export const listEnabledModuleCodesForSite = async (siteId: string): Promise<str
 export const listEnabledDomainIdsForSites = async (siteIds: string[]): Promise<string[]> => {
   if (!siteIds || siteIds.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from("site_veille_domaines")
-    .select("domaine_id")
-    .in("site_id", siteIds)
-    .eq("enabled", true);
+  try {
+    const { data, error } = await supabase
+      .from("site_veille_domaines")
+      .select("domaine_id")
+      .in("site_id", siteIds)
+      .eq("enabled", true);
 
-  if (error) throw error;
-  
-  // Return unique domain IDs with proper type
-  const domainIds = (data || [])
-    .map((row: any) => row.domaine_id)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0);
-  return Array.from(new Set(domainIds));
+    if (error) {
+      // Handle gracefully if table doesn't exist yet
+      console.warn('Error fetching site_veille_domaines:', error.message);
+      return [];
+    }
+    
+    // Return unique domain IDs with proper type
+    const domainIds = (data || [])
+      .map((row: any) => row.domaine_id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    return Array.from(new Set(domainIds));
+  } catch (err) {
+    console.warn('Failed to fetch enabled domains for sites:', err);
+    return [];
+  }
 };
 
 export const fetchSitePermissions = async (userId: string, siteId: string) => {

@@ -670,27 +670,33 @@ export type Database = {
       }
       domaines_reglementaires: {
         Row: {
+          actif: boolean | null
           code: string
           couleur: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           icone: string | null
           id: string
           libelle: string
         }
         Insert: {
+          actif?: boolean | null
           code: string
           couleur?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           icone?: string | null
           id?: string
           libelle: string
         }
         Update: {
+          actif?: boolean | null
           code?: string
           couleur?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           icone?: string | null
           id?: string
@@ -1836,28 +1842,37 @@ export type Database = {
       }
       module_features: {
         Row: {
+          actif: boolean | null
           code: string
           created_at: string | null
           description: string | null
+          display_order: number | null
           id: string
           module_id: string | null
           name: string
+          updated_at: string | null
         }
         Insert: {
+          actif?: boolean | null
           code: string
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           id?: string
           module_id?: string | null
           name: string
+          updated_at?: string | null
         }
         Update: {
+          actif?: boolean | null
           code?: string
           created_at?: string | null
           description?: string | null
+          display_order?: number | null
           id?: string
           module_id?: string | null
           name?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1876,6 +1891,7 @@ export type Database = {
           couleur: string | null
           created_at: string
           description: string | null
+          display_order: number | null
           icon: string | null
           id: string
           libelle: string
@@ -1890,6 +1906,7 @@ export type Database = {
           couleur?: string | null
           created_at?: string
           description?: string | null
+          display_order?: number | null
           icon?: string | null
           id?: string
           libelle: string
@@ -1904,6 +1921,7 @@ export type Database = {
           couleur?: string | null
           created_at?: string
           description?: string | null
+          display_order?: number | null
           icon?: string | null
           id?: string
           libelle?: string
@@ -1919,21 +1937,27 @@ export type Database = {
           code: string
           created_at: string
           description: string | null
+          display_order: number | null
           id: string
+          label: string | null
           nom: string
         }
         Insert: {
           code: string
           created_at?: string
           description?: string | null
+          display_order?: number | null
           id?: string
+          label?: string | null
           nom: string
         }
         Update: {
           code?: string
           created_at?: string
           description?: string | null
+          display_order?: number | null
           id?: string
+          label?: string | null
           nom?: string
         }
         Relationships: []
@@ -2442,6 +2466,48 @@ export type Database = {
           },
           {
             foreignKeyName: "site_modules_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_veille_domaines: {
+        Row: {
+          created_at: string | null
+          domaine_id: string
+          enabled: boolean | null
+          id: string
+          site_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domaine_id: string
+          enabled?: boolean | null
+          id?: string
+          site_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domaine_id?: string
+          enabled?: boolean | null
+          id?: string
+          site_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_veille_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_veille_domaines_site_id_fkey"
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
