@@ -496,6 +496,7 @@ export type Database = {
           abreviation: string | null
           code: string
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           nom_officiel: string | null
@@ -506,6 +507,7 @@ export type Database = {
           abreviation?: string | null
           code: string
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           nom_officiel?: string | null
@@ -516,6 +518,7 @@ export type Database = {
           abreviation?: string | null
           code?: string
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           nom_officiel?: string | null
@@ -2431,6 +2434,7 @@ export type Database = {
           created_at: string | null
           disabled_at: string | null
           enabled_at: string | null
+          enabled_by: string | null
           id: string
           module_id: string
           site_id: string
@@ -2441,6 +2445,7 @@ export type Database = {
           created_at?: string | null
           disabled_at?: string | null
           enabled_at?: string | null
+          enabled_by?: string | null
           id?: string
           module_id: string
           site_id: string
@@ -2451,6 +2456,7 @@ export type Database = {
           created_at?: string | null
           disabled_at?: string | null
           enabled_at?: string | null
+          enabled_by?: string | null
           id?: string
           module_id?: string
           site_id?: string
@@ -3338,6 +3344,13 @@ export type Database = {
           telephone: string
           total_count: number
           updated_at: string
+        }[]
+      }
+      get_bulk_site_modules: {
+        Args: { site_ids: string[] }
+        Returns: {
+          modules: Json
+          site_id: string
         }[]
       }
       get_site_enabled_modules: {
