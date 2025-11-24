@@ -33,6 +33,8 @@ import { ClientUserFormModal } from "@/components/ClientUserFormModal";
 import { ClientUserManagementDrawer } from "@/components/ClientUserManagementDrawer";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ErrorAlert } from "@/components/shared/ErrorAlert";
+import { TableSkeleton } from "@/components/shared/LoadingStates";
 import {
   Tooltip,
   TooltipContent,
@@ -106,7 +108,7 @@ export default function AllClientUsers() {
     }
   }, [clientFilter, setSearchParams]);
 
-  const { data: usersData, isLoading, error: usersError } = useQuery({
+  const { data: usersData, isLoading, error: usersError, refetch } = useQuery({
     queryKey: ["all-client-users", debouncedSearch, clientFilter, statusFilter, currentPage],
     queryFn: () => fetchAllClientUsers({
       search: debouncedSearch || undefined,
@@ -397,17 +399,16 @@ export default function AllClientUsers() {
 
       {/* Users table */}
       {usersError ? (
+        <ErrorAlert 
+          message={(usersError as any)?.message || "Erreur lors du chargement des utilisateurs"}
+          onRetry={() => refetch()}
+        />
+      ) : isLoading ? (
         <Card className="shadow-soft">
-          <CardContent className="py-6">
-            <p className="text-sm text-destructive">
-              {(usersError as any)?.message || "Vous n'êtes pas autorisé à voir cette liste."}
-            </p>
+          <CardContent className="pt-6">
+            <TableSkeleton rows={10} columns={7} />
           </CardContent>
         </Card>
-      ) : isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
       ) : users.length > 0 ? (
         <Card className="shadow-soft">
           <CardContent className="p-0">
