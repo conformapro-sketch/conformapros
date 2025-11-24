@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface ClientAdminUserManagementRequest {
-  action: 'list' | 'get' | 'invite' | 'update' | 'set_permissions' | 'audit_log';
+  action: 'list' | 'get' | 'invite' | 'update' | 'assign_sites' | 'set_permissions' | 'audit_log';
   userId?: string;
   siteId?: string;
   search?: string;
@@ -186,6 +186,78 @@ Deno.serve(async (req) => {
         });
 
         result = { user: data };
+        break;
+      }
+
+      case 'assign_sites': {
+        if (!request.userId || !request.siteIds) {
+          throw new Error('userId and siteIds required');
+        }
+
+        // Verify user belongs to admin's client
+        const { data: targetUser } = await supabase
+          .from('client_users')
+          .select('client_id')
+          .eq('id', request.userId)
+          .single();
+
+        if (targetUser?.client_id !== adminClientId) {
+          throw new Error('Access denied: user not in your client');
+        }
+
+        // Validate all sites belong to admin's client
+        if (request.siteIds.length > 0) {
+          const { data: validSites } = await supabase
+            .from('sites')
+            .select('id')
+            .eq('client_id', adminClientId)
+            .in('id', request.siteIds);
+
+          const validSiteIds = validSites?.map(s => s.id) || [];
+          const invalidSites = request.siteIds.filter(id => !validSiteIds.includes(id));
+
+          if (invalidSites.length > 0) {
+            throw new Error('Invalid sites: some sites do not belong to your client');
+          }
+        }
+
+        // Get before state
+        const { data: beforeSites } = await supabase
+          .from('access_scopes')
+          .select('site_id')
+          .eq('user_id', request.userId);
+
+        // Delete existing
+        await supabase
+          .from('access_scopes')
+          .delete()
+          .eq('user_id', request.userId);
+
+        // Insert new
+        if (request.siteIds.length > 0) {
+          const { error } = await supabase
+            .from('access_scopes')
+            .insert(
+              request.siteIds.map(siteId => ({
+                user_id: request.userId,
+                site_id: siteId,
+                created_by: adminClientId,
+              }))
+            );
+
+          if (error) throw error;
+        }
+
+        // Log audit
+        await supabase.rpc('log_user_management_action', {
+          p_action_type: 'site_assignment',
+          p_target_user_id: request.userId,
+          p_client_id: adminClientId,
+          p_before_state: { sites: beforeSites },
+          p_after_state: { sites: request.siteIds },
+        });
+
+        result = { success: true };
         break;
       }
 
