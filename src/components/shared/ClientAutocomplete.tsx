@@ -75,7 +75,7 @@ export function ClientAutocomplete({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="Tapez pour rechercher..."
             value={search}
