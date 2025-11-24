@@ -18,13 +18,17 @@ export interface Role {
 export interface RolePermission {
   id: string;
   role_id: string;
-  module_id: string;
+  // Support both FK-based (team users) and text-based (client users) formats
+  module_id?: string;
+  module?: string; // Text code for client users
   feature_id?: string;
-  action_id: string;
+  action_id?: string;
+  action?: string; // Text code for client users
   decision: PermissionDecision;
   scope: PermissionScope;
   created_at: string;
-  // Joined data from FK relations
+  updated_at?: string;
+  // Joined data from FK relations (team users)
   modules_systeme?: {
     id: string;
     code: string;

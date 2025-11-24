@@ -117,16 +117,45 @@ export function PermissionMatrixV2({
     decision: "allow" | "deny" | "inherit"
   ) => {
     setPermissions((prev) => {
-      const filtered = prev.filter(
+      let newPermissions = prev.filter(
         (p) => !(p.module.toLowerCase() === module.toLowerCase() && p.action === action)
       );
+      
+      // PERMISSION HIERARCHY ENFORCEMENT
+      // If setting view to deny, automatically deny all dependent actions
+      if (action === "view" && decision === "deny") {
+        const dependentActions = ["create", "edit", "delete", "export"];
+        newPermissions = newPermissions.filter(
+          (p) => !(p.module.toLowerCase() === module.toLowerCase() && dependentActions.includes(p.action))
+        );
+        // Add explicit denies for dependent actions
+        dependentActions.forEach(depAction => {
+          newPermissions.push({ module, action: depAction, decision: "deny", scope: "site" as const });
+        });
+      }
+      
+      // If setting a dependent action to allow, ensure view is also allowed
+      const dependentActions = ["create", "edit", "delete", "export"];
+      if (dependentActions.includes(action) && decision === "allow") {
+        const viewPerm = newPermissions.find(
+          (p) => p.module.toLowerCase() === module.toLowerCase() && p.action === "view"
+        );
+        if (!viewPerm || viewPerm.decision !== "allow") {
+          // Auto-allow view
+          newPermissions = newPermissions.filter(
+            (p) => !(p.module.toLowerCase() === module.toLowerCase() && p.action === "view")
+          );
+          newPermissions.push({ module, action: "view", decision: "allow", scope: "site" as const });
+        }
+      }
+      
       if (decision !== "inherit") {
         return [
-          ...filtered,
+          ...newPermissions,
           { module, action, decision, scope: "site" as const },
         ];
       }
-      return filtered;
+      return newPermissions;
     });
   };
 
@@ -262,13 +291,25 @@ export function PermissionMatrixV2({
               <div className="grid grid-cols-5 gap-2">
                 {actions.map((action) => {
                   const decision = getPermission(module.code, action);
+                  const viewDecision = getPermission(module.code, "view");
+                  const isDependent = ["create", "edit", "delete", "export"].includes(action);
+                  const isDisabled = isDependent && viewDecision === "deny";
+                  
                   return (
                     <button
                       key={action}
-                      onClick={() => cyclePermission(module.code, action)}
+                      onClick={() => !isDisabled && cyclePermission(module.code, action)}
+                      disabled={isDisabled}
                       className={`p-3 rounded border transition-colors ${getDecisionClass(
                         decision
-                      )}`}
+                      )} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title={
+                        isDisabled 
+                          ? "This action requires 'view' permission to be allowed first" 
+                          : action === "view" 
+                          ? "View permission is required for all other actions" 
+                          : undefined
+                      }
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium capitalize">
