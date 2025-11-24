@@ -283,17 +283,7 @@ Deno.serve(async (req) => {
           throw new Error('Access denied: user or site not in your client');
         }
 
-        // Validate permissions against enabled modules
-        const validation = await supabase.rpc('validate_site_permissions', {
-          p_user_id: request.userId,
-          p_site_id: request.siteId,
-          p_permissions: request.permissions,
-        });
-
-        if (!validation.data?.valid) {
-          throw new Error(`Permission validation failed: ${JSON.stringify(validation.data?.errors)}`);
-        }
-
+        // save_site_permissions now includes hierarchy validation internally
         const { error } = await supabase.rpc('save_site_permissions', {
           p_user_id: request.userId,
           p_site_id: request.siteId,

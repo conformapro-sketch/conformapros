@@ -125,6 +125,34 @@ export function PermissionMatrix({
         newPermissions = newPermissions.filter(p => p.module !== moduleCode);
       }
     } else {
+      // PERMISSION HIERARCHY ENFORCEMENT
+      // If setting view to deny, automatically deny all dependent actions
+      if (actionCode === "view" && decision === "deny") {
+        const dependentActions = ["create", "edit", "delete", "export"];
+        newPermissions = newPermissions.filter(
+          (p) => !(p.module === moduleCode && dependentActions.includes(p.action))
+        );
+        // Add explicit denies for dependent actions
+        dependentActions.forEach(depAction => {
+          newPermissions.push({ module: moduleCode, action: depAction, decision: "deny" });
+        });
+      }
+      
+      // If setting a dependent action to allow, ensure view is also allowed
+      const dependentActions = ["create", "edit", "delete", "export"];
+      if (dependentActions.includes(actionCode) && decision === "allow") {
+        const viewPerm = newPermissions.find(
+          (p) => p.module === moduleCode && p.action === "view"
+        );
+        if (!viewPerm || viewPerm.decision !== "allow") {
+          // Auto-allow view
+          newPermissions = newPermissions.filter(
+            (p) => !(p.module === moduleCode && p.action === "view")
+          );
+          newPermissions.push({ module: moduleCode, action: "view", decision: "allow" });
+        }
+      }
+      
       // Normal action
       if (decision !== 'inherit') {
         newPermissions.push({ module: moduleCode, action: actionCode, decision });
@@ -403,6 +431,10 @@ export function PermissionMatrix({
                     </td>
                     {!isCollapsed && allActions.map(action => {
                       const decision = getPermission(moduleCode, action.code);
+                      const viewDecision = getPermission(moduleCode, "view");
+                      const isDependent = ["create", "edit", "delete", "export"].includes(action.code);
+                      const isDisabledByHierarchy = isDependent && viewDecision === "deny";
+                      
                       return (
                         <td 
                           key={action.id} 
@@ -413,15 +445,23 @@ export function PermissionMatrix({
                         >
                           <button
                             type="button"
-                            onClick={() => !readOnly && setPermission(moduleCode, action.code, cycleDecision(decision))}
+                            onClick={() => !readOnly && !isDisabledByHierarchy && setPermission(moduleCode, action.code, cycleDecision(decision))}
                             className={cn(
                               "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
                               getDecisionColor(decision),
                               action.code === 'full' && decision === 'allow' && "ring-2 ring-primary/50",
-                              readOnly ? "cursor-not-allowed opacity-75" : "cursor-pointer"
+                              (readOnly || isDisabledByHierarchy) ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                             )}
-                            disabled={readOnly}
-                            title={action.code === 'full' ? "Active toutes les permissions pour ce module" : undefined}
+                            disabled={readOnly || isDisabledByHierarchy}
+                            title={
+                              isDisabledByHierarchy 
+                                ? "Cette action nécessite la permission 'voir' d'abord" 
+                                : action.code === 'full' 
+                                ? "Active toutes les permissions pour ce module" 
+                                : action.code === 'view'
+                                ? "La permission 'voir' est requise pour toutes les autres actions"
+                                : undefined
+                            }
                           >
                             {getDecisionLabel(decision)}
                           </button>

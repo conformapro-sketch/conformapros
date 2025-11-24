@@ -354,9 +354,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = (module: string, action: string): boolean => {
     return permissions.some(
       p => {
-        const moduleCode = p.modules_systeme?.code.toLowerCase();
-        const actionCode = p.permission_actions?.code;
-        return moduleCode === module.toLowerCase() && 
+        // Handle both data formats:
+        // - Team users: p.modules_systeme?.code + p.permission_actions?.code (from FK relations)
+        // - Client users: p.module + p.action (text fields from user_permissions)
+        const moduleCode = (p as any).module || p.modules_systeme?.code;
+        const actionCode = (p as any).action || p.permission_actions?.code;
+        
+        return moduleCode?.toLowerCase() === module.toLowerCase() && 
                actionCode === action && 
                p.decision === 'allow';
       }

@@ -1,5 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * @deprecated This file uses the deprecated 'user_sites' table.
+ * Use access-scopes-queries.ts instead, which uses the correct 'access_scopes' table.
+ * This file is kept for backward compatibility but should not be used in new code.
+ */
 export const userSitesQueries = {
   // Get all sites for a user
   async getUserSites(userId: string) {

@@ -3474,8 +3474,8 @@ export type Database = {
         }[]
       }
       validate_site_permissions: {
-        Args: { p_permissions: Json; p_site_id: string; p_user_id: string }
-        Returns: Json
+        Args: { p_permissions: Json }
+        Returns: boolean
       }
     }
     Enums: {
