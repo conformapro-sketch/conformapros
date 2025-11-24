@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -35,11 +36,17 @@ import type { Database } from "@/types/db";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import {
+  Alert,
+  AlertDescription,
+} from "@/components/ui/alert";
 import { 
   Building2, Settings, AlertCircle, MapPin, Activity,
   Library, Bell, ClipboardCheck, FileText, Shield, 
-  Users, Calendar, AlertTriangle, HardHat, Truck, Leaf, FolderOpen
+  Users, Calendar, AlertTriangle, HardHat, Truck, Leaf, FolderOpen,
+  CheckCircle2
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useEffect, useState } from "react";
 import { LocationPicker } from "@/components/LocationPicker";
@@ -548,39 +555,56 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
         </p>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className={`grid w-full ${site ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="essentiels">Informations essentielles</TabsTrigger>
             <TabsTrigger value="activite">Activité</TabsTrigger>
-            {site && <TabsTrigger value="modules">Modules</TabsTrigger>}
+            <TabsTrigger value="modules">Modules</TabsTrigger>
           </TabsList>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
             {/* Tab 1: Informations essentielles */}
             <TabsContent value="essentiels" className="space-y-4">
+              {/* Client Selection - Prominent styling matching ClientUserFormModal */}
               {!site && !clientId && (
-                <div>
-                  <Label htmlFor="client_id">Client *</Label>
-                  <Controller
-                    name="client_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un client..." />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                          {clients.map((client: any) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.nom_legal}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                <div className={cn(
+                  "p-4 rounded-lg border-2 transition-all",
+                  !watch("client_id") ? "border-primary bg-primary/5" : "border-border bg-muted/30"
+                )}>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="client_id" className="text-base font-semibold">
+                        Étape 1: Sélectionner le client *
+                      </Label>
+                      {!watch("client_id") && (
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary">
+                          Obligatoire
+                        </Badge>
+                      )}
+                    </div>
+                    <Controller
+                      name="client_id"
+                      control={control}
+                      render={({ field }) => (
+                        <ClientAutocomplete
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="🏢 Rechercher un client..."
+                        />
+                      )}
+                    />
+                    {errors.client_id && (
+                      <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.client_id.message}
+                      </p>
                     )}
-                  />
-                  {errors.client_id && (
-                    <p className="text-sm text-destructive mt-1">{errors.client_id.message}</p>
-                  )}
+                    {watch("client_id") && clients.find((c: any) => c.id === watch("client_id")) && (
+                      <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <span>Client sélectionné: <strong className="text-foreground">{clients.find((c: any) => c.id === watch("client_id"))?.nom}</strong></span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -810,9 +834,19 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
               />
             </TabsContent>
 
-            {/* Tab 3: Modules & Domaines (only for editing) */}
-            {site && (
-              <TabsContent value="modules" className="space-y-6">
+            {/* Tab 3: Modules & Domaines */}
+            <TabsContent value="modules" className="space-y-6">
+              {!site && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Les modules seront configurables après la création du site.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {site && (
+                <>
                 {!isAdmin && (
                   <div className="bg-muted/50 border border-border rounded-lg p-4 flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -988,8 +1022,9 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                     </p>
                   </div>
                 )}
-              </TabsContent>
-            )}
+                </>
+              )}
+            </TabsContent>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
