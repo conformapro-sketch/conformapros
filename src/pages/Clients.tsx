@@ -13,6 +13,7 @@ import { ClientFormModal } from "@/components/ClientFormModal";
 import { SitesDrawer } from "@/components/SitesDrawer";
 import { IntegrityCheckerModal } from "@/components/IntegrityCheckerModal";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -53,15 +54,54 @@ export default function Clients() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteClient,
-    onSuccess: () => {
+    onMutate: async (clientId) => {
+      await queryClient.cancelQueries({ queryKey: ["clients"] });
+      const previousClients = queryClient.getQueryData(["clients"]);
+      const deletedClient = (previousClients as any)?.find((c: any) => c.id === clientId);
+      
+      // Optimistic removal
+      queryClient.setQueryData(["clients"], (old: any) => 
+        old?.filter((c: any) => c.id !== clientId)
+      );
+      
+      return { previousClients, deletedClient };
+    },
+    onSuccess: (_, __, context) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: "Client supprimé avec succès" });
+      
+      // Toast with undo
+      const clientName = context?.deletedClient?.nom_legal || "Client";
+      toast({
+        title: "✓ Client supprimé",
+        description: `${clientName} a été supprimé.`,
+        action: (
+          <ToastAction altText="Annuler la suppression" onClick={() => {
+            if (context?.deletedClient) {
+              queryClient.setQueryData(["clients"], (old: any) => 
+                [...(old || []), context.deletedClient]
+              );
+              toast({ title: "Suppression annulée" });
+            }
+          }}>
+            Annuler
+          </ToastAction>
+        ),
+      });
       setDeletingId(null);
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      // Rollback
+      if (context?.previousClients) {
+        queryClient.setQueryData(["clients"], context.previousClients);
+      }
+      
+      const actionHint = error?.code === '23503' 
+        ? "Ce client possède des sites ou des données liées. Supprimez-les d'abord." 
+        : "Vérifiez vos permissions et réessayez.";
+      
       toast({
         title: "Erreur lors de la suppression",
-        description: error.message,
+        description: `${error.message} ${actionHint}`,
         variant: "destructive",
       });
     },
