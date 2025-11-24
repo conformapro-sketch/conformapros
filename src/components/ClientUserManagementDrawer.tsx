@@ -168,7 +168,7 @@ export function ClientUserManagementDrawer({
     enabled: !!user?.id && open,
   });
 
-  // Fetch all domaines
+  // Fetch all domaines - optimized with proper caching
   const { data: allDomaines = [] } = useQuery({
     queryKey: ["domaines-reglementaires"],
     queryFn: async () => {
@@ -180,8 +180,7 @@ export function ClientUserManagementDrawer({
       return data || [];
     },
     enabled: open,
-    refetchOnMount: "always",
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes - domains rarely change
   });
 
   // Filter displayed domains to only enabled ones
@@ -250,8 +249,15 @@ export function ClientUserManagementDrawer({
       return result;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["user-sites-permissions", user.id] });
-      queryClient.invalidateQueries({ queryKey: ["site-permissions", user.id, variables.siteId] });
+      // Surgical invalidation - only the specific queries that changed
+      queryClient.invalidateQueries({ 
+        queryKey: ["user-sites-permissions", user.id],
+        exact: true 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["site-permissions", user.id, variables.siteId],
+        exact: true 
+      });
       toast({
         title: "Permissions mises à jour",
         description: "Les permissions pour ce site ont été enregistrées.",
@@ -296,7 +302,11 @@ export function ClientUserManagementDrawer({
       console.log('✅ Domains saved successfully:', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-domains", user.id] });
+      // Surgical invalidation - only user's domain scopes
+      queryClient.invalidateQueries({ 
+        queryKey: ["user-domains", user.id],
+        exact: true 
+      });
       toast({
         title: "Domaines mis à jour",
         description: "Les domaines de veille réglementaire ont été enregistrés.",
@@ -351,8 +361,18 @@ export function ClientUserManagementDrawer({
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["all-client-users"] });
-      queryClient.invalidateQueries({ queryKey: ["client-users"] });
+      // Surgical invalidation - only queries containing this user
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey;
+          // Invalidate any query that includes this user's data
+          return (
+            key.includes("all-client-users") || 
+            key.includes("client-users") ||
+            (Array.isArray(key) && key.includes(user.id))
+          );
+        }
+      });
       toast({
         title: "Profil mis à jour",
         description: "Les informations du profil ont été enregistrées.",
