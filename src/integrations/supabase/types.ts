@@ -3286,6 +3286,18 @@ export type Database = {
           ordre: number
         }[]
       }
+      get_site_modules_summary: {
+        Args: { p_site_id: string }
+        Returns: {
+          enabled_modules_count: number
+          has_bibliotheque: boolean
+          has_veille: boolean
+          module_codes: string[]
+          site_id: string
+          site_name: string
+          total_modules_count: number
+        }[]
+      }
       get_site_permissions: {
         Args: { p_site_id: string; p_user_id: string }
         Returns: {
@@ -3337,6 +3349,10 @@ export type Database = {
           p_target_user_id: string
         }
         Returns: string
+      }
+      quick_enable_site_modules: {
+        Args: { p_module_codes: string[]; p_site_id: string }
+        Returns: Json
       }
       save_site_permissions: {
         Args: {

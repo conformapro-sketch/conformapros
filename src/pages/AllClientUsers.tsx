@@ -259,14 +259,6 @@ export default function AllClientUsers() {
         <Button 
           className="bg-gradient-primary shadow-medium"
           onClick={() => {
-            if (clientFilter === "all") {
-              toast({
-                title: "Sélection requise",
-                description: "Veuillez filtrer par client avant d'ajouter un utilisateur",
-                variant: "destructive",
-              });
-              return;
-            }
             setEditingUser(undefined);
             setUserFormOpen(true);
           }}
