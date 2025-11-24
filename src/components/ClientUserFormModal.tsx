@@ -5,13 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -318,31 +312,12 @@ export function ClientUserFormModal({ open, onOpenChange, clientId, user }: Clie
                   name="client_id"
                   control={control}
                   render={({ field }) => (
-                    <Select 
-                      value={field.value} 
-                      onValueChange={field.onChange} 
+                    <ClientAutocomplete
+                      value={field.value}
+                      onChange={field.onChange}
                       disabled={!!clientId}
-                    >
-                      <SelectTrigger className={cn(
-                        "bg-background h-12",
-                        !field.value && "border-primary"
-                      )}>
-                        <SelectValue placeholder="🏢 Choisir une organisation client..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50">
-                        {clients?.map((client: any) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            <div className="flex items-center gap-2">
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <span>{client.nom}</span>
-                              {client.nom_legal && (
-                                <span className="text-xs text-muted-foreground">({client.nom_legal})</span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="🏢 Rechercher un client..."
+                    />
                   )}
                 />
                 {errors.client_id && (
