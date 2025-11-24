@@ -117,15 +117,14 @@ export function DomaineFormModal({ open, onOpenChange, domaine }: DomaineFormMod
 
   return (
     <Dialog 
-      open={open} 
-      onOpenChange={(newOpen) => {
+      open={open} onOpenChange={(newOpen) => {
         if (!newOpen) {
           reset();
         }
         onOpenChange(newOpen);
       }}
     >
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{domaine ? "Modifier le domaine" : "Nouveau domaine"}</DialogTitle>
         </DialogHeader>

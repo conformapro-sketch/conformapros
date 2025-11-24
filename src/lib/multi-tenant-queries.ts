@@ -238,13 +238,10 @@ export const updateSite = async (siteId: string, updates: SiteUpdate) => {
 };
 
 export const deleteSite = async (siteId: string) => {
-  const tenantId = await getCurrentTenantId();
-
   const { data, error } = await supabase
     .from("sites")
     .select("client_id")
     .eq("id", siteId)
-    .eq("tenant_id", tenantId)
     .maybeSingle();
 
   if (error) throw error;
@@ -252,8 +249,7 @@ export const deleteSite = async (siteId: string) => {
   const { error: deleteError } = await supabase
     .from("sites")
     .delete()
-    .eq("id", siteId)
-    .eq("tenant_id", tenantId);
+    .eq("id", siteId);
   
   if (deleteError) throw deleteError;
 
@@ -279,7 +275,6 @@ export const logAudit = async (
   } = {},
 ) => {
   try {
-    const tenantId = await getCurrentTenantId();
     const resolvedSiteId = options.siteId ?? null;
     const resolvedEntity =
       options.entity ??
@@ -292,7 +287,7 @@ export const logAudit = async (
     ) as Json;
 
     const payload: AuditLogInsert = {
-      tenant_id: tenantId,
+      tenant_id: null,
       action,
       actor_id: actorId,
       client_id: clientId,

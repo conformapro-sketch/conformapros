@@ -65,7 +65,7 @@ export default function AllClientUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isSuperAdmin, hasRole } = useAuth();
-  const isAdminGlobal = hasRole("admin_global");
+  const isAdminGlobal = hasRole("Admin Global");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
