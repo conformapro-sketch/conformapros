@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
+import { LogoUpload } from "@/components/shared/LogoUpload";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,6 +33,7 @@ import {
   listGouvernorats,
   listDelegationsByGouvernorat,
 } from "@/lib/multi-tenant-queries";
+import { sitesQueryService } from "@/lib/sites-query-service";
 import type { Database } from "@/types/db";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -128,6 +130,8 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [selectedGouvernoratId, setSelectedGouvernoratId] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [useClientLogo, setUseClientLogo] = useState(false);
 
   // Check user role
   useEffect(() => {
@@ -305,7 +309,20 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       if (data.niveau_risque?.trim()) cleanData.niveau_risque = data.niveau_risque.trim();
       if (data.nombre_employes !== null && data.nombre_employes !== undefined) cleanData.nombre_employes = data.nombre_employes;
 
-      return createSite(cleanData);
+      // Handle logo
+      if (useClientLogo && clientData?.logo_url) {
+        cleanData.logo_url = clientData.logo_url;
+      }
+
+      const createdSite = await createSite(cleanData);
+
+      // Upload logo if provided
+      if (logoFile && !useClientLogo) {
+        const logoUrl = await sitesQueryService.uploadLogo(createdSite.id, logoFile);
+        await updateSite(createdSite.id, { logo_url: logoUrl });
+      }
+
+      return createdSite;
     },
     onMutate: async (data) => {
       await queryClient.cancelQueries({ queryKey: ["sites"] });
@@ -373,6 +390,14 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
       if (data.responsable_site?.trim()) cleanData.responsable_site = data.responsable_site.trim();
       if (data.niveau_risque?.trim()) cleanData.niveau_risque = data.niveau_risque.trim();
       if (data.nombre_employes !== null && data.nombre_employes !== undefined) cleanData.nombre_employes = data.nombre_employes;
+
+      // Handle logo
+      if (logoFile && !useClientLogo) {
+        const logoUrl = await sitesQueryService.uploadLogo(id, logoFile);
+        cleanData.logo_url = logoUrl;
+      } else if (useClientLogo && clientData?.logo_url) {
+        cleanData.logo_url = clientData.logo_url;
+      }
 
       return updateSite(id, cleanData);
     },
@@ -607,6 +632,19 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
                   </div>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <LogoUpload
+                  currentUrl={site?.logo_url}
+                  fallbackUrl={clientData?.logo_url}
+                  onFileSelect={setLogoFile}
+                  label="Logo du site"
+                  description="PNG, JPG jusqu'à 2MB. Héritera du logo client si vide"
+                  showFallbackOption={!!clientData?.logo_url}
+                  useFallback={useClientLogo}
+                  onUseFallbackChange={setUseClientLogo}
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

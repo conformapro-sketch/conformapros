@@ -156,4 +156,25 @@ export const sitesQueryService = {
       modulesCount: modulesCount || 0,
     };
   },
+
+  /**
+   * Upload site logo
+   */
+  async uploadLogo(siteId: string, file: File) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${siteId}-${Date.now()}.${fileExt}`;
+    const filePath = `sites/${siteId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("logos")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("logos")
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  },
 };

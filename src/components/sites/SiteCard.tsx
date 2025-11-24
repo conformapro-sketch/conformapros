@@ -38,8 +38,19 @@ export function SiteCard({ site, modules = [], onView, onEdit, onDelete }: SiteC
 
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Building2 className="h-5 w-5 text-primary" />
+          {/* Site or Client Logo */}
+          <div className="relative">
+            {(site.logo_url || site.clients?.logo_url) ? (
+              <img
+                src={site.logo_url || site.clients?.logo_url}
+                alt={site.nom}
+                className="h-12 w-12 rounded-lg object-cover border-2 border-border"
+              />
+            ) : (
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg truncate pr-20">{site.nom}</CardTitle>
