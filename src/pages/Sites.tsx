@@ -17,6 +17,7 @@ import { fetchSites, deleteSite, fetchClients, listSiteModules, listGouvernorats
 import { useDebounce } from "@/hooks/useDebounce";
 import { SiteFormModal } from "@/components/SiteFormModal";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -115,16 +116,55 @@ export default function Sites() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteSite,
-    onSuccess: () => {
+    onMutate: async (siteId) => {
+      await queryClient.cancelQueries({ queryKey: ["sites"] });
+      const previousSites = queryClient.getQueryData(["sites"]);
+      const deletedSite = (previousSites as any)?.find((s: any) => s.id === siteId);
+      
+      // Optimistic removal
+      queryClient.setQueryData(["sites"], (old: any) => 
+        old?.filter((s: any) => s.id !== siteId)
+      );
+      
+      return { previousSites, deletedSite };
+    },
+    onSuccess: (_, __, context) => {
       queryClient.invalidateQueries({ queryKey: ["sites"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: "Site supprimé avec succès" });
+      
+      // Toast with undo action
+      const siteName = context?.deletedSite?.nom_site || "Site";
+      toast({
+        title: "✓ Site supprimé",
+        description: `${siteName} a été supprimé.`,
+        action: (
+          <ToastAction altText="Annuler la suppression" onClick={() => {
+            if (context?.deletedSite) {
+              queryClient.setQueryData(["sites"], (old: any) => 
+                [...(old || []), context.deletedSite]
+              );
+              toast({ title: "Suppression annulée" });
+            }
+          }}>
+            Annuler
+          </ToastAction>
+        ),
+      });
       setDeletingId(null);
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      // Rollback on error
+      if (context?.previousSites) {
+        queryClient.setQueryData(["sites"], context.previousSites);
+      }
+      
+      const actionHint = error?.code === '23503' 
+        ? "Ce site contient des données liées (employés, équipements, etc.). Supprimez-les d'abord." 
+        : "Vérifiez vos permissions et réessayez.";
+      
       toast({
         title: "Erreur lors de la suppression",
-        description: error.message,
+        description: `${error.message} ${actionHint}`,
         variant: "destructive",
       });
     },

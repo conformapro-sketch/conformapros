@@ -300,19 +300,43 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
 
       return createSite(cleanData);
     },
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ["sites"] });
+      const previousSites = queryClient.getQueryData(["sites"]);
+      
+      // Optimistic update
+      queryClient.setQueryData(["sites"], (old: any) => {
+        const optimisticSite = {
+          id: `temp-${Date.now()}`,
+          ...data,
+          created_at: new Date().toISOString(),
+        };
+        return [...(old || []), optimisticSite];
+      });
+      
+      return { previousSites };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sites"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: "Site créé avec succès" });
+      toast({ title: "✓ Site créé avec succès" });
       reset();
       setSelectedGouvernoratId(null);
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      if (context?.previousSites) {
+        queryClient.setQueryData(["sites"], context.previousSites);
+      }
+      
       console.error("Site creation error:", error);
+      const actionHint = error?.code === '23505' 
+        ? "Un site avec ce code existe déjà pour ce client." 
+        : "Vérifiez les champs obligatoires et réessayez.";
+      
       toast({
         title: "Erreur lors de la création",
-        description: error.message || "Une erreur est survenue",
+        description: `${error.message || "Une erreur est survenue"} ${actionHint}`,
         variant: "destructive",
       });
     },
@@ -345,17 +369,36 @@ export function SiteFormModal({ open, onOpenChange, site, clientId }: SiteFormMo
 
       return updateSite(id, cleanData);
     },
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ["sites"] });
+      const previousSites = queryClient.getQueryData(["sites"]);
+      
+      // Optimistic update
+      queryClient.setQueryData(["sites"], (old: any) => {
+        return old?.map((s: any) => 
+          s.id === id ? { ...s, ...data, updated_at: new Date().toISOString() } : s
+        );
+      });
+      
+      return { previousSites };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sites"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast({ title: "Site modifié avec succès" });
+      toast({ title: "✓ Site modifié avec succès" });
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      if (context?.previousSites) {
+        queryClient.setQueryData(["sites"], context.previousSites);
+      }
+      
       console.error("Site update error:", error);
+      const actionHint = "Vérifiez votre connexion et réessayez.";
+      
       toast({
         title: "Erreur lors de la modification",
-        description: error.message || "Une erreur est survenue",
+        description: `${error.message || "Une erreur est survenue"} ${actionHint}`,
         variant: "destructive",
       });
     },

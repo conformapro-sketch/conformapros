@@ -68,20 +68,46 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
 
   const createMutation = useMutation({
     mutationFn: createClient,
+    onMutate: async (newClient) => {
+      // Optimistic update: add client to cache immediately
+      await queryClient.cancelQueries({ queryKey: ["clients"] });
+      const previousClients = queryClient.getQueryData(["clients"]);
+      
+      queryClient.setQueryData(["clients"], (old: any) => {
+        const optimisticClient = {
+          id: `temp-${Date.now()}`,
+          ...newClient,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        return [...(old || []), optimisticClient];
+      });
+      
+      return { previousClients };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       toast({
-        title: "Client créé",
+        title: "✓ Client créé",
         description: "Le client a été créé avec succès.",
       });
       reset();
       onOpenChange(false);
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      // Rollback on error
+      if (context?.previousClients) {
+        queryClient.setQueryData(["clients"], context.previousClients);
+      }
+      
       const errorMessage = error?.message || "Impossible de créer le client.";
+      const actionHint = error?.code === '23505' 
+        ? "Un client avec ce SIRET existe déjà. Vérifiez le numéro." 
+        : "Vérifiez les informations saisies et réessayez.";
+      
       toast({
-        title: "Erreur",
-        description: errorMessage,
+        title: "Erreur de création",
+        description: `${errorMessage} ${actionHint}`,
         variant: "destructive",
       });
     },
@@ -90,18 +116,39 @@ export function ClientFormModal({ open, onOpenChange, client }: ClientFormModalP
   const updateMutation = useMutation({
     mutationFn: ({ clientId, updates }: { clientId: string; updates: any }) => 
       updateClient(clientId, updates),
+    onMutate: async ({ clientId, updates }) => {
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ["clients"] });
+      const previousClients = queryClient.getQueryData(["clients"]);
+      
+      queryClient.setQueryData(["clients"], (old: any) => {
+        return old?.map((c: any) => 
+          c.id === clientId ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
+        );
+      });
+      
+      return { previousClients };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       toast({
-        title: "Client modifié",
-        description: "Le client a été modifié avec succès.",
+        title: "✓ Client modifié",
+        description: "Les modifications ont été enregistrées.",
       });
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: (error: any, _, context) => {
+      // Rollback on error
+      if (context?.previousClients) {
+        queryClient.setQueryData(["clients"], context.previousClients);
+      }
+      
+      const errorMessage = error?.message || "Impossible de modifier le client.";
+      const actionHint = "Vérifiez votre connexion et réessayez.";
+      
       toast({
-        title: "Erreur",
-        description: "Impossible de modifier le client.",
+        title: "Erreur de modification",
+        description: `${errorMessage} ${actionHint}`,
         variant: "destructive",
       });
       console.error(error);
