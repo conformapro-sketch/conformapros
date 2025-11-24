@@ -28,6 +28,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllClientUsers, fetchClients, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useDebounce } from "@/hooks/useDebounce";
 import { ClientUserFormModal } from "@/components/ClientUserFormModal";
 import { ClientUserManagementDrawer } from "@/components/ClientUserManagementDrawer";
 import { useToast } from "@/hooks/use-toast";
@@ -80,9 +81,12 @@ export default function AllClientUsers() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any>(null);
 
+  const debouncedSearch = useDebounce(searchQuery, 400);
+
   const { data: clients = [] } = useQuery({
     queryKey: ["clients"],
     queryFn: fetchClients,
+    staleTime: 2 * 60 * 1000,
   });
 
   // Default client filter for non-global admins
@@ -103,14 +107,15 @@ export default function AllClientUsers() {
   }, [clientFilter, setSearchParams]);
 
   const { data: usersData, isLoading, error: usersError } = useQuery({
-    queryKey: ["all-client-users", searchQuery, clientFilter, statusFilter, currentPage],
+    queryKey: ["all-client-users", debouncedSearch, clientFilter, statusFilter, currentPage],
     queryFn: () => fetchAllClientUsers({
-      search: searchQuery || undefined,
+      search: debouncedSearch || undefined,
       clientId: clientFilter !== "all" ? clientFilter : undefined,
       status: statusFilter !== "all" ? statusFilter : undefined,
       page: currentPage,
       pageSize: 20,
     }),
+    staleTime: 60 * 1000, // 1 minute
   });
 
   const users = usersData?.data || [];

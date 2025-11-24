@@ -586,6 +586,35 @@ export const listSiteModules = async (siteId: string) => {
   })) || [];
 };
 
+export const siteModulesQueries = {
+  listEnabledModulesForSite: async (siteId: string) => {
+    const { data, error } = await supabase.rpc("get_site_enabled_modules", {
+      _site_id: siteId,
+    });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Bulk fetch modules for multiple sites (prevents N+1 queries)
+  getBulkSiteModules: async (siteIds: string[]) => {
+    if (!siteIds || siteIds.length === 0) return {};
+
+    const { data, error } = await supabase.rpc("get_bulk_site_modules", {
+      site_ids: siteIds,
+    });
+
+    if (error) throw error;
+
+    // Convert array to map for easy lookup
+    const modulesMap: Record<string, any[]> = {};
+    data?.forEach((item: any) => {
+      modulesMap[item.site_id] = item.modules || [];
+    });
+    return modulesMap;
+  },
+};
+
 export const toggleSiteModule = async (
   siteId: string, 
   moduleCode: string, 

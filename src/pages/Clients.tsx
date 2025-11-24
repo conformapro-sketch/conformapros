@@ -8,6 +8,7 @@ import { Building2, Plus, Search, MapPin, Factory, Eye, Pencil, Trash2, FileText
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchClients, fetchSites, deleteClient } from "@/lib/multi-tenant-queries";
+import { useDebounce } from "@/hooks/useDebounce";
 import { ClientFormModal } from "@/components/ClientFormModal";
 import { SitesDrawer } from "@/components/SitesDrawer";
 import { IntegrityCheckerModal } from "@/components/IntegrityCheckerModal";
@@ -36,14 +37,18 @@ export default function Clients() {
     return (localStorage.getItem('clients-view-mode') as 'grid' | 'list') || 'grid';
   });
 
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   const { data: clients, isLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: fetchClients,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   const { data: allSites } = useQuery({
     queryKey: ["sites"],
     queryFn: fetchSites,
+    staleTime: 2 * 60 * 1000,
   });
 
   const deleteMutation = useMutation({
@@ -68,9 +73,9 @@ export default function Clients() {
 
   const filteredClients = clients?.filter(client => {
     const matchesSearch = 
-      client.nom_legal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (client.nom && client.nom.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (client.siret && client.siret.toLowerCase().includes(searchQuery.toLowerCase()));
+      client.nom_legal?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (client.nom && client.nom.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+      (client.siret && client.siret.toLowerCase().includes(debouncedSearch.toLowerCase()));
     
     return matchesSearch;
   }) || [];

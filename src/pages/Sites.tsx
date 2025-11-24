@@ -13,7 +13,8 @@ import {
 import { MapPin, Plus, Search, Factory, Users, Pencil, Trash2, FileText, Building2, Settings, Filter, FileDown, Grid3x3, List, Eye, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchSites, deleteSite, fetchClients, listSiteModules, listGouvernorats } from "@/lib/multi-tenant-queries";
+import { fetchSites, deleteSite, fetchClients, listSiteModules, listGouvernorats, siteModulesQueries } from "@/lib/multi-tenant-queries";
+import { useDebounce } from "@/hooks/useDebounce";
 import { SiteFormModal } from "@/components/SiteFormModal";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -61,9 +62,12 @@ export default function Sites() {
     return (localStorage.getItem('sites-view-mode') as 'grid' | 'list') || 'grid';
   });
 
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   const { data: sites, isLoading } = useQuery({
     queryKey: ["sites"],
     queryFn: fetchSites,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   const { data: clients = [] } = useQuery({
@@ -74,30 +78,35 @@ export default function Sites() {
   const { data: gouvernorats = [] } = useQuery({
     queryKey: ["gouvernorats"],
     queryFn: listGouvernorats,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Component to show active modules for a site
+  // Bulk fetch modules for all sites (prevents N+1 query problem)
+  const siteIds = sites?.map(s => s.id) || [];
+  const { data: bulkModules = {} } = useQuery({
+    queryKey: ["bulk-site-modules", siteIds],
+    queryFn: () => siteModulesQueries.getBulkSiteModules(siteIds),
+    enabled: siteIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Component to show active modules for a site using bulk data
   const SiteModulesBadges = ({ siteId }: { siteId: string }) => {
-    const { data: siteModules = [] } = useQuery({
-      queryKey: ["site-modules", siteId],
-      queryFn: () => listSiteModules(siteId),
-    });
+    const siteModules = bulkModules[siteId] || [];
 
-    const activeModules = siteModules.filter((sm: any) => sm.enabled);
-
-    if (activeModules.length === 0) return null;
+    if (siteModules.length === 0) return null;
 
     return (
       <div className="flex flex-wrap gap-1 mt-2">
-        {activeModules.slice(0, 3).map((sm: any) => (
+        {siteModules.slice(0, 3).map((sm: any) => (
           <Badge key={sm.id} variant="secondary" className="text-xs">
             <Settings className="h-3 w-3 mr-1" />
-            {sm.modules_systeme?.code}
+            {sm.code}
           </Badge>
         ))}
-        {activeModules.length > 3 && (
+        {siteModules.length > 3 && (
           <Badge variant="outline" className="text-xs">
-            +{activeModules.length - 3}
+            +{siteModules.length - 3}
           </Badge>
         )}
       </div>
@@ -122,13 +131,13 @@ export default function Sites() {
   });
 
   const filteredSites = sites?.filter(site => {
-    // Text search
+    // Text search with debounced value
     const matchesSearch = 
-      site.nom_site.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      site.code_site.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (site.gouvernorat && site.gouvernorat.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (site.delegation && site.delegation.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (site.localite && site.localite.toLowerCase().includes(searchQuery.toLowerCase()));
+      site.nom_site.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      site.code_site.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (site.gouvernorat && site.gouvernorat.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+      (site.delegation && site.delegation.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+      (site.localite && site.localite.toLowerCase().includes(debouncedSearch.toLowerCase()));
 
     // Filters
     const matchesClient = filterClient === "all" || site.client_id === filterClient;
