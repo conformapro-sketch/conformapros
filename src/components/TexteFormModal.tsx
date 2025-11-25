@@ -15,6 +15,8 @@ import { textesCodesQueries } from "@/lib/codes-queries";
 import type { TypeRelationCode } from "@/types/codes";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { Upload, X, Loader2, FileText } from "lucide-react";
+import { AutoriteAutocomplete } from "@/components/shared/AutoriteAutocomplete";
+import { AutoriteFormModal } from "@/components/AutoriteFormModal";
 
 interface TexteFormModalProps {
   open: boolean;
@@ -30,7 +32,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
     type_acte: "LOI" as "LOI" | "DECRET-LOI" | "ARRETE" | "DECRET" | "CIRCULAIRE",
     reference_officielle: "",
     intitule: "",
-    autorite_emettrice: "",
+    autorite_emettrice_id: "",
     date_publication: "",
     statut_vigueur: "en_vigueur" as "en_vigueur" | "abroge" | "suspendu" | "modifie",
     resume: "",
@@ -44,6 +46,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [existingPdfUrl, setExistingPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [autoriteFormOpen, setAutoriteFormOpen] = useState(false);
 
   const { data: domaines, isLoading: domainesLoading } = useQuery({
     queryKey: ["domaines"],
@@ -63,7 +66,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
         type_acte: texte.type_acte.toUpperCase() as "LOI" | "DECRET-LOI" | "ARRETE" | "DECRET" | "CIRCULAIRE",
         reference_officielle: texte.reference_officielle,
         intitule: texte.intitule,
-        autorite_emettrice: texte.autorite_emettrice || "",
+        autorite_emettrice_id: (texte as any).autorite_emettrice_id || "",
         date_publication: texte.date_publication || "",
         statut_vigueur: texte.statut_vigueur,
         resume: texte.resume || "",
@@ -97,7 +100,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
         type_acte: "LOI",
         reference_officielle: "",
         intitule: "",
-        autorite_emettrice: "",
+        autorite_emettrice_id: "",
         date_publication: "",
         statut_vigueur: "en_vigueur",
         resume: "",
@@ -299,10 +302,11 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="autorite_emettrice">Autorité émettrice</Label>
-              <Input
-                id="autorite_emettrice"
-                value={formData.autorite_emettrice}
-                onChange={(e) => setFormData({ ...formData, autorite_emettrice: e.target.value })}
+              <AutoriteAutocomplete
+                value={formData.autorite_emettrice_id}
+                onChange={(value) => setFormData({ ...formData, autorite_emettrice_id: value })}
+                placeholder="Sélectionner une autorité émettrice..."
+                onAddNew={() => setAutoriteFormOpen(true)}
               />
             </div>
 
@@ -481,6 +485,14 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AutoriteFormModal
+        open={autoriteFormOpen}
+        onOpenChange={setAutoriteFormOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['autorites'] });
+        }}
+      />
     </Dialog>
   );
 }
