@@ -234,3 +234,79 @@ export const articlesQueries = {
     if (error) throw error;
   },
 };
+
+// Article versions queries
+export const articleVersionsQueries = {
+  async getByArticleId(articleId: string) {
+    const { data, error } = await supabase
+      .from("article_versions")
+      .select(`
+        *,
+        source_texte:textes_reglementaires!article_versions_source_texte_id_fkey(
+          id,
+          reference,
+          titre,
+          type
+        )
+      `)
+      .eq("article_id", articleId)
+      .order("numero_version", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(version: {
+    article_id: string;
+    contenu: string;
+    date_effet: string;
+    numero_version: number;
+    source_texte_id: string;
+    statut?: 'en_vigueur' | 'remplacee' | 'abrogee';
+    notes_modifications?: string;
+  }) {
+    const { data, error } = await supabase
+      .from("article_versions")
+      .insert([{
+        ...version,
+        statut: version.statut || 'en_vigueur',
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, version: Partial<{
+    contenu: string;
+    date_effet: string;
+    statut: 'en_vigueur' | 'remplacee' | 'abrogee';
+    notes_modifications: string;
+  }>) {
+    const { data, error } = await supabase
+      .from("article_versions")
+      .update(version)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from("article_versions")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  async updateOldVersionsStatus(articleId: string, newVersionId: string, newStatus: 'remplacee' | 'abrogee') {
+    const { error } = await supabase
+      .from("article_versions")
+      .update({ statut: newStatus })
+      .eq("article_id", articleId)
+      .eq("statut", "en_vigueur")
+      .neq("id", newVersionId);
+    if (error) throw error;
+  },
+};

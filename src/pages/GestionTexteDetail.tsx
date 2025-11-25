@@ -11,7 +11,8 @@ import {
   Pencil,
   Trash2,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  History
 } from "lucide-react";
 import { 
   AlertDialog,
@@ -29,6 +30,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
 import { ArticleReglementaireFormModal } from "@/components/ArticleReglementaireFormModal";
+import { ArticleVersionManagerModal } from "@/components/ArticleVersionManagerModal";
 
 export default function GestionTexteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +41,7 @@ export default function GestionTexteDetail() {
   const [editingArticle, setEditingArticle] = useState<any>(null);
   const [deleteArticleId, setDeleteArticleId] = useState<string | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [versionManagerArticle, setVersionManagerArticle] = useState<{ id: string; numero: string } | null>(null);
 
   const { data: texte, isLoading, error } = useQuery({
     queryKey: ["texte-reglementaire-detail", id],
@@ -245,6 +248,14 @@ export default function GestionTexteDetail() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setVersionManagerArticle({ id: article.id, numero: article.numero })}
+                          >
+                            <History className="h-4 w-4 mr-1" />
+                            Versions
+                          </Button>
+                          <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
@@ -316,6 +327,19 @@ export default function GestionTexteDetail() {
           setEditingArticle(null);
         }}
       />
+
+      {/* Version manager modal */}
+      {versionManagerArticle && (
+        <ArticleVersionManagerModal
+          open={!!versionManagerArticle}
+          onOpenChange={(open) => !open && setVersionManagerArticle(null)}
+          articleId={versionManagerArticle.id}
+          articleNumero={versionManagerArticle.numero}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["articles-active-versions"] });
+          }}
+        />
+      )}
     </div>
   );
 }
