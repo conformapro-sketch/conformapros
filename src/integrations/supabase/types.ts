@@ -3015,7 +3015,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          date_publication: string
+          date_publication: string | null
           id: string
           pdf_url: string | null
           reference: string
@@ -3027,7 +3027,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
-          date_publication: string
+          date_publication?: string | null
           id?: string
           pdf_url?: string | null
           reference: string
@@ -3039,7 +3039,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          date_publication?: string
+          date_publication?: string | null
           id?: string
           pdf_url?: string | null
           reference?: string
