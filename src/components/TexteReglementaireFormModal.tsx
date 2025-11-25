@@ -9,6 +9,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-reglementaires-queries";
 import { toast } from "sonner";
 import { Upload, X, Loader2, FileText, ExternalLink } from "lucide-react";
+import { AutoriteAutocomplete } from "@/components/shared/AutoriteAutocomplete";
+import { AutoriteFormModal } from "@/components/AutoriteFormModal";
 
 interface TexteReglementaireFormModalProps {
   open: boolean;
@@ -36,7 +38,7 @@ export function TexteReglementaireFormModal({
     type: "loi" as "loi" | "decret" | "arrete" | "circulaire",
     reference: "",
     titre: "",
-    autorite_emettrice: "",
+    autorite_emettrice_id: "",
     date_publication: "",
     source_url: "",
   });
@@ -44,6 +46,7 @@ export function TexteReglementaireFormModal({
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [existingPdfUrl, setExistingPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [autoriteFormOpen, setAutoriteFormOpen] = useState(false);
 
   useEffect(() => {
     if (texte) {
@@ -51,7 +54,7 @@ export function TexteReglementaireFormModal({
         type: texte.type,
         reference: texte.reference,
         titre: texte.titre,
-        autorite_emettrice: texte.autorite_emettrice || "",
+        autorite_emettrice_id: (texte as any).autorite_emettrice_id || "",
         date_publication: texte.date_publication || "",
         source_url: texte.source_url || "",
       });
@@ -62,7 +65,7 @@ export function TexteReglementaireFormModal({
         type: "loi",
         reference: "",
         titre: "",
-        autorite_emettrice: "",
+        autorite_emettrice_id: "",
         date_publication: "",
         source_url: "",
       });
@@ -233,11 +236,11 @@ export function TexteReglementaireFormModal({
 
           <div className="space-y-2">
             <Label htmlFor="autorite_emettrice">Autorité émettrice</Label>
-            <Input
-              id="autorite_emettrice"
-              value={formData.autorite_emettrice}
-              onChange={(e) => setFormData({ ...formData, autorite_emettrice: e.target.value })}
-              placeholder="Ex: Assemblée des Représentants du Peuple"
+            <AutoriteAutocomplete
+              value={formData.autorite_emettrice_id}
+              onChange={(value) => setFormData({ ...formData, autorite_emettrice_id: value })}
+              placeholder="Sélectionner une autorité émettrice..."
+              onAddNew={() => setAutoriteFormOpen(true)}
             />
           </div>
 
@@ -365,6 +368,15 @@ export function TexteReglementaireFormModal({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AutoriteFormModal
+        open={autoriteFormOpen}
+        onOpenChange={setAutoriteFormOpen}
+        onSuccess={() => {
+          setAutoriteFormOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['autorites'] });
+        }}
+      />
     </Dialog>
   );
 }

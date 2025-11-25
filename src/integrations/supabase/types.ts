@@ -398,6 +398,48 @@ export type Database = {
           },
         ]
       }
+      autorites_emettrices: {
+        Row: {
+          actif: boolean | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          nom: string
+          nom_court: string | null
+          ordre: number | null
+          pays: string | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          nom: string
+          nom_court?: string | null
+          ordre?: number | null
+          pays?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          nom?: string
+          nom_court?: string | null
+          ordre?: number | null
+          pays?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       changelog: {
         Row: {
           created_at: string
@@ -3002,6 +3044,7 @@ export type Database = {
         Row: {
           annee: number | null
           autorite_emettrice: string | null
+          autorite_emettrice_id: string | null
           created_at: string
           created_by: string | null
           date_publication: string | null
@@ -3016,6 +3059,7 @@ export type Database = {
         Insert: {
           annee?: number | null
           autorite_emettrice?: string | null
+          autorite_emettrice_id?: string | null
           created_at?: string
           created_by?: string | null
           date_publication?: string | null
@@ -3030,6 +3074,7 @@ export type Database = {
         Update: {
           annee?: number | null
           autorite_emettrice?: string | null
+          autorite_emettrice_id?: string | null
           created_at?: string
           created_by?: string | null
           date_publication?: string | null
@@ -3041,7 +3086,15 @@ export type Database = {
           type?: Database["public"]["Enums"]["type_texte_reglementaire"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "textes_reglementaires_autorite_emettrice_id_fkey"
+            columns: ["autorite_emettrice_id"]
+            isOneToOne: false
+            referencedRelation: "autorites_emettrices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       textes_sous_domaines: {
         Row: {

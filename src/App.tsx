@@ -87,6 +87,7 @@ import CodesJuridiques from "./pages/CodesJuridiques";
 import CodeDetail from "./pages/CodeDetail";
 import StaffUserManagement from "./pages/StaffUserManagement";
 import ClientAdminUserManagement from "./pages/ClientAdminUserManagement";
+import GestionAutorites from "./pages/GestionAutorites";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -202,6 +203,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
                     <DomainesPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="bibliotheque/autorites" 
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                    <GestionAutorites />
                   </ProtectedRoute>
                 } 
               />
