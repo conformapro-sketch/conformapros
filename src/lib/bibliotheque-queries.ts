@@ -104,7 +104,7 @@ export const applicabiliteMappingQueries = {
 export const searchQueries = {
   async fullTextSearch(searchTerm: string, limit: number = 50) {
     const { data, error } = await supabase
-      .rpc('search_actes_reglementaires', {
+      .rpc('search_textes_reglementaires', {
         search_term: searchTerm,
         result_limit: limit
       });
@@ -114,11 +114,11 @@ export const searchQueries = {
   }
 };
 
-// Applicable actes for site query
+// Applicable textes for site query
 export const applicableActesQueries = {
   async getApplicableActesForSite(siteId: string) {
     const { data, error } = await supabase
-      .rpc('get_applicable_actes_for_site', {
+      .rpc('get_applicable_textes_for_site', {
         p_site_id: siteId
       });
     
@@ -160,7 +160,7 @@ export const importHelpers = {
         };
 
         const { data, error } = await supabase
-          .from('actes_reglementaires')
+          .from('textes_reglementaires')
           .insert([texteData])
           .select()
           .single();
@@ -186,7 +186,7 @@ export const versioningHelpers = {
   async createNewVersion(texteId: string, changeReason: string) {
     // Get current texte
     const { data: currentTexte, error: fetchError } = await supabase
-      .from('actes_reglementaires')
+      .from('textes_reglementaires')
       .select('*')
       .eq('id', texteId)
       .single();
@@ -197,7 +197,7 @@ export const versioningHelpers = {
 
     // Update texte with new version
     const { error: updateError } = await supabase
-      .from('actes_reglementaires')
+      .from('textes_reglementaires')
       .update({
         version: newVersion,
         previous_version_id: texteId,
@@ -229,7 +229,7 @@ export const exportHelpers = {
   async generateTextePDF(texteId: string) {
     // Fetch full texte data with relations
     const { data: texte, error: texteError } = await supabase
-      .from('actes_reglementaires')
+      .from('textes_reglementaires')
       .select(`
         *,
         articles(*)

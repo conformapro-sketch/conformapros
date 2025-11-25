@@ -8,10 +8,8 @@
  *     └─> CODES (Regroupements thématiques)
  * 
  * Note importante :
- * Les tables de la base de données utilisent le terme "acte" pour des raisons historiques
- * (ex: actes_reglementaires, actes_annexes). Dans le code, nous préférons "texte" qui est 
- * plus précis et correspond à la terminologie juridique tunisienne.
- * Les interfaces gardent "Acte" dans leur nom pour maintenir la compatibilité avec la DB.
+ * Le code utilise "textes_reglementaires" comme nom de table principal.
+ * Les interfaces utilisent "ActeReglementaire" pour compatibilité historique.
  */
 
 export type TypeActe = "loi" | "decret-loi" | "decret" | "arrete" | "circulaire";
@@ -62,7 +60,7 @@ export interface Applicability {
 }
 
 // Interface principale pour un texte réglementaire
-// Note: Gardé comme "ActeReglementaire" pour compatibilité avec la table DB "actes_reglementaires"
+// Note: Compatible avec la table DB "textes_reglementaires"
 export interface ActeReglementaire {
   id: string;
   type_acte: TypeActe;

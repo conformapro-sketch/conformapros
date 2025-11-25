@@ -70,12 +70,12 @@ export const textesReglementairesQueries = {
     const pageSize = filters?.pageSize || 10;
     const searchTerm = filters?.searchTerm?.trim() || "";
 
-    // Search in actes
+    // Search in textes
     let textesQuery = supabase
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .select(`
         *,
-        domaines:actes_reglementaires_domaines(
+        domaines:textes_domaines(
           domaine:domaines_reglementaires(id, libelle)
         )
       `);
@@ -100,14 +100,14 @@ export const textesReglementairesQueries = {
 
     // Filter by domaine if specified
     if (filters?.domaineFilter && filters.domaineFilter !== "all") {
-      const { data: actesWithDomain } = await supabase
-        .from("actes_reglementaires_domaines")
-        .select("acte_id")
+      const { data: textesWithDomain } = await supabase
+        .from("textes_domaines")
+        .select("texte_id")
         .eq("domaine_id", filters.domaineFilter);
       
-      const acteIds = actesWithDomain?.map(a => a.acte_id) || [];
-      if (acteIds.length > 0) {
-        textesQuery = textesQuery.in("id", acteIds);
+      const texteIds = textesWithDomain?.map(t => t.texte_id) || [];
+      if (texteIds.length > 0) {
+        textesQuery = textesQuery.in("id", texteIds);
       } else {
         textesQuery = textesQuery.in("id", []);
       }
@@ -115,41 +115,41 @@ export const textesReglementairesQueries = {
 
     // Filter by sous-domaine if specified
     if (filters?.sousDomaineFilter && filters.sousDomaineFilter !== "all") {
-      const { data: actesWithSousDomaine } = await supabase
-        .from("actes_reglementaires_sous_domaines")
-        .select("acte_id")
+      const { data: textesWithSousDomaine } = await supabase
+        .from("textes_sous_domaines")
+        .select("texte_id")
         .eq("sous_domaine_id", filters.sousDomaineFilter);
       
-      const acteIds = actesWithSousDomaine?.map(a => a.acte_id) || [];
-      if (acteIds.length > 0) {
-        textesQuery = textesQuery.in("id", acteIds);
+      const texteIds = textesWithSousDomaine?.map(t => t.texte_id) || [];
+      if (texteIds.length > 0) {
+        textesQuery = textesQuery.in("id", texteIds);
       } else {
         textesQuery = textesQuery.in("id", []);
       }
     }
 
-    // Get acte IDs that match type, statut, and année filters for articles filtering
-    let acteIdsForArticles: string[] | null = null;
+    // Get texte IDs that match type, statut, and année filters for articles filtering
+    let texteIdsForArticles: string[] | null = null;
 
     if (filters?.typeFilter || filters?.statutFilter || filters?.anneeFilter) {
-      let acteFilterQuery = supabase
-        .from("actes_reglementaires")
+      let texteFilterQuery = supabase
+        .from("textes_reglementaires")
         .select("id");
       
       if (filters?.typeFilter && filters.typeFilter !== "all") {
-        acteFilterQuery = acteFilterQuery.eq("type_acte", filters.typeFilter);
+        texteFilterQuery = texteFilterQuery.eq("type_acte", filters.typeFilter);
       }
       
       if (filters?.statutFilter && filters.statutFilter !== "all") {
-        acteFilterQuery = acteFilterQuery.eq("statut_vigueur", filters.statutFilter);
+        texteFilterQuery = texteFilterQuery.eq("statut_vigueur", filters.statutFilter);
       }
       
       if (filters?.anneeFilter && filters.anneeFilter !== "all") {
-        acteFilterQuery = acteFilterQuery.eq("annee", parseInt(filters.anneeFilter));
+        texteFilterQuery = texteFilterQuery.eq("annee", parseInt(filters.anneeFilter));
       }
       
-      const { data: matchingActes } = await acteFilterQuery;
-      acteIdsForArticles = matchingActes?.map(a => a.id) || [];
+      const { data: matchingTextes } = await texteFilterQuery;
+      texteIdsForArticles = matchingTextes?.map(t => t.id) || [];
     }
 
     // Search in articles
@@ -157,9 +157,9 @@ export const textesReglementairesQueries = {
       .from("textes_articles")
       .select(`
         *,
-        texte:actes_reglementaires!textes_articles_texte_id_fkey(
+        texte:textes_reglementaires!textes_articles_texte_id_fkey(
           id, intitule, reference_officielle, type_acte, statut_vigueur, date_publication, annee,
-          domaines:actes_reglementaires_domaines(
+          domaines:textes_domaines(
             domaine:domaines_reglementaires(id, libelle)
           )
         )
@@ -172,22 +172,22 @@ export const textesReglementairesQueries = {
     }
 
     // Combine domaine/sous-domaine filters with type/statut/année filters
-    let finalActeIdsForArticles = acteIdsForArticles;
+    let finalTexteIdsForArticles = texteIdsForArticles;
 
     // Filter articles by domaine if specified
     if (filters?.domaineFilter && filters.domaineFilter !== "all") {
-      const { data: actesWithDomain } = await supabase
-        .from("actes_reglementaires_domaines")
-        .select("acte_id")
+      const { data: textesWithDomain } = await supabase
+        .from("textes_domaines")
+        .select("texte_id")
         .eq("domaine_id", filters.domaineFilter);
       
-      const domaineActeIds = actesWithDomain?.map(a => a.acte_id) || [];
+      const domaineTexteIds = textesWithDomain?.map(t => t.texte_id) || [];
       
-      if (finalActeIdsForArticles !== null) {
+      if (finalTexteIdsForArticles !== null) {
         // Intersection of both filters
-        finalActeIdsForArticles = finalActeIdsForArticles.filter(id => domaineActeIds.includes(id));
+        finalTexteIdsForArticles = finalTexteIdsForArticles.filter(id => domaineTexteIds.includes(id));
       } else {
-        finalActeIdsForArticles = domaineActeIds;
+        finalTexteIdsForArticles = domaineTexteIds;
       }
     }
 
@@ -209,15 +209,15 @@ export const textesReglementairesQueries = {
         articlesQuery = articlesQuery.in("id", []);
       }
       
-      // Ne pas combiner avec finalActeIdsForArticles pour les sous-domaines
+      // Ne pas combiner avec finalTexteIdsForArticles pour les sous-domaines
       // car la relation est article->sous_domaine, pas texte->sous_domaine
     }
 
     // Apply final combined filters (type/statut/année/domaine)
     // MAIS PAS si sous-domaine est filtré (car déjà appliqué directement sur les articles)
-    if (finalActeIdsForArticles !== null && (!filters?.sousDomaineFilter || filters.sousDomaineFilter === "all")) {
-      if (finalActeIdsForArticles.length > 0) {
-        articlesQuery = articlesQuery.in("texte_id", finalActeIdsForArticles);
+    if (finalTexteIdsForArticles !== null && (!filters?.sousDomaineFilter || filters.sousDomaineFilter === "all")) {
+      if (finalTexteIdsForArticles.length > 0) {
+        articlesQuery = articlesQuery.in("texte_id", finalTexteIdsForArticles);
       } else {
         articlesQuery = articlesQuery.in("texte_id", []);
       }
@@ -268,11 +268,11 @@ export const textesReglementairesQueries = {
     const to = from + pageSize - 1;
 
     let query = supabase
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .select(`
         *,
         articles:textes_articles(count),
-        domaines:actes_reglementaires_domaines(
+        domaines:textes_domaines(
           domaine:domaines_reglementaires(id, libelle)
         )
       `, { count: "exact" });
@@ -309,14 +309,14 @@ export const textesReglementairesQueries = {
 
     if (filters?.domaineFilter && filters.domaineFilter !== "all") {
       // Filter by domain through junction table - this needs a different approach
-      const { data: actesWithDomain } = await supabase
-        .from("actes_reglementaires_domaines")
-        .select("acte_id")
+      const { data: textesWithDomain } = await supabase
+        .from("textes_domaines")
+        .select("texte_id")
         .eq("domaine_id", filters.domaineFilter);
       
-      if (actesWithDomain && actesWithDomain.length > 0) {
-        const acteIds = actesWithDomain.map(a => a.acte_id);
-        query = query.in("id", acteIds);
+      if (textesWithDomain && textesWithDomain.length > 0) {
+        const texteIds = textesWithDomain.map(t => t.texte_id);
+        query = query.in("id", texteIds);
       }
     }
 
@@ -340,11 +340,11 @@ export const textesReglementairesQueries = {
 
   async getById(id: string) {
     const { data, error } = await supabase
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .select(`
         *,
         articles:textes_articles(*),
-        domaines:actes_reglementaires_domaines(
+        domaines:textes_domaines(
           domaine:domaines_reglementaires(*)
         )
       `)
@@ -356,7 +356,7 @@ export const textesReglementairesQueries = {
 
   async create(texte: Partial<TexteReglementaire>, domaineIds?: string[]) {
     const { data, error } = await supabase
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .insert([texte as any])
       .select()
       .single();
@@ -365,10 +365,10 @@ export const textesReglementairesQueries = {
     // Link domaines
     if (domaineIds && domaineIds.length > 0) {
       const relations = domaineIds.map(domaineId => ({
-        acte_id: data.id,
+        texte_id: data.id,
         domaine_id: domaineId,
       }));
-      await supabase.from("actes_reglementaires_domaines").insert(relations);
+      await supabase.from("textes_domaines").insert(relations);
     }
 
     return data;
@@ -376,7 +376,7 @@ export const textesReglementairesQueries = {
 
   async update(id: string, texte: Partial<TexteReglementaire>, domaineIds?: string[]) {
     const { data, error } = await supabase
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .update(texte as any)
       .eq("id", id)
       .select()
@@ -385,13 +385,13 @@ export const textesReglementairesQueries = {
 
     // Update domaines
     if (domaineIds !== undefined) {
-      await supabase.from("actes_reglementaires_domaines").delete().eq("acte_id", id);
+      await supabase.from("textes_domaines").delete().eq("texte_id", id);
       if (domaineIds.length > 0) {
         const relations = domaineIds.map(domaineId => ({
-          acte_id: id,
+          texte_id: id,
           domaine_id: domaineId,
         }));
-        await supabase.from("actes_reglementaires_domaines").insert(relations);
+        await supabase.from("textes_domaines").insert(relations);
       }
     }
 
@@ -400,7 +400,7 @@ export const textesReglementairesQueries = {
 
   async softDelete(id: string) {
     const { error } = await supabase
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .delete()
       .eq("id", id);
     if (error) throw error;
@@ -480,7 +480,7 @@ export const textesArticlesQueries = {
       .from("textes_articles")
       .select(`
         *, 
-        actes_reglementaires(reference_officielle, intitule),
+        textes_reglementaires(reference_officielle, intitule),
         sous_domaines:articles_sous_domaines(
           sous_domaine:sous_domaines_application(*)
         )
