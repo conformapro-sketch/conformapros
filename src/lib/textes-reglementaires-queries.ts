@@ -6,7 +6,8 @@ export interface TexteReglementaire {
   type: 'loi' | 'decret' | 'arrete' | 'circulaire';
   reference: string;
   titre: string;
-  autorite_emettrice?: string;
+  autorite_emettrice?: string; // Deprecated, use autorite_emettrice_id
+  autorite_emettrice_id?: string;
   date_publication?: string;
   source_url?: string;
   pdf_url?: string;
