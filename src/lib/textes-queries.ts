@@ -547,17 +547,16 @@ export const textesArticlesVersionsQueries = {
       .from("article_versions")
       .select(`
         *,
-        source_text:source_text_id (
+        source_texte:source_texte_id (
           id,
-          reference_officielle,
-          intitule,
-          type_acte,
+          reference,
+          titre,
+          type,
           date_publication
         )
       `)
       .eq("article_id", articleId)
-      .is("deleted_at", null)
-      .order("effective_from", { ascending: false });
+      .order("date_effet", { ascending: false });
     if (error) throw error;
     return data;
   },
@@ -567,17 +566,16 @@ export const textesArticlesVersionsQueries = {
       .from("article_versions")
       .select(`
         *,
-        source_text:source_text_id (
+        source_texte:source_texte_id (
           id,
-          reference_officielle,
-          intitule,
-          type_acte,
+          reference,
+          titre,
+          type,
           date_publication
         )
       `)
       .eq("article_id", articleId)
-      .is("deleted_at", null)
-      .order("effective_from", { ascending: false });
+      .order("date_effet", { ascending: false });
     if (error) throw error;
     return data;
   },
@@ -603,31 +601,23 @@ export const textesArticlesVersionsQueries = {
 
   async create(version: {
     article_id: string;
-    version_numero: number;
-    version_label: string;
+    numero_version: number;
     contenu: string;
-    date_version: string;
-    effective_from: string;
-    effective_to?: string;
-    modification_type: string;
-    source_text_id?: string;
-    source_article_reference?: string;
-    replaced_version_id?: string;
-    notes_modification?: string;
-    raison_modification?: string;
-    tags?: string[];
-    impact_estime?: string;
+    date_effet: string;
+    statut?: "en_vigueur" | "abrogee" | "remplacee";
+    source_texte_id: string;
+    notes_modifications?: string;
   }) {
     const { data, error } = await supabase
       .from("article_versions")
       .insert([version as any])
       .select(`
         *,
-        source_text:source_text_id (
+        source_texte:source_texte_id (
           id,
-          reference_officielle,
-          intitule,
-          type_acte
+          reference,
+          titre,
+          type
         )
       `)
       .single();
@@ -636,15 +626,11 @@ export const textesArticlesVersionsQueries = {
   },
 
   async update(id: string, version: Partial<{
-    version_label: string;
     contenu: string;
-    effective_from: string;
-    effective_to?: string;
-    modification_type: string;
-    source_text_id?: string;
-    source_article_reference?: string;
-    notes_modification?: string;
-    is_active: boolean;
+    date_effet: string;
+    statut: "en_vigueur" | "abrogee" | "remplacee";
+    source_texte_id?: string;
+    notes_modifications?: string;
   }>) {
     const { data, error } = await supabase
       .from("article_versions")
@@ -652,11 +638,11 @@ export const textesArticlesVersionsQueries = {
       .eq("id", id)
       .select(`
         *,
-        source_text:source_text_id (
+        source_texte:source_texte_id (
           id,
-          reference_officielle,
-          intitule,
-          type_acte
+          reference,
+          titre,
+          type
         )
       `)
       .single();
@@ -667,7 +653,7 @@ export const textesArticlesVersionsQueries = {
   async softDelete(id: string) {
     const { error } = await supabase
       .from("article_versions")
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ statut: "abrogee" })
       .eq("id", id);
     if (error) throw error;
   },
