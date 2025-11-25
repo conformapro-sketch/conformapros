@@ -164,3 +164,73 @@ export const domainesQueries = {
     return data as DomaineReglementaire[];
   },
 };
+
+// Article queries for textes_reglementaires
+export const articlesQueries = {
+  async getByTexteId(texteId: string) {
+    const { data, error } = await supabase
+      .from("articles")
+      .select(`
+        *,
+        sous_domaines:article_sous_domaines(
+          sous_domaine:sous_domaines_application(*)
+        )
+      `)
+      .eq("texte_id", texteId)
+      .order("numero");
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getActiveVersions(articleIds: string[]) {
+    if (articleIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from("v_articles_versions_actives")
+      .select("*")
+      .in("article_id", articleIds);
+    if (error) throw error;
+    return data || [];
+  },
+
+  async create(article: {
+    texte_id: string;
+    numero: string;
+    titre: string;
+    resume?: string;
+    est_introductif?: boolean;
+    porte_exigence?: boolean;
+  }) {
+    const { data, error } = await supabase
+      .from("articles")
+      .insert([article])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, article: Partial<{
+    numero: string;
+    titre: string;
+    resume: string;
+    est_introductif: boolean;
+    porte_exigence: boolean;
+  }>) {
+    const { data, error } = await supabase
+      .from("articles")
+      .update(article)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from("articles")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+};
