@@ -28,6 +28,7 @@ import { textesReglementairesQueries, articlesQueries } from "@/lib/textes-regle
 import { toast } from "sonner";
 import { useState } from "react";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
+import { ArticleReglementaireFormModal } from "@/components/ArticleReglementaireFormModal";
 
 export default function GestionTexteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -301,29 +302,20 @@ export default function GestionTexteDetail() {
         />
       )}
 
-      {/* Article form modal - TODO: Create simplified version */}
-      {showArticleModal && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <Card className="w-full max-w-2xl m-4">
-            <CardHeader>
-              <CardTitle>
-                {editingArticle ? "Modifier l'article" : "Ajouter un article"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Formulaire d'article à implémenter avec gestion des versions.
-              </p>
-              <Button className="mt-4" onClick={() => {
-                setShowArticleModal(false);
-                setEditingArticle(null);
-              }}>
-                Fermer
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Article form modal */}
+      <ArticleReglementaireFormModal
+        open={showArticleModal}
+        onOpenChange={(open) => {
+          setShowArticleModal(open);
+          if (!open) setEditingArticle(null);
+        }}
+        texteId={id!}
+        article={editingArticle}
+        onSuccess={() => {
+          setShowArticleModal(false);
+          setEditingArticle(null);
+        }}
+      />
     </div>
   );
 }
