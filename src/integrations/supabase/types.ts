@@ -212,9 +212,18 @@ export type Database = {
           created_at: string
           created_by: string | null
           date_version: string
+          deleted_at: string | null
+          effective_from: string
+          effective_to: string | null
           id: string
           is_active: boolean | null
+          modification_type: string | null
+          notes_modification: string | null
           raison_modification: string | null
+          replaced_version_id: string | null
+          source_article_reference: string | null
+          source_text_id: string | null
+          version_label: string | null
           version_numero: number
         }
         Insert: {
@@ -223,9 +232,18 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date_version: string
+          deleted_at?: string | null
+          effective_from?: string
+          effective_to?: string | null
           id?: string
           is_active?: boolean | null
+          modification_type?: string | null
+          notes_modification?: string | null
           raison_modification?: string | null
+          replaced_version_id?: string | null
+          source_article_reference?: string | null
+          source_text_id?: string | null
+          version_label?: string | null
           version_numero: number
         }
         Update: {
@@ -234,9 +252,18 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date_version?: string
+          deleted_at?: string | null
+          effective_from?: string
+          effective_to?: string | null
           id?: string
           is_active?: boolean | null
+          modification_type?: string | null
+          notes_modification?: string | null
           raison_modification?: string | null
+          replaced_version_id?: string | null
+          source_article_reference?: string | null
+          source_text_id?: string | null
+          version_label?: string | null
           version_numero?: number
         }
         Relationships: [
@@ -245,6 +272,20 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_versions_replaced_version_id_fkey"
+            columns: ["replaced_version_id"]
+            isOneToOne: false
+            referencedRelation: "article_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_versions_source_text_id_fkey"
+            columns: ["source_text_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
             referencedColumns: ["id"]
           },
         ]
@@ -526,6 +567,54 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      codes_structures: {
+        Row: {
+          code_id: string
+          created_at: string
+          id: string
+          niveau: string
+          numero: string
+          ordre: number
+          parent_id: string | null
+          titre: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          id?: string
+          niveau: string
+          numero: string
+          ordre?: number
+          parent_id?: string | null
+          titre: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          id?: string
+          niveau?: string
+          numero?: string
+          ordre?: number
+          parent_id?: string | null
+          titre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "codes_structures_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "codes_juridiques"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "codes_structures_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "codes_structures"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conformite_evaluations: {
         Row: {
@@ -2031,6 +2120,68 @@ export type Database = {
           },
         ]
       }
+      plans_action_attachments: {
+        Row: {
+          action_id: string
+          created_at: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          titre: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          titre: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          titre?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plans_action_attachments_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "plans_action"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plans_action_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "client_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plans_action_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "v_client_admin_users_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plans_action_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "v_staff_client_users_overview"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_surveillance: {
         Row: {
           client_id: string
@@ -2690,6 +2841,7 @@ export type Database = {
           contenu: string
           created_at: string
           id: string
+          is_exigence: boolean | null
           numero: string | null
           numero_article: string
           ordre: number | null
@@ -2705,6 +2857,7 @@ export type Database = {
           contenu: string
           created_at?: string
           id?: string
+          is_exigence?: boolean | null
           numero?: string | null
           numero_article: string
           ordre?: number | null
@@ -2720,6 +2873,7 @@ export type Database = {
           contenu?: string
           created_at?: string
           id?: string
+          is_exigence?: boolean | null
           numero?: string | null
           numero_article?: string
           ordre?: number | null
@@ -3057,6 +3211,88 @@ export type Database = {
             columns: ["site_id"]
             isOneToOne: false
             referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      veille_alerts: {
+        Row: {
+          alert_type: string
+          article_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          read_at: string | null
+          read_by: string | null
+          site_id: string
+          version_id: string | null
+        }
+        Insert: {
+          alert_type: string
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          read_at?: string | null
+          read_by?: string | null
+          site_id: string
+          version_id?: string | null
+        }
+        Update: {
+          alert_type?: string
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          read_at?: string | null
+          read_by?: string | null
+          site_id?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veille_alerts_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "textes_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veille_alerts_read_by_fkey"
+            columns: ["read_by"]
+            isOneToOne: false
+            referencedRelation: "client_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veille_alerts_read_by_fkey"
+            columns: ["read_by"]
+            isOneToOne: false
+            referencedRelation: "v_client_admin_users_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veille_alerts_read_by_fkey"
+            columns: ["read_by"]
+            isOneToOne: false
+            referencedRelation: "v_staff_client_users_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veille_alerts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veille_alerts_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "article_versions"
             referencedColumns: ["id"]
           },
         ]
