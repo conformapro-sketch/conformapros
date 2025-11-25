@@ -2769,6 +2769,7 @@ export type Database = {
       }
       sous_domaines_application: {
         Row: {
+          actif: boolean
           code: string
           created_at: string
           deleted_at: string | null
@@ -2779,6 +2780,7 @@ export type Database = {
           ordre: number
         }
         Insert: {
+          actif?: boolean
           code: string
           created_at?: string
           deleted_at?: string | null
@@ -2789,6 +2791,7 @@ export type Database = {
           ordre?: number
         }
         Update: {
+          actif?: boolean
           code?: string
           created_at?: string
           deleted_at?: string | null
