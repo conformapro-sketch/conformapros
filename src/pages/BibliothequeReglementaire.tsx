@@ -54,7 +54,6 @@ function BibliothequeReglementaireContent() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
   const [sousDomaineFilter, setSousDomaineFilter] = useState<string>("all");
-  const [statutFilter, setStatutFilter] = useState<string>("all");
   const [anneeFilter, setAnneeFilter] = useState<string>("all");
   const [withPdfFilter, setWithPdfFilter] = useState<boolean>(false);
   const [favoritesFilter, setFavoritesFilter] = useState<boolean>(false);
@@ -93,12 +92,11 @@ function BibliothequeReglementaireContent() {
   });
 
   const { data: result, isLoading, error } = useQuery({
-    queryKey: ["textes-reglementaires", typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter, searchTerm, page, pageSize],
+    queryKey: ["textes-reglementaires", typeFilter, domaineFilter, sousDomaineFilter, anneeFilter, searchTerm, page, pageSize],
     queryFn: async () => {
       const data = await textesReglementairesQueries.getAll({
         searchTerm,
         typeFilter: typeFilter !== "all" ? typeFilter : undefined,
-        statutFilter: statutFilter !== "all" ? statutFilter : undefined,
         domaineFilter: domaineFilter !== "all" ? domaineFilter : undefined,
         sousDomaineFilter: sousDomaineFilter !== "all" ? sousDomaineFilter : undefined,
         anneeFilter: anneeFilter !== "all" ? anneeFilter : undefined,
@@ -165,14 +163,13 @@ function BibliothequeReglementaireContent() {
     };
   }, [textes, totalCount, isFavorite]);
 
-  const activeFiltersCount = [typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter]
+  const activeFiltersCount = [typeFilter, domaineFilter, sousDomaineFilter, anneeFilter]
     .filter(f => f !== "all").length + (withPdfFilter ? 1 : 0) + (favoritesFilter ? 1 : 0);
 
   const clearAllFilters = () => {
     setTypeFilter("all");
     setDomaineFilter("all");
     setSousDomaineFilter("all");
-    setStatutFilter("all");
     setAnneeFilter("all");
     setWithPdfFilter(false);
     setFavoritesFilter(false);
@@ -211,14 +208,6 @@ function BibliothequeReglementaireContent() {
         onRemove: () => setTypeFilter("all"),
       });
     }
-    if (statutFilter !== "all") {
-      filters.push({
-        id: "statut",
-        label: `Statut: ${statutFilter}`,
-        value: statutFilter,
-        onRemove: () => setStatutFilter("all"),
-      });
-    }
     if (domaineFilter !== "all") {
       const domaine = domainesList?.find((d: any) => d.id === domaineFilter);
       filters.push({
@@ -245,7 +234,7 @@ function BibliothequeReglementaireContent() {
       });
     }
     return filters;
-  }, [typeFilter, statutFilter, domaineFilter, withPdfFilter, favoritesFilter, domainesList]);
+  }, [typeFilter, domaineFilter, withPdfFilter, favoritesFilter, domainesList]);
 
   return (
     <div className="container mx-auto p-6 space-y-6 animate-fade-in">
@@ -289,8 +278,6 @@ function BibliothequeReglementaireContent() {
       <BibliothequeHorizontalFilters
         typeFilter={typeFilter}
         setTypeFilter={setTypeFilter}
-        statutFilter={statutFilter}
-        setStatutFilter={setStatutFilter}
         domaineFilter={domaineFilter}
         setDomaineFilter={setDomaineFilter}
         sousDomaineFilter={sousDomaineFilter}

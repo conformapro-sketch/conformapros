@@ -36,7 +36,6 @@ export default function BibliothequeTextes() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
   const [sousDomaineFilter, setSousDomaineFilter] = useState<string>("all");
-  const [statutFilter, setStatutFilter] = useState<string>("all");
   const [anneeFilter, setAnneeFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("date_publication");
@@ -57,12 +56,11 @@ export default function BibliothequeTextes() {
   });
 
   const { data: result, isLoading } = useQuery({
-    queryKey: ["textes-reglementaires", searchTerm, typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter, page, sortBy, sortOrder],
+    queryKey: ["textes-reglementaires", searchTerm, typeFilter, domaineFilter, sousDomaineFilter, anneeFilter, page, sortBy, sortOrder],
     queryFn: () =>
       textesReglementairesQueries.getAll({
         searchTerm,
         typeFilter: typeFilter !== "all" ? typeFilter : undefined,
-        statutFilter: statutFilter !== "all" ? statutFilter : undefined,
         domaineFilter: domaineFilter !== "all" ? domaineFilter : undefined,
         sousDomaineFilter: sousDomaineFilter !== "all" ? sousDomaineFilter : undefined,
         anneeFilter: anneeFilter !== "all" ? anneeFilter : undefined,
@@ -207,19 +205,6 @@ export default function BibliothequeTextes() {
                       {sd.libelle}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={statutFilter} onValueChange={(val) => { setStatutFilter(val); setPage(1); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="en_vigueur">En vigueur</SelectItem>
-                  <SelectItem value="modifie">Modifié</SelectItem>
-                  <SelectItem value="abroge">Abrogé</SelectItem>
-                  <SelectItem value="suspendu">Suspendu</SelectItem>
                 </SelectContent>
               </Select>
 

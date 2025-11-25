@@ -80,7 +80,6 @@ export default function BibliothequeRechercheAvancee() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
   const [sousDomaineFilter, setSousDomaineFilter] = useState<string>("all");
-  const [statutFilter, setStatutFilter] = useState<string>("all");
   const [anneeFilter, setAnneeFilter] = useState<string>("all");
   
   // Modal states
@@ -120,18 +119,16 @@ export default function BibliothequeRechercheAvancee() {
     typeFilter !== "all",
     domaineFilter !== "all",
     sousDomaineFilter !== "all",
-    statutFilter !== "all",
     anneeFilter !== "all"
   ].filter(Boolean).length;
 
   const { data: searchResults, isLoading } = useQuery({
-    queryKey: ["smart-search", debouncedSearch, typeFilter, domaineFilter, sousDomaineFilter, statutFilter, anneeFilter],
+    queryKey: ["smart-search", debouncedSearch, typeFilter, domaineFilter, sousDomaineFilter, anneeFilter],
     queryFn: () => textesReglementairesQueries.smartSearch({
       searchTerm: debouncedSearch.length >= 2 ? debouncedSearch : "",
       typeFilter: typeFilter !== "all" ? typeFilter : undefined,
       domaineFilter: domaineFilter !== "all" ? domaineFilter : undefined,
       sousDomaineFilter: sousDomaineFilter !== "all" ? sousDomaineFilter : undefined,
-      statutFilter: statutFilter !== "all" ? statutFilter : undefined,
       anneeFilter: anneeFilter !== "all" ? anneeFilter : undefined,
     }),
     enabled: debouncedSearch.length >= 2 || activeFiltersCount > 0,
@@ -154,7 +151,6 @@ export default function BibliothequeRechercheAvancee() {
     setTypeFilter("all");
     setDomaineFilter("all");
     setSousDomaineFilter("all");
-    setStatutFilter("all");
     setAnneeFilter("all");
   };
 
@@ -281,19 +277,6 @@ export default function BibliothequeRechercheAvancee() {
                 ))}
               </SelectContent>
             </Select>
-
-            <Select value={statutFilter} onValueChange={setStatutFilter}>
-              <SelectTrigger className="h-10">
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent className="z-50 bg-popover">
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="en_vigueur">En vigueur</SelectItem>
-                <SelectItem value="modifie">Modifié</SelectItem>
-                <SelectItem value="abroge">Abrogé</SelectItem>
-                <SelectItem value="suspendu">Suspendu</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Active filters tags */}
@@ -346,19 +329,6 @@ export default function BibliothequeRechercheAvancee() {
                     size="sm"
                     className="h-4 w-4 p-0 hover:bg-transparent"
                     onClick={() => setAnneeFilter("all")}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              )}
-              {statutFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1 pr-1">
-                  Statut: {STATUT_LABELS[statutFilter]?.label}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => setStatutFilter("all")}
                   >
                     <X className="h-3 w-3" />
                   </Button>

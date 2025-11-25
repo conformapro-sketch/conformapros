@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-queries";
@@ -29,14 +28,12 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
-    type_acte: "LOI" as "LOI" | "DECRET-LOI" | "ARRETE" | "DECRET" | "CIRCULAIRE",
-    reference_officielle: "",
-    intitule: "",
+    type: "loi" as "loi" | "decret" | "arrete" | "circulaire",
+    reference: "",
+    titre: "",
     autorite_emettrice_id: "",
     date_publication: "",
-    statut_vigueur: "en_vigueur" as "en_vigueur" | "abroge" | "suspendu" | "modifie",
-    resume: "",
-    lien_officiel: "",
+    source_url: "",
     annee: new Date().getFullYear(),
   });
   const [selectedDomaines, setSelectedDomaines] = useState<string[]>([]);
@@ -63,15 +60,13 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   useEffect(() => {
     if (texte) {
       setFormData({
-        type_acte: texte.type_acte.toUpperCase() as "LOI" | "DECRET-LOI" | "ARRETE" | "DECRET" | "CIRCULAIRE",
-        reference_officielle: texte.reference_officielle,
-        intitule: texte.intitule,
+        type: (texte as any).type || "loi",
+        reference: (texte as any).reference || "",
+        titre: (texte as any).titre || "",
         autorite_emettrice_id: (texte as any).autorite_emettrice_id || "",
-        date_publication: texte.date_publication || "",
-        statut_vigueur: texte.statut_vigueur,
-        resume: texte.resume || "",
-        lien_officiel: texte.lien_officiel || "",
-        annee: texte.annee || new Date().getFullYear(),
+        date_publication: (texte as any).date_publication || "",
+        source_url: (texte as any).source_url || "",
+        annee: (texte as any).annee || new Date().getFullYear(),
       });
       
       // Load existing domaines
@@ -97,14 +92,12 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
       setPdfFile(null);
     } else {
       setFormData({
-        type_acte: "LOI",
-        reference_officielle: "",
-        intitule: "",
+        type: "loi",
+        reference: "",
+        titre: "",
         autorite_emettrice_id: "",
         date_publication: "",
-        statut_vigueur: "en_vigueur",
-        resume: "",
-        lien_officiel: "",
+        source_url: "",
         annee: new Date().getFullYear(),
       });
       setSelectedDomaines([]);
@@ -240,11 +233,11 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
     e.preventDefault();
     
     // Client-side validation
-    if (!formData.reference_officielle.trim()) {
-      toast.error("La référence officielle est requise");
+    if (!formData.reference.trim()) {
+      toast.error("La référence est requise");
       return;
     }
-    if (!formData.intitule.trim()) {
+    if (!formData.titre.trim()) {
       toast.error("Le titre est requis");
       return;
     }
@@ -264,37 +257,36 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="type_acte">Type *</Label>
-            <Select value={formData.type_acte} onValueChange={(val: any) => setFormData({ ...formData, type_acte: val })}>
+            <Label htmlFor="type">Type *</Label>
+            <Select value={formData.type} onValueChange={(val: any) => setFormData({ ...formData, type: val })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="LOI">Loi</SelectItem>
-                <SelectItem value="DECRET-LOI">Décret-loi</SelectItem>
-                <SelectItem value="DECRET">Décret</SelectItem>
-                <SelectItem value="ARRETE">Arrêté</SelectItem>
-                <SelectItem value="CIRCULAIRE">Circulaire</SelectItem>
+                <SelectItem value="loi">Loi</SelectItem>
+                <SelectItem value="decret">Décret</SelectItem>
+                <SelectItem value="arrete">Arrêté</SelectItem>
+                <SelectItem value="circulaire">Circulaire</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="reference_officielle">Référence officielle *</Label>
+            <Label htmlFor="reference">Référence *</Label>
             <Input
-              id="reference_officielle"
-              value={formData.reference_officielle}
-              onChange={(e) => setFormData({ ...formData, reference_officielle: e.target.value })}
+              id="reference"
+              value={formData.reference}
+              onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="intitule">Titre *</Label>
+            <Label htmlFor="titre">Titre *</Label>
             <Input
-              id="intitule"
-              value={formData.intitule}
-              onChange={(e) => setFormData({ ...formData, intitule: e.target.value })}
+              id="titre"
+              value={formData.titre}
+              onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
               required
             />
           </div>
@@ -332,27 +324,12 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="statut_vigueur">Statut *</Label>
-            <Select value={formData.statut_vigueur} onValueChange={(val: any) => setFormData({ ...formData, statut_vigueur: val })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en_vigueur">En vigueur</SelectItem>
-                <SelectItem value="modifie">Modifié</SelectItem>
-                <SelectItem value="abroge">Abrogé</SelectItem>
-                <SelectItem value="suspendu">Suspendu</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="resume">Résumé</Label>
-            <RichTextEditor
-              value={formData.resume}
-              onChange={(value) => setFormData({ ...formData, resume: value })}
-              placeholder="Résumé ou objet du texte réglementaire..."
-              className="min-h-[150px]"
+            <Label htmlFor="source_url">Lien source officiel</Label>
+            <Input
+              id="source_url"
+              value={formData.source_url}
+              onChange={(e) => setFormData({ ...formData, source_url: e.target.value })}
+              placeholder="https://..."
             />
           </div>
 
@@ -412,16 +389,6 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
               accept="application/pdf"
               onChange={handleFileChange}
               className="hidden"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="lien_officiel">Lien officiel</Label>
-            <Input
-              id="lien_officiel"
-              value={formData.lien_officiel}
-              onChange={(e) => setFormData({ ...formData, lien_officiel: e.target.value })}
-              placeholder="https://..."
             />
           </div>
 
