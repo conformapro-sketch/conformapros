@@ -193,12 +193,12 @@ export function ArticleVersionWizard({
         .from("article_versions")
         .select("*")
         .eq("article_id", targetArticle.id)
-        .eq("is_active", true)
-        .order("version_numero", { ascending: false })
+        .eq("statut", "en_vigueur")
+        .order("numero_version", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      const nextVersionNumber = (currentVersion?.version_numero || 0) + 1;
+      const nextVersionNumber = (currentVersion?.numero_version || 0) + 1;
 
       // 2. Upload document if provided
       let documentUrl = null;
@@ -211,38 +211,31 @@ export function ArticleVersionWizard({
         .from("article_versions")
         .insert({
           article_id: targetArticle.id,
-          version_numero: nextVersionNumber,
-          version_label: `v${nextVersionNumber}`,
+          numero_version: nextVersionNumber,
           contenu: typeEffet === "ABROGE" 
             ? `<div class="abrogation-notice">
        <p><strong>Article abrogé</strong></p>
-       <p>Texte source : ${selectedTexteSource.reference_officielle}</p>
+       <p>Texte source : ${selectedTexteSource.reference}</p>
        <p>Date d'effet : ${new Date(dateEffet).toLocaleDateString("fr-FR")}</p>
        <p>Raison : ${raisonModification}</p>
      </div>`
             : (contenuModifie.trim() || targetArticle.contenu || "<p>Contenu non spécifié</p>"),
-          date_version: new Date().toISOString(),
-          modification_type: typeEffet.toLowerCase(),
-          source_text_id: selectedTexteSource.id,
-          source_article_reference: selectedTexteSource.reference_officielle,
-          effective_from: dateEffet,
-          is_active: true,
-          raison_modification: raisonModification,
-          impact_estime: impactEstime,
-          tags: [typeEffet.toLowerCase()],
+          date_effet: dateEffet,
+          statut: "en_vigueur",
+          source_texte_id: selectedTexteSource.id,
+          notes_modifications: raisonModification,
         })
         .select()
         .single();
 
       if (versionError) throw versionError;
 
-      // 4. Deactivate previous version
+      // 4. Mark previous version as replaced
       if (currentVersion) {
         const { error: updateError } = await supabase
           .from("article_versions")
           .update({
-            is_active: false,
-            effective_to: dateEffet,
+            statut: "remplacee",
           })
           .eq("id", currentVersion.id);
 

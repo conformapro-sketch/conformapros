@@ -247,74 +247,53 @@ export type Database = {
           contenu: string
           created_at: string
           created_by: string | null
-          date_version: string
-          deleted_at: string | null
-          effective_from: string
-          effective_to: string | null
+          date_effet: string
           id: string
-          is_active: boolean | null
-          modification_type: string | null
-          notes_modification: string | null
-          raison_modification: string | null
-          replaced_version_id: string | null
-          source_article_reference: string | null
-          source_text_id: string | null
-          version_label: string | null
-          version_numero: number
+          notes_modifications: string | null
+          numero_version: number
+          source_texte_id: string
+          statut: Database["public"]["Enums"]["statut_version_article"]
+          updated_at: string
         }
         Insert: {
           article_id: string
           contenu: string
           created_at?: string
           created_by?: string | null
-          date_version: string
-          deleted_at?: string | null
-          effective_from?: string
-          effective_to?: string | null
+          date_effet: string
           id?: string
-          is_active?: boolean | null
-          modification_type?: string | null
-          notes_modification?: string | null
-          raison_modification?: string | null
-          replaced_version_id?: string | null
-          source_article_reference?: string | null
-          source_text_id?: string | null
-          version_label?: string | null
-          version_numero: number
+          notes_modifications?: string | null
+          numero_version: number
+          source_texte_id: string
+          statut?: Database["public"]["Enums"]["statut_version_article"]
+          updated_at?: string
         }
         Update: {
           article_id?: string
           contenu?: string
           created_at?: string
           created_by?: string | null
-          date_version?: string
-          deleted_at?: string | null
-          effective_from?: string
-          effective_to?: string | null
+          date_effet?: string
           id?: string
-          is_active?: boolean | null
-          modification_type?: string | null
-          notes_modification?: string | null
-          raison_modification?: string | null
-          replaced_version_id?: string | null
-          source_article_reference?: string | null
-          source_text_id?: string | null
-          version_label?: string | null
-          version_numero?: number
+          notes_modifications?: string | null
+          numero_version?: number
+          source_texte_id?: string
+          statut?: Database["public"]["Enums"]["statut_version_article"]
+          updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "article_versions_article_id_fkey"
             columns: ["article_id"]
             isOneToOne: false
-            referencedRelation: "textes_articles"
+            referencedRelation: "articles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "article_versions_replaced_version_id_fkey"
-            columns: ["replaced_version_id"]
+            foreignKeyName: "article_versions_source_texte_id_fkey"
+            columns: ["source_texte_id"]
             isOneToOne: false
-            referencedRelation: "article_versions"
+            referencedRelation: "textes_reglementaires"
             referencedColumns: ["id"]
           },
         ]
@@ -3350,13 +3329,6 @@ export type Database = {
             referencedRelation: "sites"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "veille_alerts_version_id_fkey"
-            columns: ["version_id"]
-            isOneToOne: false
-            referencedRelation: "article_versions"
-            referencedColumns: ["id"]
-          },
         ]
       }
       visites_medicales: {
@@ -3823,6 +3795,7 @@ export type Database = {
       priorite: "haute" | "moyenne" | "basse"
       role_type: "team" | "client"
       statut_action: "a_faire" | "en_cours" | "terminee" | "annulee"
+      statut_version_article: "en_vigueur" | "abrogee" | "remplacee"
       statut_visite: "programmee" | "effectuee" | "annulee" | "reportee"
       type_document_medical: "aptitude" | "inaptitude" | "restriction" | "autre"
       type_texte_reglementaire: "loi" | "decret" | "arrete" | "circulaire"
@@ -3991,6 +3964,7 @@ export const Constants = {
       priorite: ["haute", "moyenne", "basse"],
       role_type: ["team", "client"],
       statut_action: ["a_faire", "en_cours", "terminee", "annulee"],
+      statut_version_article: ["en_vigueur", "abrogee", "remplacee"],
       statut_visite: ["programmee", "effectuee", "annulee", "reportee"],
       type_document_medical: ["aptitude", "inaptitude", "restriction", "autre"],
       type_texte_reglementaire: ["loi", "decret", "arrete", "circulaire"],

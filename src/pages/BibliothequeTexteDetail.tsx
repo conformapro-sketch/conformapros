@@ -217,31 +217,25 @@ export default function BibliothequeTexteDetail() {
 
       // 1. Récupérer le prochain numéro de version
       const existingVersions = await textesArticlesVersionsQueries.getByArticleId(articleId);
-      const nextVersionNum = Math.max(...existingVersions.map(v => v.version_numero), 0) + 1;
+      const nextVersionNum = Math.max(...existingVersions.map(v => v.numero_version), 0) + 1;
       
       // 2. Créer une nouvelle version (pas écraser l'article)
       await textesArticlesVersionsQueries.create({
         article_id: articleId,
-        version_numero: nextVersionNum,
-        version_label: `Version ${nextVersionNum} (Restaurée depuis V${version.version_numero})`,
-        date_version: new Date().toISOString().split('T')[0],
+        numero_version: nextVersionNum,
         contenu: version.contenu,
-        modification_type: 'restauration',
-        source_text_id: version.source_text_id,
-        source_article_reference: `Restauration de Version ${version.version_numero}`,
-        effective_from: new Date().toISOString().split('T')[0],
-        effective_to: null,
-        raison_modification: `Restauration de la Version ${version.version_numero} datée du ${version.date_version}`,
-        tags: ['restauration', 'version_precedente'],
-        impact_estime: 'medium',
+        date_effet: new Date().toISOString().split('T')[0],
+        statut: 'en_vigueur',
+        source_texte_id: version.source_texte_id,
+        notes_modifications: `Restauration de la Version ${version.numero_version} datée du ${version.date_effet}`,
       });
       
-      // 3. Désactiver les versions précédentes
+      // 3. Marquer les versions précédentes comme remplacées
       await Promise.all(
         existingVersions
-          .filter(v => v.is_active)
+          .filter(v => v.statut === 'en_vigueur')
           .map(v => textesArticlesVersionsQueries.update(v.id, { 
-            effective_to: new Date().toISOString().split('T')[0]
+            statut: 'remplacee'
           }))
       );
       
@@ -584,10 +578,9 @@ export default function BibliothequeTexteDetail() {
                           <div className="mt-6">
                             <ArticleVersionsTimeline
                               versions={versionsData}
-                              currentContent={article.contenu}
                               onCompare={handleCompareVersionsDetail}
                               onRestore={(version) => handleSetCurrentVersion(article.id, version)}
-                              onDelete={(version) => deleteVersionMutation.mutate(version.id)}
+                              onDelete={(versionId) => deleteVersionMutation.mutate(versionId)}
                             />
                           </div>
                         </CollapsibleContent>

@@ -209,12 +209,12 @@ export function ArticleFormModal({
           .from("article_versions")
           .select("*")
           .eq("article_id", effetData.article_cible_id)
-          .eq("is_active", true)
-          .order("version_numero", { ascending: false })
+          .eq("statut", "en_vigueur")
+          .order("numero_version", { ascending: false })
           .limit(1)
           .maybeSingle();
         
-        const nextVersionNumber = (currentVersion?.version_numero || 0) + 1;
+        const nextVersionNumber = (currentVersion?.numero_version || 0) + 1;
         
         // 2. Créer la nouvelle version dans l'article cible
         const newVersionContent = effetData.type_effet === "ABROGE" 
@@ -227,27 +227,20 @@ export function ArticleFormModal({
           .from("article_versions")
           .insert({
             article_id: effetData.article_cible_id,
-            version_numero: nextVersionNumber,
-            version_label: `v${nextVersionNumber}`,
+            numero_version: nextVersionNumber,
             contenu: newVersionContent,
-            date_version: new Date().toISOString(),
-            modification_type: effetData.type_effet.toLowerCase(),
-            source_text_id: texteId,
-            source_article_reference: formData.numero,
-            effective_from: effetData.date_effet,
-            is_active: true,
-            raison_modification: effetData.notes || `${effetData.type_effet} par ${texteData?.reference_officielle}`,
-            tags: [effetData.type_effet.toLowerCase(), "automatique"],
-            impact_estime: effetData.type_effet === "ABROGE" || effetData.type_effet === "REMPLACE" ? "high" : "medium",
+            date_effet: effetData.date_effet,
+            statut: "en_vigueur",
+            source_texte_id: texteId,
+            notes_modifications: effetData.notes || `${effetData.type_effet} par ${texteData?.reference}`,
           });
         
-        // 3. Désactiver l'ancienne version
+        // 3. Remplacer l'ancienne version
         if (currentVersion) {
           await supabase
             .from("article_versions")
             .update({
-              is_active: false,
-              effective_to: effetData.date_effet,
+              statut: "remplacee",
             })
             .eq("id", currentVersion.id);
         }
