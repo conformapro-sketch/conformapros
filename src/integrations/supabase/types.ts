@@ -205,6 +205,42 @@ export type Database = {
           },
         ]
       }
+      article_sous_domaines: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          sous_domaine_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          sous_domaine_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          sous_domaine_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_sous_domaines_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_sous_domaines_sous_domaine_id_fkey"
+            columns: ["sous_domaine_id"]
+            isOneToOne: false
+            referencedRelation: "sous_domaines_application"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_versions: {
         Row: {
           article_id: string
