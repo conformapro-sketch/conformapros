@@ -106,48 +106,6 @@ export type Database = {
           },
         ]
       }
-      actes_reglementaires: {
-        Row: {
-          created_at: string | null
-          date_entree_vigueur: string | null
-          date_publication: string | null
-          description: string | null
-          id: string
-          intitule: string
-          numero_jort: string | null
-          reference_officielle: string
-          statut_vigueur: string | null
-          type_acte: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          date_entree_vigueur?: string | null
-          date_publication?: string | null
-          description?: string | null
-          id?: string
-          intitule: string
-          numero_jort?: string | null
-          reference_officielle: string
-          statut_vigueur?: string | null
-          type_acte?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          date_entree_vigueur?: string | null
-          date_publication?: string | null
-          description?: string | null
-          id?: string
-          intitule?: string
-          numero_jort?: string | null
-          reference_officielle?: string
-          statut_vigueur?: string | null
-          type_acte?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       actions_correctives: {
         Row: {
           conformite_id: string | null
@@ -2964,13 +2922,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "textes_articles_acte_id_fkey"
-            columns: ["acte_id"]
-            isOneToOne: false
-            referencedRelation: "actes_reglementaires"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "textes_articles_parent_article_id_fkey"
             columns: ["parent_article_id"]
             isOneToOne: false
@@ -3011,8 +2962,45 @@ export type Database = {
           },
         ]
       }
+      textes_domaines: {
+        Row: {
+          created_at: string | null
+          domaine_id: string
+          id: string
+          texte_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          domaine_id: string
+          id?: string
+          texte_id: string
+        }
+        Update: {
+          created_at?: string | null
+          domaine_id?: string
+          id?: string
+          texte_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textes_domaines_domaine_id_fkey"
+            columns: ["domaine_id"]
+            isOneToOne: false
+            referencedRelation: "domaines_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textes_domaines_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       textes_reglementaires: {
         Row: {
+          annee: number | null
           created_at: string
           created_by: string | null
           date_publication: string | null
@@ -3025,6 +3013,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          annee?: number | null
           created_at?: string
           created_by?: string | null
           date_publication?: string | null
@@ -3037,6 +3026,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          annee?: number | null
           created_at?: string
           created_by?: string | null
           date_publication?: string | null
@@ -3049,6 +3039,42 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      textes_sous_domaines: {
+        Row: {
+          created_at: string | null
+          id: string
+          sous_domaine_id: string
+          texte_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          sous_domaine_id: string
+          texte_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          sous_domaine_id?: string
+          texte_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "textes_sous_domaines_sous_domaine_id_fkey"
+            columns: ["sous_domaine_id"]
+            isOneToOne: false
+            referencedRelation: "sous_domaines_application"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "textes_sous_domaines_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_domain_scopes: {
         Row: {
@@ -3681,6 +3707,16 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_applicable_textes_for_site: {
+        Args: { p_site_id: string }
+        Returns: {
+          date_publication: string
+          id: string
+          reference: string
+          titre: string
+          type: string
+        }[]
+      }
       get_bulk_site_modules: {
         Args: { site_ids: string[] }
         Returns: {
@@ -3776,6 +3812,17 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      search_textes_reglementaires: {
+        Args: { result_limit?: number; search_term: string }
+        Returns: {
+          date_publication: string
+          id: string
+          rank: number
+          reference: string
+          titre: string
+          type: string
+        }[]
       }
       seed_common_domains: { Args: never; Returns: undefined }
       set_user_domain_scopes: {

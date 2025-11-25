@@ -183,7 +183,7 @@ export default function BibliothequeTexteDetail() {
           article_source_id,
           textes_articles!articles_effets_juridiques_article_source_id_fkey(
             numero_article,
-            actes_reglementaires!textes_articles_texte_id_fkey(reference_officielle)
+            textes_reglementaires!textes_articles_texte_id_fkey(reference_officielle)
           )
         `)
         .eq('article_cible_id', articleId)

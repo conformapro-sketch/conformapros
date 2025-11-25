@@ -25,8 +25,8 @@ export default function BibliothequeTableauDeBord() {
     queryKey: ['textes_stats'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('actes_reglementaires')
-        .select('*, actes_reglementaires_domaines(domaine_id)');
+        .from('textes_reglementaires')
+        .select('*, textes_domaines(domaine_id)');
       if (error) throw error;
       return data || [];
     },
@@ -63,7 +63,7 @@ export default function BibliothequeTableauDeBord() {
       const yearMatch = yearFilter === "all" || texte.annee?.toString() === yearFilter;
       const autoriteMatch = autoriteFilter === "all" || texte.autorite_emettrice === autoriteFilter;
       const domaineMatch = domaineFilter === "all" || 
-        (texte.actes_reglementaires_domaines || []).some((d: any) => d.domaine_id === domaineFilter);
+        (texte.textes_domaines || []).some((d: any) => d.domaine_id === domaineFilter);
       return yearMatch && autoriteMatch && domaineMatch;
     });
   }, [textes, yearFilter, autoriteFilter, domaineFilter]);

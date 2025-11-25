@@ -226,8 +226,8 @@ export default function VeilleApplicabilite() {
       if (allowedDomaineIds.length === 0) return [];
       
       const { data, error } = await supabase
-        .from("actes_reglementaires_domaines")
-        .select("acte_id, domaine_id")
+        .from("textes_domaines")
+        .select("texte_id, domaine_id")
         .in("domaine_id", allowedDomaineIds);
       
       if (error) throw error;
@@ -237,7 +237,7 @@ export default function VeilleApplicabilite() {
   });
 
   const texteIdsAllowed = useMemo(() => {
-    return [...new Set(texteIdsData.map(t => t.acte_id))];
+    return [...new Set(texteIdsData.map(t => t.texte_id))];
   }, [texteIdsData]);
 
   // Fetch textes filtered by domain and allowed texts
@@ -247,19 +247,19 @@ export default function VeilleApplicabilite() {
       if (texteIdsAllowed.length === 0) return [];
       
       let query = supabase
-        .from("actes_reglementaires")
+        .from("textes_reglementaires")
         .select("id, intitule, reference_officielle, type_acte")
         .in("id", texteIdsAllowed);
 
       if (filters.domaine && filters.domaine !== "all") {
         const { data: texteIds } = await supabase
-          .from("actes_reglementaires_domaines")
-          .select("acte_id")
+          .from("textes_domaines")
+          .select("texte_id")
           .eq("domaine_id", filters.domaine);
 
         if (texteIds && texteIds.length > 0) {
           const filteredIds = texteIds
-            .map((t) => t.acte_id)
+            .map((t) => t.texte_id)
             .filter(id => texteIdsAllowed.includes(id));
           
           if (filteredIds.length > 0) {
@@ -295,7 +295,7 @@ export default function VeilleApplicabilite() {
           contenu,
           texte_id,
           indicatif,
-          actes_reglementaires (
+          textes_reglementaires (
             id,
             reference_officielle,
             intitule,
@@ -324,7 +324,7 @@ export default function VeilleApplicabilite() {
       const rows: ArticleRow[] =
         articlesData?.map((article) => {
           const status = statusData?.find((s) => s.article_id === article.id);
-          const texte = article.actes_reglementaires as any;
+          const texte = article.textes_reglementaires as any;
 
           return {
             id: status?.id || `new_${article.id}`,

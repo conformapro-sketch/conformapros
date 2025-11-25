@@ -12,7 +12,7 @@ import type {
   ArticleVersion
 } from "@/types/textes";
 
-// Type-safe wrappers for actes_reglementaires queries
+// Type-safe wrappers for textes_reglementaires queries
 export const actesQueries = {
   async getAll(filters?: {
     searchTerm?: string;
@@ -33,7 +33,7 @@ export const actesQueries = {
     const to = from + pageSize - 1;
 
     let query = (supabase as any)
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .select("*, articles(count)", { count: "exact" })
       .is("deleted_at", null);
 
@@ -84,7 +84,7 @@ export const actesQueries = {
 
   async getById(id: string) {
     const { data, error } = await (supabase as any)
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .select("*")
       .eq("id", id)
       .is("deleted_at", null)
@@ -96,17 +96,17 @@ export const actesQueries = {
   async create(acte: Partial<ActeReglementaire>) {
     // Check for duplicate intitule
     const { data: existing } = await (supabase as any)
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .select("id")
       .eq("intitule", acte.intitule)
       .maybeSingle();
     
     if (existing) {
-      throw new Error("Un acte avec ce titre existe déjà");
+      throw new Error("Un texte avec ce titre existe déjà");
     }
 
     const { data, error } = await (supabase as any)
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .insert([acte])
       .select()
       .single();
@@ -118,19 +118,19 @@ export const actesQueries = {
     // Check for duplicate intitule (excluding current)
     if (acte.intitule) {
       const { data: existing } = await (supabase as any)
-        .from("actes_reglementaires")
+        .from("textes_reglementaires")
         .select("id")
         .eq("intitule", acte.intitule)
         .neq("id", id)
         .maybeSingle();
       
       if (existing) {
-        throw new Error("Un acte avec ce titre existe déjà");
+        throw new Error("Un texte avec ce titre existe déjà");
       }
     }
 
     const { data, error } = await (supabase as any)
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .update(acte)
       .eq("id", id)
       .select()
@@ -141,7 +141,7 @@ export const actesQueries = {
 
   async delete(id: string) {
     const { error } = await (supabase as any)
-      .from("actes_reglementaires")
+      .from("textes_reglementaires")
       .delete()
       .eq("id", id);
     if (error) throw error;
@@ -257,7 +257,7 @@ export const relationsQueries = {
       .from("relations_actes")
       .select(`
         *,
-        cible:actes_reglementaires!relations_actes_cible_id_fkey(numero_officiel, intitule)
+        cible:textes_reglementaires!relations_actes_cible_id_fkey(numero_officiel, intitule)
       `)
       .eq("source_id", sourceId);
     if (error) throw error;

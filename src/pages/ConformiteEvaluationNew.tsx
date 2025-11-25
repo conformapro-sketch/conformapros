@@ -169,7 +169,7 @@ const evaluationDataQueries = {
         *,
         texte:textes_reglementaires (
           *,
-          actes_reglementaires_domaines (
+          textes_domaines (
             domaine:domaines_reglementaires (id, code, libelle)
           )
         )
@@ -182,7 +182,7 @@ const evaluationDataQueries = {
       const texte = article?.texte;
       const conformite = Array.isArray(status.conformite) ? status.conformite[0] : undefined;
       
-      const domaines = texte?.actes_reglementaires_domaines
+      const domaines = texte?.textes_domaines
         ?.map((d: any) => d.domaine)
         .filter(Boolean) || [];
 
@@ -462,16 +462,16 @@ export default function ConformiteEvaluationNew() {
   const { data: textes = [] } = useQuery({
     queryKey: ['textes', filters.domaine],
     queryFn: async () => {
-      let query = supabase.from('actes_reglementaires').select('id, intitule, reference_officielle');
+      let query = supabase.from('textes_reglementaires').select('id, intitule, reference_officielle');
       
       if (filters.domaine) {
         const { data: texteIds } = await supabase
-          .from('actes_reglementaires_domaines')
-          .select('acte_id')
+          .from('textes_domaines')
+          .select('texte_id')
           .eq('domaine_id', filters.domaine);
         
         if (texteIds && texteIds.length > 0) {
-          query = query.in('id', texteIds.map(t => t.acte_id));
+          query = query.in('id', texteIds.map(t => t.texte_id));
         }
       }
       

@@ -62,10 +62,10 @@ const GestionArticles = () => {
 
   // Fetch texte info
   const { data: texte } = useQuery({
-    queryKey: ["acte", id],
+    queryKey: ["texte", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("actes_reglementaires")
+        .from("textes_reglementaires")
         .select("reference, titre")
         .eq("id", id!)
         .maybeSingle();
