@@ -6,6 +6,7 @@ export interface TexteReglementaire {
   type: 'loi' | 'decret' | 'arrete' | 'circulaire';
   reference: string;
   titre: string;
+  autorite_emettrice?: string;
   date_publication?: string;
   source_url?: string;
   pdf_url?: string;

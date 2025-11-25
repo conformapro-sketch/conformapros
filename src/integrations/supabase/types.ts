@@ -3001,6 +3001,7 @@ export type Database = {
       textes_reglementaires: {
         Row: {
           annee: number | null
+          autorite_emettrice: string | null
           created_at: string
           created_by: string | null
           date_publication: string | null
@@ -3014,6 +3015,7 @@ export type Database = {
         }
         Insert: {
           annee?: number | null
+          autorite_emettrice?: string | null
           created_at?: string
           created_by?: string | null
           date_publication?: string | null
@@ -3027,6 +3029,7 @@ export type Database = {
         }
         Update: {
           annee?: number | null
+          autorite_emettrice?: string | null
           created_at?: string
           created_by?: string | null
           date_publication?: string | null
