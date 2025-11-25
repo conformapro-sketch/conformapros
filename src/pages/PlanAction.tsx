@@ -116,7 +116,7 @@ export default function PlanAction() {
       const texteIds = [...new Set(articlesData?.map(a => a.texte_id).filter(Boolean) || [])];
       const { data: textesData } = await supabase
         .from('textes_reglementaires')
-        .select('id, reference_officielle, titre')
+        .select('id, reference, titre')
         .in('id', texteIds);
 
       // Récupérer les responsables
@@ -171,7 +171,7 @@ export default function PlanAction() {
           return (
             action.titre?.toLowerCase().includes(lowerSearch) ||
             action.manquement?.toLowerCase().includes(lowerSearch) ||
-            action.texte?.reference_officielle?.toLowerCase().includes(lowerSearch) ||
+            action.texte?.reference?.toLowerCase().includes(lowerSearch) ||
             action.texte?.titre?.toLowerCase().includes(lowerSearch) ||
             action.article?.numero?.toLowerCase().includes(lowerSearch) ||
             action.site?.nom_site?.toLowerCase().includes(lowerSearch) ||
@@ -431,9 +431,9 @@ export default function PlanAction() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {action.texte?.reference_officielle ? (
+                        {action.texte?.reference ? (
                           <div className="text-sm">
-                            <div className="font-medium">{action.texte.reference_officielle}</div>
+                            <div className="font-medium">{action.texte.reference}</div>
                             <div className="text-muted-foreground">Art. {action.article?.numero}</div>
                           </div>
                         ) : '-'}
