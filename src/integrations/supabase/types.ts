@@ -2771,26 +2771,32 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          deleted_at: string | null
           description: string | null
           domaine_id: string
           id: string
           libelle: string
+          ordre: number
         }
         Insert: {
           code: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domaine_id: string
           id?: string
           libelle: string
+          ordre?: number
         }
         Update: {
           code?: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domaine_id?: string
           id?: string
           libelle?: string
+          ordre?: number
         }
         Relationships: [
           {
