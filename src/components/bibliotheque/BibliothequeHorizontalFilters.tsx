@@ -21,8 +21,6 @@ interface BibliothequeHorizontalFiltersProps {
   // États des filtres
   typeFilter: string;
   setTypeFilter: (value: string) => void;
-  statutFilter: string;
-  setStatutFilter: (value: string) => void;
   domaineFilter: string;
   setDomaineFilter: (value: string) => void;
   sousDomaineFilter: string;
@@ -66,8 +64,6 @@ const STATUT_OPTIONS = [
 export function BibliothequeHorizontalFilters({
   typeFilter,
   setTypeFilter,
-  statutFilter,
-  setStatutFilter,
   domaineFilter,
   setDomaineFilter,
   sousDomaineFilter,
@@ -150,22 +146,6 @@ export function BibliothequeHorizontalFilters({
                 </SelectTrigger>
                 <SelectContent>
                   {TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="statut-filter" className="text-xs">Statut</Label>
-              <Select value={statutFilter} onValueChange={setStatutFilter}>
-                <SelectTrigger id="statut-filter" className="h-9">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUT_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

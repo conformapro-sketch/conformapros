@@ -45,7 +45,6 @@ export default function BibliothequeNavigationTree() {
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["LOIS"]);
   const [expandedTextes, setExpandedTextes] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [selectedStatut, setSelectedStatut] = useState<string>("all");
   const [selectedDomaine, setSelectedDomaine] = useState<string>("all");
   const [showFormModal, setShowFormModal] = useState(false);
 
@@ -55,12 +54,11 @@ export default function BibliothequeNavigationTree() {
   });
 
   const { data: textesResult, isLoading } = useQuery({
-    queryKey: ["bibliotheque-navigation-tree", searchTerm, selectedType, selectedStatut, selectedDomaine],
+    queryKey: ["bibliotheque-navigation-tree", searchTerm, selectedType, selectedDomaine],
     queryFn: () =>
       textesReglementairesQueries.getAll({
         searchTerm,
         typeFilter: selectedType !== "all" ? selectedType : undefined,
-        statutFilter: selectedStatut !== "all" ? selectedStatut : undefined,
         domaineFilter: selectedDomaine !== "all" ? selectedDomaine : undefined,
         pageSize: 1000, // Get all for tree view
       }),
@@ -177,19 +175,6 @@ export default function BibliothequeNavigationTree() {
                         {label}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedStatut} onValueChange={setSelectedStatut}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="en_vigueur">En vigueur</SelectItem>
-                    <SelectItem value="modifie">Modifié</SelectItem>
-                    <SelectItem value="abroge">Abrogé</SelectItem>
-                    <SelectItem value="suspendu">Suspendu</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -422,7 +407,6 @@ export default function BibliothequeNavigationTree() {
                     onClick={() => {
                       setSearchTerm("");
                       setSelectedType("all");
-                      setSelectedStatut("all");
                       setSelectedDomaine("all");
                     }}
                   >

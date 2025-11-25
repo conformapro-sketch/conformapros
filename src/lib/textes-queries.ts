@@ -3,17 +3,18 @@ import { supabaseAny as supabase } from "@/lib/supabase-any";
 
 export interface TexteReglementaire {
   id: string;
-  type_acte: 'loi' | 'decret-loi' | 'arrete' | 'decret' | 'circulaire';
-  reference_officielle: string;
-  intitule: string;
+  type: 'loi' | 'decret' | 'arrete' | 'circulaire';
+  reference: string;
+  titre: string;
   autorite_emettrice?: string;
+  autorite_emettrice_id?: string;
   date_publication?: string;
-  statut_vigueur: 'en_vigueur' | 'abroge' | 'suspendu' | 'modifie';
-  resume?: string;
-  lien_officiel?: string;
+  source_url?: string;
+  pdf_url?: string;
   annee?: number;
   created_at: string;
   updated_at: string;
+  created_by?: string;
 }
 
 export interface Code {
@@ -59,7 +60,6 @@ export const textesReglementairesQueries = {
   async smartSearch(filters?: {
     searchTerm?: string;
     typeFilter?: string;
-    statutFilter?: string;
     domaineFilter?: string;
     sousDomaineFilter?: string;
     anneeFilter?: string;
@@ -82,16 +82,12 @@ export const textesReglementairesQueries = {
 
     if (searchTerm) {
       textesQuery = textesQuery.or(
-        `intitule.ilike.%${searchTerm}%,reference_officielle.ilike.%${searchTerm}%,resume.ilike.%${searchTerm}%,autorite_emettrice.ilike.%${searchTerm}%`
+        `titre.ilike.%${searchTerm}%,reference.ilike.%${searchTerm}%,autorite_emettrice.ilike.%${searchTerm}%`
       );
     }
 
     if (filters?.typeFilter && filters.typeFilter !== "all") {
-      textesQuery = textesQuery.eq("type_acte", filters.typeFilter as any);
-    }
-
-    if (filters?.statutFilter && filters.statutFilter !== "all") {
-      textesQuery = textesQuery.eq("statut_vigueur", filters.statutFilter as any);
+      textesQuery = textesQuery.eq("type", filters.typeFilter as any);
     }
 
     if (filters?.anneeFilter && filters.anneeFilter !== "all") {
@@ -128,20 +124,16 @@ export const textesReglementairesQueries = {
       }
     }
 
-    // Get texte IDs that match type, statut, and année filters for articles filtering
+    // Get texte IDs that match type and année filters for articles filtering
     let texteIdsForArticles: string[] | null = null;
 
-    if (filters?.typeFilter || filters?.statutFilter || filters?.anneeFilter) {
+    if (filters?.typeFilter || filters?.anneeFilter) {
       let texteFilterQuery = supabase
         .from("textes_reglementaires")
         .select("id");
       
       if (filters?.typeFilter && filters.typeFilter !== "all") {
-        texteFilterQuery = texteFilterQuery.eq("type_acte", filters.typeFilter);
-      }
-      
-      if (filters?.statutFilter && filters.statutFilter !== "all") {
-        texteFilterQuery = texteFilterQuery.eq("statut_vigueur", filters.statutFilter);
+        texteFilterQuery = texteFilterQuery.eq("type", filters.typeFilter);
       }
       
       if (filters?.anneeFilter && filters.anneeFilter !== "all") {
@@ -158,7 +150,7 @@ export const textesReglementairesQueries = {
       .select(`
         *,
         texte:textes_reglementaires!textes_articles_texte_id_fkey(
-          id, intitule, reference_officielle, type_acte, statut_vigueur, date_publication, annee,
+          id, titre, reference, type, date_publication, annee,
           domaines:textes_domaines(
             domaine:domaines_reglementaires(id, libelle)
           )
@@ -213,7 +205,7 @@ export const textesReglementairesQueries = {
       // car la relation est article->sous_domaine, pas texte->sous_domaine
     }
 
-    // Apply final combined filters (type/statut/année/domaine)
+    // Apply final combined filters (type/année/domaine)
     // MAIS PAS si sous-domaine est filtré (car déjà appliqué directement sur les articles)
     if (finalTexteIdsForArticles !== null && (!filters?.sousDomaineFilter || filters.sousDomaineFilter === "all")) {
       if (finalTexteIdsForArticles.length > 0) {
@@ -253,7 +245,6 @@ export const textesReglementairesQueries = {
   async getAll(filters?: {
     searchTerm?: string;
     typeFilter?: string;
-    statutFilter?: string;
     domaineFilter?: string;
     sousDomaineFilter?: string;
     anneeFilter?: string;
@@ -279,28 +270,12 @@ export const textesReglementairesQueries = {
 
     if (filters?.searchTerm) {
       query = query.or(
-        `intitule.ilike.%${filters.searchTerm}%,reference_officielle.ilike.%${filters.searchTerm}%,autorite_emettrice.ilike.%${filters.searchTerm}%,resume.ilike.%${filters.searchTerm}%`
+        `titre.ilike.%${filters.searchTerm}%,reference.ilike.%${filters.searchTerm}%,autorite_emettrice.ilike.%${filters.searchTerm}%`
       );
     }
 
     if (filters?.typeFilter && filters.typeFilter !== "all") {
-      query = query.eq("type_acte", filters.typeFilter as any);
-    }
-
-    if (filters?.statutFilter && filters.statutFilter !== "all") {
-      query = query.eq("statut_vigueur", filters.statutFilter as any);
-    }
-
-    if (filters?.anneeFilter && filters.anneeFilter !== "all") {
-      query = query.eq("annee", parseInt(filters.anneeFilter));
-    }
-
-    if (filters?.typeFilter && filters.typeFilter !== "all") {
-      query = query.eq("type_acte", filters.typeFilter);
-    }
-
-    if (filters?.statutFilter && filters.statutFilter !== "all") {
-      query = query.eq("statut_vigueur", filters.statutFilter);
+      query = query.eq("type", filters.typeFilter as any);
     }
 
     if (filters?.anneeFilter && filters.anneeFilter !== "all") {
@@ -480,7 +455,7 @@ export const textesArticlesQueries = {
       .from("textes_articles")
       .select(`
         *, 
-        textes_reglementaires(reference_officielle, intitule),
+        textes_reglementaires(reference, titre),
         sous_domaines:articles_sous_domaines(
           sous_domaine:sous_domaines_application(*)
         )
