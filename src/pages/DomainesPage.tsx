@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Plus, Search, ChevronDown, ChevronRight, Pencil, Trash2, FolderOpen,
-  Shield, Users, Leaf, CheckCircle, Zap, Utensils, Lock, ShieldCheck, HelpCircle, Database
+  Shield, Users, Leaf, CheckCircle, Zap, Utensils, Lock, ShieldCheck, HelpCircle
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -17,18 +17,17 @@ import {
   softDeleteDomaine, 
   softDeleteSousDomaine,
   toggleDomaineActif,
-  toggleSousDomaineActif,
-  seedCommonDomains
+  toggleSousDomaineActif
 } from "@/lib/domaines-queries";
 import { DomaineFormModal } from "@/components/DomaineFormModal";
 import { SousDomaineFormModal } from "@/components/SousDomaineFormModal";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { Database as DatabaseType } from "@/types/db";
+import type { Database } from "@/types/db";
 
-type DomaineRow = DatabaseType["public"]["Tables"]["domaines_reglementaires"]["Row"];
-type SousDomaineRow = DatabaseType["public"]["Tables"]["sous_domaines_application"]["Row"];
+type DomaineRow = Database["public"]["Tables"]["domaines_reglementaires"]["Row"];
+type SousDomaineRow = Database["public"]["Tables"]["sous_domaines_application"]["Row"];
 
 export default function DomainesPage() {
   const { toast } = useToast();
@@ -107,25 +106,6 @@ export default function DomainesPage() {
     },
   });
 
-  const seedDataMutation = useMutation({
-    mutationFn: seedCommonDomains,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["domaines-reglementaires"] });
-      queryClient.invalidateQueries({ queryKey: ["sous-domaines-all"] });
-      toast({ 
-        title: "Données initialisées",
-        description: "Les domaines et sous-domaines courants ont été ajoutés avec succès.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erreur lors de l'initialisation",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const filteredDomaines = domaines?.filter(domaine =>
     domaine.libelle.toLowerCase().includes(searchQuery.toLowerCase()) ||
     domaine.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -178,17 +158,7 @@ export default function DomainesPage() {
             Gérez les domaines et sous-domaines réglementaires
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button 
-            variant="outline"
-            onClick={() => seedDataMutation.mutate()}
-            disabled={seedDataMutation.isPending}
-            size="sm"
-            title="Charger les domaines courants (SST, ENV, SOCIAL) avec leurs sous-domaines"
-          >
-            <Database className="h-4 w-4 mr-2" />
-            {seedDataMutation.isPending ? "Chargement..." : "Charger données de démo"}
-          </Button>
+        <div className="flex gap-2">
           <Button 
             variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
             onClick={() => setViewMode('hierarchical')}

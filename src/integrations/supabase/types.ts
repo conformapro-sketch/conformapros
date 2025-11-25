@@ -3544,14 +3544,6 @@ export type Database = {
       }
     }
     Functions: {
-      check_domain_has_articles: {
-        Args: { p_domaine_id: string }
-        Returns: boolean
-      }
-      check_sous_domaine_has_articles: {
-        Args: { p_sous_domaine_id: string }
-        Returns: boolean
-      }
       client_admin_get_user_overview: {
         Args: {
           p_page?: number
@@ -3698,7 +3690,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      seed_common_domains: { Args: never; Returns: undefined }
       set_user_domain_scopes: {
         Args: { domaine_ids: string[]; target_user_id: string }
         Returns: undefined
