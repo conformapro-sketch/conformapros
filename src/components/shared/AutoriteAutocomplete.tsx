@@ -8,6 +8,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -85,50 +86,52 @@ export function AutoriteAutocomplete({
             value={search}
             onValueChange={setSearch}
           />
-          <CommandEmpty>
-            Aucune autorité trouvée.
-            {isStaff && onAddNew && (
-              <Button
-                variant="ghost"
-                className="w-full justify-start mt-2"
-                onClick={() => {
-                  setOpen(false);
-                  onAddNew();
-                }}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Ajouter "{search}"
-              </Button>
-            )}
-          </CommandEmpty>
-          <CommandGroup className="max-h-64 overflow-auto">
-            {autorites.map((autorite) => (
-              <CommandItem
-                key={autorite.id}
-                value={autorite.id}
-                onSelect={() => {
-                  onChange(autorite.id);
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === autorite.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <Landmark className="mr-2 h-4 w-4 text-muted-foreground" />
-                <div className="flex flex-col">
-                  <span>{autorite.nom}</span>
-                  {autorite.nom_court && (
-                    <span className="text-xs text-muted-foreground">
-                      {autorite.nom_court}
-                    </span>
-                  )}
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <CommandList>
+            <CommandEmpty>
+              Aucune autorité trouvée.
+              {isStaff && onAddNew && (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start mt-2"
+                  onClick={() => {
+                    setOpen(false);
+                    onAddNew();
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter "{search}"
+                </Button>
+              )}
+            </CommandEmpty>
+            <CommandGroup className="max-h-64 overflow-auto">
+              {autorites.map((autorite) => (
+                <CommandItem
+                  key={autorite.id}
+                  value={autorite.id}
+                  onSelect={() => {
+                    onChange(autorite.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === autorite.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <Landmark className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span>{autorite.nom}</span>
+                    {autorite.nom_court && (
+                      <span className="text-xs text-muted-foreground">
+                        {autorite.nom_court}
+                      </span>
+                    )}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
