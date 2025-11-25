@@ -233,6 +233,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "article_sous_domaines_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "v_articles_versions_actives"
+            referencedColumns: ["article_id"]
+          },
+          {
             foreignKeyName: "article_sous_domaines_sous_domaine_id_fkey"
             columns: ["sous_domaine_id"]
             isOneToOne: false
@@ -288,6 +295,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "articles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_versions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "v_articles_versions_actives"
+            referencedColumns: ["article_id"]
           },
           {
             foreignKeyName: "article_versions_source_texte_id_fkey"
@@ -3470,6 +3484,46 @@ export type Database = {
             columns: ["equipement_id"]
             isOneToOne: false
             referencedRelation: "equipements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_articles_versions_actives: {
+        Row: {
+          article_id: string | null
+          article_numero: string | null
+          article_resume: string | null
+          article_titre: string | null
+          contenu: string | null
+          created_at: string | null
+          created_by: string | null
+          date_effet: string | null
+          est_introductif: boolean | null
+          notes_modifications: string | null
+          numero_version: number | null
+          porte_exigence: boolean | null
+          source_reference: string | null
+          source_texte_id: string | null
+          source_titre: string | null
+          source_type:
+            | Database["public"]["Enums"]["type_texte_reglementaire"]
+            | null
+          texte_id: string | null
+          version_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_versions_source_texte_id_fkey"
+            columns: ["source_texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "articles_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
             referencedColumns: ["id"]
           },
         ]
