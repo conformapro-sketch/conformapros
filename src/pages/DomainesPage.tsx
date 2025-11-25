@@ -5,7 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, ChevronDown, ChevronRight, Pencil, Trash2, FolderOpen } from "lucide-react";
+import { 
+  Plus, Search, ChevronDown, ChevronRight, Pencil, Trash2, FolderOpen,
+  Shield, Users, Leaf, CheckCircle, Zap, Utensils, Lock, ShieldCheck, HelpCircle
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   fetchDomaines, 
@@ -177,6 +180,7 @@ export default function DomainesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
+                  <TableHead>Visuel</TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Nom</TableHead>
                   <TableHead>Description</TableHead>
@@ -311,6 +315,22 @@ function DomaineRow({
     enabled: expanded,
   });
 
+  const getIconComponent = (iconName?: string | null) => {
+    const iconMap: Record<string, any> = {
+      shield: Shield,
+      users: Users,
+      leaf: Leaf,
+      "check-circle": CheckCircle,
+      zap: Zap,
+      utensils: Utensils,
+      lock: Lock,
+      "shield-check": ShieldCheck,
+    };
+    return iconMap[iconName || ""] || HelpCircle;
+  };
+
+  const IconComponent = getIconComponent(domaine.icone);
+
   return (
     <Collapsible asChild open={expanded} onOpenChange={onToggleExpand}>
       <>
@@ -325,6 +345,16 @@ function DomaineRow({
                 )}
               </Button>
             </CollapsibleTrigger>
+          </TableCell>
+          <TableCell>
+            <div className="flex items-center gap-2">
+              <div 
+                className="h-8 w-8 rounded flex items-center justify-center"
+                style={{ backgroundColor: domaine.couleur || "hsl(200, 70%, 50%)" }}
+              >
+                <IconComponent className="h-4 w-4 text-white" />
+              </div>
+            </div>
           </TableCell>
           <TableCell>
             <Badge variant="outline" className="font-mono">{domaine.code}</Badge>
@@ -382,7 +412,7 @@ function DomaineRow({
         
         <CollapsibleContent asChild>
           <TableRow>
-            <TableCell colSpan={6} className="bg-muted/50 p-0">
+            <TableCell colSpan={7} className="bg-muted/50 p-0">
               {sousDomaines && sousDomaines.length > 0 ? (
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-3">
