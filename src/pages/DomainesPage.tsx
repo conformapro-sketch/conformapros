@@ -12,6 +12,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   fetchDomaines, 
+  fetchSousDomaines,
   fetchSousDomainesByDomaine,
   softDeleteDomaine, 
   softDeleteSousDomaine,
@@ -25,7 +26,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Database } from "@/types/db";
 
-type DomaineRow = Database["public"]["Tables"]["domaines_application"]["Row"];
+type DomaineRow = Database["public"]["Tables"]["domaines_reglementaires"]["Row"];
 type SousDomaineRow = Database["public"]["Tables"]["sous_domaines_application"]["Row"];
 
 export default function DomainesPage() {
@@ -41,10 +42,18 @@ export default function DomainesPage() {
   const [deletingSousDomaine, setDeleteingSousDomaine] = useState<string | null>(null);
   const [expandedDomaines, setExpandedDomaines] = useState<Set<string>>(new Set());
   const [selectedDomaineForSousDomaine, setSelectedDomaineForSousDomaine] = useState<string | undefined>();
+  const [viewMode, setViewMode] = useState<'hierarchical' | 'flat'>('hierarchical');
+  const [filterDomaineId, setFilterDomaineId] = useState<string | 'all'>('all');
 
   const { data: domaines, isLoading } = useQuery({
     queryKey: ["domaines-reglementaires"],
     queryFn: fetchDomaines,
+  });
+
+  const { data: allSousDomaines, isLoading: isLoadingSousDomaines } = useQuery({
+    queryKey: ["sous-domaines-all"],
+    queryFn: fetchSousDomaines,
+    enabled: viewMode === 'flat',
   });
 
   const deleteDomaineMutation = useMutation({
@@ -125,11 +134,19 @@ export default function DomainesPage() {
     setSousDomaineFormOpen(true);
   };
 
-  const handleAddSousDomaine = (domaineId: string) => {
+  const handleAddSousDomaine = (domaineId?: string) => {
     setSelectedDomaineForSousDomaine(domaineId);
     setEditingSousDomaine(undefined);
     setSousDomaineFormOpen(true);
   };
+
+  const filteredSousDomaines = allSousDomaines?.filter(sd => {
+    const matchesSearch = sd.libelle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sd.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (sd.description && sd.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesDomaine = filterDomaineId === 'all' || sd.domaine_id === filterDomaineId;
+    return matchesSearch && matchesDomaine;
+  }) || [];
 
   return (
     <div className="space-y-6">
@@ -141,39 +158,70 @@ export default function DomainesPage() {
             Gérez les domaines et sous-domaines réglementaires
           </p>
         </div>
-        <Button 
-          className="bg-gradient-primary shadow-medium"
-          onClick={() => {
-            setEditingDomaine(undefined);
-            setDomaineFormOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau domaine
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
+            onClick={() => setViewMode('hierarchical')}
+            size="sm"
+          >
+            Vue hiérarchique
+          </Button>
+          <Button 
+            variant={viewMode === 'flat' ? 'default' : 'outline'}
+            onClick={() => setViewMode('flat')}
+            size="sm"
+          >
+            Tous les sous-domaines
+          </Button>
+          <Button 
+            className="bg-gradient-primary shadow-medium"
+            onClick={() => {
+              setEditingDomaine(undefined);
+              setDomaineFormOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau domaine
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <Card className="shadow-soft">
         <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par nom, code ou description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={viewMode === 'hierarchical' ? "Rechercher des domaines..." : "Rechercher des sous-domaines..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {viewMode === 'flat' && (
+              <select
+                value={filterDomaineId}
+                onChange={(e) => setFilterDomaineId(e.target.value)}
+                className="flex h-10 w-[200px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="all">Tous les domaines</option>
+                {domaines?.filter(d => d.actif ?? true).map(d => (
+                  <option key={d.id} value={d.id}>{d.libelle}</option>
+                ))}
+              </select>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      ) : filteredDomaines.length > 0 ? (
+      {/* Content */}
+      {viewMode === 'hierarchical' ? (
+        isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredDomaines.length > 0 ? (
         <Card className="shadow-soft">
           <CardContent className="p-0">
             <Table>
@@ -208,15 +256,136 @@ export default function DomainesPage() {
             </Table>
           </CardContent>
         </Card>
+        ) : (
+          <Card className="shadow-soft">
+            <CardContent className="py-12 text-center">
+              <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">
+                {searchQuery ? "Aucun domaine ne correspond à la recherche" : "Aucun domaine enregistré"}
+              </p>
+            </CardContent>
+          </Card>
+        )
       ) : (
-        <Card className="shadow-soft">
-          <CardContent className="py-12 text-center">
-            <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground mb-4">
-              {searchQuery ? "Aucun domaine ne correspond à la recherche" : "Aucun domaine enregistré"}
-            </p>
-          </CardContent>
-        </Card>
+        // Flat view - all sub-domains
+        isLoadingSousDomaines ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : filteredSousDomaines.length > 0 ? (
+          <Card className="shadow-soft">
+            <CardContent className="p-0">
+              <div className="flex items-center justify-between p-4 border-b">
+                <span className="text-sm text-muted-foreground">
+                  {filteredSousDomaines.length} sous-domaine{filteredSousDomaines.length > 1 ? 's' : ''}
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() => handleAddSousDomaine(filterDomaineId === 'all' ? undefined : filterDomaineId)}
+                  className="bg-gradient-primary"
+                >
+                  <Plus className="h-3 w-3 mr-2" />
+                  Nouveau sous-domaine
+                </Button>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Domaine parent</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Nom</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-center">Actif</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredSousDomaines.map((sousDomaine) => {
+                    const parentDomaine = domaines?.find(d => d.id === sousDomaine.domaine_id);
+                    return (
+                      <TableRow key={sousDomaine.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {parentDomaine && (
+                              <>
+                                <div 
+                                  className="h-6 w-6 rounded flex items-center justify-center flex-shrink-0"
+                                  style={{ backgroundColor: parentDomaine.couleur || "hsl(200, 70%, 50%)" }}
+                                >
+                                  <Shield className="h-3 w-3 text-white" />
+                                </div>
+                                <span className="text-sm">{parentDomaine.libelle}</span>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="font-mono text-xs">
+                            {sousDomaine.code}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{sousDomaine.libelle}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {sousDomaine.description || "-"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Switch
+                            checked={sousDomaine.actif ?? false}
+                            onCheckedChange={(actif) => toggleActifMutation.mutate({ 
+                              id: sousDomaine.id, 
+                              actif, 
+                              type: 'sousDomaine' 
+                            })}
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditSousDomaine(sousDomaine)}
+                              title="Modifier"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteingSousDomaine(sousDomaine.id)}
+                              className="text-destructive hover:text-destructive"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="shadow-soft">
+            <CardContent className="py-12 text-center">
+              <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">
+                {searchQuery || filterDomaineId !== 'all' 
+                  ? "Aucun sous-domaine ne correspond aux critères" 
+                  : "Aucun sous-domaine enregistré"}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleAddSousDomaine(filterDomaineId === 'all' ? undefined : filterDomaineId)}
+              >
+                <Plus className="h-3 w-3 mr-2" />
+                Créer un sous-domaine
+              </Button>
+            </CardContent>
+          </Card>
+        )
       )}
 
       <DomaineFormModal

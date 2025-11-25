@@ -17,10 +17,11 @@ import type { Database } from "@/types/db";
 type SousDomaineRow = Database["public"]["Tables"]["sous_domaines_application"]["Row"];
 
 const sousDomaineSchema = z.object({
-  domaine_id: z.string().min(1, "Le domaine est requis"),
+  domaine_id: z.string().min(1, "Le domaine parent est obligatoire - un sous-domaine ne peut pas être orphelin"),
   code: z.string().min(1, "Le code est requis").max(10, "Maximum 10 caractères"),
   libelle: z.string().min(1, "Le nom est requis"),
   description: z.string().optional(),
+  ordre: z.number().int().min(0, "L'ordre doit être un nombre positif").optional(),
   actif: z.boolean(),
 });
 
@@ -56,12 +57,14 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
       code: "",
       libelle: "",
       description: "",
+      ordre: 0,
       actif: true,
     },
   });
 
   const actif = watch("actif");
   const domaineId = watch("domaine_id");
+  const ordre = watch("ordre");
 
   // Mettre à jour le formulaire quand le sous-domaine change
   useEffect(() => {
@@ -72,6 +75,7 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
           code: sousDomaine.code,
           libelle: sousDomaine.libelle,
           description: sousDomaine.description || "",
+          ordre: sousDomaine.ordre || 0,
           actif: sousDomaine.actif ?? true,
         });
       } else {
@@ -80,6 +84,7 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
           code: "",
           libelle: "",
           description: "",
+          ordre: 0,
           actif: true,
         });
       }
@@ -197,6 +202,23 @@ export function SousDomaineFormModal({ open, onOpenChange, sousDomaine, defaultD
               rows={3}
               placeholder="Description du sous-domaine..."
             />
+          </div>
+
+          <div>
+            <Label htmlFor="ordre">Ordre d'affichage</Label>
+            <Input 
+              id="ordre" 
+              type="number"
+              min="0"
+              {...register("ordre", { valueAsNumber: true })} 
+              placeholder="0"
+            />
+            {errors.ordre && (
+              <p className="text-sm text-destructive mt-1">{errors.ordre.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Définit l'ordre d'affichage des sous-domaines (0 = premier)
+            </p>
           </div>
 
           <div className="flex items-center justify-between">
