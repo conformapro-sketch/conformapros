@@ -283,6 +283,53 @@ export type Database = {
           },
         ]
       }
+      articles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          est_introductif: boolean
+          id: string
+          numero: string
+          porte_exigence: boolean
+          resume: string | null
+          texte_id: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          est_introductif?: boolean
+          id?: string
+          numero: string
+          porte_exigence?: boolean
+          resume?: string | null
+          texte_id: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          est_introductif?: boolean
+          id?: string
+          numero?: string
+          porte_exigence?: boolean
+          resume?: string | null
+          texte_id?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles_effets_juridiques: {
         Row: {
           article_id: string
