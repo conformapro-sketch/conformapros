@@ -36,6 +36,7 @@ export function TexteReglementaireFormModal({
     type: "loi" as "loi" | "decret" | "arrete" | "circulaire",
     reference: "",
     titre: "",
+    autorite_emettrice: "",
     date_publication: "",
     source_url: "",
   });
@@ -50,6 +51,7 @@ export function TexteReglementaireFormModal({
         type: texte.type,
         reference: texte.reference,
         titre: texte.titre,
+        autorite_emettrice: texte.autorite_emettrice || "",
         date_publication: texte.date_publication || "",
         source_url: texte.source_url || "",
       });
@@ -60,6 +62,7 @@ export function TexteReglementaireFormModal({
         type: "loi",
         reference: "",
         titre: "",
+        autorite_emettrice: "",
         date_publication: "",
         source_url: "",
       });
@@ -225,6 +228,16 @@ export function TexteReglementaireFormModal({
               placeholder="Intitulé complet du texte réglementaire"
               rows={3}
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="autorite_emettrice">Autorité émettrice</Label>
+            <Input
+              id="autorite_emettrice"
+              value={formData.autorite_emettrice}
+              onChange={(e) => setFormData({ ...formData, autorite_emettrice: e.target.value })}
+              placeholder="Ex: Assemblée des Représentants du Peuple"
             />
           </div>
 
