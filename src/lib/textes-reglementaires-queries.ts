@@ -1,0 +1,166 @@
+// Query helpers for textes_reglementaires (new regulatory architecture)
+import { supabaseAny as supabase } from "@/lib/supabase-any";
+
+export interface TexteReglementaire {
+  id: string;
+  type: 'loi' | 'decret' | 'arrete' | 'circulaire';
+  reference: string;
+  titre: string;
+  date_publication?: string;
+  source_url?: string;
+  pdf_url?: string;
+  created_at: string;
+  created_by?: string;
+  updated_at: string;
+}
+
+export interface DomaineReglementaire {
+  id: string;
+  code: string;
+  libelle: string;
+  description?: string;
+  couleur?: string;
+  icone?: string;
+  actif: boolean;
+}
+
+export const textesReglementairesQueries = {
+  async getAll(filters?: {
+    searchTerm?: string;
+    typeFilter?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  }) {
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 25;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from("textes_reglementaires")
+      .select(`
+        *,
+        articles:articles(count)
+      `, { count: "exact" });
+
+    if (filters?.searchTerm) {
+      query = query.or(
+        `reference.ilike.%${filters.searchTerm}%,titre.ilike.%${filters.searchTerm}%`
+      );
+    }
+
+    if (filters?.typeFilter && filters.typeFilter !== "all") {
+      query = query.eq("type", filters.typeFilter);
+    }
+
+    const sortBy = filters?.sortBy || "date_publication";
+    const sortOrder = filters?.sortOrder || "desc";
+    query = query.order(sortBy, { ascending: sortOrder === "asc", nullsFirst: false });
+
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+    
+    return { 
+      data: data || [], 
+      count: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count || 0) / pageSize)
+    };
+  },
+
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from("textes_reglementaires")
+      .select(`
+        *,
+        articles:articles(*)
+      `)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
+  async create(texte: Omit<TexteReglementaire, 'id' | 'created_at' | 'updated_at'>) {
+    const { data, error } = await supabase
+      .from("textes_reglementaires")
+      .insert([texte])
+      .select()
+      .single();
+    if (error) throw error;
+    return data as TexteReglementaire;
+  },
+
+  async update(id: string, texte: Partial<TexteReglementaire>) {
+    const { data, error } = await supabase
+      .from("textes_reglementaires")
+      .update(texte)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as TexteReglementaire;
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from("textes_reglementaires")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  async uploadPDF(file: File): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('textes-reglementaires-pdf')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw new Error(`Erreur lors de l'upload: ${uploadError.message}`);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('textes-reglementaires-pdf')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  },
+
+  async deletePDF(pdfUrl: string) {
+    // Extract file path from URL
+    const urlParts = pdfUrl.split('/textes-reglementaires-pdf/');
+    if (urlParts.length < 2) return;
+    
+    const filePath = urlParts[1];
+    
+    const { error } = await supabase.storage
+      .from('textes-reglementaires-pdf')
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Error deleting PDF:', error);
+    }
+  }
+};
+
+export const domainesQueries = {
+  async getActive() {
+    const { data, error } = await supabase
+      .from("domaines_reglementaires")
+      .select("*")
+      .eq("actif", true)
+      .is("deleted_at", null)
+      .order("libelle");
+    if (error) throw error;
+    return data as DomaineReglementaire[];
+  },
+};
