@@ -281,13 +281,6 @@ export type Database = {
             referencedRelation: "article_versions"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "article_versions_source_text_id_fkey"
-            columns: ["source_text_id"]
-            isOneToOne: false
-            referencedRelation: "textes_reglementaires"
-            referencedColumns: ["id"]
-          },
         ]
       }
       articles_effets_juridiques: {
@@ -2908,13 +2901,6 @@ export type Database = {
             referencedRelation: "textes_articles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "textes_articles_texte_id_fkey"
-            columns: ["texte_id"]
-            isOneToOne: false
-            referencedRelation: "textes_reglementaires"
-            referencedColumns: ["id"]
-          },
         ]
       }
       textes_codes: {
@@ -2947,59 +2933,43 @@ export type Database = {
             referencedRelation: "codes_juridiques"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "textes_codes_texte_id_fkey"
-            columns: ["texte_id"]
-            isOneToOne: false
-            referencedRelation: "textes_reglementaires"
-            referencedColumns: ["id"]
-          },
         ]
       }
       textes_reglementaires: {
         Row: {
           created_at: string
-          date_abrogation: string | null
-          date_entree_vigueur: string | null
+          created_by: string | null
           date_publication: string
           id: string
-          lien_officiel: string | null
-          numero: string
-          reference_officielle: string | null
-          resume: string | null
-          statut: string
+          pdf_url: string | null
+          reference: string
+          source_url: string | null
           titre: string
-          type_texte: string
+          type: Database["public"]["Enums"]["type_texte_reglementaire"]
           updated_at: string
         }
         Insert: {
           created_at?: string
-          date_abrogation?: string | null
-          date_entree_vigueur?: string | null
+          created_by?: string | null
           date_publication: string
           id?: string
-          lien_officiel?: string | null
-          numero: string
-          reference_officielle?: string | null
-          resume?: string | null
-          statut?: string
+          pdf_url?: string | null
+          reference: string
+          source_url?: string | null
           titre: string
-          type_texte: string
+          type: Database["public"]["Enums"]["type_texte_reglementaire"]
           updated_at?: string
         }
         Update: {
           created_at?: string
-          date_abrogation?: string | null
-          date_entree_vigueur?: string | null
+          created_by?: string | null
           date_publication?: string
           id?: string
-          lien_officiel?: string | null
-          numero?: string
-          reference_officielle?: string | null
-          resume?: string | null
-          statut?: string
+          pdf_url?: string | null
+          reference?: string
+          source_url?: string | null
           titre?: string
-          type_texte?: string
+          type?: Database["public"]["Enums"]["type_texte_reglementaire"]
           updated_at?: string
         }
         Relationships: []
@@ -3544,6 +3514,14 @@ export type Database = {
       }
     }
     Functions: {
+      check_domain_has_articles: {
+        Args: { p_domaine_id: string }
+        Returns: boolean
+      }
+      check_sous_domaine_has_articles: {
+        Args: { p_sous_domaine_id: string }
+        Returns: boolean
+      }
       client_admin_get_user_overview: {
         Args: {
           p_page?: number
@@ -3690,6 +3668,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      seed_common_domains: { Args: never; Returns: undefined }
       set_user_domain_scopes: {
         Args: { domaine_ids: string[]; target_user_id: string }
         Returns: undefined
@@ -3763,6 +3742,7 @@ export type Database = {
       statut_action: "a_faire" | "en_cours" | "terminee" | "annulee"
       statut_visite: "programmee" | "effectuee" | "annulee" | "reportee"
       type_document_medical: "aptitude" | "inaptitude" | "restriction" | "autre"
+      type_texte_reglementaire: "loi" | "decret" | "arrete" | "circulaire"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3930,6 +3910,7 @@ export const Constants = {
       statut_action: ["a_faire", "en_cours", "terminee", "annulee"],
       statut_visite: ["programmee", "effectuee", "annulee", "reportee"],
       type_document_medical: ["aptitude", "inaptitude", "restriction", "autre"],
+      type_texte_reglementaire: ["loi", "decret", "arrete", "circulaire"],
     },
   },
 } as const
