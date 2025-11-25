@@ -167,6 +167,21 @@ export const domainesQueries = {
 
 // Article queries for textes_reglementaires
 export const articlesQueries = {
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from("articles")
+      .select(`
+        *,
+        sous_domaines:article_sous_domaines(
+          sous_domaine:sous_domaines_application(*)
+        )
+      `)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   async getByTexteId(texteId: string) {
     const { data, error } = await supabase
       .from("articles")
