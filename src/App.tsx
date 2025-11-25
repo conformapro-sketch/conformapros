@@ -88,6 +88,7 @@ import CodeDetail from "./pages/CodeDetail";
 import StaffUserManagement from "./pages/StaffUserManagement";
 import ClientAdminUserManagement from "./pages/ClientAdminUserManagement";
 import GestionAutorites from "./pages/GestionAutorites";
+import BibliothequeParametres from "./pages/BibliothequeParametres";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -211,6 +212,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
                     <GestionAutorites />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="bibliotheque/parametres" 
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                    <BibliothequeParametres />
                   </ProtectedRoute>
                 } 
               />
