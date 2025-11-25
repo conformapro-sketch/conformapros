@@ -40,7 +40,12 @@ export const createDomaine = async (domaine: DomaineInsert) => {
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Ce code de domaine existe déjà. Veuillez choisir un code unique.');
+    }
+    throw error;
+  }
   return data;
 };
 
@@ -52,7 +57,12 @@ export const updateDomaine = async (domaineId: string, updates: DomaineUpdate) =
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Ce code de domaine existe déjà. Veuillez choisir un code unique.');
+    }
+    throw error;
+  }
   return data;
 };
 
@@ -64,7 +74,12 @@ export const softDeleteDomaine = async (domaineId: string) => {
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    if (error.message?.includes('has articles linked')) {
+      throw new Error('Impossible de supprimer ce domaine : il contient des articles liés. Veuillez d\'abord supprimer les associations avec les articles.');
+    }
+    throw error;
+  }
   return data;
 };
 
@@ -124,7 +139,12 @@ export const createSousDomaine = async (sousDomaine: SousDomaineInsert) => {
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Ce code de sous-domaine existe déjà dans ce domaine. Veuillez choisir un code unique.');
+    }
+    throw error;
+  }
   return data;
 };
 
@@ -136,7 +156,12 @@ export const updateSousDomaine = async (sousDomaineId: string, updates: SousDoma
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Ce code de sous-domaine existe déjà dans ce domaine. Veuillez choisir un code unique.');
+    }
+    throw error;
+  }
   return data;
 };
 
@@ -148,7 +173,12 @@ export const softDeleteSousDomaine = async (sousDomaineId: string) => {
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    if (error.message?.includes('has articles linked')) {
+      throw new Error('Impossible de supprimer ce sous-domaine : il contient des articles liés. Veuillez d\'abord supprimer les associations avec les articles.');
+    }
+    throw error;
+  }
   return data;
 };
 
@@ -160,6 +190,13 @@ export const toggleSousDomaineActif = async (sousDomaineId: string, actif: boole
     .select()
     .single();
   
+  if (error) throw error;
+  return data;
+};
+
+// Seed common domains (SST, ENV, SOCIAL with sub-domains)
+export const seedCommonDomains = async () => {
+  const { data, error } = await supabase.rpc('seed_common_domains');
   if (error) throw error;
   return data;
 };
