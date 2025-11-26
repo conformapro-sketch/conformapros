@@ -96,9 +96,9 @@ import ClientBibliotheque from "./pages/ClientBibliotheque";
 import ClientTexteDetail from "./pages/ClientTexteDetail";
 import ClientCodesJuridiques from "./pages/ClientCodesJuridiques";
 import ClientRechercheAvancee from "./pages/ClientRechercheAvancee";
-import Settings from "./pages/Settings";
 import AccountSettings from "./pages/settings/AccountSettings";
 import OrganizationSettings from "./pages/settings/OrganizationSettings";
+import { SettingsLayout } from "@/components/SettingsLayout";
 import StaffDashboard from "./pages/settings/StaffDashboard";
 import StaffUsersManagement from "./pages/settings/StaffUsersManagement";
 import StaffRolesManagement from "./pages/settings/StaffRolesManagement";
@@ -365,111 +365,29 @@ const App = () => (
               <Route path="permis" element={<ComingSoon title="Permis de travail" description="Système électronique de permis de travail et accès visiteurs" />} />
             </Route>
             
-            {/* Settings routes - Full screen without sidebar */}
+            {/* Settings routes - Dedicated layout without main app navbar */}
             <Route 
               path="/settings" 
               element={
                 <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/account" 
-              element={
-                <ProtectedRoute>
-                  <AccountSettings />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/organization" 
-              element={
-                <ProtectedRoute>
-                  <OrganizationSettings />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/staff" 
-              element={
-                <ProtectedRoute>
                   <StaffRouteGuard>
-                    <StaffDashboard />
+                    <SettingsLayout />
                   </StaffRouteGuard>
                 </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/staff-users" 
-              element={
-                <ProtectedRoute>
-                  <StaffRouteGuard>
-                    <StaffUsersManagement />
-                  </StaffRouteGuard>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/staff-roles" 
-              element={
-                <ProtectedRoute>
-                  <StaffRouteGuard>
-                    <StaffRolesManagement />
-                  </StaffRouteGuard>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/staff-permissions" 
-              element={
-                <ProtectedRoute>
-                  <StaffRouteGuard>
-                    <StaffPermissionsManagement />
-                  </StaffRouteGuard>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/client-users" 
-              element={
-                <ProtectedRoute>
-                  <StaffRouteGuard>
-                    <ClientUsersManagement />
-                  </StaffRouteGuard>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/sites" 
-              element={
-                <ProtectedRoute>
-                  <StaffRouteGuard>
-                    <SitesManagement />
-                  </StaffRouteGuard>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/site-modules" 
-              element={
-                <ProtectedRoute>
-                  <StaffRouteGuard>
-                    <SiteModulesOverview />
-                  </StaffRouteGuard>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings/site-domains" 
-              element={
-                <ProtectedRoute>
-                  <StaffRouteGuard>
-                    <SiteDomainsManagement />
-                  </StaffRouteGuard>
-                </ProtectedRoute>
-              } 
-            />
+              }
+            >
+              <Route index element={<StaffDashboard />} />
+              <Route path="account" element={<AccountSettings />} />
+              <Route path="organization" element={<OrganizationSettings />} />
+              <Route path="staff" element={<StaffDashboard />} />
+              <Route path="staff-users" element={<StaffUsersManagement />} />
+              <Route path="staff-roles" element={<StaffRolesManagement />} />
+              <Route path="staff-permissions" element={<StaffPermissionsManagement />} />
+              <Route path="client-users" element={<ClientUsersManagement />} />
+              <Route path="sites" element={<SitesManagement />} />
+              <Route path="site-modules" element={<SiteModulesOverview />} />
+              <Route path="site-domains" element={<SiteDomainsManagement />} />
+            </Route>
             
             {/* Catch-all 404 */}
             <Route path="*" element={<NotFound />} />
