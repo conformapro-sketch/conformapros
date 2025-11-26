@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import { articlesQueries, articleVersionsQueries } from "@/lib/actes-queries";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { Article } from "@/types/textes";
 import { ArticleVersionComparison } from "./ArticleVersionComparison";
+import { PaginationControls } from "./shared/PaginationControls";
+import { usePagination } from "@/hooks/usePagination";
 
 interface ArticlesTabProps {
   acteId: string;
@@ -37,6 +39,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [comparisonArticleId, setComparisonArticleId] = useState<string | null>(null);
   const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
   const [formData, setFormData] = useState<ArticleFormData>({
     numero: "",
     titre_court: "",
@@ -44,6 +47,22 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
     sous_domaine_ids: [],
     is_exigence: false,
   });
+
+  // Pagination
+  const sortedArticles = useMemo(() => 
+    [...articles].sort((a, b) => (a.ordre || 0) - (b.ordre || 0)),
+    [articles]
+  );
+
+  const {
+    page,
+    totalPages,
+    paginatedItems: paginatedArticles,
+    goToPage,
+    hasNextPage,
+    hasPrevPage,
+    resetPage,
+  } = usePagination(sortedArticles, pageSize);
 
   // Fetch sous-domaines
   const { data: sousDomainesData } = useQuery({
@@ -106,6 +125,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
       queryClient.invalidateQueries({ queryKey: ["articles-sous-domaines", acteId] });
       toast({ title: "Article ajouté", description: "L'article a été créé avec succès" });
       resetForm();
+      resetPage(); // Reset pagination on new article
       setDialogOpen(false);
     },
     onError: (error: any) => {
@@ -344,21 +364,20 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
       </CardHeader>
       <CardContent>
         {articles.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-32">Référence</TableHead>
-                  <TableHead>Titre court</TableHead>
-                  <TableHead>Sous-domaines</TableHead>
-                  <TableHead className="w-20 text-center">Ordre</TableHead>
-                  <TableHead className="w-48 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {articles
-                  .sort((a, b) => (a.ordre || 0) - (b.ordre || 0))
-                  .map((article) => {
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-32">Référence</TableHead>
+                    <TableHead>Titre court</TableHead>
+                    <TableHead>Sous-domaines</TableHead>
+                    <TableHead className="w-20 text-center">Ordre</TableHead>
+                    <TableHead className="w-48 text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedArticles.map((article) => {
                     const sousDomaines = getArticleSousDomaines(article.id);
                     return (
                       <TableRow key={article.id}>
@@ -426,9 +445,25 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
                       </TableRow>
                     );
                   })}
-              </TableBody>
-            </Table>
-          </div>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination Controls */}
+            <PaginationControls
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={articles.length}
+              pageSize={pageSize}
+              onPageChange={goToPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                resetPage();
+              }}
+              hasNextPage={hasNextPage}
+              hasPrevPage={hasPrevPage}
+            />
+          </>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
             Aucun article. Cliquez sur "Ajouter un article" pour commencer.
