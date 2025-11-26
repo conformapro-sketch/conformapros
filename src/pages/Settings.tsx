@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useUserType } from '@/hooks/useUserType';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, Settings as SettingsIcon, Users, Shield, Building2, Layers, Globe, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -13,6 +14,13 @@ interface SettingsSection {
 }
 
 const staffSections: SettingsSection[] = [
+  {
+    id: 'account',
+    label: 'Mon Compte',
+    icon: User,
+    description: 'Gérer mes informations personnelles et préférences',
+    path: '/settings/account'
+  },
   {
     id: 'staff-roles',
     label: 'Rôles du Staff',
@@ -52,6 +60,13 @@ const staffSections: SettingsSection[] = [
 
 const clientAdminSections: SettingsSection[] = [
   {
+    id: 'account',
+    label: 'Mon Compte',
+    icon: User,
+    description: 'Gérer mes informations personnelles et préférences',
+    path: '/settings/account'
+  },
+  {
     id: 'my-users',
     label: 'Mes Utilisateurs',
     icon: Users,
@@ -75,6 +90,8 @@ const clientAdminSections: SettingsSection[] = [
 
 export default function Settings() {
   const userType = useUserType();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
   if (userType === 'loading') {
@@ -89,10 +106,18 @@ export default function Settings() {
 
   const handleSectionClick = (section: SettingsSection) => {
     if (section.path) {
-      window.location.href = section.path;
+      navigate(section.path);
     } else {
       setSelectedSection(section.id);
     }
+  };
+
+  // Determine active section based on current path
+  const isActive = (section: SettingsSection) => {
+    if (section.path) {
+      return location.pathname === section.path;
+    }
+    return selectedSection === section.id;
   };
 
   return (
@@ -116,7 +141,7 @@ export default function Settings() {
                   className={cn(
                     "flex w-full items-start gap-3 rounded-md px-3 py-2 text-left transition-colors",
                     "hover:bg-accent hover:text-accent-foreground",
-                    selectedSection === section.id && "bg-accent text-accent-foreground"
+                    isActive(section) && "bg-accent text-accent-foreground"
                   )}
                 >
                   <section.icon className="h-5 w-5 shrink-0 mt-0.5" />

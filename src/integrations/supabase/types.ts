@@ -3030,6 +3030,7 @@ export type Database = {
       staff_users: {
         Row: {
           actif: boolean
+          avatar_url: string | null
           created_at: string
           email: string
           id: string
@@ -3040,6 +3041,7 @@ export type Database = {
         }
         Insert: {
           actif?: boolean
+          avatar_url?: string | null
           created_at?: string
           email: string
           id: string
@@ -3050,6 +3052,7 @@ export type Database = {
         }
         Update: {
           actif?: boolean
+          avatar_url?: string | null
           created_at?: string
           email?: string
           id?: string
