@@ -4189,6 +4189,13 @@ export type Database = {
           total_count: number
         }[]
       }
+      sync_current_user_to_staff: {
+        Args: never
+        Returns: {
+          message: string
+          staff_user_id: string
+        }[]
+      }
       validate_site_permissions: {
         Args: { p_permissions: Json }
         Returns: boolean
