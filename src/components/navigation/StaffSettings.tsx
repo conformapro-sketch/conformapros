@@ -33,19 +33,26 @@ export function StaffSettings() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex items-center gap-2">
-          <Shield className="h-4 w-4" /> Conforma Pro
+          <Shield className="h-4 w-4" /> ConformaPro Staff
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/utilisateurs" className="cursor-pointer">
+          <Link to="/staff/users" className="cursor-pointer">
             <UserCog className="mr-2 h-4 w-4" />
-            Gestion du staff
+            Personnel ConformaPro
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/roles" className="cursor-pointer">
+          <Link to="/staff/roles" className="cursor-pointer">
             <Shield className="mr-2 h-4 w-4" />
-            Gestion des rôles
+            Rôles staff
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/staff/client-users" className="cursor-pointer">
+            <UserCog className="mr-2 h-4 w-4" />
+            Utilisateurs clients
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

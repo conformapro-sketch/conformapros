@@ -26,7 +26,9 @@ interface AuthContextType {
   isSuperAdmin: () => boolean;
   isTeamUser: () => boolean;
   isClientUser: () => boolean;
+  isStaffUser: () => Promise<boolean>;
   getClientId: () => string | null;
+  getStaffRole: () => Promise<string | null>;
   
   // Auth functions
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -393,6 +395,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return clientId;
   };
 
+  const isStaffUser = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { data, error } = await supabase
+        .rpc('is_staff_user', { _user_id: user.id });
+      
+      if (error) {
+        console.error('Error checking staff status:', error);
+        return false;
+      }
+      
+      return data === true;
+    } catch (err) {
+      console.error('Error in isStaffUser:', err);
+      return false;
+    }
+  };
+
+  const getStaffRole = async (): Promise<string | null> => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .rpc('get_staff_role', { _user_id: user.id });
+      
+      if (error) {
+        console.error('Error getting staff role:', error);
+        return null;
+      }
+      
+      // data is the role_id UUID, now fetch the role name
+      if (!data) return null;
+      
+      const { data: roleData } = await supabase
+        .from('staff_roles')
+        .select('nom_role')
+        .eq('id', data)
+        .single();
+      
+      return roleData?.nom_role || null;
+    } catch (err) {
+      console.error('Error in getStaffRole:', err);
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -410,7 +459,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isSuperAdmin,
         isTeamUser,
         isClientUser,
+        isStaffUser,
         getClientId,
+        getStaffRole,
         signIn,
         signUp,
         signOut,
