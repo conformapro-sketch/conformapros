@@ -199,6 +199,45 @@ export type Database = {
           },
         ]
       }
+      article_tags: {
+        Row: {
+          article_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_tags_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "reglementaire_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_versions: {
         Row: {
           article_id: string
@@ -2404,6 +2443,33 @@ export type Database = {
         }
         Relationships: []
       }
+      reglementaire_tags: {
+        Row: {
+          couleur: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          couleur?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          couleur?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_audit_logs: {
         Row: {
           action: string
@@ -2934,6 +3000,45 @@ export type Database = {
           prix_mensuel?: number
         }
         Relationships: []
+      }
+      texte_tags: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          tag_id: string
+          texte_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tag_id: string
+          texte_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tag_id?: string
+          texte_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "texte_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "reglementaire_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "texte_tags_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       textes_articles: {
         Row: {

@@ -32,6 +32,7 @@ import { PDFViewerModal } from "@/components/PDFViewerModal";
 import { ArticleReglementaireFormModal } from "@/components/ArticleReglementaireFormModal";
 import { ArticleVersionManagerModal } from "@/components/ArticleVersionManagerModal";
 import { TexteDomainesManager } from "@/components/TexteDomainesManager";
+import { TagManager } from "@/components/TagManager";
 
 export default function GestionTexteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -166,6 +167,19 @@ export default function GestionTexteDetail() {
 
       {/* Domaines associés */}
       <TexteDomainesManager texteId={id!} />
+
+      {/* Tags */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Tags</CardTitle>
+          <CardDescription>
+            Étiquettes pour organiser et catégoriser ce texte
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TagManager entityId={id!} entityType="texte" />
+        </CardContent>
+      </Card>
 
       {/* Articles */}
       <Card className="shadow-sm">

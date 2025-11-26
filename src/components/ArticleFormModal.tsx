@@ -20,6 +20,7 @@ import { HierarchyAlert } from "@/components/HierarchyAlert";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import type { TypeEffet, PorteeEffet } from "@/types/textes";
+import { TagManager } from "@/components/TagManager";
 
 interface ArticleFormModalProps {
   open: boolean;
@@ -477,6 +478,17 @@ export function ArticleFormModal({
               texteDomaineIds={texteDomaineIds}
             />
           </div>
+
+          {/* 🏷️ Tags */}
+          {article && (
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                <span>🏷️</span> Tags
+              </h3>
+              
+              <TagManager entityId={article.id} entityType="article" />
+            </div>
+          )}
 
           {/* 🎯 Effet juridique */}
           {!article && (
