@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { codesQueries, codesStructuresQueries } from "@/lib/codes-queries";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { ChevronDown, ChevronRight, BookOpen, FileText, Home } from "lucide-react";
+import { ChevronDown, ChevronRight, BookOpen, FileText, Home, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -21,6 +22,7 @@ interface StructureNode {
 }
 
 export default function ClientCodesJuridiques() {
+  const navigate = useNavigate();
   const [selectedCodeId, setSelectedCodeId] = useState<string | null>(null);
   const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -162,6 +164,16 @@ export default function ClientCodesJuridiques() {
           <p className="text-muted-foreground mt-1">
             Naviguez par structure juridique (livres, titres, chapitres, sections)
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate("/client-bibliotheque")} variant="outline">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Bibliothèque
+          </Button>
+          <Button onClick={() => navigate("/client/recherche-avancee")} variant="outline">
+            <Search className="h-4 w-4 mr-2" />
+            Recherche avancée
+          </Button>
         </div>
       </div>
 
