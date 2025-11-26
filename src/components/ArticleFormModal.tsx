@@ -40,7 +40,6 @@ export function ArticleFormModal({
   const [formData, setFormData] = useState({
     numero: "",
     titre_court: "",
-    resume: "",
     contenu: "",
     is_exigence: false,
   });
@@ -90,7 +89,6 @@ export function ArticleFormModal({
       setFormData({
         numero: article.numero_article || "",
         titre_court: article.titre_court || "",
-        resume: article.resume || "",
         contenu: article.contenu || "",
         is_exigence: article.is_exigence || false,
       });
@@ -186,7 +184,6 @@ export function ArticleFormModal({
     setFormData({
       numero: "",
       titre_court: "",
-      resume: "",
       contenu: "",
       is_exigence: false,
     });
@@ -363,8 +360,7 @@ export function ArticleFormModal({
       texte_id: texteId,
       numero_article: formData.numero.trim(),
       titre_court: formData.titre_court.trim() || null,
-      resume: formData.resume.trim() || null,
-      contenu: formData.contenu.trim() || null,
+      contenu: formData.contenu.trim() || "",
       is_exigence: formData.is_exigence,
     };
 
@@ -422,20 +418,6 @@ export function ArticleFormModal({
               />
             </div>
 
-            {/* Résumé explicatif */}
-            <div className="space-y-2">
-              <Label htmlFor="resume">Résumé explicatif</Label>
-              <Textarea
-                id="resume"
-                value={formData.resume}
-                onChange={(e) => setFormData({ ...formData, resume: e.target.value })}
-                placeholder="Résumé court de l'article (optionnel)"
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground">
-                Ce résumé sera affiché dans les aperçus et les recherches
-              </p>
-            </div>
           </div>
 
           {/* ⚠️ Classification */}
