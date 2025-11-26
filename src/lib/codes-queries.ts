@@ -167,6 +167,79 @@ export const codesQueries = {
   },
 };
 
+// ============= CODES STRUCTURES =============
+
+export const codesStructuresQueries = {
+  // Récupérer toute la structure hiérarchique d'un code
+  async getByCodeId(codeId: string) {
+    const { data, error } = await supabase
+      .from("codes_structures")
+      .select("*")
+      .eq("code_id", codeId)
+      .order("ordre");
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Récupérer les articles liés à une structure
+  async getArticlesByStructureId(structureId: string) {
+    const { data, error } = await supabase
+      .from("codes_liens_articles")
+      .select(`
+        id,
+        article_id,
+        articles (
+          id,
+          numero,
+          titre,
+          resume,
+          est_introductif,
+          porte_exigence,
+          article_versions!inner (
+            id,
+            numero_version,
+            contenu,
+            date_effet,
+            statut,
+            source_texte_id,
+            textes_reglementaires (
+              id,
+              reference,
+              titre,
+              type,
+              date_publication
+            )
+          )
+        )
+      `)
+      .eq("structure_id", structureId);
+
+    if (error) throw error;
+
+    // Filter to only include en_vigueur versions
+    const articlesWithActiveVersions = data
+      ?.map((link: any) => {
+        const article = link.articles;
+        if (!article) return null;
+
+        const activeVersion = article.article_versions?.find(
+          (v: any) => v.statut === "en_vigueur"
+        );
+
+        if (!activeVersion) return null;
+
+        return {
+          ...article,
+          active_version: activeVersion,
+        };
+      })
+      .filter(Boolean);
+
+    return articlesWithActiveVersions || [];
+  },
+};
+
 // ============= LIAISONS TEXTES-CODES =============
 
 export const textesCodesQueries = {
