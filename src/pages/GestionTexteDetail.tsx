@@ -31,6 +31,7 @@ import { useState } from "react";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
 import { ArticleReglementaireFormModal } from "@/components/ArticleReglementaireFormModal";
 import { ArticleVersionManagerModal } from "@/components/ArticleVersionManagerModal";
+import { TexteDomainesManager } from "@/components/TexteDomainesManager";
 
 export default function GestionTexteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -164,16 +165,7 @@ export default function GestionTexteDetail() {
       </Card>
 
       {/* Domaines associés */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Domaines réglementaires</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-muted-foreground">
-            La gestion des domaines pour les textes réglementaires sera disponible prochainement.
-          </div>
-        </CardContent>
-      </Card>
+      <TexteDomainesManager texteId={id!} />
 
       {/* Articles */}
       <Card className="shadow-sm">
