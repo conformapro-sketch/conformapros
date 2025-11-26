@@ -2970,6 +2970,13 @@ export type Database = {
             referencedRelation: "textes_articles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "textes_articles_texte_id_fkey"
+            columns: ["texte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
         ]
       }
       textes_codes: {
