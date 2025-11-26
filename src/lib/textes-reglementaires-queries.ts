@@ -30,6 +30,10 @@ export const textesReglementairesQueries = {
   async getAll(filters?: {
     searchTerm?: string;
     typeFilter?: string;
+    domainesFilter?: string[];
+    dateFrom?: string;
+    dateTo?: string;
+    hasPdf?: boolean | null;
     page?: number;
     pageSize?: number;
     sortBy?: string;
@@ -45,16 +49,66 @@ export const textesReglementairesQueries = {
       .select(`
         *,
         articles:articles(count)
-      `, { count: "exact" });
+      `, { count: "exact" })
+      .is("deleted_at", null);
 
+    // Recherche texte (titre + référence)
     if (filters?.searchTerm) {
       query = query.or(
         `reference.ilike.%${filters.searchTerm}%,titre.ilike.%${filters.searchTerm}%`
       );
     }
 
+    // Filtre par type
     if (filters?.typeFilter && filters.typeFilter !== "all") {
       query = query.eq("type", filters.typeFilter);
+    }
+
+    // Filtre par intervalle de dates
+    if (filters?.dateFrom) {
+      query = query.gte("date_publication", filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      query = query.lte("date_publication", filters.dateTo);
+    }
+
+    // Filtre par présence de PDF
+    if (filters?.hasPdf === true) {
+      query = query.not("pdf_url", "is", null);
+    } else if (filters?.hasPdf === false) {
+      query = query.is("pdf_url", null);
+    }
+
+    // Filtre par domaines (multi-sélection)
+    // On doit filtrer via les articles liés aux sous-domaines
+    if (filters?.domainesFilter && filters.domainesFilter.length > 0) {
+      // Récupérer les IDs des textes qui ont des articles liés aux domaines sélectionnés
+      const { data: articlesData } = await supabase
+        .from("articles")
+        .select(`
+          texte_id,
+          article_sous_domaines!inner(
+            sous_domaines_application!inner(
+              domaine_id
+            )
+          )
+        `)
+        .in("article_sous_domaines.sous_domaines_application.domaine_id", filters.domainesFilter);
+
+      const texteIds = [...new Set(articlesData?.map((a) => a.texte_id) || [])];
+      
+      if (texteIds.length > 0) {
+        query = query.in("id", texteIds);
+      } else {
+        // Aucun texte ne correspond aux domaines sélectionnés
+        return {
+          data: [],
+          count: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
     }
 
     const sortBy = filters?.sortBy || "date_publication";
