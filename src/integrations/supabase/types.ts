@@ -3947,6 +3947,14 @@ export type Database = {
         Args: { p_sous_domaine_id: string }
         Returns: boolean
       }
+      check_staff_permission: {
+        Args: { _permission_key: string; _user_id: string }
+        Returns: Json
+      }
+      check_staff_permissions_batch: {
+        Args: { _permission_keys: string[]; _user_id: string }
+        Returns: Json
+      }
       client_admin_get_user_overview: {
         Args: {
           p_page?: number
@@ -4077,6 +4085,7 @@ export type Database = {
           scope: Database["public"]["Enums"]["permission_scope"]
         }[]
       }
+      get_staff_role: { Args: { _user_id: string }; Returns: string }
       get_user_sites: {
         Args: { _user_id: string }
         Returns: {
@@ -4108,6 +4117,7 @@ export type Database = {
         Args: { _module_id: string; _site_id: string }
         Returns: boolean
       }
+      is_staff_user: { Args: { _user_id: string }; Returns: boolean }
       log_user_management_action: {
         Args: {
           p_action_type: string
