@@ -168,4 +168,82 @@ export const clientBibliothequeQueries = {
       libelle: item.domaines_reglementaires.libelle,
     }));
   },
+
+  /**
+   * Get text detail by ID with domains
+   */
+  async getTexteById(texteId: string) {
+    const { data: texte, error } = await supabase
+      .from("textes_reglementaires")
+      .select("id, type, reference, titre, date_publication, pdf_url, source_url")
+      .eq("id", texteId)
+      .is("deleted_at", null)
+      .single();
+
+    if (error) throw error;
+    if (!texte) return null;
+
+    // Get domains for this text
+    const { data: articleDomains } = await supabase
+      .from("articles")
+      .select("article_sous_domaines!inner(sous_domaines_application!inner(domaines_reglementaires!inner(id, code, libelle)))")
+      .eq("texte_id", texteId);
+
+    // Extract unique domains
+    const domainesMap = new Map();
+    (articleDomains || []).forEach((article: any) => {
+      (article.article_sous_domaines || []).forEach((asd: any) => {
+        const domaine = asd?.sous_domaines_application?.domaines_reglementaires;
+        if (domaine) {
+          domainesMap.set(domaine.id, {
+            id: domaine.id,
+            code: domaine.code,
+            libelle: domaine.libelle,
+          });
+        }
+      });
+    });
+
+    return {
+      ...texte,
+      domaines: Array.from(domainesMap.values()),
+    };
+  },
+
+  /**
+   * Get articles with active versions for a text
+   */
+  async getTexteArticlesActiveVersions(texteId: string) {
+    const { data: articles, error } = await supabase
+      .from("articles")
+      .select(`
+        id,
+        numero,
+        titre,
+        resume,
+        est_introductif,
+        porte_exigence,
+        article_versions!inner(
+          id,
+          contenu,
+          date_effet,
+          statut
+        )
+      `)
+      .eq("texte_id", texteId)
+      .eq("article_versions.statut", "en_vigueur")
+      .order("numero", { ascending: true });
+
+    if (error) throw error;
+
+    return (articles || []).map((article: any) => ({
+      id: article.id,
+      numero: article.numero,
+      titre: article.titre,
+      resume: article.resume,
+      est_introductif: article.est_introductif,
+      porte_exigence: article.porte_exigence,
+      active_version: article.article_versions?.[0] || null,
+    }));
+  },
 };
