@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +13,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -22,22 +30,49 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { staffUsersQueries, type StaffUserWithRole } from "@/lib/staff-users-queries";
-import { Plus, Search, Edit, Power, KeyRound, Trash2 } from "lucide-react";
+import { staffRolesQueries } from "@/lib/staff-roles-queries";
+import { useStaffPermission, STAFF_PERMISSIONS } from "@/lib/staff-permission-middleware";
+import { Plus, Search, Edit, Power, KeyRound, Trash2, Filter, ShieldAlert } from "lucide-react";
 import { StaffUserFormModal } from "@/components/staff/StaffUserFormModal";
 
 export default function StaffUsersManagement() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [showFormModal, setShowFormModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<StaffUserWithRole | null>(null);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Permission check
+  const { authorized, loading: permissionLoading } = useStaffPermission(STAFF_PERMISSIONS.MANAGE_STAFF);
+
+  useEffect(() => {
+    if (!permissionLoading && !authorized) {
+      toast({ 
+        variant: "destructive", 
+        title: "Accès refusé",
+        description: "Vous n'avez pas la permission d'accéder à cette page" 
+      });
+      navigate("/dashboard");
+    }
+  }, [authorized, permissionLoading, navigate, toast]);
+
   const { data: staffUsers, isLoading } = useQuery({
     queryKey: ["staff-users"],
     queryFn: staffUsersQueries.getAll,
+    enabled: authorized,
+  });
+
+  const { data: staffRoles = [] } = useQuery({
+    queryKey: ["staff-roles"],
+    queryFn: staffRolesQueries.getAll,
+    enabled: authorized,
   });
 
   const toggleActiveMutation = useMutation({
@@ -74,11 +109,23 @@ export default function StaffUsersManagement() {
     },
   });
 
-  const filteredUsers = staffUsers?.filter((user) =>
-    [user.nom, user.prenom, user.email].some((field) =>
+  const filteredUsers = staffUsers?.filter((user) => {
+    // Search filter
+    const matchesSearch = [user.nom, user.prenom, user.email].some((field) =>
       field?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+    );
+    
+    // Role filter
+    const matchesRole = filterRole === "all" || user.role_id === filterRole;
+    
+    // Status filter
+    const matchesStatus = 
+      filterStatus === "all" || 
+      (filterStatus === "active" && user.actif) || 
+      (filterStatus === "inactive" && !user.actif);
+    
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   const handleCreate = () => {
     setSelectedUser(null);
@@ -108,11 +155,24 @@ export default function StaffUsersManagement() {
     }
   };
 
-  if (isLoading) {
+  if (permissionLoading || isLoading) {
     return (
       <div className="container mx-auto py-8 space-y-4">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (!authorized) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertDescription>
+            Vous n'avez pas la permission d'accéder à cette page. Contactez votre administrateur.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -142,6 +202,35 @@ export default function StaffUsersManagement() {
             className="pl-9"
           />
         </div>
+        
+        {/* Role Filter */}
+        <Select value={filterRole} onValueChange={setFilterRole}>
+          <SelectTrigger className="w-[200px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filtrer par rôle" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les rôles</SelectItem>
+            {staffRoles.map((role) => (
+              <SelectItem key={role.id} value={role.id}>
+                {role.nom_role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Status Filter */}
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[180px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filtrer par statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les statuts</SelectItem>
+            <SelectItem value="active">Actifs</SelectItem>
+            <SelectItem value="inactive">Inactifs</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="border rounded-lg">
