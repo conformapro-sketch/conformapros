@@ -139,24 +139,18 @@ function BibliothequeReglementaireContent() {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const enVigueur = textes.filter((t: any) => t.statut_vigueur === "en_vigueur").length;
-    const modifies = textes.filter((t: any) => t.statut_vigueur === "modifie").length;
-    const abroges = textes.filter((t: any) => t.statut_vigueur === "abroge").length;
     const withPdf = textes.filter((t: any) => t.pdf_url).length;
     const favorites = textes.filter((t: any) => isFavorite(t.id)).length;
     
     const parType = {
-      loi: textes.filter((t: any) => t.type_acte === "LOI").length,
-      decret: textes.filter((t: any) => t.type_acte === "DECRET").length,
-      arrete: textes.filter((t: any) => t.type_acte === "ARRETE").length,
-      circulaire: textes.filter((t: any) => t.type_acte === "CIRCULAIRE").length,
+      loi: textes.filter((t: any) => t.type === "loi").length,
+      decret: textes.filter((t: any) => t.type === "decret").length,
+      arrete: textes.filter((t: any) => t.type === "arrete").length,
+      circulaire: textes.filter((t: any) => t.type === "circulaire").length,
     };
     
     return {
       total: totalCount,
-      enVigueur,
-      modifies,
-      abroges,
       withPdf,
       favorites,
       parType,
@@ -193,7 +187,7 @@ function BibliothequeReglementaireContent() {
   const handleViewPdf = (texte: any) => {
     if (texte.pdf_url) {
       setSelectedPdfUrl(texte.pdf_url);
-      setSelectedPdfTitle(texte.reference_officielle);
+      setSelectedPdfTitle(texte.reference);
       setPdfViewerOpen(true);
     }
   };

@@ -7,9 +7,6 @@ import { cn } from "@/lib/utils";
 interface BibliothequeStatsCardsProps {
   stats: {
     total: number;
-    enVigueur: number;
-    modifies: number;
-    abroges: number;
     parType: {
       loi: number;
       decret: number;
@@ -32,33 +29,6 @@ export function BibliothequeStatsCards({ stats, onFilterByStatus }: Bibliotheque
       color: "text-primary",
       bgColor: "bg-primary/10",
       filter: "all",
-    },
-    {
-      id: "en_vigueur",
-      label: "En vigueur",
-      value: stats.enVigueur,
-      icon: CheckCircle,
-      color: "text-green-600",
-      bgColor: "bg-green-50 dark:bg-green-950",
-      filter: "en_vigueur",
-    },
-    {
-      id: "modifie",
-      label: "Modifiés",
-      value: stats.modifies,
-      icon: AlertTriangle,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50 dark:bg-orange-950",
-      filter: "modifie",
-    },
-    {
-      id: "abroge",
-      label: "Abrogés",
-      value: stats.abroges,
-      icon: XCircle,
-      color: "text-red-600",
-      bgColor: "bg-red-50 dark:bg-red-950",
-      filter: "abroge",
     },
   ];
 

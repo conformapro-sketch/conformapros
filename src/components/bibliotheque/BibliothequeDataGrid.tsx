@@ -73,11 +73,11 @@ export function BibliothequeDataGrid({
 
   const columns: ColumnDef<any>[] = [
     {
-      accessorKey: "type_acte",
+      accessorKey: "type",
       header: "Type",
       size: 120,
       cell: ({ row }) => {
-        const type = row.original.type_acte;
+        const type = row.original.type;
         const Icon = TYPE_ICONS[type] || FileText;
         return (
           <div className="flex items-center gap-2">
@@ -88,21 +88,21 @@ export function BibliothequeDataGrid({
       },
     },
     {
-      accessorKey: "reference_officielle",
+      accessorKey: "reference",
       header: "Référence",
       size: 300,
       cell: ({ row }) => (
         <HoverCard openDelay={200}>
           <HoverCardTrigger asChild>
             <span className="font-semibold text-primary cursor-pointer hover:underline line-clamp-3 leading-tight block whitespace-normal break-words">
-              {row.original.reference_officielle}
+              {row.original.reference}
             </span>
           </HoverCardTrigger>
           <HoverCardContent className="w-80" side="right">
             <div className="space-y-2">
-              <p className="text-sm font-semibold">{row.original.reference_officielle}</p>
+              <p className="text-sm font-semibold">{row.original.reference}</p>
               <p className="text-xs text-muted-foreground">
-                {row.original.intitule}
+                {row.original.titre}
               </p>
             </div>
           </HoverCardContent>
@@ -110,43 +110,25 @@ export function BibliothequeDataGrid({
       ),
     },
     {
-      accessorKey: "intitule",
+      accessorKey: "titre",
       header: "Titre",
       size: 300,
       cell: ({ row }) => (
-        <HoverCard openDelay={200}>
-          <HoverCardTrigger asChild>
-            <div className="cursor-pointer">
-              <p className="line-clamp-2 text-sm whitespace-normal break-words">{row.original.intitule}</p>
-            </div>
-          </HoverCardTrigger>
-          <HoverCardContent className="w-96" side="right">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold">{row.original.intitule}</p>
-              {row.original.resume && (
-                <p className="text-xs text-muted-foreground">{row.original.resume}</p>
-              )}
-            </div>
-          </HoverCardContent>
-        </HoverCard>
+        <div className="line-clamp-2 text-sm whitespace-normal break-words">
+          {row.original.titre}
+        </div>
       ),
     },
     {
-      id: "statut_articles",
-      header: "Statut & Articles",
-      size: 180,
+      id: "articles",
+      header: "Articles",
+      size: 120,
       cell: ({ row }) => {
-        const statut = getStatutBadge(row.original.statut_vigueur);
         const articlesCount = row.original.articles?.[0]?.count || 0;
         return (
-          <div className="flex flex-col gap-1.5">
-            <Badge variant={statut.variant} className="w-fit">
-              {statut.label}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {articlesCount} article{articlesCount > 1 ? "s" : ""}
-            </span>
-          </div>
+          <span className="text-sm text-muted-foreground">
+            {articlesCount} article{articlesCount > 1 ? "s" : ""}
+          </span>
         );
       },
     },
