@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ClientUserFormModal } from '@/components/ClientUserFormModal';
 import { UserPermissionDrawer } from '@/components/UserPermissionDrawer';
+import { UserSitesManager } from '@/components/UserSitesManager';
+import { ClientAutocomplete } from '@/components/shared/ClientAutocomplete';
 
 interface ClientUser {
   id: string;
@@ -42,14 +44,16 @@ interface ClientUser {
 export default function ClientUsersManagement() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<ClientUser | null>(null);
   const [isPermissionDrawerOpen, setIsPermissionDrawerOpen] = useState(false);
-  const [userForPermissions, setUserForPermissions] = useState<string | null>(null);
+  const [isSitesDrawerOpen, setIsSitesDrawerOpen] = useState(false);
+  const [userForPermissions, setUserForPermissions] = useState<ClientUser | null>(null);
 
-  // Fetch all client users
+  // Fetch all client users with site counts
   const { data: users, isLoading } = useQuery({
-    queryKey: ['client-users', search],
+    queryKey: ['client-users', search, selectedClientId],
     queryFn: async () => {
       let query = supabase
         .from('client_users')
@@ -57,7 +61,8 @@ export default function ClientUsersManagement() {
           *,
           clients (
             nom
-          )
+          ),
+          access_scopes(id, site_id)
         `)
         .order('created_at', { ascending: false });
 
@@ -65,9 +70,18 @@ export default function ClientUsersManagement() {
         query = query.or(`email.ilike.%${search}%,nom.ilike.%${search}%,prenom.ilike.%${search}%`);
       }
 
+      if (selectedClientId) {
+        query = query.eq('client_id', selectedClientId);
+      }
+
       const { data, error } = await query;
       if (error) throw error;
-      return data as ClientUser[];
+      
+      // Calculate site counts
+      return (data || []).map(user => ({
+        ...user,
+        site_count: user.access_scopes?.length || 0
+      }));
     },
   });
 
@@ -114,9 +128,14 @@ export default function ClientUsersManagement() {
     setIsFormOpen(true);
   };
 
-  const handleViewPermissions = (userId: string) => {
-    setUserForPermissions(userId);
+  const handleViewPermissions = (user: ClientUser) => {
+    setUserForPermissions(user);
     setIsPermissionDrawerOpen(true);
+  };
+
+  const handleManageSites = (user: ClientUser) => {
+    setSelectedUser(user);
+    setIsSitesDrawerOpen(true);
   };
 
   const filteredUsers = users || [];
@@ -150,8 +169,8 @@ export default function ClientUsersManagement() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search */}
-          <div className="flex items-center gap-2">
+          {/* Search and Filters */}
+          <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -161,6 +180,24 @@ export default function ClientUsersManagement() {
                 className="pl-9"
               />
             </div>
+            <div className="w-64">
+              <ClientAutocomplete
+                value={selectedClientId}
+                onChange={setSelectedClientId}
+                placeholder="Filtrer par client"
+              />
+            </div>
+            {(search || selectedClientId) && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSearch('');
+                  setSelectedClientId('');
+                }}
+              >
+                Réinitialiser
+              </Button>
+            )}
           </div>
 
           {/* Users Table */}
@@ -171,17 +208,18 @@ export default function ClientUsersManagement() {
                   <TableHead>Utilisateur</TableHead>
                   <TableHead>Organisation</TableHead>
                   <TableHead>Rôle</TableHead>
+                  <TableHead>Sites</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                      Aucun utilisateur trouvé
-                    </TableCell>
-                  </TableRow>
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    Aucun utilisateur trouvé
+                  </TableCell>
+                </TableRow>
                 ) : (
                   filteredUsers.map((user) => (
                     <TableRow key={user.id}>
@@ -211,6 +249,11 @@ export default function ClientUsersManagement() {
                         )}
                       </TableCell>
                       <TableCell>
+                        <Badge variant="outline">
+                          {(user as any).site_count || 0} site(s)
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         {user.actif ? (
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                             Actif
@@ -234,9 +277,13 @@ export default function ClientUsersManagement() {
                             <DropdownMenuItem onClick={() => handleEdit(user)}>
                               Modifier
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleViewPermissions(user.id)}>
+                            <DropdownMenuItem onClick={() => handleManageSites(user)}>
                               <MapPin className="mr-2 h-4 w-4" />
-                              Voir permissions & sites
+                              Gérer les sites
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewPermissions(user)}>
+                              <Shield className="mr-2 h-4 w-4" />
+                              Gérer les permissions
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => toggleActiveMutation.mutate({
@@ -285,13 +332,24 @@ export default function ClientUsersManagement() {
         user={selectedUser}
       />
 
+      {/* Sites Manager Drawer */}
+      {selectedUser && (
+        <UserSitesManager
+          userId={selectedUser.id}
+          userEmail={selectedUser.email}
+          clientId={selectedUser.client_id}
+          open={isSitesDrawerOpen}
+          onOpenChange={setIsSitesDrawerOpen}
+        />
+      )}
+
       {/* Permissions Drawer */}
-      {userForPermissions && users && (
+      {userForPermissions && (
         <UserPermissionDrawer
           open={isPermissionDrawerOpen}
           onOpenChange={setIsPermissionDrawerOpen}
-          user={users.find(u => u.id === userForPermissions) || null}
-          clientId={users.find(u => u.id === userForPermissions)?.client_id || ''}
+          user={userForPermissions}
+          clientId={userForPermissions.client_id}
         />
       )}
     </div>
