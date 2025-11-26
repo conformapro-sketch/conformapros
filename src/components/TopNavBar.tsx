@@ -11,7 +11,6 @@ import { NotificationsButton } from "@/components/navigation/NotificationsButton
 import { ThemeToggle } from "@/components/navigation/ThemeToggle";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { SettingsButton } from "@/components/navigation/SettingsButton";
-import { StaffSettings } from "@/components/navigation/StaffSettings";
 
 export type TopNavBarProps = {
   className?: string;
@@ -94,7 +93,6 @@ export default function TopNavBar({
             <NotificationsButton count={notifications} />
             <ThemeToggle />
             <SettingsButton />
-            <StaffSettings />
             <UserProfileMenu onProfileClick={onProfileClick} onLogout={onLogout} />
           </TooltipProvider>
         </div>
