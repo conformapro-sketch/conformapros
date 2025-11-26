@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { StaffRouteGuard } from "@/components/guards/StaffRouteGuard";
 import { Layout } from "@/components/Layout";
 import { createOptimizedQueryClient } from "@/lib/query-config";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
@@ -88,6 +89,7 @@ import CodeDetail from "./pages/CodeDetail";
 import StaffUserManagement from "./pages/StaffUserManagement";
 import ClientAdminUserManagement from "./pages/ClientAdminUserManagement";
 import StaffRoleManagement from "./pages/StaffRoleManagement";
+import StaffMemberManagement from "./pages/StaffMemberManagement";
 import GestionAutorites from "./pages/GestionAutorites";
 import BibliothequeParametres from "./pages/BibliothequeParametres";
 import ClientBibliotheque from "./pages/ClientBibliotheque";
@@ -269,38 +271,34 @@ const App = () => (
               />
               <Route path="roles" element={<GestionRoles />} />
               
-              {/* Staff Role Management */}
-              <Route
-                path="staff/roles"
+              {/* Staff Routes - Protected by StaffRouteGuard */}
+              <Route 
+                path="staff/roles" 
                 element={
-                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
+                  <StaffRouteGuard>
                     <StaffRoleManagement />
-                  </ProtectedRoute>
-                }
+                  </StaffRouteGuard>
+                } 
               />
-              
-              {/* Staff User Management */}
-              <Route
-                path="staff/users"
+              <Route 
+                path="staff/users" 
                 element={
-                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
+                  <StaffRouteGuard>
+                    <StaffMemberManagement />
+                  </StaffRouteGuard>
+                } 
+              />
+              <Route 
+                path="staff/client-users" 
+                element={
+                  <StaffRouteGuard>
                     <StaffUserManagement />
-                  </ProtectedRoute>
-                }
+                  </StaffRouteGuard>
+                } 
               />
               
               <Route path="client-users" element={<ClientUsers />} />
               <Route path="clients/:clientId/users" element={<ClientUsers />} />
-              
-              {/* Staff User Management */}
-              <Route
-                path="staff/user-management"
-                element={
-                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
-                    <StaffUserManagement />
-                  </ProtectedRoute>
-                }
-              />
               
               {/* Client Admin User Management */}
               <Route path="client-admin/users" element={<ClientAdminUserManagement />} />
