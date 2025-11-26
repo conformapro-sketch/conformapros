@@ -2992,6 +2992,47 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_users: {
+        Row: {
+          actif: boolean
+          created_at: string
+          email: string
+          id: string
+          nom: string
+          prenom: string
+          role_id: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          email: string
+          id: string
+          nom: string
+          prenom: string
+          role_id: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nom?: string
+          prenom?: string
+          role_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_users_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "staff_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           created_at: string
