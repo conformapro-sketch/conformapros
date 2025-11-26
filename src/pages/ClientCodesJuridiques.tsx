@@ -10,6 +10,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { ChevronDown, ChevronRight, BookOpen, FileText, Home, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RegulatoryItemViewer } from "@/components/bibliotheque/RegulatoryItemViewer";
 
 interface StructureNode {
   id: string;
@@ -250,45 +251,16 @@ export default function ClientCodesJuridiques() {
             </Alert>
           )}
           {selectedStructureId && !articlesLoading && articles && articles.length > 0 && (
-            <div className="space-y-4 max-h-[600px] overflow-y-auto">
+            <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
               {articles.map((article: any) => (
-                <Card key={article.id} className="p-4">
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-medium">Article {article.numero}</div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {article.titre}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {article.porte_exigence && (
-                          <Badge variant="destructive">Exigence réglementaire</Badge>
-                        )}
-                        {!article.porte_exigence && article.est_introductif && (
-                          <Badge variant="secondary">Introductif</Badge>
-                        )}
-                      </div>
-                    </div>
-                    {article.resume && (
-                      <p className="text-sm text-muted-foreground">{article.resume}</p>
-                    )}
-                    {article.active_version && (
-                      <div className="text-xs text-muted-foreground pt-2 border-t">
-                        <div>Version {article.active_version.numero_version} en vigueur</div>
-                        <div>
-                          Depuis le{" "}
-                          {new Date(article.active_version.date_effet).toLocaleDateString("fr-FR")}
-                        </div>
-                        {article.active_version.textes_reglementaires && (
-                          <div className="mt-1">
-                            Source: {article.active_version.textes_reglementaires.reference}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Card>
+                <RegulatoryItemViewer
+                  key={article.id}
+                  articleId={article.id}
+                  showTexteInfo={true}
+                  showTags={true}
+                  showSousDomaines={true}
+                  compact={true}
+                />
               ))}
             </div>
           )}
