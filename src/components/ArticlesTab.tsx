@@ -26,7 +26,7 @@ interface ArticleFormData {
   titre_court: string;
   ordre: number;
   sous_domaine_ids: string[];
-  indicatif: boolean;
+  is_exigence: boolean;
 }
 
 export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
@@ -42,7 +42,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
     titre_court: "",
     ordre: 0,
     sous_domaine_ids: [],
-    indicatif: false,
+    is_exigence: false,
   });
 
   // Fetch sous-domaines
@@ -86,7 +86,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
         numero: data.numero,
         titre_court: data.titre_court,
         ordre: data.ordre,
-        indicatif: data.indicatif,
+        is_exigence: data.is_exigence,
       });
 
       // Insert sous-domaines relationships
@@ -123,7 +123,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
         numero: data.numero,
         titre_court: data.titre_court,
         ordre: data.ordre,
-        indicatif: data.indicatif,
+        is_exigence: data.is_exigence,
       });
 
       // Update sous-domaines relationships
@@ -175,7 +175,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
       titre_court: "",
       ordre: 0,
       sous_domaine_ids: [],
-      indicatif: false,
+      is_exigence: false,
     });
     setEditingId(null);
   };
@@ -189,7 +189,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
       titre_court: article.titre_court || "",
       ordre: article.ordre || 0,
       sous_domaine_ids: articleSousDomaines,
-      indicatif: article.indicatif || false,
+      is_exigence: article.is_exigence || false,
     });
     setEditingId(article.id);
     setDialogOpen(true);
@@ -285,19 +285,19 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
 
                 <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
                   <Checkbox
-                    id="indicatif"
-                    checked={formData.indicatif}
-                    onCheckedChange={(checked) => setFormData({ ...formData, indicatif: checked === true })}
+                    id="is_exigence"
+                    checked={formData.is_exigence}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_exigence: checked === true })}
                   />
                   <div className="space-y-1">
                     <Label 
-                      htmlFor="indicatif" 
+                      htmlFor="is_exigence" 
                       className="text-sm font-medium cursor-pointer"
                     >
-                      Article à titre indicatif (non applicable)
+                      Est une exigence réglementaire
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Pour les articles de définition, explicatifs, descriptifs ou introductifs qui n'imposent pas d'obligations applicables
+                      Cochez si cet article impose des obligations applicables nécessitant une évaluation de conformité
                     </p>
                   </div>
                 </div>
@@ -365,7 +365,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             {article.numero}
-                            {article.indicatif && (
+                            {!article.is_exigence && (
                               <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                                 Indicatif
                               </Badge>
