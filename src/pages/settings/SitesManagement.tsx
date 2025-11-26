@@ -20,12 +20,15 @@ import {
   MapPin,
   Users,
   Eye,
-  Archive
+  Archive,
+  Power
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sitesQueryService } from "@/lib/sites-query-service";
 import { clientsQueryService } from "@/lib/clients-query-service";
 import { siteModulesQueries } from "@/lib/multi-tenant-queries";
+import { siteDomainQueries } from "@/lib/site-domains-queries";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SiteFormModal } from "@/components/SiteFormModal";
 import { useToast } from "@/hooks/use-toast";
@@ -64,6 +67,7 @@ export default function SitesManagement() {
   });
 
   const siteIds = sites?.map(s => s.id) || [];
+  
   const { data: bulkModules = {} } = useQuery({
     queryKey: ["bulk-site-modules", siteIds],
     queryFn: () => siteModulesQueries.getBulkSiteModules(siteIds),
@@ -71,24 +75,36 @@ export default function SitesManagement() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const SiteModulesBadges = ({ siteId }: { siteId: string }) => {
-    const siteModules = bulkModules[siteId] || [];
-    if (siteModules.length === 0) return <span className="text-muted-foreground text-sm">Aucun module</span>;
+  const { data: domainCounts = {} } = useQuery({
+    queryKey: ["site-domain-counts", siteIds],
+    queryFn: () => siteDomainQueries.getDomainCounts(siteIds),
+    enabled: siteIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+  });
 
-    return (
-      <div className="flex flex-wrap gap-1">
-        {siteModules.slice(0, 3).map((sm: any) => (
-          <Badge key={sm.id} variant="secondary" className="text-xs">
-            {sm.code}
-          </Badge>
-        ))}
-        {siteModules.length > 3 && (
-          <Badge variant="outline" className="text-xs">
-            +{siteModules.length - 3}
-          </Badge>
-        )}
-      </div>
-    );
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, actif }: { id: string; actif: boolean }) => {
+      const { error } = await sitesQueryService.update(id, { actif });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sites"] });
+      toast({ 
+        title: "✓ Statut mis à jour",
+        description: "Le statut du site a été modifié avec succès."
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de modifier le statut",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleToggleActive = (site: SiteRow) => {
+    toggleActiveMutation.mutate({ id: site.id, actif: !(site as any).actif });
   };
 
   const deleteMutation = useMutation({
@@ -229,21 +245,31 @@ export default function SitesManagement() {
                   <TableRow>
                     <TableHead>Site</TableHead>
                     <TableHead>Client</TableHead>
-                    <TableHead>Localisation</TableHead>
-                    <TableHead>Effectif</TableHead>
-                    <TableHead>Modules</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-center">Modules</TableHead>
+                    <TableHead className="text-center">Domaines</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSites.map((site) => {
                     const client = (site as any).clients;
+                    const siteModules = bulkModules[site.id] || [];
+                    const domainsCount = domainCounts[site.id] || 0;
+                    const siteActif = (site as any).actif ?? true;
+                    
                     return (
                       <TableRow key={site.id}>
                         <TableCell>
                           <div>
                             <div className="font-medium">{site.nom_site}</div>
                             <div className="text-sm text-muted-foreground">{site.code_site}</div>
+                            {site.gouvernorat && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                <MapPin className="h-3 w-3" />
+                                <span>{site.gouvernorat}</span>
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -259,27 +285,34 @@ export default function SitesManagement() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {site.gouvernorat ? (
-                            <div className="flex items-center gap-1 text-sm">
-                              <MapPin className="h-3 w-3 text-muted-foreground" />
-                              <span>{site.gouvernorat}</span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {siteActif ? (
+                              <Badge variant="default" className="bg-green-600">
+                                Actif
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">Inactif</Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleToggleActive(site)}
+                              title={siteActif ? "Désactiver" : "Activer"}
+                            >
+                              <Power className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
-                        <TableCell>
-                          {site.nombre_employes ? (
-                            <div className="flex items-center gap-1 text-sm">
-                              <Users className="h-3 w-3 text-muted-foreground" />
-                              <span>{site.nombre_employes}</span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">
+                            {siteModules.length}
+                          </Badge>
                         </TableCell>
-                        <TableCell>
-                          <SiteModulesBadges siteId={site.id} />
+                        <TableCell className="text-center">
+                          <Badge variant="outline">
+                            {domainsCount}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>

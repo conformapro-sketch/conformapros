@@ -2837,6 +2837,7 @@ export type Database = {
       }
       sites: {
         Row: {
+          actif: boolean | null
           activite: string | null
           adresse: string | null
           classification: string | null
@@ -2865,6 +2866,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          actif?: boolean | null
           activite?: string | null
           adresse?: string | null
           classification?: string | null
@@ -2893,6 +2895,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          actif?: boolean | null
           activite?: string | null
           adresse?: string | null
           classification?: string | null
