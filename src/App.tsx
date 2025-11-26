@@ -379,14 +379,14 @@ const App = () => (
               <Route index element={<StaffDashboard />} />
               <Route path="account" element={<AccountSettings />} />
               <Route path="organization" element={<OrganizationSettings />} />
-              <Route path="staff" element={<StaffDashboard />} />
-              <Route path="staff-users" element={<StaffUsersManagement />} />
-              <Route path="staff-roles" element={<StaffRolesManagement />} />
-              <Route path="staff-permissions" element={<StaffPermissionsManagement />} />
-              <Route path="client-users" element={<ClientUsersManagement />} />
+              <Route path="staff" element={<StaffUsersManagement />} />
+              <Route path="staffroles" element={<StaffRolesManagement />} />
+              <Route path="clients" element={<StaffDashboard />} />
               <Route path="sites" element={<SitesManagement />} />
-              <Route path="site-modules" element={<SiteModulesOverview />} />
-              <Route path="site-domains" element={<SiteDomainsManagement />} />
+              <Route path="clientusers" element={<ClientUsersManagement />} />
+              <Route path="modules" element={<SiteModulesOverview />} />
+              <Route path="domains" element={<SiteDomainsManagement />} />
+              <Route path="logs" element={<StaffPermissionsManagement />} />
             </Route>
             
             {/* Catch-all 404 */}
