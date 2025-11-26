@@ -100,6 +100,7 @@ import Settings from "./pages/Settings";
 import AccountSettings from "./pages/settings/AccountSettings";
 import OrganizationSettings from "./pages/settings/OrganizationSettings";
 import ClientUsersManagement from "./pages/settings/ClientUsersManagement";
+import SitesManagement from "./pages/settings/SitesManagement";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -389,6 +390,16 @@ const App = () => (
                 <ProtectedRoute>
                   <StaffRouteGuard>
                     <ClientUsersManagement />
+                  </StaffRouteGuard>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/sites" 
+              element={
+                <ProtectedRoute>
+                  <StaffRouteGuard>
+                    <SitesManagement />
                   </StaffRouteGuard>
                 </ProtectedRoute>
               } 
