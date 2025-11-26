@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { 
   FileText, 
   Search, 
@@ -17,12 +19,15 @@ import {
   Edit,
   Trash2,
   ExternalLink,
-  FileDown
+  FileDown,
+  Filter,
+  X
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries } from "@/lib/textes-reglementaires-queries";
 import { TexteReglementaireFormModal } from "@/components/TexteReglementaireFormModal";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +38,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const TYPE_LABELS: Record<string, string> = {
   loi: "Loi",
@@ -47,20 +57,43 @@ export default function GestionTextesReglementaires() {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [selectedDomaines, setSelectedDomaines] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [hasPdf, setHasPdf] = useState<boolean | null>(null);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("date_publication");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showTexteModal, setShowTexteModal] = useState(false);
   const [editingTexte, setEditingTexte] = useState<any>(null);
   const [deleteConfirmTexte, setDeleteConfirmTexte] = useState<any>(null);
+  const [showFilters, setShowFilters] = useState(false);
   const pageSize = 25;
 
+  // Charger les domaines pour le filtre
+  const { data: domaines = [] } = useQuery({
+    queryKey: ["domaines-reglementaires"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("domaines_reglementaires")
+        .select("id, code, libelle")
+        .eq("actif", true)
+        .order("libelle");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const { data: result, isLoading } = useQuery({
-    queryKey: ["textes-reglementaires", searchTerm, typeFilter, page, sortBy, sortOrder],
+    queryKey: ["textes-reglementaires", searchTerm, typeFilter, selectedDomaines, dateFrom, dateTo, hasPdf, page, sortBy, sortOrder],
     queryFn: () =>
       textesReglementairesQueries.getAll({
         searchTerm,
         typeFilter: typeFilter !== "all" ? typeFilter : undefined,
+        domainesFilter: selectedDomaines.length > 0 ? selectedDomaines : undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        hasPdf,
         page,
         pageSize,
         sortBy,
@@ -109,6 +142,33 @@ export default function GestionTextesReglementaires() {
     }
   };
 
+  const toggleDomaine = (domaineId: string) => {
+    setSelectedDomaines((prev) =>
+      prev.includes(domaineId)
+        ? prev.filter((id) => id !== domaineId)
+        : [...prev, domaineId]
+    );
+    setPage(1);
+  };
+
+  const clearAllFilters = () => {
+    setTypeFilter("all");
+    setSelectedDomaines([]);
+    setDateFrom("");
+    setDateTo("");
+    setHasPdf(null);
+    setSearchTerm("");
+    setPage(1);
+  };
+
+  const hasActiveFilters = 
+    typeFilter !== "all" ||
+    selectedDomaines.length > 0 ||
+    dateFrom ||
+    dateTo ||
+    hasPdf !== null ||
+    searchTerm;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -137,34 +197,154 @@ export default function GestionTextesReglementaires() {
       <Card className="shadow-soft">
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par référence ou titre..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setPage(1);
-                }}
-                className="pl-10"
-              />
+            {/* Barre de recherche */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par référence ou titre..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filtres
+                {hasActiveFilters && (
+                  <Badge variant="secondary" className="ml-2">
+                    {[
+                      typeFilter !== "all" ? 1 : 0,
+                      selectedDomaines.length,
+                      dateFrom ? 1 : 0,
+                      dateTo ? 1 : 0,
+                      hasPdf !== null ? 1 : 0,
+                    ].reduce((a, b) => a + b, 0)}
+                  </Badge>
+                )}
+              </Button>
             </div>
-            
-            <div className="flex gap-3">
-              <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); setPage(1); }}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Type de texte" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les types</SelectItem>
-                  {Object.entries(TYPE_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {/* Filtres avancés */}
+            {showFilters && (
+              <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">Filtres avancés</h3>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                      <X className="h-3 w-3 mr-1" />
+                      Réinitialiser
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Type de texte */}
+                  <div className="space-y-2">
+                    <Label>Type de texte</Label>
+                    <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); setPage(1); }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Type de texte" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les types</SelectItem>
+                        {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Date de début */}
+                  <div className="space-y-2">
+                    <Label>Date publication (depuis)</Label>
+                    <Input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => {
+                        setDateFrom(e.target.value);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
+
+                  {/* Date de fin */}
+                  <div className="space-y-2">
+                    <Label>Date publication (jusqu'à)</Label>
+                    <Input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => {
+                        setDateTo(e.target.value);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Domaines (multi-sélection) */}
+                <div className="space-y-2">
+                  <Label>Domaines réglementaires</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start">
+                        {selectedDomaines.length === 0
+                          ? "Tous les domaines"
+                          : `${selectedDomaines.length} domaine(s) sélectionné(s)`}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {domaines.map((domaine: any) => (
+                          <div key={domaine.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`domaine-${domaine.id}`}
+                              checked={selectedDomaines.includes(domaine.id)}
+                              onCheckedChange={() => toggleDomaine(domaine.id)}
+                            />
+                            <label
+                              htmlFor={`domaine-${domaine.id}`}
+                              className="text-sm cursor-pointer flex-1"
+                            >
+                              {domaine.libelle} ({domaine.code})
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Présence de PDF */}
+                <div className="space-y-2">
+                  <Label>Fichier PDF</Label>
+                  <Select
+                    value={hasPdf === null ? "all" : hasPdf ? "yes" : "no"}
+                    onValueChange={(val) => {
+                      setHasPdf(val === "all" ? null : val === "yes");
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous</SelectItem>
+                      <SelectItem value="yes">Avec PDF</SelectItem>
+                      <SelectItem value="no">Sans PDF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -190,28 +370,34 @@ export default function GestionTextesReglementaires() {
                   <TableHeader>
                     <TableRow>
                       <TableHead 
-                        className="cursor-pointer" 
+                        className="cursor-pointer hover:bg-muted/50" 
                         onClick={() => handleSort("type")}
                       >
                         Type {sortBy === "type" && (sortOrder === "asc" ? "↑" : "↓")}
                       </TableHead>
                       <TableHead 
-                        className="cursor-pointer" 
+                        className="cursor-pointer hover:bg-muted/50" 
                         onClick={() => handleSort("reference")}
                       >
                         Référence {sortBy === "reference" && (sortOrder === "asc" ? "↑" : "↓")}
                       </TableHead>
                       <TableHead 
-                        className="cursor-pointer" 
+                        className="cursor-pointer hover:bg-muted/50" 
                         onClick={() => handleSort("titre")}
                       >
                         Titre {sortBy === "titre" && (sortOrder === "asc" ? "↑" : "↓")}
                       </TableHead>
                       <TableHead 
-                        className="cursor-pointer" 
+                        className="cursor-pointer hover:bg-muted/50" 
                         onClick={() => handleSort("date_publication")}
                       >
                         Date publication {sortBy === "date_publication" && (sortOrder === "asc" ? "↑" : "↓")}
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50" 
+                        onClick={() => handleSort("created_at")}
+                      >
+                        Date création {sortBy === "created_at" && (sortOrder === "asc" ? "↑" : "↓")}
                       </TableHead>
                       <TableHead className="text-center">#Articles</TableHead>
                       <TableHead>Fichiers</TableHead>
@@ -241,6 +427,9 @@ export default function GestionTextesReglementaires() {
                             {texte.date_publication
                               ? new Date(texte.date_publication).toLocaleDateString("fr-FR")
                               : "—"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {new Date(texte.created_at).toLocaleDateString("fr-FR")}
                           </TableCell>
                           <TableCell className="text-center text-sm font-medium">
                             {articleCount}
