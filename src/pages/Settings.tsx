@@ -22,6 +22,34 @@ const staffSections: SettingsSection[] = [
     path: '/settings/account'
   },
   {
+    id: 'staff-dashboard',
+    label: 'Dashboard Staff',
+    icon: Shield,
+    description: 'Vue d\'ensemble de la gestion du staff ConformaPro',
+    path: '/settings/staff'
+  },
+  {
+    id: 'staff-users-mgmt',
+    label: 'Utilisateurs Staff',
+    icon: Users,
+    description: 'Gérer les membres de l\'équipe ConformaPro',
+    path: '/settings/staff-users'
+  },
+  {
+    id: 'staff-roles-mgmt',
+    label: 'Rôles Staff',
+    icon: Shield,
+    description: 'Gérer les rôles du personnel ConformaPro',
+    path: '/settings/staff-roles'
+  },
+  {
+    id: 'staff-permissions-mgmt',
+    label: 'Permissions Staff',
+    icon: SettingsIcon,
+    description: 'Configurer les permissions par rôle',
+    path: '/settings/staff-permissions'
+  },
+  {
     id: 'client-users-management',
     label: 'Utilisateurs Clients',
     icon: Users,
@@ -48,27 +76,6 @@ const staffSections: SettingsSection[] = [
     icon: Globe,
     description: 'Gérer les domaines autorisés pour chaque site',
     path: '/settings/site-domains'
-  },
-  {
-    id: 'staff-roles',
-    label: 'Rôles du Staff',
-    icon: Shield,
-    description: 'Gérer les rôles et permissions du personnel ConformaPro',
-    path: '/staff/roles'
-  },
-  {
-    id: 'staff-users',
-    label: 'Utilisateurs Staff',
-    icon: Users,
-    description: 'Gérer les membres de l\'équipe ConformaPro',
-    path: '/staff/users'
-  },
-  {
-    id: 'client-users',
-    label: 'Utilisateurs Clients',
-    icon: User,
-    description: 'Vue d\'ensemble des utilisateurs clients',
-    path: '/staff/client-users'
   },
   {
     id: 'regulatory-domains',
