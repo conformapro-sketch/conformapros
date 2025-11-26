@@ -14,8 +14,6 @@ import {
   Eye, 
   Plus,
   Download,
-  ChevronLeft,
-  ChevronRight,
   Edit,
   Trash2,
   ExternalLink,
@@ -23,6 +21,7 @@ import {
   Filter,
   X
 } from "lucide-react";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries } from "@/lib/textes-reglementaires-queries";
 import { TexteReglementaireFormModal } from "@/components/TexteReglementaireFormModal";
@@ -62,13 +61,13 @@ export default function GestionTextesReglementaires() {
   const [dateTo, setDateTo] = useState("");
   const [hasPdf, setHasPdf] = useState<boolean | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [sortBy, setSortBy] = useState("date_publication");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showTexteModal, setShowTexteModal] = useState(false);
   const [editingTexte, setEditingTexte] = useState<any>(null);
   const [deleteConfirmTexte, setDeleteConfirmTexte] = useState<any>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const pageSize = 25;
 
   // Charger les domaines pour le filtre
   const { data: domaines = [] } = useQuery({
@@ -84,8 +83,8 @@ export default function GestionTextesReglementaires() {
     },
   });
 
-  const { data: result, isLoading } = useQuery({
-    queryKey: ["textes-reglementaires", searchTerm, typeFilter, selectedDomaines, dateFrom, dateTo, hasPdf, page, sortBy, sortOrder],
+  const { data: result, isLoading, error } = useQuery({
+    queryKey: ["textes-reglementaires", searchTerm, typeFilter, selectedDomaines, dateFrom, dateTo, hasPdf, page, pageSize, sortBy, sortOrder],
     queryFn: () =>
       textesReglementairesQueries.getAll({
         searchTerm,
@@ -493,33 +492,31 @@ export default function GestionTextesReglementaires() {
                 </Table>
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Page {page} sur {totalPages}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={page === totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {/* Pagination Controls */}
+              <PaginationControls
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={totalCount}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(newSize) => {
+                  setPageSize(newSize);
+                  setPage(1); // Reset to first page when changing page size
+                }}
+                hasNextPage={page < totalPages}
+                hasPrevPage={page > 1}
+              />
             </>
+          ) : error ? (
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 text-destructive mx-auto mb-4 opacity-50" />
+              <p className="text-destructive font-medium mb-2">
+                Erreur lors du chargement
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {(error as any)?.message || "Une erreur s'est produite"}
+              </p>
+            </div>
           ) : (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
