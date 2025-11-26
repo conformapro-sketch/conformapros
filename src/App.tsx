@@ -89,6 +89,8 @@ import StaffUserManagement from "./pages/StaffUserManagement";
 import ClientAdminUserManagement from "./pages/ClientAdminUserManagement";
 import GestionAutorites from "./pages/GestionAutorites";
 import BibliothequeParametres from "./pages/BibliothequeParametres";
+import ClientBibliotheque from "./pages/ClientBibliotheque";
+import ClientTexteDetail from "./pages/ClientTexteDetail";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -227,6 +229,11 @@ const App = () => (
               <Route path="bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
               <Route path="bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
               <Route path="bibliotheque/recherche" element={<BibliothequeRechercheAvancee />} />
+              
+              {/* Client Bibliothèque Routes */}
+              <Route path="client-bibliotheque" element={<ClientBibliotheque />} />
+              <Route path="client/bibliotheque/textes/:id" element={<ClientTexteDetail />} />
+              
               <Route path="veille" element={<Navigate to="/veille/dashboard" replace />} />
               <Route path="veille/dashboard" element={<VeilleDashboard />} />
               <Route path="veille/applicabilite" element={<VeilleApplicabilite />} />
