@@ -3871,6 +3871,32 @@ export type Database = {
           total_count: number
         }[]
       }
+      get_active_articles_for_site: {
+        Args: { site_uuid: string }
+        Returns: {
+          article_est_introductif: boolean
+          article_id: string
+          article_numero: string
+          article_porte_exigence: boolean
+          article_resume: string
+          article_titre: string
+          domaines: Json
+          sous_domaines: Json
+          tags: Json
+          texte_autorite_id: string
+          texte_date_publication: string
+          texte_id: string
+          texte_reference: string
+          texte_titre: string
+          texte_type: string
+          version_contenu: string
+          version_date_effet: string
+          version_id: string
+          version_notes: string
+          version_numero: number
+          version_source_texte_id: string
+        }[]
+      }
       get_all_client_users: {
         Args: {
           filter_client_id?: string

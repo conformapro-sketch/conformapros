@@ -257,3 +257,77 @@ export const exportHelpers = {
     };
   }
 };
+
+/**
+ * Type definitions for the active articles response
+ */
+export interface ActiveArticleForSite {
+  // Version info
+  version_id: string;
+  version_contenu: string;
+  version_date_effet: string;
+  version_numero: number;
+  version_notes: string | null;
+  version_source_texte_id: string;
+  
+  // Article info
+  article_id: string;
+  article_numero: string;
+  article_titre: string;
+  article_resume: string | null;
+  article_est_introductif: boolean;
+  article_porte_exigence: boolean;
+  
+  // Texte info
+  texte_id: string;
+  texte_type: string;
+  texte_reference: string;
+  texte_titre: string;
+  texte_date_publication: string;
+  texte_autorite_id: string | null;
+  
+  // Aggregated data
+  domaines: Array<{
+    id: string;
+    code: string;
+    libelle: string;
+    couleur: string | null;
+  }> | null;
+  sous_domaines: Array<{
+    id: string;
+    code: string;
+    libelle: string;
+    domaine_id: string;
+  }> | null;
+  tags: Array<{
+    id: string;
+    label: string;
+    couleur: string | null;
+  }> | null;
+}
+
+/**
+ * Generic helper queries for Bibliothèque and Veille modules
+ */
+export const bibliothequeQueries = {
+  /**
+   * Get all active article versions for a given site
+   * Filters by:
+   * - Article version status = 'en_vigueur'
+   * - Article domain included in site's authorized domains
+   * 
+   * Returns fully joined data including article, text, domains, subdomains, and tags
+   */
+  getActiveArticlesForSite: async (siteId: string): Promise<ActiveArticleForSite[]> => {
+    const { data, error } = await supabase.rpc('get_active_articles_for_site', {
+      site_uuid: siteId
+    });
+
+    if (error) {
+      console.error('Error fetching active articles for site:', error);
+      throw error;
+    }
+
+    return data || [];
+  }
+};
