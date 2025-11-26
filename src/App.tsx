@@ -87,6 +87,7 @@ import CodesJuridiques from "./pages/CodesJuridiques";
 import CodeDetail from "./pages/CodeDetail";
 import StaffUserManagement from "./pages/StaffUserManagement";
 import ClientAdminUserManagement from "./pages/ClientAdminUserManagement";
+import StaffRoleManagement from "./pages/StaffRoleManagement";
 import GestionAutorites from "./pages/GestionAutorites";
 import BibliothequeParametres from "./pages/BibliothequeParametres";
 import ClientBibliotheque from "./pages/ClientBibliotheque";
@@ -267,6 +268,17 @@ const App = () => (
                 }
               />
               <Route path="roles" element={<GestionRoles />} />
+              
+              {/* Staff Role Management */}
+              <Route
+                path="staff/roles"
+                element={
+                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
+                    <StaffRoleManagement />
+                  </ProtectedRoute>
+                }
+              />
+              
               <Route path="client-users" element={<ClientUsers />} />
               <Route path="clients/:clientId/users" element={<ClientUsers />} />
               
