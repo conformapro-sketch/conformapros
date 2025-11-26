@@ -99,6 +99,7 @@ import ClientRechercheAvancee from "./pages/ClientRechercheAvancee";
 import Settings from "./pages/Settings";
 import AccountSettings from "./pages/settings/AccountSettings";
 import OrganizationSettings from "./pages/settings/OrganizationSettings";
+import ClientUsersManagement from "./pages/settings/ClientUsersManagement";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -379,6 +380,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <OrganizationSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/client-users" 
+              element={
+                <ProtectedRoute>
+                  <StaffRouteGuard>
+                    <ClientUsersManagement />
+                  </StaffRouteGuard>
                 </ProtectedRoute>
               } 
             />
