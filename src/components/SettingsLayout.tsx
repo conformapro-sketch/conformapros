@@ -18,60 +18,77 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
-const settingsNavItems = [
+const settingsNavSections = [
   {
-    id: "account",
-    label: "Mon Compte",
-    icon: User,
-    path: "/settings/account",
+    id: "personal",
+    items: [
+      {
+        id: "account",
+        label: "Account",
+        icon: User,
+        path: "/settings/account",
+      },
+    ],
   },
   {
-    id: "staff-dashboard",
-    label: "Dashboard Staff",
-    icon: Shield,
-    path: "/settings/staff",
+    id: "staff",
+    label: "Staff",
+    items: [
+      {
+        id: "staff-users",
+        label: "Staff users",
+        icon: Users,
+        path: "/settings/staff",
+      },
+      {
+        id: "staff-roles",
+        label: "Staff roles",
+        icon: Shield,
+        path: "/settings/staffroles",
+      },
+    ],
   },
   {
-    id: "staff-users",
-    label: "Utilisateurs Staff",
-    icon: Users,
-    path: "/settings/staff-users",
-  },
-  {
-    id: "staff-roles",
-    label: "Rôles Staff",
-    icon: Shield,
-    path: "/settings/staff-roles",
-  },
-  {
-    id: "staff-permissions",
-    label: "Permissions Staff",
-    icon: SettingsIcon,
-    path: "/settings/staff-permissions",
-  },
-  {
-    id: "client-users",
-    label: "Utilisateurs Clients",
-    icon: Users,
-    path: "/settings/client-users",
-  },
-  {
-    id: "sites",
-    label: "Sites",
-    icon: Building2,
-    path: "/settings/sites",
-  },
-  {
-    id: "site-modules",
-    label: "Modules par Site",
-    icon: Layers,
-    path: "/settings/site-modules",
-  },
-  {
-    id: "site-domains",
-    label: "Domaines par Site",
-    icon: Globe,
-    path: "/settings/site-domains",
+    id: "clients",
+    label: "Clients",
+    items: [
+      {
+        id: "clients",
+        label: "Clients",
+        icon: Building2,
+        path: "/settings/clients",
+      },
+      {
+        id: "sites",
+        label: "Sites",
+        icon: Building2,
+        path: "/settings/sites",
+      },
+      {
+        id: "client-users",
+        label: "Client users",
+        icon: Users,
+        path: "/settings/clientusers",
+      },
+      {
+        id: "modules",
+        label: "Modules",
+        icon: Layers,
+        path: "/settings/modules",
+      },
+      {
+        id: "domains",
+        label: "Domains",
+        icon: Globe,
+        path: "/settings/domains",
+      },
+      {
+        id: "logs",
+        label: "Logs",
+        icon: SettingsIcon,
+        path: "/settings/logs",
+      },
+    ],
   },
 ];
 
@@ -94,27 +111,31 @@ function SettingsSidebar() {
           </div>
         </div>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Configuration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsNavItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => navigate(item.path)}
-                    className={cn(
-                      "w-full cursor-pointer",
-                      isActive(item.path) && "bg-accent text-accent-foreground font-medium"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {state !== "collapsed" && <span>{item.label}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {settingsNavSections.map((section) => (
+          <SidebarGroup key={section.id}>
+            {section.label && state !== "collapsed" && (
+              <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      onClick={() => navigate(item.path)}
+                      className={cn(
+                        "w-full cursor-pointer",
+                        isActive(item.path) && "bg-accent text-accent-foreground font-medium"
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {state !== "collapsed" && <span>{item.label}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   );
