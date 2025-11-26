@@ -96,6 +96,7 @@ import ClientBibliotheque from "./pages/ClientBibliotheque";
 import ClientTexteDetail from "./pages/ClientTexteDetail";
 import ClientCodesJuridiques from "./pages/ClientCodesJuridiques";
 import ClientRechercheAvancee from "./pages/ClientRechercheAvancee";
+import Settings from "./pages/Settings";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -352,6 +353,7 @@ const App = () => (
               
               <Route path="prestataires" element={<ComingSoon title="Prestataires & Sous-traitants" description="Gestion des contrats et conformité des prestataires externes" />} />
               <Route path="permis" element={<ComingSoon title="Permis de travail" description="Système électronique de permis de travail et accès visiteurs" />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
             
             {/* Catch-all 404 */}
