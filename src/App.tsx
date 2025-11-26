@@ -103,6 +103,7 @@ import StaffDashboard from "./pages/settings/StaffDashboard";
 import StaffUsersManagement from "./pages/settings/StaffUsersManagement";
 import StaffRolesManagement from "./pages/settings/StaffRolesManagement";
 import StaffPermissionsManagement from "./pages/settings/StaffPermissionsManagement";
+import ClientsManagement from "./pages/settings/ClientsManagement";
 import ClientUsersManagement from "./pages/settings/ClientUsersManagement";
 import SitesManagement from "./pages/settings/SitesManagement";
 import SiteModulesOverview from "./pages/settings/SiteModulesOverview";
@@ -381,7 +382,7 @@ const App = () => (
               <Route path="organization" element={<OrganizationSettings />} />
               <Route path="staff" element={<StaffUsersManagement />} />
               <Route path="staffroles" element={<StaffRolesManagement />} />
-              <Route path="clients" element={<StaffDashboard />} />
+              <Route path="clients" element={<ClientsManagement />} />
               <Route path="sites" element={<SitesManagement />} />
               <Route path="clientusers" element={<ClientUsersManagement />} />
               <Route path="modules" element={<SiteModulesOverview />} />
