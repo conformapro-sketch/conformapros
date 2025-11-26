@@ -22,6 +22,13 @@ const staffSections: SettingsSection[] = [
     path: '/settings/account'
   },
   {
+    id: 'client-users-management',
+    label: 'Utilisateurs Clients',
+    icon: Users,
+    description: 'Gérer tous les utilisateurs des organisations clientes',
+    path: '/settings/client-users'
+  },
+  {
     id: 'staff-roles',
     label: 'Rôles du Staff',
     icon: Shield,
