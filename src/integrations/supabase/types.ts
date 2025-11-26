@@ -547,6 +547,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          actif: boolean | null
           adresse: string | null
           code_postal: string | null
           created_at: string
@@ -556,11 +557,13 @@ export type Database = {
           nom: string
           nom_legal: string | null
           pays: string | null
+          secteur: string | null
           siret: string | null
           telephone: string | null
           updated_at: string
         }
         Insert: {
+          actif?: boolean | null
           adresse?: string | null
           code_postal?: string | null
           created_at?: string
@@ -570,11 +573,13 @@ export type Database = {
           nom: string
           nom_legal?: string | null
           pays?: string | null
+          secteur?: string | null
           siret?: string | null
           telephone?: string | null
           updated_at?: string
         }
         Update: {
+          actif?: boolean | null
           adresse?: string | null
           code_postal?: string | null
           created_at?: string
@@ -584,6 +589,7 @@ export type Database = {
           nom?: string
           nom_legal?: string | null
           pays?: string | null
+          secteur?: string | null
           siret?: string | null
           telephone?: string | null
           updated_at?: string
