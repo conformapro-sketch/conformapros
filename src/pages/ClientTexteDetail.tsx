@@ -1,16 +1,42 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Calendar, ExternalLink, Download } from "lucide-react";
+import { ArrowLeft, FileText, Calendar, ExternalLink, Download, Home } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { clientBibliothequeQueries } from "@/lib/client-bibliotheque-queries";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 export default function ClientTexteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [currentSiteName, setCurrentSiteName] = useState<string>("");
+
+  // Get current site name
+  useEffect(() => {
+    const fetchCurrentSite = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: accessScopes } = await supabase
+        .from("access_scopes")
+        .select("site_id, sites(nom)")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+
+      if (accessScopes) {
+        setCurrentSiteName((accessScopes as any).sites?.nom || "");
+      }
+    };
+
+    fetchCurrentSite();
+  }, []);
 
   // Fetch text details
   const { data: texte, isLoading: isLoadingTexte, error: errorTexte } = useQuery({
@@ -63,6 +89,33 @@ export default function ClientTexteDetail() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Breadcrumb */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/dashboard">
+              <Home className="h-4 w-4" />
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          {currentSiteName && (
+            <>
+              <BreadcrumbItem>
+                <BreadcrumbLink>{currentSiteName}</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+            </>
+          )}
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/client-bibliotheque">Bibliothèque réglementaire</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{texte.reference}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button

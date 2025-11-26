@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, Eye, BookOpen } from "lucide-react";
+import { Search, FileText, Eye, BookOpen, Home } from "lucide-react";
 import { PaginationControls } from "@/components/shared/PaginationControls";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { clientBibliothequeQueries } from "@/lib/client-bibliotheque-queries";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,17 +32,22 @@ export default function ClientBibliotheque() {
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [currentSiteName, setCurrentSiteName] = useState<string>("");
 
-  // Get current site ID from access_scopes (first assigned site)
+  // Get current site ID and name from access_scopes (first assigned site)
   const { data: accessScopes } = useQuery({
     queryKey: ["user-access-scopes", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       const { data } = await supabase
         .from("access_scopes")
-        .select("site_id")
+        .select("site_id, sites(nom)")
         .eq("user_id", user.id)
         .limit(1);
+      
+      if (data && data.length > 0) {
+        setCurrentSiteName((data[0] as any).sites?.nom || "");
+      }
       return data || [];
     },
     enabled: !!user?.id,
@@ -95,6 +101,29 @@ export default function ClientBibliotheque() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
+      {/* Breadcrumb */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/dashboard">
+              <Home className="h-4 w-4" />
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          {currentSiteName && (
+            <>
+              <BreadcrumbItem>
+                <BreadcrumbLink>{currentSiteName}</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+            </>
+          )}
+          <BreadcrumbItem>
+            <BreadcrumbPage>Bibliothèque réglementaire</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">
@@ -242,7 +271,7 @@ export default function ClientBibliotheque() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
+                            onClick={() => navigate(`/client/bibliotheque/textes/${texte.id}`)}
                             title="Voir le détail"
                           >
                             <Eye className="h-4 w-4" />
