@@ -216,10 +216,10 @@ export default function ClientTexteDetail() {
                             <Badge variant="outline" className="font-mono">
                               {article.numero}
                             </Badge>
-                            {article.est_introductif ? (
-                              <Badge variant="secondary">Introductif</Badge>
-                            ) : article.porte_exigence ? (
+                            {article.porte_exigence ? (
                               <Badge variant="default">Exigence réglementaire</Badge>
+                            ) : article.est_introductif ? (
+                              <Badge variant="secondary">Introductif</Badge>
                             ) : null}
                           </div>
                           <h3 className="text-lg font-semibold">{article.titre}</h3>
