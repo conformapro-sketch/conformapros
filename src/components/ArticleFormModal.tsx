@@ -42,7 +42,7 @@ export function ArticleFormModal({
     titre_court: "",
     resume: "",
     contenu: "",
-    indicatif: false,
+    is_exigence: false,
   });
   const [selectedSousDomaines, setSelectedSousDomaines] = useState<string[]>([]);
   
@@ -92,7 +92,7 @@ export function ArticleFormModal({
         titre_court: article.titre_court || "",
         resume: article.resume || "",
         contenu: article.contenu || "",
-        indicatif: article.indicatif || false,
+        is_exigence: article.is_exigence || false,
       });
       
       // Load existing sous-domaines
@@ -188,7 +188,7 @@ export function ArticleFormModal({
       titre_court: "",
       resume: "",
       contenu: "",
-      indicatif: false,
+      is_exigence: false,
     });
   };
 
@@ -365,7 +365,7 @@ export function ArticleFormModal({
       titre_court: formData.titre_court.trim() || null,
       resume: formData.resume.trim() || null,
       contenu: formData.contenu.trim() || null,
-      indicatif: formData.indicatif,
+      is_exigence: formData.is_exigence,
     };
 
     if (article) {
@@ -444,22 +444,22 @@ export function ArticleFormModal({
               <span>⚠️</span> Classification
             </h3>
             
-            {/* Article indicatif */}
+            {/* Article exigence réglementaire */}
             <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
               <Checkbox
-                id="indicatif"
-                checked={formData.indicatif}
-                onCheckedChange={(checked) => setFormData({ ...formData, indicatif: checked === true })}
+                id="is_exigence"
+                checked={formData.is_exigence}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_exigence: checked === true })}
               />
               <div className="space-y-1">
                 <Label 
-                  htmlFor="indicatif" 
+                  htmlFor="is_exigence" 
                   className="text-sm font-medium cursor-pointer"
                 >
-                  Article à titre indicatif (non applicable)
+                  Est une exigence réglementaire
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Pour les articles de définition, explicatifs, descriptifs ou introductifs qui n'imposent pas d'obligations applicables
+                  Cochez si cet article impose des obligations applicables nécessitant une évaluation de conformité
                 </p>
               </div>
             </div>

@@ -501,15 +501,15 @@ export default function BibliothequeTexteDetail() {
                                     ) : (
                                       <ChevronRight className="h-4 w-4" />
                                     )}
-                                    <h3 className="font-semibold text-lg flex items-center gap-2 flex-wrap">
-                                      {article.numero_article}
-                                      {article.titre_court && <span className="text-muted-foreground">- {article.titre_court}</span>}
-                                      {article.indicatif && (
-                                        <Badge variant="secondary" className="text-xs">
-                                          Indicatif
-                                        </Badge>
-                                      )}
-                                    </h3>
+                                     <h3 className="font-semibold text-lg flex items-center gap-2 flex-wrap">
+                                       {article.numero_article}
+                                       {article.titre_court && <span className="text-muted-foreground">- {article.titre_court}</span>}
+                                       {!article.is_exigence && (
+                                         <Badge variant="secondary" className="text-xs">
+                                           Indicatif
+                                         </Badge>
+                                       )}
+                                     </h3>
                                   </div>
                                 </Button>
                               </CollapsibleTrigger>
