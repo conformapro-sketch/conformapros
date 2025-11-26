@@ -36,6 +36,20 @@ const staffSections: SettingsSection[] = [
     path: '/settings/sites'
   },
   {
+    id: 'site-modules',
+    label: 'Modules par Site',
+    icon: Layers,
+    description: 'Visualiser les modules activés pour chaque site',
+    path: '/settings/site-modules'
+  },
+  {
+    id: 'site-domains',
+    label: 'Domaines par Site',
+    icon: Globe,
+    description: 'Gérer les domaines autorisés pour chaque site',
+    path: '/settings/site-domains'
+  },
+  {
     id: 'staff-roles',
     label: 'Rôles du Staff',
     icon: Shield,

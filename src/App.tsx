@@ -101,6 +101,8 @@ import AccountSettings from "./pages/settings/AccountSettings";
 import OrganizationSettings from "./pages/settings/OrganizationSettings";
 import ClientUsersManagement from "./pages/settings/ClientUsersManagement";
 import SitesManagement from "./pages/settings/SitesManagement";
+import SiteModulesOverview from "./pages/settings/SiteModulesOverview";
+import SiteDomainsManagement from "./pages/settings/SiteDomainsManagement";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -400,6 +402,26 @@ const App = () => (
                 <ProtectedRoute>
                   <StaffRouteGuard>
                     <SitesManagement />
+                  </StaffRouteGuard>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/site-modules" 
+              element={
+                <ProtectedRoute>
+                  <StaffRouteGuard>
+                    <SiteModulesOverview />
+                  </StaffRouteGuard>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/site-domains" 
+              element={
+                <ProtectedRoute>
+                  <StaffRouteGuard>
+                    <SiteDomainsManagement />
                   </StaffRouteGuard>
                 </ProtectedRoute>
               } 
