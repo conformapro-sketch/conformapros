@@ -2968,6 +2968,30 @@ export type Database = {
           },
         ]
       }
+      staff_roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          nom_role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom_role: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom_role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           created_at: string
