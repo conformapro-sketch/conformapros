@@ -141,16 +141,6 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
       { title: "Prestataires", url: "/environnement/prestataires" },
     ],
   },
-  CLIENTS: {
-    icon: FolderOpen,
-    subItems: [
-      { title: "Clients", url: "/clients" },
-      { title: "Sites", url: "/sites" },
-      { title: "Utilisateurs client", url: "/clients/utilisateurs" },
-      { title: "Facture", url: "/facture" },
-      { title: "Abonnement", url: "/abonnement" },
-    ],
-  },
 };
 
 // Ordre d'affichage souhaité dans le menu
@@ -169,7 +159,6 @@ const MODULE_DISPLAY_ORDER = [
   'PERMIS',
   'PRESTATAIRES',
   'ENVIRONNEMENT',
-  'CLIENTS',
 ];
 
 export const buildNavigationFromModules = (modules: ModuleSysteme[]): MenuItem[] => {
