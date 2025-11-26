@@ -11,6 +11,7 @@ import { clientBibliothequeQueries } from "@/lib/client-bibliotheque-queries";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
+import { RegulatoryItemViewer } from "@/components/bibliotheque/RegulatoryItemViewer";
 
 export default function ClientTexteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -196,59 +197,35 @@ export default function ClientTexteDetail() {
       </Card>
 
       {/* Articles List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          <h2 className="text-2xl font-bold">
             Articles ({articles?.length || 0})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {articles && articles.length > 0 ? (
-            <div className="space-y-4">
-              {articles.map((article: any) => (
-                <Card key={article.id} className="border-l-4 border-l-primary/50">
-                  <CardContent className="pt-6">
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline" className="font-mono">
-                              {article.numero}
-                            </Badge>
-                            {article.porte_exigence ? (
-                              <Badge variant="default">Exigence réglementaire</Badge>
-                            ) : article.est_introductif ? (
-                              <Badge variant="secondary">Introductif</Badge>
-                            ) : null}
-                          </div>
-                          <h3 className="text-lg font-semibold">{article.titre}</h3>
-                        </div>
-                      </div>
-                      
-                      {article.resume && (
-                        <p className="text-sm text-muted-foreground">{article.resume}</p>
-                      )}
+          </h2>
+        </div>
 
-                      {article.active_version && (
-                        <div className="text-xs text-muted-foreground pt-2 border-t">
-                          Version active depuis le{" "}
-                          {new Date(article.active_version.date_effet).toLocaleDateString("fr-FR")}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
+        {articles && articles.length > 0 ? (
+          <div className="space-y-6">
+            {articles.map((article: any) => (
+              <RegulatoryItemViewer
+                key={article.id}
+                articleId={article.id}
+                showTexteInfo={false}
+                showTags={true}
+                showSousDomaines={true}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-12 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Aucun article disponible pour ce texte.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
