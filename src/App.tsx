@@ -89,7 +89,6 @@ import StaffUserManagement from "./pages/StaffUserManagement";
 import ClientAdminUserManagement from "./pages/ClientAdminUserManagement";
 import GestionAutorites from "./pages/GestionAutorites";
 import BibliothequeParametres from "./pages/BibliothequeParametres";
-import Home from "./pages/Home";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -104,7 +103,7 @@ function RootRedirect() {
     );
   }
   
-  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/home" replace />;
+  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 }
 
 const App = () => (
@@ -117,7 +116,6 @@ const App = () => (
           <AuthProvider>
             <Routes>
             {/* Public routes */}
-            <Route path="/home" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<RootRedirect />} />
