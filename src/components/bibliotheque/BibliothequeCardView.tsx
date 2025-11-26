@@ -57,8 +57,7 @@ export function BibliothequeCardView({
         </Card>
       ) : (
         data.map((texte) => {
-          const Icon = TYPE_ICONS[texte.type_acte] || FileText;
-          const statut = getStatutBadge(texte.statut_vigueur);
+          const Icon = TYPE_ICONS[texte.type] || FileText;
 
           return (
             <Card
@@ -72,17 +71,16 @@ export function BibliothequeCardView({
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className="gap-1.5">
                         <Icon className="h-3.5 w-3.5" />
-                        {TYPE_LABELS[texte.type_acte] || texte.type_acte}
+                        {TYPE_LABELS[texte.type] || texte.type}
                       </Badge>
-                      <Badge variant={statut.variant}>{statut.label}</Badge>
                     </div>
 
                     <div>
                       <p className="font-semibold text-primary text-sm mb-1">
-                        {texte.reference_officielle}
+                        {texte.reference}
                       </p>
                       <h3 className="font-medium line-clamp-2 text-sm group-hover:text-primary transition-colors">
-                        {texte.intitule}
+                        {texte.titre}
                       </h3>
                     </div>
                   </div>
