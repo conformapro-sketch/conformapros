@@ -10,6 +10,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +23,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { articleVersionsQueries, textesReglementairesQueries } from "@/lib/textes-reglementaires-queries";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Calendar, FileText, Trash2, AlertCircle, History } from "lucide-react";
+import { Loader2, Plus, Calendar, FileText, Trash2, AlertCircle, History, AlertTriangle, Building2, CheckCircle, ListTodo } from "lucide-react";
 import { TexteAutocomplete } from "@/components/bibliotheque/TexteAutocomplete";
 
 interface ArticleVersionManagerModalProps {
@@ -32,6 +34,18 @@ interface ArticleVersionManagerModalProps {
   articleId: string;
   articleNumero: string;
   onSuccess?: () => void;
+}
+
+interface ArticleVersionImpact {
+  sites_count: number;
+  evaluations_count: number;
+  actions_count: number;
+  sites_details: Array<{
+    site_id: string;
+    site_nom: string;
+    client_nom: string;
+    status: string;
+  }>;
 }
 
 export function ArticleVersionManagerModal({ 
@@ -44,6 +58,7 @@ export function ArticleVersionManagerModal({
   const queryClient = useQueryClient();
   const [showNewVersionForm, setShowNewVersionForm] = useState(false);
   const [deleteVersionId, setDeleteVersionId] = useState<string | null>(null);
+  const [showImpactDialog, setShowImpactDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     contenu: "",
@@ -52,6 +67,19 @@ export function ArticleVersionManagerModal({
     notes_modifications: "",
     statut: "en_vigueur" as "en_vigueur" | "remplacee" | "abrogee",
     old_version_status: "remplacee" as "remplacee" | "abrogee",
+  });
+
+  // Charger l'impact potentiel
+  const { data: impactData, isLoading: impactLoading } = useQuery({
+    queryKey: ["article-version-impact", articleId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_article_version_impact", {
+        p_article_id: articleId,
+      });
+      if (error) throw error;
+      return data as unknown as ArticleVersionImpact;
+    },
+    enabled: !!articleId && open && formData.statut === "en_vigueur",
   });
 
   const { data: versions = [], isLoading: versionsLoading } = useQuery({
@@ -150,6 +178,21 @@ export function ArticleVersionManagerModal({
       return;
     }
 
+    // Si nouvelle version en_vigueur avec impact, afficher le panneau d'avertissement
+    if (formData.statut === "en_vigueur" && impactData && (
+      impactData.sites_count > 0 || 
+      impactData.evaluations_count > 0 || 
+      impactData.actions_count > 0
+    )) {
+      setShowImpactDialog(true);
+    } else {
+      // Pas d'impact ou statut différent, créer directement
+      createVersionMutation.mutate(formData);
+    }
+  };
+
+  const confirmCreateWithImpact = () => {
+    setShowImpactDialog(false);
     createVersionMutation.mutate(formData);
   };
 
@@ -427,10 +470,138 @@ export function ArticleVersionManagerModal({
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteVersionId && deleteVersionMutation.mutate(deleteVersionId)}
+              onClick={() => {
+                if (deleteVersionId) {
+                  deleteVersionMutation.mutate(deleteVersionId);
+                }
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Impact potentiel dialog */}
+      <AlertDialog open={showImpactDialog} onOpenChange={setShowImpactDialog}>
+        <AlertDialogContent className="max-w-3xl">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-6 w-6 text-warning" />
+              <AlertDialogTitle>Impact potentiel sur les clients</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Cette modification de version aura un impact sur des sites clients qui utilisent actuellement cet article.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {impactLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : impactData && (
+            <div className="space-y-4">
+              {/* Statistiques d'impact */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-md">
+                        <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{impactData.sites_count}</p>
+                        <p className="text-xs text-muted-foreground">Sites concernés</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 dark:bg-green-900 rounded-md">
+                        <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-300" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{impactData.evaluations_count}</p>
+                        <p className="text-xs text-muted-foreground">Évaluations</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-md">
+                        <ListTodo className="h-5 w-5 text-orange-600 dark:text-orange-300" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{impactData.actions_count}</p>
+                        <p className="text-xs text-muted-foreground">Actions liées</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Liste des sites affectés */}
+              {impactData.sites_details && impactData.sites_details.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Sites impactés</CardTitle>
+                    <CardDescription>
+                      Ces sites ont déjà évalué ou marqué cet article comme applicable
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {impactData.sites_details.map((site) => (
+                        <div
+                          key={site.site_id}
+                          className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50"
+                        >
+                          <div>
+                            <p className="font-medium">{site.site_nom}</p>
+                            <p className="text-sm text-muted-foreground">{site.client_nom}</p>
+                          </div>
+                          <Badge variant={
+                            site.status === "conforme" ? "default" :
+                            site.status === "non_conforme" ? "destructive" :
+                            "secondary"
+                          }>
+                            {site.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Conséquences</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc list-inside space-y-1 mt-2 text-sm">
+                    <li>Les sites concernés seront notifiés de la modification</li>
+                    <li>Les évaluations de conformité existantes devront être revérifiées</li>
+                    <li>Les actions du plan d'action liées pourraient nécessiter une mise à jour</li>
+                    <li>L'ancienne version sera automatiquement marquée comme "{formData.old_version_status}"</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowImpactDialog(false)}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCreateWithImpact}>
+              Confirmer et créer la version
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

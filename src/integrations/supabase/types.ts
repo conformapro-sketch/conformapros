@@ -3766,6 +3766,10 @@ export type Database = {
           type: string
         }[]
       }
+      get_article_version_impact: {
+        Args: { p_article_id: string }
+        Returns: Json
+      }
       get_bulk_site_modules: {
         Args: { site_ids: string[] }
         Returns: {
