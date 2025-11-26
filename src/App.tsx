@@ -92,6 +92,7 @@ import BibliothequeParametres from "./pages/BibliothequeParametres";
 import ClientBibliotheque from "./pages/ClientBibliotheque";
 import ClientTexteDetail from "./pages/ClientTexteDetail";
 import ClientCodesJuridiques from "./pages/ClientCodesJuridiques";
+import ClientRechercheAvancee from "./pages/ClientRechercheAvancee";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -235,6 +236,7 @@ const App = () => (
               <Route path="client-bibliotheque" element={<ClientBibliotheque />} />
               <Route path="client/bibliotheque/textes/:id" element={<ClientTexteDetail />} />
               <Route path="client/codes-juridiques" element={<ClientCodesJuridiques />} />
+              <Route path="client/recherche-avancee" element={<ClientRechercheAvancee />} />
               
               <Route path="veille" element={<Navigate to="/veille/dashboard" replace />} />
               <Route path="veille/dashboard" element={<VeilleDashboard />} />

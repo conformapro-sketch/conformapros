@@ -125,13 +125,25 @@ export default function ClientBibliotheque() {
       </Breadcrumb>
 
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">
-          Bibliothèque réglementaire
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Textes réglementaires applicables à votre site
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">
+            Bibliothèque réglementaire
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Textes réglementaires applicables à votre site
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate("/client/codes-juridiques")} variant="outline">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Codes juridiques
+          </Button>
+          <Button onClick={() => navigate("/client/recherche-avancee")} variant="outline">
+            <Search className="h-4 w-4 mr-2" />
+            Recherche avancée
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
