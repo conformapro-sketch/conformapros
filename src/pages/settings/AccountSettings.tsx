@@ -34,6 +34,7 @@ export default function AccountSettings() {
     timezone: 'Africa/Tunis',
     language: 'fr'
   });
+  const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -106,7 +107,7 @@ export default function AccountSettings() {
   };
 
   const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword) {
+    if (!oldPassword || !newPassword || !confirmPassword) {
       toast.error('Veuillez remplir tous les champs du mot de passe');
       return;
     }
@@ -123,6 +124,19 @@ export default function AccountSettings() {
 
     try {
       setSaving(true);
+      
+      // Verify old password by attempting to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password: oldPassword
+      });
+
+      if (signInError) {
+        toast.error('Ancien mot de passe incorrect');
+        return;
+      }
+
+      // Update to new password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -130,6 +144,7 @@ export default function AccountSettings() {
       if (error) throw error;
 
       toast.success('Mot de passe modifié avec succès');
+      setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error) {
@@ -351,6 +366,16 @@ export default function AccountSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="old-password">Ancien mot de passe</Label>
+            <Input
+              id="old-password"
+              type="password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              placeholder="Votre mot de passe actuel"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="new-password">Nouveau mot de passe</Label>
             <Input
