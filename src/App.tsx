@@ -99,6 +99,10 @@ import ClientRechercheAvancee from "./pages/ClientRechercheAvancee";
 import Settings from "./pages/Settings";
 import AccountSettings from "./pages/settings/AccountSettings";
 import OrganizationSettings from "./pages/settings/OrganizationSettings";
+import StaffDashboard from "./pages/settings/StaffDashboard";
+import StaffUsersManagement from "./pages/settings/StaffUsersManagement";
+import StaffRolesManagement from "./pages/settings/StaffRolesManagement";
+import StaffPermissionsManagement from "./pages/settings/StaffPermissionsManagement";
 import ClientUsersManagement from "./pages/settings/ClientUsersManagement";
 import SitesManagement from "./pages/settings/SitesManagement";
 import SiteModulesOverview from "./pages/settings/SiteModulesOverview";
@@ -383,6 +387,46 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <OrganizationSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/staff" 
+              element={
+                <ProtectedRoute>
+                  <StaffRouteGuard>
+                    <StaffDashboard />
+                  </StaffRouteGuard>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/staff-users" 
+              element={
+                <ProtectedRoute>
+                  <StaffRouteGuard>
+                    <StaffUsersManagement />
+                  </StaffRouteGuard>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/staff-roles" 
+              element={
+                <ProtectedRoute>
+                  <StaffRouteGuard>
+                    <StaffRolesManagement />
+                  </StaffRouteGuard>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/staff-permissions" 
+              element={
+                <ProtectedRoute>
+                  <StaffRouteGuard>
+                    <StaffPermissionsManagement />
+                  </StaffRouteGuard>
                 </ProtectedRoute>
               } 
             />
