@@ -279,6 +279,16 @@ const App = () => (
                 }
               />
               
+              {/* Staff User Management */}
+              <Route
+                path="staff/users"
+                element={
+                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global", "super_admin", "admin_global"]}>
+                    <StaffUserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              
               <Route path="client-users" element={<ClientUsers />} />
               <Route path="clients/:clientId/users" element={<ClientUsers />} />
               
