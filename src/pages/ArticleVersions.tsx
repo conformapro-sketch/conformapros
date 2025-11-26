@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { articleVersionsQueries, articlesQueries } from "@/lib/textes-reglementaires-queries";
+import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Calendar, FileText, User, Clock, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -22,7 +23,30 @@ export default function ArticleVersions() {
 
   const { data: versions = [], isLoading: versionsLoading } = useQuery({
     queryKey: ["article-versions-history", articleId],
-    queryFn: () => articleVersionsQueries.getByArticleId(articleId!),
+    queryFn: async () => {
+      const versionData = await articleVersionsQueries.getByArticleId(articleId!);
+      
+      // Fetch created_by user profiles for each version
+      const versionsWithAuthors = await Promise.all(
+        versionData.map(async (version) => {
+          if (version.created_by) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("nom, prenom, email")
+              .eq("id", version.created_by)
+              .maybeSingle();
+            
+            return {
+              ...version,
+              author_profile: profile,
+            };
+          }
+          return version;
+        })
+      );
+      
+      return versionsWithAuthors;
+    },
     enabled: !!articleId,
   });
 
@@ -203,11 +227,18 @@ export default function ArticleVersions() {
                         <div className="flex items-start gap-2">
                           <User className="h-4 w-4 text-muted-foreground mt-0.5" />
                           <div>
-                            <p className="text-xs text-muted-foreground">Créé par</p>
+                            <p className="text-xs text-muted-foreground">Créé par (Staff)</p>
                             <p className="text-sm font-medium">
-                              {version.created_by || "Système"}
+                              {(version as any).author_profile 
+                                ? `${(version as any).author_profile.prenom} ${(version as any).author_profile.nom}`
+                                : "Système"}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            {(version as any).author_profile?.email && (
+                              <p className="text-xs text-muted-foreground">
+                                {(version as any).author_profile.email}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
                               {format(new Date(version.created_at), "d MMM yyyy à HH:mm", { locale: fr })}
                             </p>
                           </div>
