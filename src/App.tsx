@@ -98,6 +98,7 @@ import ClientCodesJuridiques from "./pages/ClientCodesJuridiques";
 import ClientRechercheAvancee from "./pages/ClientRechercheAvancee";
 import Settings from "./pages/Settings";
 import AccountSettings from "./pages/settings/AccountSettings";
+import OrganizationSettings from "./pages/settings/OrganizationSettings";
 
 const queryClient = createOptimizedQueryClient();
 
@@ -370,6 +371,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AccountSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/organization" 
+              element={
+                <ProtectedRoute>
+                  <OrganizationSettings />
                 </ProtectedRoute>
               } 
             />

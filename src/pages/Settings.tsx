@@ -67,6 +67,13 @@ const clientAdminSections: SettingsSection[] = [
     path: '/settings/account'
   },
   {
+    id: 'organization',
+    label: 'Mon Organisation',
+    icon: Building2,
+    description: 'Gérer les informations de mon entreprise',
+    path: '/settings/organization'
+  },
+  {
     id: 'my-users',
     label: 'Mes Utilisateurs',
     icon: Users,
