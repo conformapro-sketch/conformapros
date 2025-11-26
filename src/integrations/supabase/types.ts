@@ -623,6 +623,42 @@ export type Database = {
         }
         Relationships: []
       }
+      codes_liens_articles: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          structure_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          structure_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          structure_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "codes_liens_articles_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "codes_liens_articles_structure_id_fkey"
+            columns: ["structure_id"]
+            isOneToOne: false
+            referencedRelation: "codes_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       codes_structures: {
         Row: {
           code_id: string
