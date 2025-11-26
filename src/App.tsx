@@ -12,14 +12,6 @@ import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import Clients from "./pages/Clients";
-import ClientDetail from "./pages/ClientDetail";
-import Sites from "./pages/Sites";
-import SiteDetail from "./pages/SiteDetail";
-import Abonnement from "./pages/Abonnement";
-import Facture from "./pages/Facture";
-import Devis from "./pages/Devis";
-import FactureAvoir from "./pages/FactureAvoir";
 import VeilleReglementaire from "./pages/VeilleReglementaire";
 import VeilleDashboard from "./pages/VeilleDashboard";
 import VeilleApplicabilite from "./pages/VeilleApplicabilite";
@@ -66,7 +58,6 @@ import GestionUtilisateurs from "./pages/GestionUtilisateurs";
 import GestionRoles from "./pages/GestionRoles";
 import RoleManager from "./pages/RoleManager";
 import ClientUsers from "./pages/ClientUsers";
-import AllClientUsers from "./pages/AllClientUsers";
 import VisitesMedicales from "./pages/VisitesMedicales";
 import VisitesMedicalesDashboard from "./pages/VisitesMedicalesDashboard";
 import Formations from "./pages/Formations";
@@ -152,52 +143,8 @@ const App = () => (
             {/* Protected routes with Layout */}
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="clients" element={<Clients />} />
-              <Route path="clients/:id" element={<ClientDetail />} />
-              <Route 
-                path="clients/utilisateurs" 
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
-                    <AllClientUsers />
-                  </ProtectedRoute>
-                } 
-              />
               <Route path="client-users" element={<ClientUsers />} />
               <Route path="clients/:clientId/users" element={<ClientUsers />} />
-              <Route path="sites" element={<Sites />} />
-              <Route path="sites/:id" element={<SiteDetail />} />
-              <Route
-                path="abonnement"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
-                    <Abonnement />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="facture"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
-                    <Facture />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="devis"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
-                    <Devis />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="facture/avoir"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global", "billing_manager"]}>
-                    <FactureAvoir />
-                  </ProtectedRoute>
-                }
-              />
               <Route path="actes" element={<TextesReglementaires />} />
               <Route path="actes/nouveau" element={<TexteForm />} />
               <Route path="actes/:id" element={<TexteDetail />} />
