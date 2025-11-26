@@ -504,11 +504,15 @@ export default function BibliothequeTexteDetail() {
                                      <h3 className="font-semibold text-lg flex items-center gap-2 flex-wrap">
                                        {article.numero_article}
                                        {article.titre_court && <span className="text-muted-foreground">- {article.titre_court}</span>}
-                                       {!article.is_exigence && (
-                                         <Badge variant="secondary" className="text-xs">
-                                           Indicatif
+                                       {article.porte_exigence ? (
+                                         <Badge variant="default" className="text-xs">
+                                           Exigence réglementaire
                                          </Badge>
-                                       )}
+                                       ) : article.est_introductif ? (
+                                         <Badge variant="secondary" className="text-xs">
+                                           Introductif
+                                         </Badge>
+                                       ) : null}
                                      </h3>
                                   </div>
                                 </Button>

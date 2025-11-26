@@ -28,7 +28,8 @@ interface ArticleFormData {
   titre_court: string;
   ordre: number;
   sous_domaine_ids: string[];
-  is_exigence: boolean;
+  porte_exigence: boolean;
+  est_introductif: boolean;
 }
 
 export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
@@ -45,7 +46,8 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
     titre_court: "",
     ordre: 0,
     sous_domaine_ids: [],
-    is_exigence: false,
+    porte_exigence: true,
+    est_introductif: false,
   });
 
   // Pagination
@@ -105,7 +107,8 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
         numero: data.numero,
         titre_court: data.titre_court,
         ordre: data.ordre,
-        is_exigence: data.is_exigence,
+        porte_exigence: data.porte_exigence,
+        est_introductif: data.est_introductif,
       });
 
       // Insert sous-domaines relationships
@@ -143,7 +146,8 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
         numero: data.numero,
         titre_court: data.titre_court,
         ordre: data.ordre,
-        is_exigence: data.is_exigence,
+        porte_exigence: data.porte_exigence,
+        est_introductif: data.est_introductif,
       });
 
       // Update sous-domaines relationships
@@ -195,7 +199,8 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
       titre_court: "",
       ordre: 0,
       sous_domaine_ids: [],
-      is_exigence: false,
+      porte_exigence: true,
+      est_introductif: false,
     });
     setEditingId(null);
   };
@@ -209,7 +214,8 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
       titre_court: article.titre_court || "",
       ordre: article.ordre || 0,
       sous_domaine_ids: articleSousDomaines,
-      is_exigence: article.is_exigence || false,
+      porte_exigence: article.porte_exigence,
+      est_introductif: article.est_introductif,
     });
     setEditingId(article.id);
     setDialogOpen(true);
@@ -303,22 +309,43 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
                   />
                 </div>
 
-                <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
-                  <Checkbox
-                    id="is_exigence"
-                    checked={formData.is_exigence}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_exigence: checked === true })}
-                  />
-                  <div className="space-y-1">
-                    <Label 
-                      htmlFor="is_exigence" 
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      Est une exigence réglementaire
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Cochez si cet article impose des obligations applicables nécessitant une évaluation de conformité
-                    </p>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
+                    <Checkbox
+                      id="porte_exigence"
+                      checked={formData.porte_exigence}
+                      onCheckedChange={(checked) => setFormData({ ...formData, porte_exigence: checked === true })}
+                    />
+                    <div className="space-y-1">
+                      <Label 
+                        htmlFor="porte_exigence" 
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        Est une exigence réglementaire
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Cochez si cet article impose des obligations applicables nécessitant une évaluation de conformité
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
+                    <Checkbox
+                      id="est_introductif"
+                      checked={formData.est_introductif}
+                      onCheckedChange={(checked) => setFormData({ ...formData, est_introductif: checked === true })}
+                    />
+                    <div className="space-y-1">
+                      <Label 
+                        htmlFor="est_introductif" 
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        Est un article introductif
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Cochez si cet article est de nature introductive (contexte, définitions, champ d'application)
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -384,15 +411,23 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             {article.numero}
-                            {!article.is_exigence && (
-                              <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                                Indicatif
-                              </Badge>
-                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {article.titre_court || <span className="text-muted-foreground">—</span>}
+                          <div className="space-y-1">
+                            <div>{article.titre_court || <span className="text-muted-foreground">—</span>}</div>
+                            <div className="flex items-center gap-2">
+                              {article.porte_exigence ? (
+                                <Badge variant="default" className="text-xs">
+                                  Exigence réglementaire
+                                </Badge>
+                              ) : article.est_introductif ? (
+                                <Badge variant="secondary" className="text-xs">
+                                  Introductif
+                                </Badge>
+                              ) : null}
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">

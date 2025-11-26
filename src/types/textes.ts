@@ -133,7 +133,8 @@ export interface Article {
   contenu_ar?: string;
   contenu_fr?: string;
   notes?: string;
-  is_exigence?: boolean;
+  est_introductif: boolean;
+  porte_exigence: boolean;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
