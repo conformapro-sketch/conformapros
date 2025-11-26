@@ -2968,6 +2968,41 @@ export type Database = {
           },
         ]
       }
+      staff_role_permissions: {
+        Row: {
+          autorise: boolean
+          created_at: string
+          id: string
+          permission_key: string
+          role_id: string
+          updated_at: string
+        }
+        Insert: {
+          autorise?: boolean
+          created_at?: string
+          id?: string
+          permission_key: string
+          role_id: string
+          updated_at?: string
+        }
+        Update: {
+          autorise?: boolean
+          created_at?: string
+          id?: string
+          permission_key?: string
+          role_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "staff_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_roles: {
         Row: {
           created_at: string
