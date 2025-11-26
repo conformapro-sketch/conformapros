@@ -354,9 +354,25 @@ const App = () => (
               
               <Route path="prestataires" element={<ComingSoon title="Prestataires & Sous-traitants" description="Gestion des contrats et conformité des prestataires externes" />} />
               <Route path="permis" element={<ComingSoon title="Permis de travail" description="Système électronique de permis de travail et accès visiteurs" />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="settings/account" element={<AccountSettings />} />
             </Route>
+            
+            {/* Settings routes - Full screen without sidebar */}
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings/account" 
+              element={
+                <ProtectedRoute>
+                  <AccountSettings />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Catch-all 404 */}
             <Route path="*" element={<NotFound />} />
