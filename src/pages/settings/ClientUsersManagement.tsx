@@ -64,35 +64,51 @@ export default function ClientUsersManagement() {
     queryKey: ['client-users', debouncedSearch, selectedClientId],
     queryFn: async () => {
       try {
-        let query = supabase
+        // Step 1: Fetch client users with client info
+        let usersQuery = supabase
           .from('client_users')
           .select(`
             *,
             clients (
               nom
-            ),
-            access_scopes(id, site_id)
+            )
           `)
           .order('created_at', { ascending: false });
 
         if (debouncedSearch) {
-          query = query.or(`email.ilike.%${debouncedSearch}%,nom.ilike.%${debouncedSearch}%,prenom.ilike.%${debouncedSearch}%`);
+          usersQuery = usersQuery.or(`email.ilike.%${debouncedSearch}%,nom.ilike.%${debouncedSearch}%,prenom.ilike.%${debouncedSearch}%`);
         }
 
         if (selectedClientId) {
-          query = query.eq('client_id', selectedClientId);
+          usersQuery = usersQuery.eq('client_id', selectedClientId);
         }
 
-        const { data, error } = await query;
-        if (error) {
-          console.error('Error fetching client users:', error);
-          throw error;
+        const { data: usersData, error: usersError } = await usersQuery;
+        if (usersError) {
+          console.error('Error fetching client users:', usersError);
+          throw usersError;
         }
-        
-        // Calculate site counts
-        return (data || []).map(user => ({
+
+        if (!usersData || usersData.length === 0) {
+          return [];
+        }
+
+        // Step 2: Fetch access_scopes separately for all users
+        const userIds = usersData.map(u => u.id);
+        const { data: scopesData, error: scopesError } = await supabase
+          .from('access_scopes')
+          .select('user_id, site_id, id')
+          .in('user_id', userIds);
+
+        if (scopesError) {
+          console.error('Error fetching access scopes:', scopesError);
+          // Don't throw - just continue without site counts
+        }
+
+        // Step 3: Merge data and calculate site counts
+        return usersData.map(user => ({
           ...user,
-          site_count: user.access_scopes?.length || 0
+          site_count: scopesData?.filter(scope => scope.user_id === user.id).length || 0
         }));
       } catch (err) {
         console.error('Query error:', err);
