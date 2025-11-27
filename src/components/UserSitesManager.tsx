@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { userSitesQueries } from "@/lib/user-sites-queries";
+import { accessScopesQueries } from "@/lib/access-scopes-queries";
 import { Loader2, Building2 } from "lucide-react";
 import {
   Sheet,
@@ -36,14 +36,14 @@ export function UserSitesManager({
   // Fetch available sites for the client
   const { data: availableSites, isLoading: loadingSites } = useQuery({
     queryKey: ["client-sites", clientId],
-    queryFn: () => userSitesQueries.getClientSites(clientId),
+    queryFn: () => accessScopesQueries.getClientSites(clientId),
     enabled: open && !!clientId,
   });
 
   // Fetch user's current site assignments
   const { data: userSites, isLoading: loadingUserSites } = useQuery({
     queryKey: ["user-sites", userId],
-    queryFn: () => userSitesQueries.getUserSites(userId),
+    queryFn: () => accessScopesQueries.getUserSites(userId),
     enabled: open && !!userId,
   });
 
@@ -58,7 +58,7 @@ export function UserSitesManager({
   // Update user sites mutation
   const updateMutation = useMutation({
     mutationFn: (siteIds: string[]) =>
-      userSitesQueries.updateUserSites(userId, siteIds),
+      accessScopesQueries.updateUserSites(userId, clientId, siteIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-sites", userId] });
       queryClient.invalidateQueries({ queryKey: ["client-users"] });
