@@ -1,9 +1,6 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,10 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, ChevronDown, ChevronRight, Lock } from "lucide-react";
+import { Search, Lock } from "lucide-react";
 import type { PermissionDecision, PermissionScope } from "@/types/roles";
-import { cn } from "@/lib/utils";
-import { usePermissionStructure, useClientModules, useAdminModules } from "@/hooks/usePermissionStructure";
+import { usePermissionStructure, useClientModules } from "@/hooks/usePermissionStructure";
+import { SimplePermissionSelector } from "@/components/permissions/SimplePermissionSelector";
 
 interface Permission {
   module: string;
@@ -49,12 +46,10 @@ export function PermissionMatrix({
   modules,
 }: PermissionMatrixProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
 
   // Load permission structure dynamically
-  const { modules: allModules, actions: allActions, isLoading } = usePermissionStructure();
+  const { modules: allModules, isLoading } = usePermissionStructure();
   const clientModules = useClientModules();
-  const adminModules = useAdminModules();
 
   // Filter modules based on user type and optional allowed modules list
   const availableModulesData = useMemo(() => {
@@ -100,190 +95,6 @@ export function PermissionMatrix({
     );
   }, [searchTerm, availableModulesData]);
 
-  const getPermission = (moduleCode: string, actionCode: string): PermissionDecision => {
-    const perm = permissions.find(p => p.module === moduleCode && p.action === actionCode);
-    return perm?.decision || 'inherit';
-  };
-
-  const isFullAction = (actionCode: string) => actionCode === 'full';
-
-  const setPermission = (moduleCode: string, actionCode: string, decision: PermissionDecision) => {
-    let newPermissions = permissions.filter(
-      p => !(p.module === moduleCode && p.action === actionCode)
-    );
-
-    // Handle "Full" action specially
-    if (isFullAction(actionCode)) {
-      if (decision === 'allow') {
-        // Enable ALL actions for this module
-        newPermissions = newPermissions.filter(p => p.module !== moduleCode);
-        allActions.forEach(action => {
-          newPermissions.push({ module: moduleCode, action: action.code, decision: 'allow' });
-        });
-      } else {
-        // Disable ALL actions for this module
-        newPermissions = newPermissions.filter(p => p.module !== moduleCode);
-      }
-    } else {
-      // PERMISSION HIERARCHY ENFORCEMENT
-      // If setting view to deny, automatically deny all dependent actions
-      if (actionCode === "view" && decision === "deny") {
-        const dependentActions = ["create", "edit", "delete", "export"];
-        newPermissions = newPermissions.filter(
-          (p) => !(p.module === moduleCode && dependentActions.includes(p.action))
-        );
-        // Add explicit denies for dependent actions
-        dependentActions.forEach(depAction => {
-          newPermissions.push({ module: moduleCode, action: depAction, decision: "deny" });
-        });
-      }
-      
-      // If setting a dependent action to allow, ensure view is also allowed
-      const dependentActions = ["create", "edit", "delete", "export"];
-      if (dependentActions.includes(actionCode) && decision === "allow") {
-        const viewPerm = newPermissions.find(
-          (p) => p.module === moduleCode && p.action === "view"
-        );
-        if (!viewPerm || viewPerm.decision !== "allow") {
-          // Auto-allow view
-          newPermissions = newPermissions.filter(
-            (p) => !(p.module === moduleCode && p.action === "view")
-          );
-          newPermissions.push({ module: moduleCode, action: "view", decision: "allow" });
-        }
-      }
-      
-      // Normal action
-      if (decision !== 'inherit') {
-        newPermissions.push({ module: moduleCode, action: actionCode, decision });
-      }
-      
-      // Auto-update "Full" based on other actions
-      const fullAction = allActions.find(a => a.code === 'full');
-      if (fullAction) {
-        const otherActions = allActions.filter(a => a.code !== 'full');
-        const allOthersAllowed = otherActions.every(action => 
-          newPermissions.some(p => 
-            p.module === moduleCode && 
-            p.action === action.code && 
-            p.decision === 'allow'
-          )
-        );
-        
-        // Remove existing "full" for this module
-        newPermissions = newPermissions.filter(
-          p => !(p.module === moduleCode && p.action === 'full')
-        );
-        
-        // Add "full" if all others are allowed
-        if (allOthersAllowed) {
-          newPermissions.push({ module: moduleCode, action: 'full', decision: 'allow' });
-        }
-      }
-    }
-
-    onPermissionsChange(newPermissions);
-  };
-
-  const toggleModule = (moduleCode: string) => {
-    const newCollapsed = new Set(collapsedModules);
-    if (newCollapsed.has(moduleCode)) {
-      newCollapsed.delete(moduleCode);
-    } else {
-      newCollapsed.add(moduleCode);
-    }
-    setCollapsedModules(newCollapsed);
-  };
-
-  const toggleModuleActions = (moduleCode: string, allow: boolean) => {
-    const newPermissions = permissions.filter(p => p.module !== moduleCode);
-    
-    if (allow) {
-      allActions.forEach(action => {
-        newPermissions.push({ module: moduleCode, action: action.code, decision: 'allow' });
-      });
-    }
-
-    onPermissionsChange(newPermissions);
-  };
-
-  const applyPreset = (preset: 'all' | 'none' | 'read_only') => {
-    if (preset === 'none') {
-      onPermissionsChange([]);
-      return;
-    }
-
-    if (preset === 'all') {
-      const allPermissions: Permission[] = [];
-      availableModulesData.forEach(module => {
-        allActions.forEach(action => {
-          allPermissions.push({ module: module.code.toLowerCase(), action: action.code, decision: 'allow' });
-        });
-      });
-      onPermissionsChange(allPermissions);
-      return;
-    }
-
-    if (preset === 'read_only') {
-      const readPermissions: Permission[] = [];
-      const viewAction = allActions.find(a => a.code === 'view');
-      const exportAction = allActions.find(a => a.code === 'export');
-      
-      availableModulesData.forEach(module => {
-        if (viewAction) {
-          readPermissions.push({ module: module.code.toLowerCase(), action: viewAction.code, decision: 'allow' });
-        }
-        if (exportAction) {
-          readPermissions.push({ module: module.code.toLowerCase(), action: exportAction.code, decision: 'allow' });
-        }
-      });
-      onPermissionsChange(readPermissions);
-    }
-  };
-
-  const getDecisionColor = (decision: PermissionDecision) => {
-    switch (decision) {
-      case 'allow':
-        return 'bg-success/10 text-success border-success/20';
-      case 'deny':
-        return 'bg-destructive/10 text-destructive border-destructive/20';
-      case 'inherit':
-      default:
-        return 'bg-muted text-muted-foreground border-border';
-    }
-  };
-
-  const getDecisionLabel = (decision: PermissionDecision) => {
-    switch (decision) {
-      case 'allow':
-        return 'Autorisé';
-      case 'deny':
-        return 'Refusé';
-      case 'inherit':
-      default:
-        return 'Hérité';
-    }
-  };
-
-  const cycleDecision = (current: PermissionDecision): PermissionDecision => {
-    // For client users, only cycle between allow and deny (skip inherit)
-    if (userType === 'client') {
-      return current === 'allow' ? 'deny' : 'allow';
-    }
-    
-    // For team users, include inherit
-    switch (current) {
-      case 'inherit':
-        return 'allow';
-      case 'allow':
-        return 'deny';
-      case 'deny':
-        return 'inherit';
-      default:
-        return 'inherit';
-    }
-  };
-
   // Show loading state
   if (isLoading) {
     return (
@@ -327,36 +138,6 @@ export function PermissionMatrix({
               <SelectItem value="site">Site (Sites spécifiques)</SelectItem>
             </SelectContent>
           </Select>
-
-          <div className="ml-auto flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => applyPreset('all')}
-              disabled={readOnly}
-            >
-              Tout autoriser
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => applyPreset('read_only')}
-              disabled={readOnly}
-            >
-              Lecture seule
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => applyPreset('none')}
-              disabled={readOnly}
-            >
-              Tout réinitialiser
-            </Button>
-          </div>
         </div>
       </Card>
 
@@ -371,137 +152,29 @@ export function PermissionMatrix({
         />
       </div>
 
-      {/* Permission Matrix */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium sticky left-0 bg-muted/50 z-10 min-w-[200px]">
-                  Module
-                </th>
-                {allActions.map(action => (
-                  <th 
-                    key={action.id} 
-                    className={cn(
-                      "text-center p-3 font-medium min-w-[100px]",
-                      action.code === 'full' && "bg-primary/5 font-semibold"
-                    )}
-                    title={action.code === 'full' ? action.description : undefined}
-                  >
-                    {action.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredModules.map(module => {
-                const moduleCode = module.code.toLowerCase();
-                const isCollapsed = collapsedModules.has(moduleCode);
-                const modulePerms = permissions.filter(p => p.module === moduleCode);
-                const hasAnyAllow = modulePerms.some(p => p.decision === 'allow');
-
-                return (
-                  <tr key={module.id} className="border-b hover:bg-muted/30">
-                    <td className="sticky left-0 bg-background z-10 p-3">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => toggleModule(moduleCode)}
-                          disabled={readOnly}
-                        >
-                          {isCollapsed ? (
-                            <ChevronRight className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <span className="font-medium">{module.libelle}</span>
-                        {readOnly && <Lock className="h-3 w-3 ml-1 text-muted-foreground" />}
-                        <Switch
-                          checked={hasAnyAllow}
-                          onCheckedChange={(checked) => toggleModuleActions(moduleCode, checked)}
-                          className="ml-2"
-                          disabled={readOnly}
-                        />
-                      </div>
-                    </td>
-                    {!isCollapsed && allActions.map(action => {
-                      const decision = getPermission(moduleCode, action.code);
-                      const viewDecision = getPermission(moduleCode, "view");
-                      const isDependent = ["create", "edit", "delete", "export"].includes(action.code);
-                      const isDisabledByHierarchy = isDependent && viewDecision === "deny";
-                      
-                      return (
-                        <td 
-                          key={action.id} 
-                          className={cn(
-                            "text-center p-3",
-                            action.code === 'full' && "bg-primary/5"
-                          )}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => !readOnly && !isDisabledByHierarchy && setPermission(moduleCode, action.code, cycleDecision(decision))}
-                            className={cn(
-                              "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
-                              getDecisionColor(decision),
-                              action.code === 'full' && decision === 'allow' && "ring-2 ring-primary/50",
-                              (readOnly || isDisabledByHierarchy) ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                            )}
-                            disabled={readOnly || isDisabledByHierarchy}
-                            title={
-                              isDisabledByHierarchy 
-                                ? "Cette action nécessite la permission 'voir' d'abord" 
-                                : action.code === 'full' 
-                                ? "Active toutes les permissions pour ce module" 
-                                : action.code === 'view'
-                                ? "La permission 'voir' est requise pour toutes les autres actions"
-                                : undefined
-                            }
-                          >
-                            {getDecisionLabel(decision)}
-                          </button>
-                        </td>
-                      );
-                    })}
-                    {isCollapsed && (
-                      <td colSpan={allActions.length} className="text-center text-muted-foreground text-sm p-3">
-                        <Badge variant="outline">
-                          {modulePerms.length} permission(s) configurée(s)
-                        </Badge>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      {/* Simplified Permission Selector */}
+      <SimplePermissionSelector
+        modules={filteredModules.map(m => ({
+          code: m.code,
+          libelle: m.libelle,
+        }))}
+        permissions={permissions}
+        onPermissionsChange={onPermissionsChange}
+        disabled={readOnly}
+      />
 
       {/* Instructions */}
-      {filteredModules.length > 0 && (
-        <Card className="p-4 bg-muted/30">
-          <div className="space-y-2 text-sm">
-            <p className="font-medium text-foreground">Instructions:</p>
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>
-                {userType === 'client' 
-                  ? "Cliquez sur une cellule pour alterner entre: Autorisé ↔ Refusé"
-                  : "Cliquez sur une cellule pour alterner entre: Hérité → Autorisé → Refusé"
-                }
-              </li>
-              <li>Utilisez le switch à gauche pour activer/désactiver tous les droits d'un module</li>
-              <li>Les permissions avec "Hérité" ne seront pas sauvegardées dans la base de données</li>
-              <li>N'oubliez pas de cliquer sur "Enregistrer les permissions" après vos modifications</li>
-            </ul>
-          </div>
-        </Card>
-      )}
+      <Card className="p-4 border-primary/20 bg-primary/5">
+        <p className="text-sm text-muted-foreground">
+          <strong>Comment ça marche:</strong> Sélectionnez le niveau d'accès pour chaque module.
+          <br />
+          • <strong>Aucun accès</strong> = Module invisible pour l'utilisateur
+          <br />
+          • <strong>Lecture seule</strong> = Voir et exporter uniquement
+          <br />
+          • <strong>Accès complet</strong> = Toutes les permissions (créer, modifier, supprimer, etc.)
+        </p>
+      </Card>
     </div>
   );
 }
