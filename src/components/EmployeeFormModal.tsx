@@ -21,6 +21,7 @@ import { useQuery as useSitesQuery } from "@tanstack/react-query";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 
 const employeeSchema = z.object({
   matricule: z.string().min(1, "Matricule requis"),
@@ -54,15 +55,6 @@ export const EmployeeFormModal = ({ open, onOpenChange, employeeId }: EmployeeFo
     enabled: open,
   });
 
-  const { data: clients } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("id, nom_legal");
-      if (error) throw error;
-      return data;
-    },
-    enabled: open,
-  });
 
   const { data: sites } = useQuery({
     queryKey: ["sites"],
@@ -399,20 +391,13 @@ export const EmployeeFormModal = ({ open, onOpenChange, employeeId }: EmployeeFo
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Client *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un client" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clients?.map((client) => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.nom_legal}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <ClientAutocomplete
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Sélectionner un client"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -12,8 +12,8 @@ import {
 import { Settings, Search, Building2, CheckCircle2, XCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { sitesQueryService } from "@/lib/sites-query-service";
-import { clientsQueryService } from "@/lib/clients-query-service";
 import { siteModulesQueries } from "@/lib/multi-tenant-queries";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -30,11 +30,6 @@ export default function SiteModulesOverview() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ["clients"],
-    queryFn: clientsQueryService.fetchAll,
-    staleTime: 2 * 60 * 1000,
-  });
 
   const siteIds = sites?.map(s => s.id) || [];
   const { data: bulkModules = {} } = useQuery({
@@ -54,7 +49,7 @@ export default function SiteModulesOverview() {
     return matchesSearch && matchesClient;
   }) || [];
 
-  const isLoading = sitesLoading || clientsLoading;
+  const isLoading = sitesLoading;
 
   return (
     <div className="space-y-6">
@@ -79,19 +74,12 @@ export default function SiteModulesOverview() {
                 className="pl-10"
               />
             </div>
-            <Select value={filterClient} onValueChange={setFilterClient}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrer par client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les clients</SelectItem>
-                {clients.map((client: any) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ClientAutocomplete
+              value={filterClient}
+              onChange={setFilterClient}
+              showAllOption={true}
+              placeholder="Filtrer par client"
+            />
           </div>
         </CardContent>
       </Card>

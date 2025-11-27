@@ -12,6 +12,7 @@ import {
   updateSubscription,
 } from "@/lib/multi-tenant-queries";
 import { useToast } from "@/hooks/use-toast";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import {
   Dialog,
   DialogContent,
@@ -103,6 +104,11 @@ export function SubscriptionFormDrawer({
   const watchClientId = form.watch("client_id");
   const watchScope = form.watch("scope");
 
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: fetchClients,
+  });
+
   useEffect(() => {
     if (open) {
       form.reset({
@@ -144,10 +150,6 @@ export function SubscriptionFormDrawer({
     }
   }, [watchScope, form]);
 
-  const { data: clients = [], isLoading: isLoadingClients } = useQuery<ClientRow[]>({
-    queryKey: ["clients", "light"],
-    queryFn: fetchClients,
-  });
 
   const { data: plans = [], isLoading: isLoadingPlans } = useQuery<PlanRow[]>({
     queryKey: ["plans"],
@@ -257,22 +259,12 @@ export function SubscriptionFormDrawer({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="client_id">Client</Label>
-              <Select
-                onValueChange={(value) => form.setValue("client_id", value)}
+              <ClientAutocomplete
                 value={form.watch("client_id")}
-                disabled={isLoadingClients || isSubmitting}
-              >
-                <SelectTrigger id="client_id">
-                  <SelectValue placeholder={isLoadingClients ? "Chargement..." : "Selectionner un client"} />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border">
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom_legal || client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => form.setValue("client_id", value)}
+                disabled={isSubmitting}
+                placeholder="Sélectionner un client"
+              />
               {form.formState.errors.client_id && (
                 <p className="text-sm text-destructive">{form.formState.errors.client_id.message}</p>
               )}
@@ -452,7 +444,7 @@ export function SubscriptionFormDrawer({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button type="submit" disabled={isSubmitting || isLoadingClients || isLoadingPlans}>
+            <Button type="submit" disabled={isSubmitting || isLoadingPlans}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

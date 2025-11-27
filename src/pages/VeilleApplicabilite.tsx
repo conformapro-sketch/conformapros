@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { fetchSites, bulkUpdateSiteArticleStatus } from "@/lib/multi-tenant-queries";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { fetchDomaines } from "@/lib/domaines-queries";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -118,19 +119,6 @@ export default function VeilleApplicabilite() {
     setExpandedArticle(null);
   }, [selectedSite, filters, searchTerm, quickFilter]);
 
-  // Fetch clients (only for team users)
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, nom, nom_legal")
-        .order("nom");
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: isTeamUser(),
-  });
 
   // Fetch sites (filtered by client for team users)
   const { data: allSites = [] } = useQuery({
@@ -554,24 +542,15 @@ export default function VeilleApplicabilite() {
               {isTeamUser() && (
                 <div className="flex-1 space-y-2">
                   <Label>Client</Label>
-                  <Select 
-                    value={selectedClient} 
-                    onValueChange={(value) => {
+                  <ClientAutocomplete
+                    value={selectedClient}
+                    onChange={(value) => {
                       setSelectedClient(value);
                       setSelectedSite("");
                     }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.nom || client.nom_legal}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    showAllOption={false}
+                    placeholder="Sélectionner un client"
+                  />
                 </div>
               )}
               <div className="flex-1 space-y-2">

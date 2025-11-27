@@ -14,8 +14,8 @@ import {
 import { Globe, Search, Building2, Save, AlertCircle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sitesQueryService } from "@/lib/sites-query-service";
-import { clientsQueryService } from "@/lib/clients-query-service";
 import { listDomaines, listSiteVeilleDomaines, toggleSiteVeilleDomaine } from "@/lib/multi-tenant-queries";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -39,11 +39,6 @@ export default function SiteDomainsManagement() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ["clients"],
-    queryFn: clientsQueryService.fetchAll,
-    staleTime: 2 * 60 * 1000,
-  });
 
   const { data: domaines = [], isLoading: domainesLoading } = useQuery({
     queryKey: ["domaines"],
@@ -129,7 +124,7 @@ export default function SiteDomainsManagement() {
 
   const selectedSiteData = sites.find(s => s.id === selectedSite);
 
-  const isLoading = sitesLoading || clientsLoading || domainesLoading;
+  const isLoading = sitesLoading || domainesLoading;
 
   return (
     <div className="space-y-6">
@@ -145,19 +140,12 @@ export default function SiteDomainsManagement() {
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select value={filterClient} onValueChange={setFilterClient}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrer par client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les clients</SelectItem>
-                {clients.map((client: any) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ClientAutocomplete
+              value={filterClient}
+              onChange={setFilterClient}
+              showAllOption={true}
+              placeholder="Filtrer par client"
+            />
 
             <Select value={selectedSite} onValueChange={setSelectedSite}>
               <SelectTrigger>
