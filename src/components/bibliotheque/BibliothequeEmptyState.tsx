@@ -53,7 +53,7 @@ export function BibliothequeEmptyState({
         <div className="p-6 rounded-full bg-gradient-primary">
           <FileText className="h-16 w-16 text-primary-foreground" />
         </div>
-        <div className="absolute -top-2 -right-2 p-2 rounded-full bg-accent shadow-gold animate-pulse">
+        <div className="absolute -top-2 -right-2 p-2 rounded-full bg-accent shadow-brand animate-pulse">
           <Plus className="h-6 w-6 text-accent-foreground" />
         </div>
       </div>
@@ -66,7 +66,7 @@ export function BibliothequeEmptyState({
       </p>
       
       <div className="flex flex-col sm:flex-row gap-3">
-        <Button onClick={onAddNew} size="lg" className="bg-accent hover:bg-accent/90 shadow-gold">
+        <Button onClick={onAddNew} size="lg" className="bg-accent hover:bg-accent/90 shadow-brand">
           <Plus className="h-5 w-5 mr-2" />
           Créer le premier texte
         </Button>
