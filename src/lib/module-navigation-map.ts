@@ -161,13 +161,25 @@ const MODULE_DISPLAY_ORDER = [
   'ENVIRONNEMENT',
 ];
 
-export const buildNavigationFromModules = (modules: ModuleSysteme[]): MenuItem[] => {
+export const buildNavigationFromModules = (modules: ModuleSysteme[], isStaff: boolean = false): MenuItem[] => {
   if (!modules || modules.length === 0) return [];
 
   const navigationItems: MenuItem[] = [];
 
   modules.forEach((module) => {
-    const config = MODULE_NAV_CONFIG[module.code];
+    let config = MODULE_NAV_CONFIG[module.code];
+    
+    // Override Bibliothèque navigation for client users
+    if (module.code === 'BIBLIOTHEQUE' && !isStaff) {
+      config = {
+        icon: config.icon,
+        subItems: [
+          { title: "Bibliothèque", url: "/client-bibliotheque" },
+          { title: "Codes juridiques", url: "/client/codes-juridiques" },
+          { title: "Recherche avancée", url: "/client/recherche-avancee" },
+        ],
+      };
+    }
     
     if (config) {
       navigationItems.push({

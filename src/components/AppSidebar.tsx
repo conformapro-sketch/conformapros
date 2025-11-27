@@ -43,12 +43,18 @@ export function AppSidebar() {
   const [openItems, setOpenItems] = useState<string[]>([]);
   const location = useLocation();
   const { data: modules, isLoading } = useUserModules();
-  const { hasPermission, isSuperAdmin, primaryRole, isClientUser } = useAuth();
+  const { hasPermission, isSuperAdmin, hasRole, isClientUser } = useAuth();
+
+  // Determine if user is staff - memoize to avoid recreation
+  const isStaff: boolean = useMemo(() => {
+    if (isSuperAdmin) return true;
+    return hasRole('Admin Global');
+  }, [isSuperAdmin]); // hasRole is a stable function reference
 
   const navigationItems = useMemo(() => {
     if (!modules) return [];
-    return buildNavigationFromModules(modules);
-  }, [modules]);
+    return buildNavigationFromModules(modules, isStaff);
+  }, [modules, isStaff]);
 
   const canManageClients = useMemo(() => {
     return canAccessClientManagement(hasPermission, isSuperAdmin);

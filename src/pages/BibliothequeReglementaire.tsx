@@ -41,10 +41,11 @@ function BibliothequeReglementaireContent() {
   const queryClient = useQueryClient();
   const { isMobile, isDesktop } = useMediaQuery();
   const { toggleFavorite, isFavorite, preferences, setView } = useBibliothequePreferences();
-  const { hasPermission } = useAuth();
+  const { hasPermission, isSuperAdmin, hasRole } = useAuth();
   
-  // Check if user can manage textes (create/edit/delete)
-  const canManageTextes = hasPermission('BIBLIOTHEQUE', 'create');
+  // Check if user is staff (can manage textes)
+  const isStaff = isSuperAdmin || hasRole('Admin Global');
+  const canManageTextes = isStaff && hasPermission('BIBLIOTHEQUE', 'create');
   
   // View state from preferences
   const view = preferences.view;
