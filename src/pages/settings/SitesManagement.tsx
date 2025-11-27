@@ -26,8 +26,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sitesQueryService } from "@/lib/sites-query-service";
-import { clientsQueryService } from "@/lib/clients-query-service";
 import { siteModulesQueries } from "@/lib/multi-tenant-queries";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { siteDomainQueries } from "@/lib/site-domains-queries";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SiteFormModal } from "@/components/SiteFormModal";
@@ -60,11 +60,6 @@ export default function SitesManagement() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ["clients"],
-    queryFn: clientsQueryService.fetchAll,
-    staleTime: 2 * 60 * 1000,
-  });
 
   const siteIds = sites?.map(s => s.id) || [];
   
@@ -161,7 +156,7 @@ export default function SitesManagement() {
     navigate(`/sites/${siteId}`);
   };
 
-  const isLoading = sitesLoading || clientsLoading;
+  const isLoading = sitesLoading;
 
   return (
     <div className="space-y-6">
@@ -197,19 +192,12 @@ export default function SitesManagement() {
                 className="pl-10"
               />
             </div>
-            <Select value={filterClient} onValueChange={setFilterClient}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrer par client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les clients</SelectItem>
-                {clients.map((client: any) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ClientAutocomplete
+              value={filterClient}
+              onChange={setFilterClient}
+              showAllOption={true}
+              placeholder="Filtrer par client"
+            />
           </div>
         </CardContent>
       </Card>

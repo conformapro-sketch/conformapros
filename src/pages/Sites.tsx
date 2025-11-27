@@ -13,7 +13,8 @@ import {
 import { MapPin, Plus, Search, Factory, Users, Pencil, Trash2, FileText, Building2, Settings, Filter, FileDown, Grid3x3, List, Eye, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchSites, deleteSite, fetchClients, listSiteModules, listGouvernorats, siteModulesQueries } from "@/lib/multi-tenant-queries";
+import { fetchSites, deleteSite, listGouvernorats, siteModulesQueries } from "@/lib/multi-tenant-queries";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SiteFormModal } from "@/components/SiteFormModal";
 import { useToast } from "@/hooks/use-toast";
@@ -71,10 +72,6 @@ export default function Sites() {
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: fetchClients,
-  });
 
   const { data: gouvernorats = [] } = useQuery({
     queryKey: ["gouvernorats"],
@@ -417,19 +414,12 @@ export default function Sites() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <div>
-              <Select value={filterClient} onValueChange={setFilterClient}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Client" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50">
-                  <SelectItem value="all">Tous les clients</SelectItem>
-                  {clients.map((client: any) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom_legal}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ClientAutocomplete
+                value={filterClient}
+                onChange={setFilterClient}
+                showAllOption={true}
+                placeholder="Filtrer par client"
+              />
             </div>
 
             <div>

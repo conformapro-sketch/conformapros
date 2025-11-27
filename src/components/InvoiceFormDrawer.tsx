@@ -12,6 +12,7 @@ import {
   CreateInvoicePayload,
 } from "@/lib/multi-tenant-queries";
 import { useToast } from "@/hooks/use-toast";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import {
   Dialog,
   DialogContent,
@@ -127,10 +128,11 @@ export function InvoiceFormDrawer({ open, onOpenChange }: InvoiceFormDrawerProps
   const watchSubscriptionId = form.watch("subscription_id");
   const watchItems = form.watch("items");
 
-  const { data: clients = [], isLoading: isLoadingClients } = useQuery<ClientRow[]>({
-    queryKey: ["clients", "invoice"],
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
     queryFn: fetchClients,
   });
+
 
   const { data: sites = [] } = useQuery<SiteRow[]>({
     queryKey: ["sites", watchClientId, "invoice"],
@@ -257,22 +259,12 @@ export function InvoiceFormDrawer({ open, onOpenChange }: InvoiceFormDrawerProps
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-2 space-y-2">
               <Label htmlFor="client_id">Client</Label>
-              <Select
+              <ClientAutocomplete
                 value={form.watch("client_id")}
-                onValueChange={(value) => form.setValue("client_id", value)}
-                disabled={isLoadingClients || createInvoiceMutation.isPending}
-              >
-                <SelectTrigger id="client_id">
-                  <SelectValue placeholder={isLoadingClients ? "Chargement..." : "Selectionner un client"} />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border max-h-64">
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom_legal || client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => form.setValue("client_id", value)}
+                disabled={createInvoiceMutation.isPending}
+                placeholder="Sélectionner un client"
+              />
               {form.formState.errors.client_id && (
                 <p className="text-sm text-destructive">{form.formState.errors.client_id.message}</p>
               )}

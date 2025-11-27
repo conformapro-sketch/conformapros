@@ -24,6 +24,9 @@ interface ClientAutocompleteProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  showAllOption?: boolean;
+  allOptionLabel?: string;
+  allowClear?: boolean;
 }
 
 export function ClientAutocomplete({
@@ -31,6 +34,9 @@ export function ClientAutocomplete({
   onChange,
   placeholder = "🏢 Rechercher un client...",
   disabled = false,
+  showAllOption = false,
+  allOptionLabel = "Tous les clients",
+  allowClear = false,
 }: ClientAutocompleteProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -42,6 +48,7 @@ export function ClientAutocomplete({
   });
 
   const selectedClient = clients?.find((c) => c.id === value);
+  const isAllSelected = showAllOption && (value === "all" || value === "");
 
   const filteredClients = clients?.filter((client) => {
     if (!debouncedSearch) return true;
@@ -63,7 +70,9 @@ export function ClientAutocomplete({
           className="w-full justify-between"
           disabled={disabled}
         >
-          {selectedClient ? (
+          {isAllSelected ? (
+            <span className="text-muted-foreground">{allOptionLabel}</span>
+          ) : selectedClient ? (
             <span className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               {selectedClient.nom}
@@ -86,6 +95,25 @@ export function ClientAutocomplete({
               {isLoading ? "Chargement..." : "Aucun client trouvé."}
             </CommandEmpty>
             <CommandGroup>
+              {showAllOption && (
+                <CommandItem
+                  value="all"
+                  onSelect={() => {
+                    onChange("all");
+                    setOpen(false);
+                    setSearch("");
+                  }}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <Check
+                    className={cn(
+                      "h-4 w-4",
+                      isAllSelected ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span className="font-medium">{allOptionLabel}</span>
+                </CommandItem>
+              )}
               {filteredClients?.map((client) => (
                 <CommandItem
                   key={client.id}

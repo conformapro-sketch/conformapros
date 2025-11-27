@@ -26,7 +26,8 @@ import {
   Trash2
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAllClientUsers, fetchClients, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
+import { fetchAllClientUsers, resendInvite, toggleUtilisateurActif } from "@/lib/multi-tenant-queries";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ClientUserFormModal } from "@/components/ClientUserFormModal";
@@ -85,19 +86,7 @@ export default function AllClientUsers() {
 
   const debouncedSearch = useDebounce(searchQuery, 400);
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: fetchClients,
-    staleTime: 2 * 60 * 1000,
-  });
 
-  // Default client filter for non-global admins
-  useEffect(() => {
-    if (!isSuperAdmin() && !isAdminGlobal && clients.length === 1 && clientFilter === "all") {
-      setClientFilter(clients[0].id);
-      setCurrentPage(1);
-    }
-  }, [clients, clientFilter, isAdminGlobal, isSuperAdmin]);
 
   // Sync clientFilter changes to URL
   useEffect(() => {
@@ -276,28 +265,6 @@ export default function AllClientUsers() {
       </div>
 
       {/* Active Filter Indicator */}
-      {clientFilter !== "all" && (
-        <Card className="border-l-4 border-l-primary shadow-soft">
-          <CardContent className="py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-primary" />
-              <span className="text-sm">
-                Filtré par client: <strong>{clients.find(c => c.id === clientFilter)?.nom || "Inconnu"}</strong>
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setClientFilter("all");
-                navigate("/clients/utilisateurs");
-              }}
-            >
-              Voir tous les utilisateurs
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Filters */}
       <Card className="shadow-soft">
@@ -316,25 +283,15 @@ export default function AllClientUsers() {
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={clientFilter} onValueChange={(value) => {
+            <ClientAutocomplete
+              value={clientFilter}
+              onChange={(value) => {
                 setClientFilter(value);
                 setCurrentPage(1);
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tous les clients" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50">
-                  {(isSuperAdmin() || isAdminGlobal) && <SelectItem value="all">Tous les clients</SelectItem>}
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              }}
+              showAllOption={isSuperAdmin() || isAdminGlobal}
+              placeholder="Filtrer par client"
+            />
 
             <Select value={statusFilter} onValueChange={(value) => {
               setStatusFilter(value);

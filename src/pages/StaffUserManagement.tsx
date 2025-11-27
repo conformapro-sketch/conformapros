@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, UserPlus, Search, Download, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { StaffUserDetailsPanel } from "@/components/staff/StaffUserDetailsPanel";
 import { StaffUserDataGrid } from "@/components/staff/StaffUserDataGrid";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -46,18 +47,6 @@ export default function StaffUserManagement() {
     },
   });
 
-  // Fetch clients for filter
-  const { data: clients } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, nom")
-        .order("nom");
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const users: UserWithDetails[] = usersData?.users || [];
   const totalCount = users[0]?.total_count || 0;
@@ -174,19 +163,12 @@ export default function StaffUserManagement() {
                   />
                 </div>
               </div>
-              <Select value={clientFilter} onValueChange={setClientFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Tous les clients" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Tous les clients</SelectItem>
-                  {clients?.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ClientAutocomplete
+                value={clientFilter || "all"}
+                onChange={(value) => setClientFilter(value === "all" ? "" : value)}
+                showAllOption={true}
+                placeholder="Filtrer par client"
+              />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Tous les statuts" />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,19 +22,6 @@ export default function PlanAction() {
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
 
-  // Récupérer la liste des clients
-  const { data: clients = [] } = useQuery({
-    queryKey: ['clients-for-actions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id, nom, nom_legal')
-        .order('nom');
-      
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
   // Récupérer la liste des sites pour le client sélectionné
   const { data: sites = [] } = useQuery({
@@ -290,23 +278,16 @@ export default function PlanAction() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Client</label>
-              <Select value={clientFilter} onValueChange={(value) => {
-                setClientFilter(value);
-                setSiteFilter("all");
-                setPage(1);
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tous les clients" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les clients</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.nom || client.nom_legal}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ClientAutocomplete
+                value={clientFilter}
+                onChange={(value) => {
+                  setClientFilter(value);
+                  setSiteFilter("all");
+                  setPage(1);
+                }}
+                showAllOption={true}
+                placeholder="Filtrer par client"
+              />
             </div>
 
             <div className="space-y-2">

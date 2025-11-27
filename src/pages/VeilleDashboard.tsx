@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { fetchSites } from "@/lib/multi-tenant-queries";
 import { useAuth } from "@/contexts/AuthContext";
+import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -77,19 +78,6 @@ export default function VeilleDashboard() {
   );
   const [selectedSite, setSelectedSite] = useState<string>("all");
 
-  // Fetch clients (only for team users)
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("id, nom, nom_legal")
-        .order("nom");
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: isTeamUser(),
-  });
 
   // Fetch sites (filtered by client for team users)
   const { data: allSites = [] } = useQuery({
@@ -272,25 +260,15 @@ export default function VeilleDashboard() {
         </div>
         <div className="flex gap-2">
           {isTeamUser() && (
-            <Select 
-              value={selectedClient} 
-              onValueChange={(value) => {
+            <ClientAutocomplete
+              value={selectedClient}
+              onChange={(value) => {
                 setSelectedClient(value);
                 setSelectedSite("all");
               }}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les clients</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.nom || client.nom_legal}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              showAllOption={true}
+              placeholder="Filtrer par client"
+            />
           )}
           <Select value={selectedSite} onValueChange={setSelectedSite}>
             <SelectTrigger className="w-[250px]">
