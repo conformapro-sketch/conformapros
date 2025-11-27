@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ const STORAGE_KEY = "conformapro_selected_site";
 
 export function SiteProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [currentSite, setCurrentSite] = useState<Site | null>(null);
   const [availableSites, setAvailableSites] = useState<Site[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,6 +90,13 @@ export function SiteProvider({ children }: { children: ReactNode }) {
     if (site) {
       setCurrentSite(site);
       localStorage.setItem(STORAGE_KEY, siteId);
+      
+      // Invalidate site-specific queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["user-modules"] });
+      queryClient.invalidateQueries({ queryKey: ["site-permissions"] });
+      queryClient.invalidateQueries({ queryKey: ["client-bibliotheque"] });
+      queryClient.invalidateQueries({ queryKey: ["veille-dashboard-stats"] });
+      
       toast.success(`Site changé: ${site.nom}`);
     }
   };

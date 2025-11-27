@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ChevronDown, ChevronRight, BookOpen, FileText, Home, Search } from "lucide-react";
+import { useSiteContext } from "@/hooks/useSiteContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RegulatoryItemViewer } from "@/components/bibliotheque/RegulatoryItemViewer";
@@ -24,6 +25,7 @@ interface StructureNode {
 
 export default function ClientCodesJuridiques() {
   const navigate = useNavigate();
+  const { currentSite } = useSiteContext();
   const [selectedCodeId, setSelectedCodeId] = useState<string | null>(null);
   const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -161,7 +163,7 @@ export default function ClientCodesJuridiques() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Codes juridiques</h1>
+          <h1 className="text-3xl font-bold">Codes juridiques - {currentSite?.nom || "Site"}</h1>
           <p className="text-muted-foreground mt-1">
             Naviguez par structure juridique (livres, titres, chapitres, sections)
           </p>

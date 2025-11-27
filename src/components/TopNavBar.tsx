@@ -38,7 +38,7 @@ export default function TopNavBar({
   const { data: userProfile } = useUserProfile();
   const { hasRole } = useAuth();
   
-  const isClientUser = !hasRole("super_admin") && !hasRole("admin_global");
+  const isClientUser = !hasRole("Super Admin") && !hasRole("Admin Global");
 
   const leftOffset = isMobile ? "0px" : state === "collapsed" ? "var(--sidebar-width-icon)" : "var(--sidebar-width)";
   const navStyles: CSSProperties = { left: leftOffset, right: 0 };

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { fetchSites } from "@/lib/multi-tenant-queries";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSiteContext } from "@/hooks/useSiteContext";
 import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,11 +73,14 @@ const COLORS = {
 
 export default function VeilleDashboard() {
   const navigate = useNavigate();
-  const { isTeamUser, getClientId } = useAuth();
+  const { isTeamUser, getClientId, isClientUser } = useAuth();
+  const { currentSite } = useSiteContext();
   const [selectedClient, setSelectedClient] = useState<string>(
     isTeamUser() ? "all" : (getClientId() || "all")
   );
-  const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [selectedSite, setSelectedSite] = useState<string>(
+    isClientUser() && currentSite ? currentSite.id : "all"
+  );
 
 
   // Fetch sites (filtered by client for team users)

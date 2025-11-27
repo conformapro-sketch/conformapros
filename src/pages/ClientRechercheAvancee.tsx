@@ -16,6 +16,7 @@ import { Search, Home, FileText, AlertCircle, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useSiteContext } from "@/hooks/useSiteContext";
 
 const TEXT_TYPES = [
   { value: "loi", label: "Loi" },
@@ -26,6 +27,7 @@ const TEXT_TYPES = [
 
 export default function ClientRechercheAvancee() {
   const navigate = useNavigate();
+  const { currentSite } = useSiteContext();
   const [keyword, setKeyword] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDomaineId, setSelectedDomaineId] = useState<string>("");
@@ -118,7 +120,7 @@ export default function ClientRechercheAvancee() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Recherche avancée</h1>
+          <h1 className="text-3xl font-bold">Recherche avancée - {currentSite?.nom || "Site"}</h1>
           <p className="text-muted-foreground mt-1">
             Recherchez des articles réglementaires par mots-clés, type de texte et domaine
           </p>

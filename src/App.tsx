@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SiteProvider } from "@/contexts/SiteContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StaffRouteGuard } from "@/components/guards/StaffRouteGuard";
+import { ClientRouteGuard } from "@/components/guards/ClientRouteGuard";
 import { Layout } from "@/components/Layout";
 import { createOptimizedQueryClient } from "@/lib/query-config";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
@@ -85,6 +86,7 @@ import StaffMemberManagement from "./pages/StaffMemberManagement";
 import GestionAutorites from "./pages/GestionAutorites";
 import BibliothequeParametres from "./pages/BibliothequeParametres";
 import ClientBibliotheque from "./pages/ClientBibliotheque";
+import ClientDashboard from "./pages/ClientDashboard";
 import ClientTexteDetail from "./pages/ClientTexteDetail";
 import ClientCodesJuridiques from "./pages/ClientCodesJuridiques";
 import ClientRechercheAvancee from "./pages/ClientRechercheAvancee";
@@ -100,21 +102,27 @@ import ClientUsersManagement from "./pages/settings/ClientUsersManagement";
 import SitesManagement from "./pages/settings/SitesManagement";
 import SiteModulesOverview from "./pages/settings/SiteModulesOverview";
 import SiteDomainsManagement from "./pages/settings/SiteDomainsManagement";
+import { Loader2 } from "lucide-react";
 
 const queryClient = createOptimizedQueryClient();
 
 function RootRedirect() {
-  const { user, loading } = useAuth();
-  
+  const { user, loading, hasRole } = useAuth();
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
   
-  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const isStaff = hasRole("Super Admin") || hasRole("Admin Global");
+  return isStaff ? <Navigate to="/staff/dashboard" replace /> : <Navigate to="/dashboard" replace />;
 }
 
 const App = () => (
@@ -144,7 +152,20 @@ const App = () => (
             
             {/* Protected routes with Layout */}
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route path="dashboard" element={<Dashboard />} />
+              {/* Client Dashboard */}
+              <Route path="dashboard" element={
+                <ClientRouteGuard>
+                  <ClientDashboard />
+                </ClientRouteGuard>
+              } />
+              
+              {/* Staff Dashboard */}
+              <Route path="staff/dashboard" element={
+                <StaffRouteGuard>
+                  <Dashboard />
+                </StaffRouteGuard>
+              } />
+              
               <Route path="client-users" element={<ClientUsers />} />
               <Route path="clients/:clientId/users" element={<ClientUsers />} />
               <Route path="actes" element={<TextesReglementaires />} />
