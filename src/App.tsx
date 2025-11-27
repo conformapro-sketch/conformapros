@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SiteProvider } from "@/contexts/SiteContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { StaffRouteGuard } from "@/components/guards/StaffRouteGuard";
 import { Layout } from "@/components/Layout";
@@ -124,7 +125,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
+            <SiteProvider>
+              <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -339,11 +341,12 @@ const App = () => (
             
             {/* Catch-all 404 */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+              </Routes>
+            </SiteProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   </ErrorBoundary>
 );
 
