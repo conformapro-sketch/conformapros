@@ -19,18 +19,13 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Briefcase, User as UserIcon, Upload, ChevronRight } from "lucide-react";
-import { PermissionMatrix } from "@/components/roles/PermissionMatrix";
+import { MapPin, Briefcase, User as UserIcon, Upload } from "lucide-react";
+import { PermissionMatrixV2 } from "@/components/permissions/PermissionMatrixV2";
 import { cn } from "@/lib/utils";
 import {
   fetchUserSitesWithPermissions,
-  fetchSitePermissions,
-  saveSitePermissions,
-  listDomaines,
-  listEnabledModuleCodesForSite,
   listEnabledDomainIdsForSites,
 } from "@/lib/multi-tenant-queries";
-import type { PermissionScope } from "@/types/roles";
 import { SiteModulesQuickConfig } from "@/components/permissions/SiteModulesQuickConfig";
 import { Badge } from "@/components/ui/badge";
 
@@ -59,8 +54,6 @@ export function ClientUserManagementDrawer({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const [expandedSite, setExpandedSite] = useState<string>("");
-  const [sitePermissions, setSitePermissions] = useState<Record<string, any[]>>({});
-  const [siteScopes, setSiteScopes] = useState<Record<string, PermissionScope>>({});
 
   // Fetch user's sites with permission counts
   const { data: userSites = [], isLoading: loadingSites, error: sitesError, refetch: refetchSites } = useQuery({
@@ -83,76 +76,6 @@ export function ClientUserManagementDrawer({
     queryFn: () => listEnabledDomainIdsForSites(siteIds),
     enabled: !!user?.id && open && siteIds.length > 0,
   });
-
-  // Fetch permissions for expanded site
-  const { data: currentSitePerms, isLoading: loadingCurrentSitePerms } = useQuery({
-    queryKey: ["site-permissions", user?.id, expandedSite],
-    queryFn: () => fetchSitePermissions(user.id, expandedSite!),
-    enabled: !!user?.id && !!expandedSite && open,
-  });
-
-  // Fetch enabled modules for the expanded site
-  const { 
-    data: enabledModulesForSite = [], 
-    error: modulesError,
-    isLoading: loadingModules 
-  } = useQuery({
-    queryKey: ["site-enabled-modules", expandedSite],
-    queryFn: async () => {
-      const modules = await listEnabledModuleCodesForSite(expandedSite!);
-      console.log('🔍 Modules enabled for site', expandedSite, ':', modules);
-      return modules;
-    },
-    enabled: !!expandedSite && open,
-  });
-
-  // Update site permissions when fetched
-  useEffect(() => {
-    if (currentSitePerms && expandedSite) {
-      setSitePermissions(prev => ({
-        ...prev,
-        [expandedSite]: currentSitePerms.map(p => ({
-          module: p.module,
-          action: p.action,
-          decision: p.decision,
-        })),
-      }));
-      
-      if (currentSitePerms.length > 0) {
-        setSiteScopes(prev => ({
-          ...prev,
-          [expandedSite]: currentSitePerms[0].scope as PermissionScope,
-        }));
-      }
-    }
-  }, [currentSitePerms, expandedSite]);
-
-  // Pre-populate permission matrix with 'inherit' for all available modules/actions
-  // This ensures clicking cells works even when no permissions exist yet
-  useEffect(() => {
-    if (expandedSite && enabledModulesForSite.length > 0) {
-      // Only initialize if no permissions exist for this site yet
-      if (!sitePermissions[expandedSite] || sitePermissions[expandedSite].length === 0) {
-        const actions = ['view', 'create', 'edit', 'delete', 'approve', 'export'];
-        const initialPerms: any[] = [];
-        
-        enabledModulesForSite.forEach(moduleCode => {
-          actions.forEach(actionCode => {
-            initialPerms.push({
-              module: moduleCode.toLowerCase(),
-              action: actionCode,
-              decision: 'inherit',
-            });
-          });
-        });
-        
-        setSitePermissions(prev => ({
-          ...prev,
-          [expandedSite]: initialPerms,
-        }));
-      }
-    }
-  }, [expandedSite, enabledModulesForSite]);
 
   // Fetch user domain scopes
   const { data: userDomains } = useQuery({
@@ -189,7 +112,7 @@ export function ClientUserManagementDrawer({
     [allDomaines, enabledDomainIds]
   );
 
-  // Initialize states when data loads - FIXED to prevent infinite loop
+  // Initialize states when data loads
   useEffect(() => {
     if (!user?.id) return;
     
@@ -212,66 +135,7 @@ export function ClientUserManagementDrawer({
       actif: user.actif ?? true,
     });
     setAvatarPreview(user.avatar_url || "");
-  }, [user?.id, userDomains]); // Removed enabledDomainIds to fix infinite loop
-
-  // Save site permissions mutation
-  const saveSitePermissionsMutation = useMutation({
-    mutationFn: async ({ siteId }: { siteId: string }) => {
-      const perms = sitePermissions[siteId] || [];
-      const scope = siteScopes[siteId] || 'site';
-      
-      // Send ALL permissions to RPC - it will filter out 'inherit' on the backend
-      const permissionsToSave = perms.map(p => ({
-        module: p.module,
-        action: p.action,
-        decision: p.decision,
-        scope: scope,
-      }));
-      
-      // Check if user has actually configured any permissions (at least one non-inherit)
-      const hasActualPermissions = perms.some(p => p.decision !== 'inherit');
-      if (!hasActualPermissions) {
-        throw new Error("Aucune permission configurée. Cliquez sur les cellules pour autoriser ou refuser des permissions.");
-      }
-      
-      console.log('💾 Saving site permissions:', {
-        userId: user.id,
-        siteId,
-        clientId,
-        permissions: permissionsToSave,
-        permissionCount: permissionsToSave.length,
-        nonInheritCount: permissionsToSave.filter(p => p.decision !== 'inherit').length,
-        timestamp: new Date().toISOString()
-      });
-
-      const result = await saveSitePermissions(user.id, siteId, clientId, permissionsToSave);
-      console.log('✅ Permissions saved successfully:', result);
-      return result;
-    },
-    onSuccess: (_, variables) => {
-      // Surgical invalidation - only the specific queries that changed
-      queryClient.invalidateQueries({ 
-        queryKey: ["user-sites-permissions", user.id],
-        exact: true 
-      });
-      queryClient.invalidateQueries({ 
-        queryKey: ["site-permissions", user.id, variables.siteId],
-        exact: true 
-      });
-      toast({
-        title: "Permissions mises à jour",
-        description: "Les permissions pour ce site ont été enregistrées.",
-      });
-    },
-    onError: (error: any) => {
-      console.error('❌ Permission save mutation error:', error);
-      toast({
-        title: "Erreur",
-        description: error?.message || error?.details || "Impossible de sauvegarder les permissions.",
-        variant: "destructive",
-      });
-    },
-  });
+  }, [user?.id, userDomains]);
 
   // Save domains mutation
   const saveDomainsMutation = useMutation({
@@ -407,29 +271,11 @@ export function ClientUserManagementDrawer({
     );
   };
 
-  const updateSitePermissions = (siteId: string, perms: any[]) => {
-    setSitePermissions(prev => ({
-      ...prev,
-      [siteId]: perms,
-    }));
-  };
-
-  const updateSiteScope = (siteId: string, scope: PermissionScope) => {
-    setSiteScopes(prev => ({
-      ...prev,
-      [siteId]: scope,
-    }));
-  };
-
   // Check if user has access to Bibliothèque réglementaire module
   const hasBibliothequeAccess = useMemo(() => {
-    return Object.values(sitePermissions).some(perms => 
-      perms.some(p => 
-        p.module === 'bibliotheque' && 
-        p.decision === 'allow'
-      )
-    );
-  }, [sitePermissions]);
+    // This will be computed based on the permissions once loaded
+    return userSites.some(site => site.permission_count > 0);
+  }, [userSites]);
 
   if (!user) return null;
 
@@ -505,99 +351,53 @@ export function ClientUserManagementDrawer({
                   value={expandedSite}
                   onValueChange={setExpandedSite}
                 >
-                  {userSites.map((site: any) => {
-                    const isCurrentSite = expandedSite === site.site_id;
-                    const siteModuleCount = isCurrentSite ? enabledModulesForSite.length : 0;
-                    
-                    return (
-                      <AccordionItem key={site.site_id} value={site.site_id}>
-                        <AccordionTrigger className="hover:no-underline">
-                          <div className="flex items-center justify-between w-full pr-4">
-                            <div className="flex items-center gap-3">
-                              <MapPin className="h-5 w-5 text-primary" />
-                              <div className="text-left">
-                                <div className="font-medium">{site.site_name}</div>
-                                <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                  {site.permission_count || 0} permission(s) configurée(s)
-                                  {isCurrentSite && siteModuleCount > 0 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      {siteModuleCount} module{siteModuleCount > 1 ? 's' : ''}
-                                    </Badge>
-                                  )}
-                                </div>
+                  {userSites.map((site: any) => (
+                    <AccordionItem key={site.site_id} value={site.site_id}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center justify-between w-full pr-4">
+                          <div className="flex items-center gap-3">
+                            <MapPin className="h-5 w-5 text-primary" />
+                            <div className="text-left">
+                              <div className="font-medium">{site.site_name}</div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                {site.permission_count || 0} permission(s) configurée(s)
                               </div>
                             </div>
-                            {!site.site_active && (
-                              <span className="text-xs bg-muted px-2 py-1 rounded">Inactif</span>
-                            )}
                           </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="pt-4 space-y-4">
-                            {loadingCurrentSitePerms && expandedSite === site.site_id ? (
-                              <div className="text-center py-4 text-muted-foreground">
-                                Chargement des permissions...
-                              </div>
-                            ) : modulesError && expandedSite === site.site_id ? (
-                              <Card className="border-destructive">
-                                <CardContent className="pt-6 text-center">
-                                  <p className="text-destructive font-medium">Erreur lors du chargement des modules</p>
-                                  <p className="text-sm text-muted-foreground mt-2">
-                                    {modulesError instanceof Error ? modulesError.message : 'Erreur inconnue'}
-                                  </p>
-                                </CardContent>
-                              </Card>
-                            ) : loadingModules && expandedSite === site.site_id ? (
-                              <div className="text-center py-4 text-muted-foreground">
-                                Chargement des modules...
-                              </div>
-                            ) : expandedSite === site.site_id && enabledModulesForSite.length === 0 ? (
-                              <SiteModulesQuickConfig 
-                                siteId={site.site_id}
-                                siteName={site.site_name}
-                                onModulesEnabled={() => {
-                                  queryClient.invalidateQueries({ queryKey: ["site-enabled-modules", site.site_id] });
-                                }}
-                              />
-                            ) : (
-                              <>
-                                <PermissionMatrix
-                                  permissions={sitePermissions[site.site_id] || []}
-                                  onPermissionsChange={(perms) => updateSitePermissions(site.site_id, perms)}
-                                  scope={siteScopes[site.site_id] || 'site'}
-                                  onScopeChange={(scope) => updateSiteScope(site.site_id, scope)}
-                                  roleType="client"
-                                  userType="client"
-                                  siteId={site.site_id}
-                                  modules={expandedSite === site.site_id ? enabledModulesForSite : []}
-                                />
-                                <div className="flex justify-end gap-2">
-                                  <div className="text-sm text-muted-foreground self-center">
-                                    {(() => {
-                                      const perms = sitePermissions[site.site_id] || [];
-                                      const configuredCount = perms.filter(p => p.decision !== 'inherit').length;
-                                      return configuredCount > 0 
-                                        ? `${configuredCount} permission(s) configurée(s)` 
-                                        : 'Aucune permission configurée';
-                                    })()}
-                                  </div>
-                                  <Button
-                                    onClick={() => saveSitePermissionsMutation.mutate({ siteId: site.site_id })}
-                                    disabled={saveSitePermissionsMutation.isPending}
-                                  >
-                                    {saveSitePermissionsMutation.isPending 
-                                      ? "Enregistrement..." 
-                                      : "Enregistrer les permissions"
-                                    }
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
+                          {!site.site_active && (
+                            <span className="text-xs bg-muted px-2 py-1 rounded">Inactif</span>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="pt-4">
+                          {expandedSite === site.site_id ? (
+                            <PermissionMatrixV2
+                              userId={user.id}
+                              clientId={clientId}
+                              siteId={site.site_id}
+                              onUpdate={() => {
+                                queryClient.invalidateQueries({ 
+                                  queryKey: ["user-sites-permissions", user.id],
+                                  exact: true 
+                                });
+                              }}
+                            />
+                          ) : (
+                            <SiteModulesQuickConfig 
+                              siteId={site.site_id}
+                              siteName={site.site_name}
+                              onModulesEnabled={() => {
+                                queryClient.invalidateQueries({ 
+                                  queryKey: ["site-enabled-modules", site.site_id] 
+                                });
+                              }}
+                            />
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
                 </Accordion>
               )}
             </div>
