@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, UserPlus, Search, MoreVertical, Shield, MapPin } from 'lucide-react';
+import { Loader2, UserPlus, Search, MoreVertical, Shield, MapPin, AlertCircle, RefreshCw } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
+import { usePagination } from '@/hooks/usePagination';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -50,40 +54,73 @@ export default function ClientUsersManagement() {
   const [isPermissionDrawerOpen, setIsPermissionDrawerOpen] = useState(false);
   const [isSitesDrawerOpen, setIsSitesDrawerOpen] = useState(false);
   const [userForPermissions, setUserForPermissions] = useState<ClientUser | null>(null);
+  const [pageSize] = useState(20);
+
+  // Debounce search input
+  const debouncedSearch = useDebounce(search, 300);
 
   // Fetch all client users with site counts
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['client-users', search, selectedClientId],
+  const { data: users, isLoading, error, refetch } = useQuery({
+    queryKey: ['client-users', debouncedSearch, selectedClientId],
     queryFn: async () => {
-      let query = supabase
-        .from('client_users')
-        .select(`
-          *,
-          clients (
-            nom
-          ),
-          access_scopes(id, site_id)
-        `)
-        .order('created_at', { ascending: false });
+      try {
+        let query = supabase
+          .from('client_users')
+          .select(`
+            *,
+            clients (
+              nom
+            ),
+            access_scopes(id, site_id)
+          `)
+          .order('created_at', { ascending: false });
 
-      if (search) {
-        query = query.or(`email.ilike.%${search}%,nom.ilike.%${search}%,prenom.ilike.%${search}%`);
+        if (debouncedSearch) {
+          query = query.or(`email.ilike.%${debouncedSearch}%,nom.ilike.%${debouncedSearch}%,prenom.ilike.%${debouncedSearch}%`);
+        }
+
+        if (selectedClientId) {
+          query = query.eq('client_id', selectedClientId);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+          console.error('Error fetching client users:', error);
+          throw error;
+        }
+        
+        // Calculate site counts
+        return (data || []).map(user => ({
+          ...user,
+          site_count: user.access_scopes?.length || 0
+        }));
+      } catch (err) {
+        console.error('Query error:', err);
+        throw err;
       }
-
-      if (selectedClientId) {
-        query = query.eq('client_id', selectedClientId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      // Calculate site counts
-      return (data || []).map(user => ({
-        ...user,
-        site_count: user.access_scopes?.length || 0
-      }));
     },
+    staleTime: 30000, // 30 seconds
+    retry: 2,
   });
+
+  // Pagination
+  const allUsers = users || [];
+  const {
+    page,
+    totalPages,
+    paginatedItems: paginatedUsers,
+    goToPage,
+    goToNextPage,
+    goToPrevPage,
+    hasNextPage,
+    hasPrevPage,
+    resetPage,
+  } = usePagination(allUsers, pageSize);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    resetPage();
+  }, [debouncedSearch, selectedClientId, resetPage]);
 
   // Toggle user active status
   const toggleActiveMutation = useMutation({
@@ -138,12 +175,58 @@ export default function ClientUsersManagement() {
     setIsSitesDrawerOpen(true);
   };
 
-  const filteredUsers = users || [];
+  // Calculate statistics
+  const stats = {
+    total: allUsers.length,
+    active: allUsers.filter(u => u.actif).length,
+    inactive: allUsers.filter(u => !u.actif).length,
+  };
 
+  // Loading skeleton
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-4">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-64" />
+            </div>
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="ml-2">
+                Erreur lors du chargement des utilisateurs. {error instanceof Error ? error.message : 'Erreur inconnue'}
+              </AlertDescription>
+            </Alert>
+            <div className="flex justify-center mt-4">
+              <Button onClick={() => refetch()} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Réessayer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -169,6 +252,28 @@ export default function ClientUsersManagement() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Statistics */}
+          <div className="grid grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">Total utilisateurs</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+                <p className="text-xs text-muted-foreground">Actifs</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-red-600">{stats.inactive}</div>
+                <p className="text-xs text-muted-foreground">Inactifs</p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Search and Filters */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
@@ -214,14 +319,14 @@ export default function ClientUsersManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.length === 0 ? (
+                {paginatedUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    Aucun utilisateur trouvé
+                    {debouncedSearch || selectedClientId ? 'Aucun utilisateur trouvé avec ces critères' : 'Aucun utilisateur enregistré'}
                   </TableCell>
                 </TableRow>
                 ) : (
-                  filteredUsers.map((user) => (
+                  paginatedUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <div className="flex flex-col">
@@ -308,14 +413,35 @@ export default function ClientUsersManagement() {
             </Table>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground pt-4 border-t">
-            <span>Total: {filteredUsers.length} utilisateur(s)</span>
-            <span>
-              Actifs: {filteredUsers.filter(u => u.actif).length} | 
-              Inactifs: {filteredUsers.filter(u => !u.actif).length}
-            </span>
-          </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Affichage de {((page - 1) * pageSize) + 1} à {Math.min(page * pageSize, allUsers.length)} sur {allUsers.length} utilisateur(s)
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPrevPage}
+                  disabled={!hasPrevPage}
+                >
+                  Précédent
+                </Button>
+                <span className="text-sm">
+                  Page {page} sur {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNextPage}
+                  disabled={!hasNextPage}
+                >
+                  Suivant
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
