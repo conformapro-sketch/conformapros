@@ -34,6 +34,7 @@ import {
 import conformaProLogo from "@/assets/conforma-pro-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserModules } from "@/hooks/useUserModules";
+import { useSiteContext } from "@/hooks/useSiteContext";
 import { buildNavigationFromModules, findActiveModule, type MenuItem } from "@/lib/module-navigation-map";
 import { canAccessClientManagement } from "@/lib/permission-helpers";
 
@@ -42,8 +43,15 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const [openItems, setOpenItems] = useState<string[]>([]);
   const location = useLocation();
-  const { data: modules, isLoading } = useUserModules();
   const { hasPermission, isSuperAdmin, hasRole, isClientUser } = useAuth();
+  const { currentSite, isLoading: siteLoading } = useSiteContext();
+  
+  // Fetch user modules (pass siteId for client users only)
+  const { data: modules, isLoading: modulesLoading } = useUserModules(
+    isClientUser() ? currentSite?.id : null
+  );
+  
+  const isLoading = siteLoading || modulesLoading;
 
   // Determine if user is staff - memoize to avoid recreation
   const isStaff: boolean = useMemo(() => {
