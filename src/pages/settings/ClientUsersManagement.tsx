@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ClientUserFormModal } from '@/components/ClientUserFormModal';
-import { UserPermissionDrawer } from '@/components/UserPermissionDrawer';
+import { ClientUserManagementDrawer } from '@/components/ClientUserManagementDrawer';
 import { UserSitesManager } from '@/components/UserSitesManager';
 import { ClientAutocomplete } from '@/components/shared/ClientAutocomplete';
 
@@ -487,7 +487,7 @@ export default function ClientUsersManagement() {
 
       {/* Permissions Drawer */}
       {userForPermissions && (
-        <UserPermissionDrawer
+        <ClientUserManagementDrawer
           open={isPermissionDrawerOpen}
           onOpenChange={setIsPermissionDrawerOpen}
           user={userForPermissions}
