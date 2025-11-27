@@ -8,36 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { clientBibliothequeQueries } from "@/lib/client-bibliotheque-queries";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useSiteContext } from "@/hooks/useSiteContext";
 import { RegulatoryItemViewer } from "@/components/bibliotheque/RegulatoryItemViewer";
 
 export default function ClientTexteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [currentSiteName, setCurrentSiteName] = useState<string>("");
-
-  // Get current site name
-  useEffect(() => {
-    const fetchCurrentSite = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: accessScopes } = await supabase
-        .from("access_scopes")
-        .select("site_id, sites(nom)")
-        .eq("user_id", user.id)
-        .limit(1)
-        .single();
-
-      if (accessScopes) {
-        setCurrentSiteName((accessScopes as any).sites?.nom || "");
-      }
-    };
-
-    fetchCurrentSite();
-  }, []);
+  const { currentSite } = useSiteContext();
 
   // Fetch text details
   const { data: texte, isLoading: isLoadingTexte, error: errorTexte } = useQuery({
@@ -99,10 +76,10 @@ export default function ClientTexteDetail() {
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          {currentSiteName && (
+          {currentSite && (
             <>
               <BreadcrumbItem>
-                <BreadcrumbLink>{currentSiteName}</BreadcrumbLink>
+                <BreadcrumbLink>{currentSite.nom}</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
             </>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +12,8 @@ import { Search, FileText, Eye, BookOpen, Home } from "lucide-react";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { clientBibliothequeQueries } from "@/lib/client-bibliotheque-queries";
-import { useUserProfile } from "@/hooks/useUserProfile";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useSiteContext } from "@/hooks/useSiteContext";
 
 const TYPE_LABELS: Record<string, string> = {
   loi: "Loi",
@@ -26,34 +24,13 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function ClientBibliotheque() {
   const navigate = useNavigate();
-  const { data: userProfile } = useUserProfile();
-  const { user } = useAuth();
+  const { currentSite, isLoading: isSiteLoading } = useSiteContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [currentSiteName, setCurrentSiteName] = useState<string>("");
 
-  // Get current site ID and name from access_scopes (first assigned site)
-  const { data: accessScopes } = useQuery({
-    queryKey: ["user-access-scopes", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data } = await supabase
-        .from("access_scopes")
-        .select("site_id, sites(nom)")
-        .eq("user_id", user.id)
-        .limit(1);
-      
-      if (data && data.length > 0) {
-        setCurrentSiteName((data[0] as any).sites?.nom || "");
-      }
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
-
-  const currentSiteId = accessScopes?.[0]?.site_id;
+  const currentSiteId = currentSite?.id;
 
   // Fetch authorized domains for the current site
   const { data: authorizedDomains = [], isLoading: domainesLoading } = useQuery({
@@ -80,7 +57,16 @@ export default function ClientBibliotheque() {
   const totalCount = result?.count || 0;
   const totalPages = result?.totalPages || 1;
 
-  const isLoading = textesLoading || domainesLoading;
+  const isLoading = textesLoading || domainesLoading || isSiteLoading;
+
+  if (isSiteLoading) {
+    return (
+      <div className="container mx-auto py-6">
+        <Skeleton className="h-8 w-64 mb-4" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
 
   if (!currentSiteId) {
     return (
@@ -110,10 +96,10 @@ export default function ClientBibliotheque() {
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          {currentSiteName && (
+          {currentSite && (
             <>
               <BreadcrumbItem>
-                <BreadcrumbLink>{currentSiteName}</BreadcrumbLink>
+                <BreadcrumbLink>{currentSite.nom}</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
             </>

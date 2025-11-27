@@ -6,11 +6,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/contexts/AuthContext";
 import { SearchBar } from "@/components/navigation/SearchBar";
 import { NotificationsButton } from "@/components/navigation/NotificationsButton";
 import { ThemeToggle } from "@/components/navigation/ThemeToggle";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { SettingsButton } from "@/components/navigation/SettingsButton";
+import { SiteSwitcher } from "@/components/navigation/SiteSwitcher";
 
 export type TopNavBarProps = {
   className?: string;
@@ -34,6 +36,9 @@ export default function TopNavBar({
   const { state, isMobile, toggleSidebar } = useSidebar();
   const [searchOpen, setSearchOpen] = useState(false);
   const { data: userProfile } = useUserProfile();
+  const { hasRole } = useAuth();
+  
+  const isClientUser = !hasRole("super_admin") && !hasRole("admin_global");
 
   const leftOffset = isMobile ? "0px" : state === "collapsed" ? "var(--sidebar-width-icon)" : "var(--sidebar-width)";
   const navStyles: CSSProperties = { left: leftOffset, right: 0 };
@@ -81,6 +86,13 @@ export default function TopNavBar({
             </div>
           )}
         </div>
+
+        {/* Site Switcher - Only for client users */}
+        {isClientUser && (
+          <div className="flex items-center">
+            <SiteSwitcher />
+          </div>
+        )}
 
         <div className="flex flex-1 items-center justify-center">
           <TooltipProvider>
