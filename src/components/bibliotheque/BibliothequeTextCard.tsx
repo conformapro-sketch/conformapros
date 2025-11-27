@@ -96,7 +96,7 @@ export function BibliothequeTextCard({
           </Badge>
         )}
         {isNew && (
-          <Badge className="bg-accent text-accent-foreground shadow-gold animate-pulse">
+          <Badge className="bg-accent text-accent-foreground shadow-brand animate-pulse">
             <Sparkles className="h-3 w-3 mr-1" />
             Nouveau
           </Badge>

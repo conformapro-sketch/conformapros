@@ -46,7 +46,7 @@ export function SiteSwitcher() {
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-2" align="start">
+      <PopoverContent className="w-[280px] p-2 bg-popover z-50" align="start">
         <div className="space-y-1">
           {availableSites.map((site) => (
             <button

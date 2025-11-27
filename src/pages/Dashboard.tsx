@@ -23,13 +23,13 @@ export default function Dashboard() {
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Tableau de bord</h1>
           <p className="text-muted-foreground mt-2 text-sm sm:text-base">Vue d'ensemble de la conformité HSE</p>
         </div>
-        <Button className="bg-gradient-primary shadow-medium w-full sm:w-auto">
+        <Button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
           Générer rapport
         </Button>
       </div>
 
       {/* Score de conformité global */}
-      <Card className="shadow-medium border-l-4 border-l-primary bg-gradient-to-br from-primary/5 to-transparent">
+      <Card className="border-l-4 border-l-primary bg-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />

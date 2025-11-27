@@ -76,7 +76,7 @@ export default {
         'soft': 'var(--shadow-soft)',
         'medium': 'var(--shadow-medium)',
         'strong': 'var(--shadow-strong)',
-        'gold': 'var(--shadow-gold)',
+        'brand': 'var(--shadow-brand)',
       },
       borderRadius: {
         lg: "var(--radius)",

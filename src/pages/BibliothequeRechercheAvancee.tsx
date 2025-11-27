@@ -222,7 +222,7 @@ export default function BibliothequeRechercheAvancee() {
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Type de texte" />
               </SelectTrigger>
-              <SelectContent className="z-50 bg-popover">
+              <SelectContent>
                 <SelectItem value="all">Tous les types</SelectItem>
                 {Object.entries(TYPE_LABELS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
@@ -236,7 +236,7 @@ export default function BibliothequeRechercheAvancee() {
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Domaine" />
               </SelectTrigger>
-              <SelectContent className="z-50 bg-popover">
+              <SelectContent>
                 <SelectItem value="all">Tous les domaines</SelectItem>
                 {domainesList?.map((domaine) => (
                   <SelectItem key={domaine.id} value={domaine.id}>
@@ -254,7 +254,7 @@ export default function BibliothequeRechercheAvancee() {
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Sous-domaine" />
               </SelectTrigger>
-              <SelectContent className="z-50 bg-popover">
+              <SelectContent>
                 <SelectItem value="all">Tous les sous-domaines</SelectItem>
                 {sousDomainesList?.map((sousDomaine) => (
                   <SelectItem key={sousDomaine.id} value={sousDomaine.id}>
@@ -268,7 +268,7 @@ export default function BibliothequeRechercheAvancee() {
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Année" />
               </SelectTrigger>
-              <SelectContent className="z-50 bg-popover">
+              <SelectContent>
                 <SelectItem value="all">Toutes les années</SelectItem>
                 {uniqueYears.map((year) => (
                   <SelectItem key={year} value={String(year)}>

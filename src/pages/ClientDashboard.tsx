@@ -52,13 +52,13 @@ export default function ClientDashboard() {
             Vue d'ensemble de la conformité HSE pour ce site
           </p>
         </div>
-        <Button className="bg-gradient-primary shadow-medium w-full sm:w-auto">
+        <Button className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
           Générer rapport
         </Button>
       </div>
 
       {/* Conformity Score */}
-      <Card className="shadow-medium border-l-4 border-l-primary bg-gradient-to-br from-primary/5 to-transparent">
+      <Card className="border-l-4 border-l-primary bg-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
@@ -105,7 +105,7 @@ export default function ClientDashboard() {
       </div>
 
       {/* Active Modules */}
-      <Card className="shadow-medium">
+      <Card>
         <CardHeader>
           <CardTitle>Modules actifs pour {currentSite.nom}</CardTitle>
           <CardDescription>
