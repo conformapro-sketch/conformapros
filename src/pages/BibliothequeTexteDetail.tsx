@@ -55,11 +55,16 @@ import { TexteCodesDisplay } from "@/components/TexteCodesDisplay";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize-html";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
 import { BibliothequeSearchBar } from "@/components/bibliotheque/BibliothequeSearchBar";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function BibliothequeTexteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isSuperAdmin, hasRole } = useAuth();
+  
+  // Check if user is staff (can manage articles/versions)
+  const isStaff = isSuperAdmin || hasRole('Admin Global');
   
   // Article management
   const [showArticleModal, setShowArticleModal] = useState(false);
@@ -454,13 +459,15 @@ export default function BibliothequeTexteDetail() {
             <div className="flex flex-wrap justify-between items-center gap-4">
               <h2 className="text-xl font-semibold">Articles réglementaires</h2>
               <div className="flex gap-2">
-                <Button onClick={() => {
-                  setEditingArticle(null);
-                  setShowArticleModal(true);
-                }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un article
-                </Button>
+                {isStaff && (
+                  <Button onClick={() => {
+                    setEditingArticle(null);
+                    setShowArticleModal(true);
+                  }}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter un article
+                  </Button>
+                )}
               </div>
             </div>
             
@@ -525,40 +532,44 @@ export default function BibliothequeTexteDetail() {
                             </div>
                           </div>
                           <div className="flex gap-2 shrink-0">
-                            {versionsData.length > 0 && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCompareVersions(article)}
-                                title="Comparer les versions"
-                              >
-                                <GitCompare className="h-4 w-4" />
-                              </Button>
+                             {isStaff && (
+                              <>
+                                {versionsData.length > 0 && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleCompareVersions(article)}
+                                    title="Comparer les versions"
+                                  >
+                                    <GitCompare className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditArticle(article)}
+                                  title="Éditer l'article (corrections)"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCreateEffet(article)}
+                                  title="Créer une version"
+                                >
+                                  <FileEdit className="h-4 w-4 text-blue-600" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setDeleteArticleId(article.id)}
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditArticle(article)}
-                              title="Éditer l'article (corrections)"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCreateEffet(article)}
-                              title="Créer une version"
-                            >
-                              <FileEdit className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteArticleId(article.id)}
-                              title="Supprimer"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
                           </div>
                         </div>
 
