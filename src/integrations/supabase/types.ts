@@ -499,6 +499,47 @@ export type Database = {
         }
         Relationships: []
       }
+      changelog_reglementaire: {
+        Row: {
+          acte_id: string | null
+          created_at: string | null
+          created_by: string | null
+          date_changement: string
+          description: string | null
+          id: string
+          type_changement: string
+          version: string | null
+        }
+        Insert: {
+          acte_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_changement?: string
+          description?: string | null
+          id?: string
+          type_changement: string
+          version?: string | null
+        }
+        Update: {
+          acte_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          date_changement?: string
+          description?: string | null
+          id?: string
+          type_changement?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "changelog_reglementaire_acte_id_fkey"
+            columns: ["acte_id"]
+            isOneToOne: false
+            referencedRelation: "textes_reglementaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_users: {
         Row: {
           actif: boolean
