@@ -3294,6 +3294,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           date_publication: string | null
+          deleted_at: string | null
           id: string
           pdf_url: string | null
           reference: string
@@ -3309,6 +3310,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date_publication?: string | null
+          deleted_at?: string | null
           id?: string
           pdf_url?: string | null
           reference: string
@@ -3324,6 +3326,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           date_publication?: string | null
+          deleted_at?: string | null
           id?: string
           pdf_url?: string | null
           reference?: string

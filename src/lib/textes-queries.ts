@@ -146,10 +146,10 @@ export const textesReglementairesQueries = {
 
     // Search in articles
     let articlesQuery = supabase
-      .from("textes_articles")
+      .from("articles")
       .select(`
         *,
-        texte:textes_reglementaires!textes_articles_texte_id_fkey(
+        texte:textes_reglementaires!articles_texte_id_fkey(
           id, titre, reference, type, date_publication, annee,
           domaines:textes_domaines(
             domaine:domaines_reglementaires(id, libelle)
@@ -186,7 +186,7 @@ export const textesReglementairesQueries = {
     // Filter articles by sous-domaine if specified
     if (filters?.sousDomaineFilter && filters.sousDomaineFilter !== "all") {
       const { data: articlesWithSousDomaine } = await supabase
-        .from("articles_sous_domaines")
+        .from("article_sous_domaines")
         .select("article_id")
         .eq("sous_domaine_id", filters.sousDomaineFilter);
       
@@ -437,26 +437,26 @@ export const codesQueries = {
 export const textesArticlesQueries = {
   async getByTexteId(texteId: string) {
     const { data, error } = await supabase
-      .from("textes_articles")
+      .from("articles")
       .select(`
         *,
-        sous_domaines:articles_sous_domaines(
+        sous_domaines:article_sous_domaines(
           sous_domaine:sous_domaines_application(*)
         )
       `)
       .eq("texte_id", texteId)
-      .order("ordre");
+      .order("numero");
     if (error) throw error;
     return data;
   },
 
   async getById(id: string) {
     const { data, error } = await supabase
-      .from("textes_articles")
+      .from("articles")
       .select(`
         *, 
         textes_reglementaires(reference, titre),
-        sous_domaines:articles_sous_domaines(
+        sous_domaines:article_sous_domaines(
           sous_domaine:sous_domaines_application(*)
         )
       `)
@@ -468,7 +468,7 @@ export const textesArticlesQueries = {
 
   async create(article: any) {
     const { data, error } = await supabase
-      .from("textes_articles")
+      .from("articles")
       .insert([article])
       .select()
       .single();
@@ -478,7 +478,7 @@ export const textesArticlesQueries = {
 
   async update(id: string, article: any) {
     const { data, error } = await supabase
-      .from("textes_articles")
+      .from("articles")
       .update(article)
       .eq("id", id)
       .select()
@@ -489,7 +489,7 @@ export const textesArticlesQueries = {
 
   async delete(id: string) {
     const { error } = await supabase
-      .from("textes_articles")
+      .from("articles")
       .delete()
       .eq("id", id);
     if (error) throw error;
@@ -498,7 +498,7 @@ export const textesArticlesQueries = {
   async updateArticleSousDomaines(articleId: string, sousDomaineIds: string[]) {
     // Delete existing associations
     await supabase
-      .from("articles_sous_domaines")
+      .from("article_sous_domaines")
       .delete()
       .eq("article_id", articleId);
 
@@ -509,7 +509,7 @@ export const textesArticlesQueries = {
         sous_domaine_id: sousDomaineId,
       }));
       const { error } = await supabase
-        .from("articles_sous_domaines")
+        .from("article_sous_domaines")
         .insert(relations);
       if (error) throw error;
     }
