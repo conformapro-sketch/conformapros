@@ -183,7 +183,7 @@ const App = () => (
               <Route 
                 path="bibliotheque/dashboard" 
                 element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global"]}>
                     <BibliothequeTableauDeBord />
                   </ProtectedRoute>
                 } 
@@ -191,7 +191,7 @@ const App = () => (
               <Route 
                 path="bibliotheque/domain" 
                 element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global"]}>
                     <DomainesPage />
                   </ProtectedRoute>
                 } 
@@ -199,7 +199,7 @@ const App = () => (
               <Route 
                 path="bibliotheque/autorites" 
                 element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global"]}>
                     <GestionAutorites />
                   </ProtectedRoute>
                 } 
@@ -207,7 +207,7 @@ const App = () => (
               <Route 
                 path="bibliotheque/parametres" 
                 element={
-                  <ProtectedRoute allowedRoles={["super_admin", "admin_global"]}>
+                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global"]}>
                     <BibliothequeParametres />
                   </ProtectedRoute>
                 } 
