@@ -116,7 +116,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
       const filePath = `textes/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('textes_reglementaires_pdf')
+        .from('textes-reglementaires-pdf')
         .upload(filePath, pdfFile);
 
       if (uploadError) {
@@ -126,7 +126,7 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
       }
 
       const { data: { publicUrl } } = supabase.storage
-        .from('textes_reglementaires_pdf')
+        .from('textes-reglementaires-pdf')
         .getPublicUrl(filePath);
 
       return publicUrl;
