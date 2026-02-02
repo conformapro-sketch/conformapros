@@ -273,26 +273,34 @@ export default function VeilleApplicabilite() {
       if (texteIdsAllowed.length === 0) return [];
 
       // Get all articles filtered by allowed texts AND only exigence articles
+      // Using correct table: articles (not legacy textes_articles)
       let articlesQuery = supabase
-        .from("textes_articles")
+        .from("articles")
         .select(
           `
           id,
           numero,
-          titre_court,
-          contenu,
+          titre,
+          resume,
           texte_id,
-          is_exigence,
-          textes_reglementaires (
+          porte_exigence,
+          est_introductif,
+          article_versions!inner (
             id,
-            reference_officielle,
-            intitule,
-            type_acte
+            contenu,
+            statut
+          ),
+          textes_reglementaires!inner (
+            id,
+            reference,
+            titre,
+            type
           )
         `
         )
         .in("texte_id", texteIdsAllowed)
-        .eq("is_exigence", true)
+        .eq("porte_exigence", true)
+        .eq("article_versions.statut", "en_vigueur")
         .order("numero");
 
       if (filters.texte && filters.texte !== "all") {
@@ -308,23 +316,27 @@ export default function VeilleApplicabilite() {
         .select("*")
         .eq("site_id", selectedSite);
 
-      // Combine data
+      // Combine data - mapping from articles table (correct) to ArticleRow interface
       const rows: ArticleRow[] =
         articlesData?.map((article) => {
           const status = statusData?.find((s) => s.article_id === article.id);
           const texte = article.textes_reglementaires as any;
+          // Get content from the active version
+          const activeVersion = Array.isArray(article.article_versions) 
+            ? article.article_versions[0] 
+            : article.article_versions;
 
           return {
             id: status?.id || `new_${article.id}`,
             article_id: article.id,
             article_numero: article.numero,
-            article_titre: article.titre_court,
-            article_contenu: article.contenu,
-            interpretation: undefined, // Field removed from query
-            is_exigence: article.is_exigence,
+            article_titre: article.titre, // was titre_court
+            article_contenu: activeVersion?.contenu || article.resume,
+            interpretation: undefined,
+            is_exigence: article.porte_exigence, // was is_exigence
             texte_id: article.texte_id,
-            texte_reference: texte?.reference_officielle,
-            texte_titre: texte?.intitule,
+            texte_reference: texte?.reference, // was reference_officielle
+            texte_titre: texte?.titre, // was intitule
             site_id: selectedSite,
             applicabilite: status?.applicabilite || "non_concerne",
             isModified: false,

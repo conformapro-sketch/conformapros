@@ -94,10 +94,10 @@ export default function PlanAction() {
         .select('id, nom_site, code_site, client_id, clients(id, nom, nom_legal)')
         .in('id', siteIds);
 
-      // Récupérer les articles avec textes
+      // Récupérer les articles avec textes - using correct table: articles
       const { data: articlesData } = await supabase
-        .from('textes_articles')
-        .select('id, numero, titre_court, texte_id')
+        .from('articles')
+        .select('id, numero, titre, texte_id')
         .in('id', articleIds);
 
       // Récupérer les textes réglementaires

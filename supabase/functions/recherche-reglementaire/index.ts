@@ -110,7 +110,7 @@ serve(async (req) => {
           date_effet,
           statut
         ),
-        articles_sous_domaines (
+        article_sous_domaines (
           sous_domaine_id,
           sous_domaines_application (
             id,
@@ -170,7 +170,7 @@ serve(async (req) => {
 
     if (filters.domaine_ids && filters.domaine_ids.length > 0) {
       filteredArticles = filteredArticles.filter((article: any) => {
-        const articleDomaines = article.articles_sous_domaines
+        const articleDomaines = article.article_sous_domaines
           ?.map((asd: any) => asd.sous_domaines_application?.domaine_id)
           .filter(Boolean);
         return articleDomaines?.some((id: string) => filters.domaine_ids!.includes(id));
@@ -179,7 +179,7 @@ serve(async (req) => {
 
     if (filters.sous_domaine_ids && filters.sous_domaine_ids.length > 0) {
       filteredArticles = filteredArticles.filter((article: any) => {
-        const articleSousDomaines = article.articles_sous_domaines
+        const articleSousDomaines = article.article_sous_domaines
           ?.map((asd: any) => asd.sous_domaine_id)
           .filter(Boolean);
         return articleSousDomaines?.some((id: string) => filters.sous_domaine_ids!.includes(id));
@@ -262,7 +262,7 @@ serve(async (req) => {
       const domainesMap = new Map<string, any>();
       const sousDomainesMap = new Map<string, any>();
       
-      article.articles_sous_domaines?.forEach((asd: any) => {
+      article.article_sous_domaines?.forEach((asd: any) => {
         if (asd.sous_domaines_application) {
           const sd = asd.sous_domaines_application;
           sousDomainesMap.set(sd.id, {

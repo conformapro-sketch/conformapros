@@ -164,10 +164,21 @@ const evaluationDataQueries = {
     // Fetch articles with textes
     const articleIds = [...new Set(statusRecords.map(s => s.article_id).filter(Boolean))];
 
+    // Using correct table: articles (not legacy textes_articles)
     const articlesResult = await supabase
-      .from('textes_articles')
+      .from('articles')
       .select(`
-        *,
+        id,
+        numero,
+        titre,
+        resume,
+        porte_exigence,
+        texte_id,
+        article_versions!inner (
+          id,
+          contenu,
+          statut
+        ),
         texte:textes_reglementaires (
           *,
           textes_domaines (
@@ -175,7 +186,8 @@ const evaluationDataQueries = {
           )
         )
       `)
-      .in('id', articleIds);
+      .in('id', articleIds)
+      .eq('article_versions.statut', 'en_vigueur');
 
     // Build combined data
     const rows: EvaluationRow[] = statusRecords.map(status => {
@@ -194,15 +206,17 @@ const evaluationDataQueries = {
         article: article ? {
           id: article.id,
           numero: article.numero,
-          titre_court: article.titre_court,
-          reference: article.reference,
-          contenu: article.contenu,
+          titre_court: article.titre, // was titre_court, now titre
+          reference: article.texte?.reference, // from joined texte
+          contenu: Array.isArray(article.article_versions) 
+            ? article.article_versions[0]?.contenu 
+            : (article.article_versions as any)?.contenu,
         } : undefined,
         texte: texte ? {
           id: texte.id,
-          titre: texte.intitule,
-          reference_officielle: texte.reference_officielle,
-          type: texte.type_acte,
+          titre: texte.titre, // was intitule
+          reference_officielle: texte.reference, // was reference_officielle
+          type: texte.type, // was type_acte
           statut_vigueur: texte.statut_vigueur,
         } : undefined,
         domaines,
