@@ -262,7 +262,7 @@ export const textesReglementairesQueries = {
       .from("textes_reglementaires")
       .select(`
         *,
-        articles:textes_articles(count),
+        articles:articles(count),
         domaines:textes_domaines(
           domaine:domaines_reglementaires(id, libelle)
         )
@@ -318,7 +318,7 @@ export const textesReglementairesQueries = {
       .from("textes_reglementaires")
       .select(`
         *,
-        articles:textes_articles(*),
+        articles:articles(*),
         domaines:textes_domaines(
           domaine:domaines_reglementaires(*)
         )
