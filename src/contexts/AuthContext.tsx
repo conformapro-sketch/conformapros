@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [primaryRole, setPrimaryRole] = useState<Role | null>(null);
   const [allRoles, setAllRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<RolePermission[]>([]);
@@ -54,8 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
 
-  const fetchUserAccessContext = async (userId: string) => {
-    setLoading(true);
+  const fetchUserAccessContext = async (userId: string, isInitialLoad = false) => {
+    // Only show loading spinner on initial load, not on subsequent refetches
+    if (isInitialLoad && !initialLoadComplete) {
+      setLoading(true);
+    }
     try {
       console.log('Fetching access context for user:', userId);
 
@@ -121,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTenantId(profile?.tenant_id || null);
         setClientId(null); // Team users don't have client_id
         setLoading(false);
+        setInitialLoadComplete(true);
         
         console.info(`✓ Staff identity: ${primary?.name} with ${roles.length} role(s)`);
         return;
@@ -180,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTenantId(clientUser.tenant_id || null);
         setClientId(clientUser.client_id);
         setLoading(false);
+        setInitialLoadComplete(true);
         
         console.info(`✓ Client identity: ${syntheticRole.name} for client ${clientUser.client_id} with ${individualPermissions.length} permissions`);
         return;
@@ -243,6 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setTenantId(profile?.tenant_id || null);
       setClientId(null);
       setLoading(false);
+      setInitialLoadComplete(true);
       
       console.info(`✓ User identity resolved: ${primary?.name || 'No role'}`);
     } catch (err) {
@@ -255,6 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setTenantId(null);
       setClientId(null);
       setLoading(false);
+      setInitialLoadComplete(true);
     }
   };
 
@@ -285,7 +293,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(initialSession?.user ?? null);
 
       if (initialSession?.user) {
-        fetchUserAccessContext(initialSession.user.id);
+        fetchUserAccessContext(initialSession.user.id, true); // Mark as initial load
       } else {
         setPrimaryRole(null);
         setAllRoles([]);
@@ -295,6 +303,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTenantId(null);
         setClientId(null);
         setLoading(false);
+        setInitialLoadComplete(true);
       }
     });
 
