@@ -242,7 +242,7 @@ function BibliothequeReglementaireContent() {
     <div className="container mx-auto p-6 space-y-6 animate-fade-in">
       {/* Header */}
       <BibliothequeHeader
-        title="Bibliothèque Réglementaire"
+        title="Textes réglementaires"
         subtitle={`${totalCount} texte${totalCount > 1 ? 's' : ''} réglementaire${totalCount > 1 ? 's' : ''}`}
         icon={<Scale className="h-6 w-6 text-white" />}
         actions={
