@@ -1,319 +1,326 @@
 
-# Plan d'Amélioration Global du Module Bibliothèque Réglementaire
+# Plan de Séparation: Interfaces Textes Réglementaires et Articles
 
-## 1. Analyse des Problèmes Identifiés
+## Objectif
 
-### 1.1 Problème de Duplication des Sous-Domaines dans l'UI
+Séparer l'entrée "Textes & articles" du menu de navigation en deux interfaces distinctes:
+1. **Textes Réglementaires** - Navigation et recherche par textes (loi, décret, arrêté, circulaire)
+2. **Articles** - Navigation et recherche par articles avec filtres spécifiques
 
-**Cause Racine:** Il existe **deux définitions différentes** de `sousDomainesQueries` dans le code:
-
-| Fichier | Localisation | Comportement |
-|---------|--------------|--------------|
-| `src/lib/textes-queries.ts` | Lignes 43-57 | **Sans filtre `actif`** - retourne TOUS les sous-domaines |
-| `src/lib/actes-queries.ts` | Lignes 398-453 | **Avec filtre `actif=true`** - retourne uniquement les actifs |
-
-Quand un composant importe `sousDomainesQueries` depuis `textes-queries.ts` (ex: `ArticleSousDomainesSelector.tsx`), il obtient tous les sous-domaines **y compris les inactifs**, ce qui peut créer des entrées "en double" dans l'interface si des sous-domaines ont été désactivés plutôt que supprimés.
-
-**Base de données vérifiée:** Aucun doublon réel dans `sous_domaines_application` (les libellés sont uniques). Le problème est causé par l'absence de filtre `actif=true` dans certaines requêtes.
-
-### 1.2 Incohérences d'Architecture de Requêtes
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│        DUPLICATION DE CODE DANS LES FICHIERS QUERIES            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  textes-queries.ts                                              │
-│  └── sousDomainesQueries.getActive() ← SANS filtre actif       │
-│  └── domainesQueries.getActive()                                │
-│                                                                 │
-│  actes-queries.ts                                               │
-│  └── sousDomainesQueries.getActive() ← AVEC filtre actif       │
-│  └── sousDomainesQueries.getByDomaineId()                       │
-│  └── domainesQueries.getActive()                                │
-│                                                                 │
-│  domaines-queries.ts                                            │
-│  └── fetchSousDomaines()                                        │
-│  └── fetchSousDomainesByDomaine()                               │
-│                                                                 │
-│  bibliotheque-queries.ts                                        │
-│  └── Pas de sous-domaines queries                               │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 1.3 Recherche Avancée: Limitations
-
-| Limitation | Impact |
-|------------|--------|
-| Recherche mots-clés côté client (après fetch) | Performance dégradée sur gros volumes |
-| Pas de recherche full-text PostgreSQL | Pas de ranking par pertinence |
-| Pas de tokenization | "équipement protection" ne trouve pas "équipements de protection" |
-| Année extraite des résultats filtrés | Pas d'années disponibles avant la première recherche |
-
-### 1.4 Opportunités d'Amélioration UI/UX
-
-| Zone | Problème Actuel | Amélioration Proposée |
-|------|-----------------|----------------------|
-| DataGrid | Pas de colonne statut | Ajouter badge statut (en_vigueur/modifié/abrogé) |
-| Filtres | Années extraites des résultats | Pré-charger les années disponibles |
-| Recherche | Historique local seulement | Suggestions auto-complétion |
-| Mobile | Basculement card view forcé | Optimiser l'affichage responsive |
-| Navigation | Pas de breadcrumb cohérent | Ajouter fil d'Ariane |
-| Empty State | Générique | Messages contextuels selon les filtres |
-| Export | Non visible | Ajouter bouton export CSV/PDF |
-| Pagination | Basique | Afficher "sélecteur de page size" |
+Cette séparation permettra aux utilisateurs de:
+- Rechercher rapidement par texte (référence, titre, type, année)
+- OU rechercher directement dans les articles (numéro, contenu, sous-domaines, exigences)
 
 ---
 
-## 2. Plan de Corrections
+## Architecture Actuelle
 
-### Phase 1: Correction des Duplications (Priorité CRITIQUE)
-
-#### 2.1 Unifier les requêtes sous-domaines
-
-**Fichier: `src/lib/textes-queries.ts`**
-
-```typescript
-// AVANT (ligne 43-56)
-export const sousDomainesQueries = {
-  async getActive(domaineId?: string) {
-    let query = supabase
-      .from("sous_domaines_application")
-      .select("*");
-    // ... PAS de filtre actif!
-  }
-};
-
-// APRÈS
-export const sousDomainesQueries = {
-  async getActive(domaineId?: string) {
-    let query = supabase
-      .from("sous_domaines_application")
-      .select("*, domaine:domaines_reglementaires(id, libelle, code)")
-      .eq("actif", true)           // ← AJOUT CRITIQUE
-      .is("deleted_at", null);     // ← AJOUT CRITIQUE
-    
-    if (domaineId) {
-      query = query.eq("domaine_id", domaineId);
-    }
-    
-    const { data, error } = await query.order("ordre").order("libelle");
-    if (error) throw error;
-    return data || [];
-  },
-};
+```text
+BIBLIOTHÈQUE (menu)
+├── Tableau de bord      → /bibliotheque/dashboard
+├── Textes & articles    → /bibliotheque/           ← Page unique combinée
+├── Codes juridiques     → /codes-juridiques
+├── Recherche avancée    → /bibliotheque/recherche
+└── Paramètres           → /bibliotheque/parametres
 ```
 
-#### 2.2 Consolider les sources de requêtes
+La page actuelle `/bibliotheque/` (BibliothequeReglementaire.tsx) affiche uniquement les **textes** avec un compteur d'articles par texte.
 
-Supprimer les exports dupliqués et créer un fichier unique:
+---
 
-**Créer: `src/lib/regulatory-domains-queries.ts`**
+## Nouvelle Architecture
 
-Ce fichier centralisera toutes les requêtes domaines/sous-domaines avec:
-- `domainesQueries.getAll()` - Tous les domaines
-- `domainesQueries.getActive()` - Domaines actifs uniquement
-- `sousDomainesQueries.getAll()` - Tous les sous-domaines
-- `sousDomainesQueries.getActive()` - Sous-domaines actifs
-- `sousDomainesQueries.getByDomaineId()` - Filtrés par domaine parent
-
-### Phase 2: Amélioration de la Recherche (Priorité HAUTE)
-
-#### 2.3 Améliorer la recherche par mots-clés
-
-**Fichier: `src/lib/textes-queries.ts` - smartSearch**
-
-```typescript
-// Améliorer la recherche avec tokenization basique
-if (searchTerm) {
-  // Découper en mots et créer une recherche OR
-  const words = searchTerm.trim().split(/\s+/).filter(w => w.length >= 2);
-  const searchConditions = words.map(word => 
-    `titre.ilike.%${word}%,reference.ilike.%${word}%,autorite_emettrice.ilike.%${word}%`
-  ).join(',');
-  
-  textesQuery = textesQuery.or(searchConditions);
-}
+```text
+BIBLIOTHÈQUE (menu)
+├── Tableau de bord      → /bibliotheque/dashboard
+├── Textes réglementaires→ /bibliotheque/textes     ← NOUVEAU (renommage)
+├── Articles             → /bibliotheque/articles   ← NOUVELLE PAGE
+├── Codes juridiques     → /codes-juridiques
+├── Recherche avancée    → /bibliotheque/recherche
+└── Paramètres           → /bibliotheque/parametres
 ```
 
-#### 2.4 Pré-charger les années disponibles
+---
 
-**Fichier: `src/pages/BibliothequeRechercheAvancee.tsx`**
+## Modifications à Effectuer
 
-```typescript
-// Charger les années indépendamment des résultats
-const { data: availableYears } = useQuery({
-  queryKey: ["bibliotheque-years"],
-  queryFn: async () => {
-    const { data } = await supabase
-      .from("textes_reglementaires")
-      .select("annee")
-      .not("annee", "is", null)
-      .order("annee", { ascending: false });
-    
-    return [...new Set(data?.map(t => t.annee) || [])];
-  },
-});
-```
+### 1. Mise à jour de la Navigation
 
-### Phase 3: Améliorations UI/UX (Priorité MOYENNE)
+**Fichier: `src/lib/module-navigation-map.ts`**
 
-#### 2.5 Ajouter colonne Statut dans DataGrid
-
-**Fichier: `src/components/bibliotheque/BibliothequeDataGrid.tsx`**
-
-Ajouter une nouvelle colonne après "Date":
+Modifier la configuration du module BIBLIOTHEQUE:
 
 ```typescript
-{
-  accessorKey: "statut_vigueur",
-  header: "Statut",
-  size: 120,
-  cell: ({ row }) => {
-    const statut = row.original.statut_vigueur || "en_vigueur";
-    const { label, variant } = getStatutBadge(statut);
-    return <Badge variant={variant}>{label}</Badge>;
-  },
+BIBLIOTHEQUE: {
+  icon: Library,
+  subItems: [
+    { title: "Tableau de bord", url: "/bibliotheque/dashboard" },
+    { title: "Textes réglementaires", url: "/bibliotheque/textes" },  // ← Renommé
+    { title: "Articles", url: "/bibliotheque/articles" },             // ← NOUVEAU
+    { title: "Codes juridiques", url: "/codes-juridiques" },
+    { title: "Recherche avancée", url: "/bibliotheque/recherche" },
+    { title: "Paramètres", url: "/bibliotheque/parametres" },
+  ],
 },
 ```
 
-#### 2.6 Améliorer les filtres avec debounce cohérent
-
-**Fichier: `src/pages/BibliothequeReglementaire.tsx`**
-
+Même modification pour les clients (section non-staff):
 ```typescript
-import { useDebounce } from "@/hooks/useDebounce";
-
-// Utiliser debounce pour la recherche
-const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
-// Dans la query, utiliser debouncedSearchTerm au lieu de searchTerm
-```
-
-#### 2.7 Ajouter breadcrumb de navigation
-
-**Créer: `src/components/bibliotheque/BibliothequeHeader.tsx`**
-
-```typescript
-export function BibliothequeHeader({ 
-  title, 
-  breadcrumbs 
-}: { 
-  title: string; 
-  breadcrumbs?: { label: string; href?: string }[] 
-}) {
-  return (
-    <div className="space-y-2">
-      {breadcrumbs && (
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/bibliotheque">Bibliothèque</BreadcrumbLink>
-            </BreadcrumbItem>
-            {breadcrumbs.map((crumb, i) => (
-              <Fragment key={i}>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  {crumb.href ? (
-                    <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
-                  ) : (
-                    <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                  )}
-                </BreadcrumbItem>
-              </Fragment>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
-      )}
-      <h1 className="text-3xl font-bold">{title}</h1>
-    </div>
-  );
+if (module.code === 'BIBLIOTHEQUE' && !isStaff) {
+  config = {
+    icon: config.icon,
+    subItems: [
+      { title: "Textes", url: "/client-bibliotheque/textes" },
+      { title: "Articles", url: "/client-bibliotheque/articles" },
+      { title: "Codes juridiques", url: "/client/codes-juridiques" },
+      { title: "Recherche avancée", url: "/client/recherche-avancee" },
+    ],
+  };
 }
 ```
 
-#### 2.8 Améliorer la pagination
+### 2. Création de la Page Articles
+
+**Nouveau fichier: `src/pages/BibliothequeArticles.tsx`**
+
+Interface dédiée à la recherche et navigation par articles:
+
+| Fonctionnalité | Description |
+|----------------|-------------|
+| **Recherche** | Par numéro d'article, titre, contenu (version en vigueur) |
+| **Filtres** | Type de texte parent, Domaine, Sous-domaine, Année, Exigence (oui/non), Introductif (oui/non) |
+| **Affichage** | Liste avec numéro, titre, résumé, texte parent (référence cliquable), statut version |
+| **Actions** | Voir détail, voir texte parent, voir historique versions |
+| **Export** | CSV/Excel des résultats filtrés |
+
+Structure de la page:
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  [Header] Articles réglementaires          [Export] [Recherche] │
+├─────────────────────────────────────────────────────────────────┤
+│  [Stats Cards] Total | Exigences | Introductifs | En vigueur   │
+├─────────────────────────────────────────────────────────────────┤
+│  [Filtres]                                                      │
+│  Type texte ▾ | Domaine ▾ | Sous-domaine ▾ | Année ▾           │
+│  □ Exigences uniquement  □ Introductifs uniquement             │
+├─────────────────────────────────────────────────────────────────┤
+│  [Résultats]                                                    │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ Art. 1 - Champ d'application                  [En vigueur]  │
+│  │ Décret n°2024-123 du 15 janvier 2024          [Exigence]    │
+│  │ Domaine: SST > Équipements                                  │
+│  │ Résumé: Lorem ipsum dolor sit amet...                       │
+│  └─────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ Art. 2 - Obligations générales                [En vigueur]  │
+│  │ ...                                                          │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  [Pagination] ◀ 1 2 3 ... 10 ▶     Affichage: 25 ▾             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 3. Création des Requêtes Articles
+
+**Fichier: `src/lib/textes-queries.ts`**
+
+Ajouter de nouvelles fonctions de requête:
+
+```typescript
+export const articlesListQueries = {
+  // Liste paginée avec filtres
+  async getAll(filters?: {
+    searchTerm?: string;
+    typeTexteFilter?: string;      // loi, decret, arrete, circulaire
+    domaineFilter?: string;
+    sousDomaineFilter?: string;
+    anneeFilter?: string;
+    exigenceOnly?: boolean;        // porte_exigence = true
+    introductifOnly?: boolean;     // est_introductif = true
+    page?: number;
+    pageSize?: number;
+  }) {
+    // Requête optimisée avec jointures
+  },
+  
+  // Récupérer les statistiques
+  async getStats() {
+    // Total, exigences, introductifs, en_vigueur
+  }
+};
+```
+
+### 4. Création du Composant DataGrid Articles
+
+**Nouveau fichier: `src/components/bibliotheque/ArticlesDataGrid.tsx`**
+
+Colonnes du tableau:
+
+| Colonne | Description |
+|---------|-------------|
+| Numéro | Numéro de l'article |
+| Titre | Titre de l'article |
+| Texte parent | Référence cliquable vers le texte |
+| Domaines | Badges des domaines/sous-domaines |
+| Statut | Badge en_vigueur/modifié/abrogé |
+| Type | Badge Exigence ou Introductif |
+| Actions | Voir, Historique, Éditer (staff) |
+
+### 5. Mise à jour des Routes
+
+**Fichier: `src/App.tsx`**
+
+Ajouter les nouvelles routes:
+
+```typescript
+// Route existante redirigée
+<Route path="bibliotheque" element={<Navigate to="/bibliotheque/textes" replace />} />
+
+// Nouvelles routes
+<Route path="bibliotheque/textes" element={<BibliothequeReglementaire />} />
+<Route path="bibliotheque/articles" element={<BibliothequeArticles />} />
+
+// Routes client
+<Route path="client-bibliotheque" element={<Navigate to="/client-bibliotheque/textes" replace />} />
+<Route path="client-bibliotheque/textes" element={<ClientBibliotheque />} />
+<Route path="client-bibliotheque/articles" element={<ClientBibliothequeArticles />} />
+```
+
+### 6. Renommage de la Page Textes
 
 **Fichier: `src/pages/BibliothequeReglementaire.tsx`**
 
-Ajouter sélecteur de taille de page:
-
-```typescript
-<Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-  <SelectTrigger className="w-[100px]">
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="10">10</SelectItem>
-    <SelectItem value="25">25</SelectItem>
-    <SelectItem value="50">50</SelectItem>
-    <SelectItem value="100">100</SelectItem>
-  </SelectContent>
-</Select>
-```
-
-### Phase 4: Optimisations (Priorité BASSE)
-
-#### 2.9 Mise en cache intelligente des filtres
-
-Utiliser les query keys de React Query pour invalider uniquement ce qui change:
-
-```typescript
-// Query keys structurées
-const texteQueryKey = ["textes", { 
-  type: typeFilter, 
-  domaine: domaineFilter, 
-  page 
-}];
-```
-
-#### 2.10 Export des données
-
-Ajouter un bouton d'export dans le header:
-
-```typescript
-<ExportButton
-  data={textes}
-  filename="bibliotheque-reglementaire"
-  columns={["reference", "titre", "type", "date_publication", "statut_vigueur"]}
-/>
-```
+Modifications mineures:
+- Titre: "Textes Réglementaires" (au lieu de "Bibliothèque Réglementaire")
+- Breadcrumb: Bibliothèque > Textes réglementaires
+- Bouton retour: vers /bibliotheque/dashboard
 
 ---
 
-## 3. Fichiers à Modifier
+## Détails Techniques
 
-| # | Fichier | Modifications | Priorité |
-|---|---------|---------------|----------|
-| 1 | `src/lib/textes-queries.ts` | Corriger `sousDomainesQueries.getActive()` pour ajouter filtres `actif=true` et `deleted_at=null` | CRITIQUE |
-| 2 | `src/components/bibliotheque/BibliothequeDataGrid.tsx` | Ajouter colonne Statut | HAUTE |
-| 3 | `src/pages/BibliothequeRechercheAvancee.tsx` | Pré-charger années, améliorer recherche mots-clés | HAUTE |
-| 4 | `src/pages/BibliothequeReglementaire.tsx` | Debounce search, sélecteur page size | MOYENNE |
-| 5 | `src/components/bibliotheque/BibliothequeHeader.tsx` | Créer composant breadcrumb | MOYENNE |
-| 6 | `src/lib/regulatory-domains-queries.ts` | Créer fichier centralisé (optionnel) | BASSE |
+### Requête Articles avec Jointures
+
+```sql
+SELECT 
+  a.id,
+  a.numero,
+  a.titre,
+  a.resume,
+  a.est_introductif,
+  a.porte_exigence,
+  av.contenu,
+  av.statut,
+  av.date_effet,
+  t.id as texte_id,
+  t.reference,
+  t.type,
+  t.annee,
+  ARRAY_AGG(DISTINCT sd.libelle) as sous_domaines,
+  ARRAY_AGG(DISTINCT d.libelle) as domaines
+FROM articles a
+JOIN article_versions av ON av.article_id = a.id AND av.statut = 'en_vigueur'
+JOIN textes_reglementaires t ON t.id = a.texte_id
+LEFT JOIN article_sous_domaines asd ON asd.article_id = a.id
+LEFT JOIN sous_domaines_application sd ON sd.id = asd.sous_domaine_id
+LEFT JOIN domaines_reglementaires d ON d.id = sd.domaine_id
+WHERE t.deleted_at IS NULL
+GROUP BY a.id, av.id, t.id
+ORDER BY t.date_publication DESC, a.numero
+```
+
+### Filtres Spécifiques Articles
+
+| Filtre | Type | Source |
+|--------|------|--------|
+| Type texte | Select | textes_reglementaires.type |
+| Domaine | Select | domaines_reglementaires |
+| Sous-domaine | Select (dépendant) | sous_domaines_application |
+| Année | Select | textes_reglementaires.annee |
+| Exigences uniquement | Checkbox | articles.porte_exigence |
+| Introductifs uniquement | Checkbox | articles.est_introductif |
+| Statut version | Select | article_versions.statut |
 
 ---
 
-## 4. Résumé des Améliorations
+## Fichiers à Créer/Modifier
 
-### Corrections Critiques
-- Élimination des sous-domaines en double via filtrage `actif=true`
-- Unification des sources de données
+| # | Fichier | Action | Description |
+|---|---------|--------|-------------|
+| 1 | `src/lib/module-navigation-map.ts` | Modifier | Séparer navigation Textes/Articles |
+| 2 | `src/pages/BibliothequeArticles.tsx` | Créer | Nouvelle page liste articles |
+| 3 | `src/components/bibliotheque/ArticlesDataGrid.tsx` | Créer | Tableau articles |
+| 4 | `src/components/bibliotheque/ArticlesCardView.tsx` | Créer | Vue cartes articles (mobile) |
+| 5 | `src/components/bibliotheque/ArticlesFilters.tsx` | Créer | Filtres spécifiques articles |
+| 6 | `src/components/bibliotheque/ArticlesStatsCards.tsx` | Créer | Statistiques articles |
+| 7 | `src/lib/textes-queries.ts` | Modifier | Ajouter articlesListQueries |
+| 8 | `src/App.tsx` | Modifier | Ajouter routes articles |
+| 9 | `src/pages/BibliothequeReglementaire.tsx` | Modifier | Renommer titre |
+| 10 | `src/pages/ClientBibliothequeArticles.tsx` | Créer | Version client de la page articles |
 
-### Améliorations Recherche
-- Tokenization des mots-clés
-- Pré-chargement des années
-- Debounce cohérent (300ms)
+---
 
-### Améliorations UI/UX
-- Colonne statut dans la grille
-- Breadcrumb de navigation
-- Sélecteur de taille de page
-- Messages empty state contextuels
-- Bouton export
+## Comportement des Filtres
 
-### Impact Attendu
-- Élimination des doublons visuels
-- Recherche plus pertinente et rapide
-- Navigation plus intuitive
-- Meilleure expérience utilisateur globale
+### Page Textes (existante)
+
+- Type de texte (loi, décret, arrêté, circulaire)
+- Domaine
+- Sous-domaine
+- Année de publication
+- Avec PDF (checkbox)
+- Favoris (checkbox)
+
+### Page Articles (nouvelle)
+
+- Type de texte parent
+- Domaine (via article_sous_domaines)
+- Sous-domaine (via article_sous_domaines)
+- Année du texte parent
+- **Exigences uniquement** (nouveau) - filtre articles.porte_exigence = true
+- **Introductifs uniquement** (nouveau) - filtre articles.est_introductif = true
+- **Statut version** (nouveau) - en_vigueur, modifié, abrogé
+
+---
+
+## Navigation Entre les Deux Vues
+
+### Depuis la page Textes
+
+- Clic sur un texte → Page détail texte (`/bibliotheque/textes/:id`)
+- La page détail affiche les articles du texte (comportement actuel conservé)
+
+### Depuis la page Articles
+
+- Clic sur un article → Modal de prévisualisation rapide (QuickView)
+- Bouton "Voir le texte" → Page détail texte
+- Bouton "Historique" → Modal versions ou page versions
+
+---
+
+## Impact Utilisateur
+
+### Avant
+
+L'utilisateur doit:
+1. Aller dans "Textes & articles"
+2. Trouver le texte qui l'intéresse
+3. Cliquer pour voir les articles
+4. Chercher l'article spécifique
+
+### Après
+
+L'utilisateur peut:
+- **Option A**: Chercher par texte (si connaît la référence/loi)
+- **Option B**: Chercher directement l'article (par mot-clé, domaine, exigence)
+
+---
+
+## Priorité d'Implémentation
+
+1. **HAUTE** - Navigation et routes (navigation-map, App.tsx)
+2. **HAUTE** - Page BibliothequeArticles avec requêtes
+3. **MOYENNE** - Composants DataGrid et filtres
+4. **MOYENNE** - Stats cards et export
+5. **BASSE** - Version client (ClientBibliothequeArticles)
+
