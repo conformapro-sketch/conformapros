@@ -200,11 +200,10 @@ export default function BibliothequeArticleVersions() {
           {/* Statistics */}
           {versions && versions.length > 0 && (
             <VersionStatsCard versions={versions.map(v => ({
-              ...v,
-              // Map to expected format for VersionStatsCard
-              modification_type: v.statut,
-              date_version: v.date_effet,
-              effective_from: v.date_effet,
+              id: v.id,
+              numero_version: v.numero_version,
+              date_effet: v.date_effet,
+              statut: v.statut,
             }))} />
           )}
 

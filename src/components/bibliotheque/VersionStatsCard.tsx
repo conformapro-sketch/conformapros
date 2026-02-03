@@ -5,9 +5,9 @@ import { fr } from "date-fns/locale";
 
 interface Version {
   id: string;
-  version_numero: number;
-  date_version: string;
-  modification_type?: string;
+  numero_version: number;
+  date_effet: string;
+  statut?: string;
 }
 
 interface VersionStatsCardProps {
@@ -24,22 +24,30 @@ export function VersionStatsCard({ versions }: VersionStatsCardProps) {
   
   const daysSinceFirst = differenceInDays(
     new Date(),
-    new Date(oldestVersion.date_version)
+    new Date(oldestVersion.date_effet)
   );
   
   const averageFrequency = versions.length > 1 
     ? Math.round(daysSinceFirst / versions.length)
     : 0;
 
-  const modificationTypes = versions.reduce((acc, v) => {
-    const type = v.modification_type || "autre";
+  const statutTypes = versions.reduce((acc, v) => {
+    const type = v.statut || "autre";
     acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const mostFrequentType = Object.entries(modificationTypes).sort(
+  const mostFrequentStatut = Object.entries(statutTypes).sort(
     ([, a], [, b]) => b - a
   )[0];
+
+  // Map statut to display label
+  const statutLabels: Record<string, string> = {
+    en_vigueur: "En vigueur",
+    remplacee: "Remplacée",
+    abrogee: "Abrogée",
+    autre: "Autre",
+  };
 
   return (
     <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
@@ -52,7 +60,7 @@ export function VersionStatsCard({ versions }: VersionStatsCardProps) {
             </div>
             <div className="text-3xl font-bold">{versions.length}</div>
             <p className="text-xs text-muted-foreground">
-              Depuis {format(new Date(oldestVersion.date_version), 'MMM yyyy', { locale: fr })}
+              Depuis {format(new Date(oldestVersion.date_effet), 'MMM yyyy', { locale: fr })}
             </p>
           </div>
 
@@ -62,10 +70,10 @@ export function VersionStatsCard({ versions }: VersionStatsCardProps) {
               <span>Dernière modification</span>
             </div>
             <div className="text-lg font-semibold">
-              {format(new Date(latestVersion.date_version), 'd MMM yyyy', { locale: fr })}
+              {format(new Date(latestVersion.date_effet), 'd MMM yyyy', { locale: fr })}
             </div>
             <p className="text-xs text-muted-foreground">
-              {latestVersion.modification_type || "Type inconnu"}
+              {statutLabels[latestVersion.statut || "autre"] || latestVersion.statut || "Statut inconnu"}
             </p>
           </div>
 
@@ -78,7 +86,7 @@ export function VersionStatsCard({ versions }: VersionStatsCardProps) {
               {averageFrequency > 0 ? `${averageFrequency}j` : "N/A"}
             </div>
             <p className="text-xs text-muted-foreground">
-              Type principal: {mostFrequentType?.[0] || "N/A"}
+              Statut principal: {statutLabels[mostFrequentStatut?.[0] || "autre"] || mostFrequentStatut?.[0] || "N/A"}
             </p>
           </div>
         </div>

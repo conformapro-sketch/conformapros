@@ -214,15 +214,15 @@ export function AppSidebar() {
                               </CollapsibleTrigger>
                               <CollapsibleContent className="sidebar-transition">
                                 <SidebarMenuSub>
-                                  {subItems.map((subItem) => (
+                                {subItems.map((subItem) => (
                                     <SidebarMenuSubItem key={subItem.url}>
                                       <SidebarMenuSubButton asChild>
                                         <NavLink
                                           to={subItem.url}
                                           className={({ isActive }) =>
-                                            `sidebar-hover ${
+                                            `sidebar-hover transition-all duration-200 ${
                                               isActive
-                                                ? "border-l-2 border-primary bg-sidebar-accent pl-2 font-medium text-sidebar-primary"
+                                                ? "border-l-2 border-primary bg-primary/10 pl-2 font-semibold text-primary"
                                                 : "hover:bg-sidebar-accent/50"
                                             }`
                                           }
