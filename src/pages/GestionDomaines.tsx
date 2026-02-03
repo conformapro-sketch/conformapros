@@ -70,7 +70,7 @@ const GestionDomaines = () => {
     queryKey: ["domaines"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("domaines_application")
+        .from("domaines_reglementaires")
         .select("*")
         .is("deleted_at", null)
         .order("libelle");
@@ -85,7 +85,7 @@ const GestionDomaines = () => {
     queryFn: async () => {
       let query = supabase
         .from("sous_domaines_application")
-        .select("*, domaines_application(libelle)")
+        .select("*, domaine:domaines_reglementaires(libelle)")
         .is("deleted_at", null)
         .order("ordre");
 
@@ -104,7 +104,7 @@ const GestionDomaines = () => {
     mutationFn: async (data: DomaineFormData) => {
       const validated = domaineSchema.parse(data);
       const { error } = await supabase
-        .from("domaines_application")
+        .from("domaines_reglementaires")
         .insert([validated as any]);
       if (error) throw error;
     },
@@ -124,7 +124,7 @@ const GestionDomaines = () => {
     mutationFn: async ({ id, data }: { id: string; data: DomaineFormData }) => {
       const validated = domaineSchema.parse(data);
       const { error } = await supabase
-        .from("domaines_application")
+        .from("domaines_reglementaires")
         .update(validated)
         .eq("id", id);
       if (error) throw error;
@@ -145,7 +145,7 @@ const GestionDomaines = () => {
   const deleteDomaine = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("domaines_application")
+        .from("domaines_reglementaires")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
@@ -550,7 +550,7 @@ const GestionDomaines = () => {
                       <TableCell className="font-medium">{sd.code}</TableCell>
                       <TableCell>{sd.libelle}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {sd.domaines_application?.libelle}
+                        {sd.domaine?.libelle}
                       </TableCell>
                       <TableCell>
                         {sd.actif ? (

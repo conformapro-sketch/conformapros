@@ -41,8 +41,9 @@ export function ArticleFormModal({
   const [formData, setFormData] = useState({
     numero: "",
     titre: "",
-    contenu: "",
+    contenu: "", // Used only for initial version creation
     porte_exigence: false,
+    date_effet: new Date().toISOString().split('T')[0], // For initial version
   });
   const [selectedSousDomaines, setSelectedSousDomaines] = useState<string[]>([]);
   
@@ -92,6 +93,7 @@ export function ArticleFormModal({
         titre: article.titre || article.titre_court || "",
         contenu: article.contenu || "",
         porte_exigence: article.porte_exigence ?? article.is_exigence ?? false,
+        date_effet: new Date().toISOString().split('T')[0],
       });
       
       // Load existing sous-domaines
@@ -187,22 +189,48 @@ export function ArticleFormModal({
       titre: "",
       contenu: "",
       porte_exigence: false,
+      date_effet: new Date().toISOString().split('T')[0],
     });
   };
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const newArticle = await textesArticlesQueries.create(data);
+      // 1. Create the article (without contenu - it goes in article_versions)
+      const articleData = {
+        texte_id: texteId,
+        numero: data.numero,
+        titre: data.titre || null,
+        porte_exigence: data.porte_exigence,
+        est_introductif: false,
+      };
+      const newArticle = await textesArticlesQueries.create(articleData);
+      
+      // 2. Create initial version with the content
+      if (data.contenu && data.contenu.trim()) {
+        await supabase
+          .from("article_versions")
+          .insert({
+            article_id: newArticle.id,
+            numero_version: 1,
+            contenu: data.contenu,
+            date_effet: data.date_effet || new Date().toISOString().split('T')[0],
+            statut: "en_vigueur",
+            source_texte_id: texteId,
+            notes_modifications: "Version initiale",
+          });
+      }
+      
+      // 3. Link sous-domaines
       if (selectedSousDomaines.length > 0) {
         await textesArticlesQueries.updateArticleSousDomaines(
           newArticle.id,
           selectedSousDomaines
         );
       }
-      
-      // Si un effet juridique est défini et qu'il cible un article spécifique
+        
+      // 4. Handle juridical effects if specified
       if (hasEffet && effetData.article_cible_id) {
-        // 1. Récupérer l'article cible et la version active actuelle
+        // Get current version of target article
         const { data: currentVersion } = await supabase
           .from("article_versions")
           .select("*")
@@ -214,11 +242,11 @@ export function ArticleFormModal({
         
         const nextVersionNumber = (currentVersion?.numero_version || 0) + 1;
         
-        // 2. Créer la nouvelle version dans l'article cible
+        // Create new version in target article
         const newVersionContent = effetData.type_effet === "ABROGE" 
-          ? `<div class="abrogation-notice"><p><strong>Article abrogé</strong></p><p>Par : ${texteData?.reference_officielle} - Article ${formData.numero}</p><p>Date d'effet : ${new Date(effetData.date_effet).toLocaleDateString("fr-FR")}</p></div>`
+          ? `<div class="abrogation-notice"><p><strong>Article abrogé</strong></p><p>Par : ${texteData?.reference} - Article ${data.numero}</p><p>Date d'effet : ${new Date(effetData.date_effet).toLocaleDateString("fr-FR")}</p></div>`
           : (effetData.type_effet === "MODIFIE" || effetData.type_effet === "REMPLACE")
-          ? formData.contenu
+          ? data.contenu
           : currentVersion?.contenu || "";
         
         await supabase
@@ -233,17 +261,15 @@ export function ArticleFormModal({
             notes_modifications: effetData.notes || `${effetData.type_effet} par ${texteData?.reference}`,
           });
         
-        // 3. Remplacer l'ancienne version
+        // Replace old version
         if (currentVersion) {
           await supabase
             .from("article_versions")
-            .update({
-              statut: "remplacee",
-            })
+            .update({ statut: "remplacee" })
             .eq("id", currentVersion.id);
         }
         
-        // 4. Créer l'effet juridique avec le lien vers l'article source
+        // Create juridical effect record
         await articlesEffetsJuridiquesQueries.create({
           article_source_id: newArticle.id,
           texte_source_id: texteId,
@@ -259,7 +285,7 @@ export function ArticleFormModal({
           portee_detail: effetData.portee_detail || undefined,
         });
       } else if (hasEffet) {
-        // Si l'effet cible un texte entier sans article spécifique
+        // Effect targets a whole text without specific article
         await articlesEffetsJuridiquesQueries.create({
           article_source_id: newArticle.id,
           texte_source_id: texteId,
@@ -302,7 +328,13 @@ export function ArticleFormModal({
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      await textesArticlesQueries.update(id, data);
+      // Update article metadata only (not content - that's in versions)
+      const articleData = {
+        numero: data.numero,
+        titre: data.titre || null,
+        porte_exigence: data.porte_exigence,
+      };
+      await textesArticlesQueries.update(id, articleData);
       await textesArticlesQueries.updateArticleSousDomaines(id, selectedSousDomaines);
     },
     onSuccess: () => {
@@ -327,8 +359,9 @@ export function ArticleFormModal({
       return;
     }
 
-    if (!formData.contenu.trim() && !article) {
-      toast.error("Le contenu de l'article est requis");
+    // Content is required only for new articles (to create initial version)
+    if (!article && !formData.contenu.trim()) {
+      toast.error("Le contenu de l'article est requis pour créer la version initiale");
       return;
     }
 
@@ -357,12 +390,13 @@ export function ArticleFormModal({
       }
     }
 
+    // Prepare clean data - article metadata only
     const cleanData = {
-      texte_id: texteId,
       numero: formData.numero.trim(),
       titre: formData.titre.trim() || null,
       porte_exigence: formData.porte_exigence,
-      est_introductif: false,
+      contenu: formData.contenu, // Passed for initial version creation
+      date_effet: formData.date_effet,
     };
 
     if (article) {

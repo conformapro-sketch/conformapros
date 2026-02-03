@@ -37,35 +37,34 @@ export const actesQueries = {
       .select("*, articles(count)", { count: "exact" })
       .is("deleted_at", null);
 
-    // Search across multiple fields
+    // Search across multiple fields - using correct column names
     if (filters?.searchTerm) {
       query = query.or(
-        `intitule.ilike.%${filters.searchTerm}%,reference_officielle.ilike.%${filters.searchTerm}%,autorite_emettrice.ilike.%${filters.searchTerm}%,resume.ilike.%${filters.searchTerm}%,numero_officiel.ilike.%${filters.searchTerm}%`
+        `titre.ilike.%${filters.searchTerm}%,reference.ilike.%${filters.searchTerm}%,autorite_emettrice.ilike.%${filters.searchTerm}%`
       );
     }
 
     if (filters?.typeFilter && filters.typeFilter !== "all") {
-      query = query.eq("type_acte", filters.typeFilter);
+      query = query.eq("type", filters.typeFilter);
     }
 
+    // Note: statut_vigueur is deprecated - status is now tracked via article_versions
     if (filters?.statutFilter && filters.statutFilter !== "all") {
-      query = query.eq("statut_vigueur", filters.statutFilter);
+      // Skip this filter as the column no longer exists
     }
 
     if (filters?.anneeFilter && filters.anneeFilter !== "all") {
-      const annee = parseInt(filters.anneeFilter);
-      query = query.gte("date_publication_jort", `${annee}-01-01`)
-        .lte("date_publication_jort", `${annee}-12-31`);
+      query = query.eq("annee", parseInt(filters.anneeFilter));
     }
 
     if (filters?.autoriteFilter && filters.autoriteFilter !== "all") {
-      query = query.eq("autorite_emettrice", filters.autoriteFilter);
+      query = query.eq("autorite_emettrice_id", filters.autoriteFilter);
     }
 
-    // Sorting
-    const sortBy = filters?.sortBy || "date_publication_jort";
+    // Sorting - using correct column name
+    const sortBy = filters?.sortBy || "date_publication";
     const sortOrder = filters?.sortOrder || "desc";
-    query = query.order(sortBy, { ascending: sortOrder === "asc" });
+    query = query.order(sortBy, { ascending: sortOrder === "asc", nullsFirst: false });
 
     // Pagination
     query = query.range(from, to);
@@ -94,20 +93,33 @@ export const actesQueries = {
   },
 
   async create(acte: Partial<ActeReglementaire>) {
-    // Check for duplicate intitule
+    // Check for duplicate reference
     const { data: existing } = await (supabase as any)
       .from("textes_reglementaires")
       .select("id")
-      .eq("intitule", acte.intitule)
+      .eq("reference", acte.reference || (acte as any).reference_officielle)
       .maybeSingle();
     
     if (existing) {
-      throw new Error("Un texte avec ce titre existe déjà");
+      throw new Error("Un texte avec cette référence existe déjà");
     }
+
+    // Map legacy fields to correct column names
+    const cleanData = {
+      type: acte.type || (acte as any).type_acte,
+      reference: acte.reference || (acte as any).reference_officielle,
+      titre: acte.titre || (acte as any).intitule,
+      date_publication: acte.date_publication || (acte as any).date_publication_jort,
+      autorite_emettrice: acte.autorite_emettrice,
+      autorite_emettrice_id: acte.autorite_emettrice_id,
+      source_url: acte.source_url,
+      pdf_url: acte.pdf_url,
+      annee: acte.annee,
+    };
 
     const { data, error } = await (supabase as any)
       .from("textes_reglementaires")
-      .insert([acte])
+      .insert([cleanData])
       .select()
       .single();
     if (error) throw error;
@@ -115,23 +127,36 @@ export const actesQueries = {
   },
 
   async update(id: string, acte: Partial<ActeReglementaire>) {
-    // Check for duplicate intitule (excluding current)
-    if (acte.intitule) {
+    // Check for duplicate reference (excluding current)
+    const refToCheck = acte.reference || (acte as any).reference_officielle;
+    if (refToCheck) {
       const { data: existing } = await (supabase as any)
         .from("textes_reglementaires")
         .select("id")
-        .eq("intitule", acte.intitule)
+        .eq("reference", refToCheck)
         .neq("id", id)
         .maybeSingle();
       
       if (existing) {
-        throw new Error("Un texte avec ce titre existe déjà");
+        throw new Error("Un texte avec cette référence existe déjà");
       }
     }
+    
+    // Map legacy fields to correct column names
+    const cleanData: any = {};
+    if (acte.type || (acte as any).type_acte) cleanData.type = acte.type || (acte as any).type_acte;
+    if (acte.reference || (acte as any).reference_officielle) cleanData.reference = acte.reference || (acte as any).reference_officielle;
+    if (acte.titre || (acte as any).intitule) cleanData.titre = acte.titre || (acte as any).intitule;
+    if (acte.date_publication || (acte as any).date_publication_jort) cleanData.date_publication = acte.date_publication || (acte as any).date_publication_jort;
+    if (acte.autorite_emettrice !== undefined) cleanData.autorite_emettrice = acte.autorite_emettrice;
+    if (acte.autorite_emettrice_id !== undefined) cleanData.autorite_emettrice_id = acte.autorite_emettrice_id;
+    if (acte.source_url !== undefined) cleanData.source_url = acte.source_url;
+    if (acte.pdf_url !== undefined) cleanData.pdf_url = acte.pdf_url;
+    if (acte.annee !== undefined) cleanData.annee = acte.annee;
 
     const { data, error } = await (supabase as any)
       .from("textes_reglementaires")
-      .update(acte)
+      .update(cleanData)
       .eq("id", id)
       .select()
       .single();
@@ -161,12 +186,17 @@ export const typesActeQueries = {
 
 export const articlesQueries = {
   async getByActeId(acteId: string) {
+    // Note: acte_id is deprecated, using texte_id
     const { data, error } = await (supabase as any)
       .from("articles")
-      .select("*")
-      .eq("acte_id", acteId)
-      .is("deleted_at", null)
-      .order("ordre");
+      .select(`
+        *,
+        sous_domaines:article_sous_domaines(
+          sous_domaine:sous_domaines_application(*)
+        )
+      `)
+      .eq("texte_id", acteId)
+      .order("numero");
     if (error) throw error;
     return data as Article[];
   },
@@ -316,7 +346,7 @@ export const changelogQueries = {
 export const domainesQueries = {
   async getAll() {
     const { data, error } = await (supabase as any)
-      .from("domaines_application")
+      .from("domaines_reglementaires")
       .select("*")
       .is("deleted_at", null)
       .order("libelle");
@@ -326,7 +356,7 @@ export const domainesQueries = {
 
   async getActive() {
     const { data, error } = await (supabase as any)
-      .from("domaines_application")
+      .from("domaines_reglementaires")
       .select("*")
       .eq("actif", true)
       .is("deleted_at", null)
@@ -337,7 +367,7 @@ export const domainesQueries = {
 
   async create(domaine: Partial<DomaineApplication>) {
     const { data, error } = await (supabase as any)
-      .from("domaines_application")
+      .from("domaines_reglementaires")
       .insert([domaine])
       .select()
       .single();
@@ -347,7 +377,7 @@ export const domainesQueries = {
 
   async update(id: string, domaine: Partial<DomaineApplication>) {
     const { data, error } = await (supabase as any)
-      .from("domaines_application")
+      .from("domaines_reglementaires")
       .update(domaine)
       .eq("id", id)
       .select()
@@ -358,7 +388,7 @@ export const domainesQueries = {
 
   async softDelete(id: string) {
     const { error } = await (supabase as any)
-      .from("domaines_application")
+      .from("domaines_reglementaires")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", id);
     if (error) throw error;
@@ -369,7 +399,7 @@ export const sousDomainesQueries = {
   async getByDomaineId(domaineId: string) {
     const { data, error } = await (supabase as any)
       .from("sous_domaines_application")
-      .select("*, domaine:domaines_application(*)")
+      .select("*, domaine:domaines_reglementaires(*)")
       .eq("domaine_id", domaineId)
       .is("deleted_at", null)
       .order("ordre");
@@ -380,7 +410,7 @@ export const sousDomainesQueries = {
   async getActive(domaineId?: string) {
     let query = (supabase as any)
       .from("sous_domaines_application")
-      .select("*, domaine:domaines_application(*)")
+      .select("*, domaine:domaines_reglementaires(*)")
       .eq("actif", true)
       .is("deleted_at", null);
     
@@ -426,10 +456,14 @@ export const sousDomainesQueries = {
 export const articleVersionsQueries = {
   async getByArticleId(articleId: string) {
     const { data, error } = await (supabase as any)
-      .from("articles_versions")
-      .select("*")
+      .from("article_versions")
+      .select(`
+        *,
+        source_texte:textes_reglementaires!article_versions_source_texte_id_fkey(
+          id, reference, titre, type
+        )
+      `)
       .eq("article_id", articleId)
-      .is("deleted_at", null)
       .order("date_effet", { ascending: false });
     if (error) throw error;
     return data as ArticleVersion[];
@@ -437,7 +471,7 @@ export const articleVersionsQueries = {
 
   async create(version: Partial<ArticleVersion>) {
     const { data, error } = await (supabase as any)
-      .from("articles_versions")
+      .from("article_versions")
       .insert([version])
       .select()
       .single();
@@ -447,7 +481,7 @@ export const articleVersionsQueries = {
 
   async update(id: string, version: Partial<ArticleVersion>) {
     const { data, error } = await (supabase as any)
-      .from("articles_versions")
+      .from("article_versions")
       .update(version)
       .eq("id", id)
       .select()
@@ -457,9 +491,10 @@ export const articleVersionsQueries = {
   },
 
   async softDelete(id: string) {
+    // article_versions uses statut column, not deleted_at
     const { error } = await (supabase as any)
-      .from("articles_versions")
-      .update({ deleted_at: new Date().toISOString() })
+      .from("article_versions")
+      .update({ statut: "abrogee" })
       .eq("id", id);
     if (error) throw error;
   },
@@ -470,7 +505,7 @@ export const textesDomainesQueries = {
   async getByTexteId(texteId: string) {
     const { data, error } = await (supabase as any)
       .from("textes_domaines")
-      .select("*, domaine:domaines_application(*)")
+      .select("*, domaine:domaines_reglementaires(*)")
       .eq("texte_id", texteId);
     if (error) throw error;
     return data;
