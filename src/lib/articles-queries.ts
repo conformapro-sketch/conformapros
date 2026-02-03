@@ -41,6 +41,7 @@ export interface ArticleWithDetails {
 
 export interface ArticleFilters {
   searchTerm?: string;
+  texteId?: string;
   typeTexteFilter?: string;
   domaineFilter?: string;
   sousDomaineFilter?: string;
@@ -81,6 +82,11 @@ export const articlesListQueries = {
           )
         )
       `, { count: "exact" });
+
+    // Filter by specific texte ID (from URL param)
+    if (filters?.texteId && filters.texteId !== "all") {
+      query = query.eq("texte_id", filters.texteId);
+    }
 
     // Search filter - applied after fetching to include version content
     const searchTerm = filters?.searchTerm?.trim() || "";

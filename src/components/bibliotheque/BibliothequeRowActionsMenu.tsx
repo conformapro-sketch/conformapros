@@ -6,7 +6,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Eye, Pencil, Trash2, FileText, Star, Copy, Archive } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, FileText, Star, Copy, Archive } from "lucide-react";
 import { useState } from "react";
 
 interface BibliothequeRowActionsMenuProps {
@@ -61,8 +61,8 @@ export function BibliothequeRowActionsMenu({
           className="cursor-pointer"
           disabled={isLoading}
         >
-          <Eye className="h-4 w-4 mr-2" />
-          Voir les détails
+          <FileText className="h-4 w-4 mr-2" />
+          Voir les articles
         </DropdownMenuItem>
         {texte.pdf_url && onViewPdf && (
           <DropdownMenuItem 

@@ -1,21 +1,28 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Search, FileText, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { BibliothequeHeader } from "@/components/bibliotheque/BibliothequeHeader";
 import { ArticlesStatsCards } from "@/components/bibliotheque/ArticlesStatsCards";
 import { ArticlesFilters } from "@/components/bibliotheque/ArticlesFilters";
 import { ArticlesDataGrid } from "@/components/bibliotheque/ArticlesDataGrid";
 import { ArticleQuickViewModal } from "@/components/bibliotheque/ArticleQuickViewModal";
 import { PaginationControls } from "@/components/shared/PaginationControls";
-import { ExportButton } from "@/components/shared/ExportButton";
 import { articlesListQueries, type ArticleWithDetails } from "@/lib/articles-queries";
 import { domainesQueries, sousDomainesQueries } from "@/lib/textes-queries";
+import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export default function BibliothequeArticles() {
+  // URL params for texte filter
+  const [searchParams, setSearchParams] = useSearchParams();
+  const texteIdFromUrl = searchParams.get("texte");
+  
   // State for filters
   const [searchTerm, setSearchTerm] = useState("");
+  const [texteFilter, setTexteFilter] = useState(texteIdFromUrl || "all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [domaineFilter, setDomaineFilter] = useState("all");
   const [sousDomaineFilter, setSousDomaineFilter] = useState("all");
@@ -28,6 +35,13 @@ export default function BibliothequeArticles() {
   const [introductifOnly, setIntroductifOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  // Sync texte filter with URL params
+  useEffect(() => {
+    if (texteIdFromUrl && texteIdFromUrl !== texteFilter) {
+      setTexteFilter(texteIdFromUrl);
+    }
+  }, [texteIdFromUrl]);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -49,6 +63,21 @@ export default function BibliothequeArticles() {
     queryFn: articlesListQueries.getAvailableYears,
   });
 
+  // Fetch texte info for display when filter is active
+  const { data: texteInfo } = useQuery({
+    queryKey: ["texte-info-filter", texteFilter],
+    queryFn: async () => {
+      if (!texteFilter || texteFilter === "all") return null;
+      const { data } = await supabase
+        .from("textes_reglementaires")
+        .select("id, reference, titre, type")
+        .eq("id", texteFilter)
+        .single();
+      return data;
+    },
+    enabled: !!texteFilter && texteFilter !== "all",
+  });
+
   // Fetch stats
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["articles-stats"],
@@ -60,6 +89,7 @@ export default function BibliothequeArticles() {
     queryKey: [
       "articles-list",
       debouncedSearchTerm,
+      texteFilter,
       typeFilter,
       domaineFilter,
       sousDomaineFilter,
@@ -73,6 +103,7 @@ export default function BibliothequeArticles() {
     queryFn: () =>
       articlesListQueries.getAll({
         searchTerm: debouncedSearchTerm,
+        texteId: texteFilter !== "all" ? texteFilter : undefined,
         typeTexteFilter: typeFilter,
         domaineFilter,
         sousDomaineFilter,
@@ -85,9 +116,17 @@ export default function BibliothequeArticles() {
       }),
   });
 
+  // Clear texte filter
+  const clearTexteFilter = () => {
+    setTexteFilter("all");
+    setSearchParams({});
+  };
+
   // Reset all filters
   const handleResetFilters = () => {
     setSearchTerm("");
+    setTexteFilter("all");
+    setSearchParams({});
     setTypeFilter("all");
     setDomaineFilter("all");
     setSousDomaineFilter("all");
@@ -97,20 +136,6 @@ export default function BibliothequeArticles() {
     setIntroductifOnly(false);
     setPage(1);
   };
-
-  // Export data
-  const exportData = useMemo(() => {
-    return (articlesResult?.data || []).map((article) => ({
-      numero: article.numero,
-      titre: article.titre,
-      resume: article.resume || "",
-      texte_reference: article.texte?.reference || "",
-      type_texte: article.texte?.type || "",
-      porte_exigence: article.porte_exigence ? "Oui" : "Non",
-      est_introductif: article.est_introductif ? "Oui" : "Non",
-      statut: article.version_active?.statut || "",
-    }));
-  }, [articlesResult?.data]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -123,7 +148,31 @@ export default function BibliothequeArticles() {
       {/* Stats Cards */}
       <ArticlesStatsCards stats={stats} isLoading={statsLoading} />
 
-      {/* Search and Export */}
+      {/* Texte Filter Badge (when filtering by specific texte) */}
+      {texteInfo && (
+        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+          <FileText className="h-5 w-5 text-primary" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">
+              Articles du texte: <span className="text-primary">{texteInfo.reference}</span>
+            </p>
+            <p className="text-xs text-muted-foreground truncate max-w-md">
+              {texteInfo.titre}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearTexteFilter}
+            className="h-8 w-8 p-0"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Effacer le filtre</span>
+          </Button>
+        </div>
+      )}
+
+      {/* Search */}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -137,11 +186,6 @@ export default function BibliothequeArticles() {
             className="pl-10"
           />
         </div>
-
-        <ExportButton
-          data={exportData}
-          fileName="articles-reglementaires"
-        />
       </div>
 
       {/* Filters */}
