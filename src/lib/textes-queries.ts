@@ -158,8 +158,9 @@ export const textesReglementairesQueries = {
       `);
 
     if (searchTerm) {
+      // Using correct column names: numero (not numero_article), titre (not titre_court)
       articlesQuery = articlesQuery.or(
-        `numero_article.ilike.%${searchTerm}%,titre.ilike.%${searchTerm}%,contenu.ilike.%${searchTerm}%`
+        `numero.ilike.%${searchTerm}%,titre.ilike.%${searchTerm}%,resume.ilike.%${searchTerm}%`
       );
     }
 

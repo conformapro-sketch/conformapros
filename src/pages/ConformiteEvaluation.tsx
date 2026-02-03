@@ -72,7 +72,7 @@ export default function ConformiteEvaluation() {
     queryKey: ["domaines"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("domaines_application")
+        .from("domaines_reglementaires")
         .select("*")
         .eq("actif", true)
         .order("libelle");
