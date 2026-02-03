@@ -1,243 +1,187 @@
 
-# Plan de Correction Complète du Module Bibliothèque Réglementaire
+# Plan de Correction: Sauvegarde du Contenu des Articles Réglementaires
 
-## Diagnostic Complet
+## Diagnostic Confirmé
 
-### 1. Conflits de Schéma Critiques
+### Problème Identifié
+L'article `3bf23534-cb6b-46a9-b331-94a67a9e5253` existe dans la table `articles` mais n'a **aucune version correspondante** dans la table `article_versions`. Le contenu ne s'affiche pas car il n'a jamais été sauvegardé.
 
-L'analyse révèle une **incohérence majeure** entre le code et la base de données :
+### Cause Racine
 
-| Aspect | Base de Données (Réel) | Code (Utilisé) | Impact |
-|--------|------------------------|----------------|--------|
-| **Table textes** | `textes_reglementaires` | Correct | OK |
-| Colonne titre | `titre` | `titre`, `intitule` (mixte) | Erreurs partielles |
-| Colonne référence | `reference` | `reference`, `reference_officielle` (mixte) | Erreurs partielles |
-| **Table articles** | `articles` | `articles`, `textes_articles` (mixte) | **CRITIQUE** |
-| Colonne numéro article | `numero` | `numero`, `numero_article` (mixte) | Erreurs |
-| Colonne titre article | `titre` | `titre`, `titre_court` (mixte) | Erreurs |
-| Colonne exigence | `porte_exigence` | `porte_exigence`, `is_exigence` (mixte) | Erreurs |
-| Colonne contenu | Dans `article_versions` | `contenu` directement dans article | **INCORRECT** |
-| **Table domaines** | `domaines_reglementaires` | `domaines_reglementaires`, `domaines_application` (mixte) | Erreurs |
+1. **Validation du contenu défaillante** : Le code utilise `formData.contenu.trim()` pour vérifier si le contenu est vide, mais le RichTextEditor (TipTap) retourne du HTML même quand l'éditeur est "vide" (ex: `<p></p>`). Cette chaîne n'est pas considérée comme vide après `.trim()`.
 
-### 2. Fichiers avec Erreurs Identifiées
+2. **Condition de sauvegarde** : Dans `ArticleFormModal.tsx` ligne 209, la création de version initiale est conditionnée par:
+```typescript
+if (data.contenu && data.contenu.trim()) {
+```
+Cette condition passe même pour `<p></p>`, mais le contenu est effectivement vide visuellement.
 
-#### Fichiers Critiques (Erreurs de Table)
+3. **Incohérence entre création et édition** : 
+   - La création d'article tente de créer une version initiale (ligne 209-226)
+   - L'édition d'article ne crée PAS de nouvelle version - elle ne modifie que les métadonnées (ligne 336-346)
+   - Si l'article a été créé sans contenu (ou avec un contenu HTML vide), il reste sans version
 
-| Fichier | Ligne | Problème |
-|---------|-------|----------|
-| `src/lib/actes-queries.ts` | 41-43 | Recherche sur `intitule` au lieu de `titre` |
-| `src/lib/actes-queries.ts` | 97-124 | Validation duplicat sur `intitule` (inexistant) |
-| `src/lib/actes-queries.ts` | 163-210 | Utilise `acte_id` au lieu de `texte_id` pour articles |
-| `src/lib/actes-queries.ts` | 316-365 | Utilise `domaines_application` (table inexistante) |
-| `src/lib/actes-queries.ts` | 426-465 | Utilise `articles_versions` au lieu de `article_versions` |
-| `src/lib/actes-queries.ts` | 502-633 | FK vers `actes_reglementaires` et `textes_articles` (tables inexistantes) |
-| `src/components/ArticleFormModal.tsx` | 41-46 | Form utilise `numero`, `titre_court`, `contenu`, `is_exigence` |
-| `src/components/ArticleFormModal.tsx` | 360-366 | Envoie `numero_article`, `titre_court`, `is_exigence` |
-| `src/pages/BibliothequeTexteDetail.tsx` | 130-145 | Utilise `numero_article`, `titre_court`, `resume`, `contenu` |
-| `src/pages/BibliothequeTexteDetail.tsx` | 183-197 | FK vers `textes_articles` |
-| `src/types/textes.ts` | 64-100 | Type `ActeReglementaire` avec colonnes inexistantes |
-| `src/types/textes.ts` | 126-141 | Type `Article` avec `acte_id`, `titre_court`, `contenu_ar/fr` |
-| `src/types/textes.ts` | 151-180 | Type `ArticleVersion` avec colonnes incorrectes |
+4. **Article existant sans version** : L'article actuel a été créé le `2026-02-03 12:51:17` probablement avec un contenu vide ou via un ancien code qui ne créait pas de version initiale.
 
-#### Fichiers avec Colonnes Incorrectes (10+ fichiers)
+## Corrections Requises
 
-- `AbrogationModal.tsx` : `numero_article`
-- `ArticleAutocomplete.tsx` : `numero_article`, `titre_court`
-- `ArticleVersionWizard.tsx` : `numero_article`
-- `ArticleEffetsTimeline.tsx` : `numero_article`, `titre_court`
-- `EffetsCreesTab.tsx` : `numero_article`, `titre_court`
-- `ArticleQuickEffetModal.tsx` : `numero_article`
+### 1. Améliorer la validation du contenu vide
 
-### 3. Tables Réelles vs Tables Référencées
+Créer une fonction utilitaire pour détecter si le contenu HTML est réellement vide:
 
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│ TABLES RÉELLES (Database)          │ TABLES RÉFÉRENCÉES (Code)     │
-├─────────────────────────────────────────────────────────────────────┤
-│ textes_reglementaires              │ textes_reglementaires ✅      │
-│   - type (enum)                    │   - type ✅                   │
-│   - reference                      │   - reference_officielle ❌   │
-│   - titre                          │   - intitule ❌               │
-│   - date_publication               │   - date_publication_jort ❌  │
-│   - autorite_emettrice             │   - autorite_emettrice ✅     │
-│   - autorite_emettrice_id          │   - autorite_emettrice_id ✅  │
-│   - annee                          │   - annee ✅                  │
-│   - source_url                     │   - source_url ✅             │
-│   - pdf_url                        │   - pdf_url ✅                │
-├─────────────────────────────────────────────────────────────────────┤
-│ articles                           │ textes_articles ❌            │
-│   - texte_id                       │   - acte_id ❌               │
-│   - numero                         │   - numero_article ❌        │
-│   - titre                          │   - titre_court ❌           │
-│   - resume                         │   - resume ✅                │
-│   - porte_exigence                 │   - is_exigence ❌           │
-│   - est_introductif                │   - est_introductif ✅       │
-│   (pas de contenu)                 │   - contenu ❌               │
-├─────────────────────────────────────────────────────────────────────┤
-│ article_versions                   │ articles_versions ❌          │
-│   - numero_version                 │   - version_numero ❌        │
-│   - date_effet                     │   - date_version ❌          │
-│   - statut                         │   - is_active ❌             │
-│   - source_texte_id                │   - source_text_id ❌        │
-│   - contenu                        │   - contenu ✅               │
-│   - notes_modifications            │   - notes_modification ❌    │
-├─────────────────────────────────────────────────────────────────────┤
-│ domaines_reglementaires            │ domaines_application ❌       │
-│ sous_domaines_application          │ sous_domaines_application ✅  │
-│ article_sous_domaines              │ articles_sous_domaines ❌     │
-└─────────────────────────────────────────────────────────────────────┘
+```typescript
+// Détecte si le contenu HTML est visuellement vide
+function isHtmlContentEmpty(html: string): boolean {
+  if (!html) return true;
+  // Supprimer les balises HTML et les espaces
+  const textContent = html
+    .replace(/<[^>]*>/g, '') // Supprimer les balises
+    .replace(/&nbsp;/g, ' ') // Remplacer les espaces insécables
+    .trim();
+  return textContent.length === 0;
+}
 ```
 
-### 4. Problèmes UX/UI Identifiés
+### 2. Corriger ArticleFormModal.tsx
 
-1. **Formulaire Article** : Contient un champ `contenu` alors que le contenu devrait être dans `article_versions`
-2. **Liste Articles** : Affiche `contenu` depuis l'article alors qu'il devrait être chargé depuis la version active
-3. **Double source de données** : `textes-queries.ts` et `actes-queries.ts` gèrent les mêmes données différemment
+| Ligne | Modification |
+|-------|-------------|
+| 209 | Utiliser `isHtmlContentEmpty()` au lieu de `.trim()` |
+| 370-372 | Mettre à jour la validation pour utiliser `isHtmlContentEmpty()` |
+| 336-346 | Ajouter la logique pour créer/mettre à jour la version lors de l'édition |
 
----
+### 3. Ajouter la création de version lors de l'édition d'article
 
-## Plan de Correction
+Actuellement, l'édition (`updateMutation`) ne gère pas le contenu du tout. Il faut:
+1. Permettre l'édition du contenu dans le formulaire (déjà présent visuellement)
+2. Si le contenu est modifié ET non-vide, créer une nouvelle version
+3. Ou permettre de créer une version initiale si l'article n'en a pas
 
-### Phase 1 : Mise à Jour des Types TypeScript
+### 4. Invalider les queries correctement
 
-Corriger `src/types/textes.ts` pour correspondre au schéma réel de la base de données.
+Ajouter les invalidations pour les queries de versions après les mutations.
 
-**Modifications :**
-- `ActeReglementaire` → Renommer en `TexteReglementaire` avec colonnes correctes
-- `Article` → Supprimer `acte_id`, `titre_court`, `contenu_ar/fr`, ajouter `texte_id`
-- `ArticleVersion` → Corriger les noms de colonnes
+## Fichiers à Modifier
 
-### Phase 2 : Consolidation des Query Files
+| Fichier | Modifications |
+|---------|---------------|
+| `src/lib/utils.ts` | Ajouter fonction `isHtmlContentEmpty()` |
+| `src/components/ArticleFormModal.tsx` | 1. Importer `isHtmlContentEmpty`, 2. Corriger validation ligne 370, 3. Corriger condition ligne 209, 4. Ajouter logique de version dans `updateMutation` |
+| `src/pages/BibliothequeTexteDetail.tsx` | Afficher un indicateur si l'article n'a pas de version (pour diagnostic) |
 
-**Supprimer/Refactorer :**
-- `src/lib/actes-queries.ts` → Migrer vers `src/lib/textes-queries.ts`
-- `src/lib/textes-reglementaires-queries.ts` → Fusionner avec `textes-queries.ts`
+## Détails Techniques
 
-**Fichier unique :** `src/lib/bibliotheque-queries.ts` avec :
-- `textesQueries` (CRUD textes_reglementaires)
-- `articlesQueries` (CRUD articles)
-- `versionsQueries` (CRUD article_versions)
-- `domainesQueries` (CRUD domaines_reglementaires)
-- `sousDomainesQueries` (CRUD sous_domaines_application)
+### Modification de la validation du contenu (ArticleFormModal.tsx)
 
-### Phase 3 : Correction des Composants de Formulaire
+```typescript
+// Avant (ligne 370)
+if (!article && !formData.contenu.trim()) {
 
-#### 3.1 TexteFormModal.tsx
-- Vérifier les colonnes utilisées correspondent au schéma
-- Colonnes correctes : `type`, `reference`, `titre`, `date_publication`, `source_url`, `pdf_url`, `autorite_emettrice_id`, `annee`
+// Après
+if (!article && isHtmlContentEmpty(formData.contenu)) {
+```
 
-#### 3.2 ArticleFormModal.tsx
-**Corrections majeures :**
-- Supprimer le champ `contenu` du formulaire
-- Mapper correctement : `numero` (pas `numero_article`), `titre` (pas `titre_court`), `porte_exigence` (pas `is_exigence`)
-- À la création, créer automatiquement une première version
+### Modification de la création de version (ArticleFormModal.tsx)
 
-#### 3.3 ArticleVersionManagerModal (nouveau)
-- Créer un composant dédié pour gérer les versions
-- Champs : `contenu`, `date_effet`, `source_texte_id`, `notes_modifications`
+```typescript
+// Avant (ligne 209)
+if (data.contenu && data.contenu.trim()) {
 
-### Phase 4 : Correction des Pages
+// Après
+if (data.contenu && !isHtmlContentEmpty(data.contenu)) {
+```
 
-#### 4.1 BibliothequeReglementaire.tsx
-- Vérifier les imports de queries
-- Corriger les accès aux colonnes (`reference` pas `reference_officielle`)
+### Ajout de la gestion des versions lors de l'édition
 
-#### 4.2 BibliothequeTexteDetail.tsx
-- Corriger `numero_article` → `numero`
-- Corriger `titre_court` → `titre`
-- Charger le contenu depuis `article_versions` avec `statut = 'en_vigueur'`
-- Supprimer référence à `articles_effets_juridiques` vers `textes_articles`
+Dans `updateMutation`, ajouter:
 
-#### 4.3 BibliothequeTextes.tsx
-- Corriger les colonnes affichées dans la table
+```typescript
+// Si contenu fourni et article n'a pas de version active, créer une version initiale
+if (data.contenu && !isHtmlContentEmpty(data.contenu)) {
+  // Vérifier si une version existe
+  const { data: existingVersion } = await supabase
+    .from("article_versions")
+    .select("id")
+    .eq("article_id", id)
+    .eq("statut", "en_vigueur")
+    .limit(1)
+    .maybeSingle();
+  
+  if (!existingVersion) {
+    // Créer une version initiale
+    await supabase.from("article_versions").insert({
+      article_id: id,
+      numero_version: 1,
+      contenu: data.contenu,
+      date_effet: new Date().toISOString().split('T')[0],
+      statut: "en_vigueur",
+      source_texte_id: texteId,
+      notes_modifications: "Version initiale",
+    });
+  }
+}
+```
 
-### Phase 5 : Correction des Composants Auxiliaires
+### Migration de données pour l'article existant
 
-| Composant | Corrections |
-|-----------|-------------|
-| `ArticleAutocomplete.tsx` | `numero_article` → `numero` |
-| `AbrogationModal.tsx` | `numero_article` → `numero` |
-| `ArticleVersionWizard.tsx` | `numero_article` → `numero` |
-| `ArticleEffetsTimeline.tsx` | `numero_article` → `numero` |
-| `EffetsCreesTab.tsx` | `numero_article` → `numero` |
-| `ArticleQuickEffetModal.tsx` | `numero_article` → `numero` |
-| `BibliothequeCardView.tsx` | `reference` au lieu de potentiellement autres |
-| `BibliothequeDataGrid.tsx` | Vérifier les colonnes |
+Exécuter une requête SQL pour créer une version initiale pour les articles orphelins:
 
-### Phase 6 : Nettoyage et Optimisation
+```sql
+INSERT INTO article_versions (
+  article_id,
+  numero_version,
+  contenu,
+  date_effet,
+  statut,
+  source_texte_id,
+  notes_modifications
+)
+SELECT 
+  a.id,
+  1,
+  '<p>Contenu à compléter</p>',
+  COALESCE(t.date_publication, CURRENT_DATE),
+  'en_vigueur',
+  a.texte_id,
+  'Version initiale créée automatiquement'
+FROM articles a
+JOIN textes_reglementaires t ON a.texte_id = t.id
+WHERE NOT EXISTS (
+  SELECT 1 FROM article_versions av WHERE av.article_id = a.id
+);
+```
 
-1. **Supprimer les fichiers redondants :**
-   - `src/lib/actes-queries.ts` → Migrer et supprimer
-   - `src/lib/textes-reglementaires-queries.ts` → Fusionner et supprimer
-
-2. **Mettre à jour les imports :**
-   - Tous les fichiers utilisant `actes-queries` → `bibliotheque-queries`
-
-3. **Ajouter la validation côté client :**
-   - Schémas Zod alignés avec la base de données
-
-### Phase 7 : Tests et Validation
-
-1. Créer un texte réglementaire via le formulaire
-2. Ajouter un article au texte
-3. Créer une version pour l'article
-4. Vérifier l'affichage dans la liste
-5. Modifier l'article
-6. Modifier la version
-7. Tester la recherche et les filtres
-
----
-
-## Résumé des Fichiers à Modifier
-
-| Catégorie | Fichiers | Priorité |
-|-----------|----------|----------|
-| Types | `src/types/textes.ts` | HAUTE |
-| Queries | `src/lib/textes-queries.ts` (refactoring complet) | HAUTE |
-| Queries | `src/lib/actes-queries.ts` (supprimer après migration) | HAUTE |
-| Formulaires | `src/components/TexteFormModal.tsx` | HAUTE |
-| Formulaires | `src/components/ArticleFormModal.tsx` | HAUTE |
-| Pages | `src/pages/BibliothequeTexteDetail.tsx` | HAUTE |
-| Pages | `src/pages/BibliothequeReglementaire.tsx` | MOYENNE |
-| Pages | `src/pages/BibliothequeTextes.tsx` | MOYENNE |
-| Composants | `src/components/bibliotheque/BibliothequeDataGrid.tsx` | MOYENNE |
-| Composants | `src/components/bibliotheque/BibliothequeCardView.tsx` | MOYENNE |
-| Composants | 6 composants auxiliaires (Autocomplete, Timeline, etc.) | MOYENNE |
-
----
-
-## Estimations
-
-| Phase | Durée Estimée | Complexité |
-|-------|--------------|------------|
-| Phase 1 (Types) | 30 min | Moyenne |
-| Phase 2 (Queries) | 2h | Haute |
-| Phase 3 (Formulaires) | 1h30 | Haute |
-| Phase 4 (Pages) | 1h30 | Haute |
-| Phase 5 (Composants) | 1h | Moyenne |
-| Phase 6 (Nettoyage) | 30 min | Basse |
-| Phase 7 (Tests) | 30 min | Basse |
-
-**Total estimé : 7-8 heures de développement**
-
----
-
-## Architecture Cible
-
-Après correction, l'architecture sera :
+## Résumé des Changements
 
 ```text
-src/lib/bibliotheque-queries.ts    ← Source unique pour toutes les requêtes
-    ├── textesQueries              ← CRUD textes_reglementaires
-    ├── articlesQueries            ← CRUD articles
-    ├── versionsQueries            ← CRUD article_versions
-    ├── domainesQueries            ← CRUD domaines_reglementaires
-    └── sousDomainesQueries        ← CRUD sous_domaines_application
-
-src/types/bibliotheque.ts          ← Types alignés avec la BDD
-    ├── TexteReglementaire
-    ├── Article
-    ├── ArticleVersion
-    ├── DomaineReglementaire
-    └── SousDomaineApplication
+┌──────────────────────────────────────────────────────────────────┐
+│                    FLUX DE SAUVEGARDE CORRIGÉ                    │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. CRÉATION D'ARTICLE (Nouveau)                                 │
+│     ├─ Créer article dans `articles`                             │
+│     ├─ SI contenu non-vide (via isHtmlContentEmpty)              │
+│     │   └─ Créer version 1 dans `article_versions`               │
+│     └─ Lier sous-domaines                                        │
+│                                                                  │
+│  2. ÉDITION D'ARTICLE                                            │
+│     ├─ Mettre à jour métadonnées dans `articles`                 │
+│     ├─ SI contenu fourni ET pas de version active                │
+│     │   └─ Créer version 1 dans `article_versions`               │
+│     └─ Mettre à jour sous-domaines                               │
+│                                                                  │
+│  3. AJOUT DE VERSION (ArticleVersionWizard)                      │
+│     ├─ Créer nouvelle version avec statut "en_vigueur"           │
+│     └─ Passer ancienne version à "remplacée"                     │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+## Ordre d'Implémentation
+
+1. **Étape 1** : Ajouter la fonction `isHtmlContentEmpty` dans `src/lib/utils.ts`
+2. **Étape 2** : Corriger les validations dans `ArticleFormModal.tsx`
+3. **Étape 3** : Corriger la création de version dans `createMutation`
+4. **Étape 4** : Ajouter la création de version dans `updateMutation`
+5. **Étape 5** : Migrer les articles orphelins via SQL
+6. **Étape 6** : Tester le flux complet (création, édition, versions)
