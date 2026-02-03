@@ -38,7 +38,7 @@ export function BibliothequeHeader({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/bibliotheque">Bibliothèque</Link>
+                <Link to="/bibliotheque/dashboard">Bibliothèque</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             {breadcrumbs.map((crumb, i) => (
