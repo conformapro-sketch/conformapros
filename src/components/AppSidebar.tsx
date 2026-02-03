@@ -219,11 +219,12 @@ export function AppSidebar() {
                                       <SidebarMenuSubButton asChild>
                                         <NavLink
                                           to={subItem.url}
+                                          end
                                           className={({ isActive }) =>
-                                            `sidebar-hover transition-all duration-200 ${
+                                            `sidebar-hover transition-all duration-200 rounded-md ${
                                               isActive
-                                                ? "border-l-2 border-primary bg-primary/10 pl-2 font-semibold text-primary"
-                                                : "hover:bg-sidebar-accent/50"
+                                                ? "border-l-4 border-primary bg-primary/15 pl-3 font-bold text-primary shadow-sm"
+                                                : "hover:bg-sidebar-accent/50 pl-4"
                                             }`
                                           }
                                         >
