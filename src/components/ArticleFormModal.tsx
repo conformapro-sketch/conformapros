@@ -21,6 +21,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import type { TypeEffet, PorteeEffet } from "@/types/textes";
 import { TagManager } from "@/components/TagManager";
+import { isHtmlContentEmpty } from "@/lib/utils";
 
 interface ArticleFormModalProps {
   open: boolean;
@@ -206,7 +207,7 @@ export function ArticleFormModal({
       const newArticle = await textesArticlesQueries.create(articleData);
       
       // 2. Create initial version with the content
-      if (data.contenu && data.contenu.trim()) {
+      if (data.contenu && !isHtmlContentEmpty(data.contenu)) {
         const { error: versionError } = await supabase
           .from("article_versions")
           .insert({
@@ -343,10 +344,43 @@ export function ArticleFormModal({
       };
       await textesArticlesQueries.update(id, articleData);
       await textesArticlesQueries.updateArticleSousDomaines(id, selectedSousDomaines);
+      
+      // If content is provided and article has no active version, create initial version
+      if (data.contenu && !isHtmlContentEmpty(data.contenu)) {
+        const { data: existingVersion } = await supabase
+          .from("article_versions")
+          .select("id")
+          .eq("article_id", id)
+          .eq("statut", "en_vigueur")
+          .limit(1)
+          .maybeSingle();
+        
+        if (!existingVersion) {
+          const { error: versionError } = await supabase
+            .from("article_versions")
+            .insert({
+              article_id: id,
+              numero_version: 1,
+              contenu: data.contenu,
+              date_effet: data.date_effet || new Date().toISOString().split('T')[0],
+              statut: "en_vigueur",
+              source_texte_id: texteId,
+              notes_modifications: "Version initiale",
+            });
+          
+          if (versionError) {
+            console.error("Error creating initial version:", versionError);
+            throw new Error(`Erreur lors de la création de la version initiale: ${versionError.message}`);
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
       queryClient.invalidateQueries({ queryKey: ["bibliotheque-articles"] });
+      queryClient.invalidateQueries({ queryKey: ["article-versions"] });
+      queryClient.invalidateQueries({ queryKey: ["article-versions-map"] });
+      queryClient.invalidateQueries({ queryKey: ["article-active-versions"] });
       toast.success("Article modifié avec succès");
       onOpenChange(false);
       resetForm();
@@ -367,7 +401,7 @@ export function ArticleFormModal({
     }
 
     // Content is required only for new articles (to create initial version)
-    if (!article && !formData.contenu.trim()) {
+    if (!article && isHtmlContentEmpty(formData.contenu)) {
       toast.error("Le contenu de l'article est requis pour créer la version initiale");
       return;
     }
@@ -385,7 +419,7 @@ export function ArticleFormModal({
       }
       
       if ((effetData.type_effet === "MODIFIE" || effetData.type_effet === "REMPLACE") 
-          && !formData.contenu.trim()) {
+          && isHtmlContentEmpty(formData.contenu)) {
         toast.error("Le contenu est obligatoire pour ce type de modification");
         return;
       }
