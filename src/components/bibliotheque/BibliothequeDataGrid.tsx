@@ -154,16 +154,18 @@ export function BibliothequeDataGrid({
       id: "actions",
       size: 100,
       cell: ({ row }) => (
-        <BibliothequeRowActionsMenu
-          texte={row.original}
-          onView={onView}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onViewPdf={onViewPdf}
-          onToggleFavorite={onToggleFavorite}
-          isFavorite={false}
-          canEdit={canEdit}
-        />
+        <div onClick={(e) => e.stopPropagation()}>
+          <BibliothequeRowActionsMenu
+            texte={row.original}
+            onView={onView}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onViewPdf={onViewPdf}
+            onToggleFavorite={onToggleFavorite}
+            isFavorite={false}
+            canEdit={canEdit}
+          />
+        </div>
       ),
       enableSorting: false,
     },

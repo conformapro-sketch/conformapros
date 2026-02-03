@@ -85,16 +85,18 @@ export function BibliothequeCardView({
                     </div>
                   </div>
 
-                  <BibliothequeRowActionsMenu
-                    texte={texte}
-                    onView={onView}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onViewPdf={onViewPdf}
-                    onToggleFavorite={onToggleFavorite}
-                    isFavorite={false}
-                    canEdit={canEdit}
-                  />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <BibliothequeRowActionsMenu
+                      texte={texte}
+                      onView={onView}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onViewPdf={onViewPdf}
+                      onToggleFavorite={onToggleFavorite}
+                      isFavorite={false}
+                      canEdit={canEdit}
+                    />
+                  </div>
                 </div>
               </CardHeader>
 
