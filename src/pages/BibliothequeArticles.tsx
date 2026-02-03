@@ -1,16 +1,15 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Download } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BibliothequeHeader } from "@/components/bibliotheque/BibliothequeHeader";
 import { ArticlesStatsCards } from "@/components/bibliotheque/ArticlesStatsCards";
 import { ArticlesFilters } from "@/components/bibliotheque/ArticlesFilters";
 import { ArticlesDataGrid } from "@/components/bibliotheque/ArticlesDataGrid";
+import { ArticleQuickViewModal } from "@/components/bibliotheque/ArticleQuickViewModal";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { ExportButton } from "@/components/shared/ExportButton";
-import { articlesListQueries } from "@/lib/articles-queries";
+import { articlesListQueries, type ArticleWithDetails } from "@/lib/articles-queries";
 import { domainesQueries, sousDomainesQueries } from "@/lib/textes-queries";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -23,6 +22,9 @@ export default function BibliothequeArticles() {
   const [anneeFilter, setAnneeFilter] = useState("all");
   const [statutVersionFilter, setStatutVersionFilter] = useState("all");
   const [exigenceOnly, setExigenceOnly] = useState(false);
+  
+  // State for article quick view
+  const [selectedArticle, setSelectedArticle] = useState<ArticleWithDetails | null>(null);
   const [introductifOnly, setIntroductifOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -168,6 +170,14 @@ export default function BibliothequeArticles() {
       <ArticlesDataGrid
         articles={articlesResult?.data || []}
         isLoading={articlesLoading}
+        onViewArticle={(article) => setSelectedArticle(article)}
+      />
+
+      {/* Article Quick View Modal */}
+      <ArticleQuickViewModal
+        open={!!selectedArticle}
+        onOpenChange={(open) => !open && setSelectedArticle(null)}
+        article={selectedArticle}
       />
 
       {/* Pagination */}
