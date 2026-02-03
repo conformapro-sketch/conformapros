@@ -25,6 +25,7 @@ import BibliothequeTexteArticles from "./pages/BibliothequeTexteArticles";
 import BibliothequeArticleVersions from "./pages/BibliothequeArticleVersions";
 import BibliothequeTableauDeBord from "./pages/BibliothequeTableauDeBord";
 import BibliothequeRechercheAvancee from "./pages/BibliothequeRechercheAvancee";
+import BibliothequeArticles from "./pages/BibliothequeArticles";
 import ArticleVersions from "./pages/ArticleVersions";
 import ConformiteEvaluationNew from "./pages/ConformiteEvaluationNew";
 import PlanAction from "./pages/PlanAction";
@@ -179,7 +180,9 @@ const App = () => (
               <Route path="textes/:id" element={<TexteDetail />} />
               <Route path="textes/:id/editer" element={<TexteForm />} />
               {/* Bibliothèque Routes - Module indépendant */}
-              <Route path="bibliotheque" element={<BibliothequeReglementaire />} />
+              <Route path="bibliotheque" element={<Navigate to="/bibliotheque/textes" replace />} />
+              <Route path="bibliotheque/textes" element={<BibliothequeReglementaire />} />
+              <Route path="bibliotheque/articles" element={<BibliothequeArticles />} />
               <Route 
                 path="bibliotheque/dashboard" 
                 element={
@@ -218,7 +221,9 @@ const App = () => (
               <Route path="bibliotheque/recherche" element={<BibliothequeRechercheAvancee />} />
               
               {/* Client Bibliothèque Routes */}
-              <Route path="client-bibliotheque" element={<ClientBibliotheque />} />
+              <Route path="client-bibliotheque" element={<Navigate to="/client-bibliotheque/textes" replace />} />
+              <Route path="client-bibliotheque/textes" element={<ClientBibliotheque />} />
+              <Route path="client-bibliotheque/articles" element={<BibliothequeArticles />} />
               <Route path="client/bibliotheque/textes/:id" element={<ClientTexteDetail />} />
               <Route path="client/codes-juridiques" element={<ClientCodesJuridiques />} />
               <Route path="client/recherche-avancee" element={<ClientRechercheAvancee />} />

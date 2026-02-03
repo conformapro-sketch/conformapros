@@ -40,7 +40,8 @@ const MODULE_NAV_CONFIG: Record<string, Omit<MenuItem, "title">> = {
     icon: Library,
     subItems: [
       { title: "Tableau de bord", url: "/bibliotheque/dashboard" },
-      { title: "Textes & articles", url: "/bibliotheque/" },
+      { title: "Textes réglementaires", url: "/bibliotheque/textes" },
+      { title: "Articles", url: "/bibliotheque/articles" },
       { title: "Codes juridiques", url: "/codes-juridiques" },
       { title: "Recherche avancée", url: "/bibliotheque/recherche" },
       { title: "Paramètres", url: "/bibliotheque/parametres" },
@@ -174,7 +175,8 @@ export const buildNavigationFromModules = (modules: ModuleSysteme[], isStaff: bo
       config = {
         icon: config.icon,
         subItems: [
-          { title: "Bibliothèque", url: "/client-bibliotheque" },
+          { title: "Textes", url: "/client-bibliotheque/textes" },
+          { title: "Articles", url: "/client-bibliotheque/articles" },
           { title: "Codes juridiques", url: "/client/codes-juridiques" },
           { title: "Recherche avancée", url: "/client/recherche-avancee" },
         ],
