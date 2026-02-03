@@ -207,7 +207,7 @@ export function ArticleFormModal({
       
       // 2. Create initial version with the content
       if (data.contenu && data.contenu.trim()) {
-        await supabase
+        const { error: versionError } = await supabase
           .from("article_versions")
           .insert({
             article_id: newArticle.id,
@@ -218,6 +218,11 @@ export function ArticleFormModal({
             source_texte_id: texteId,
             notes_modifications: "Version initiale",
           });
+        
+        if (versionError) {
+          console.error("Error creating initial version:", versionError);
+          throw new Error(`Erreur lors de la création de la version initiale: ${versionError.message}`);
+        }
       }
       
       // 3. Link sous-domaines
@@ -308,6 +313,8 @@ export function ArticleFormModal({
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
       queryClient.invalidateQueries({ queryKey: ["bibliotheque-articles"] });
       queryClient.invalidateQueries({ queryKey: ["article-versions"] });
+      queryClient.invalidateQueries({ queryKey: ["article-versions-map"] });
+      queryClient.invalidateQueries({ queryKey: ["article-active-versions"] });
       queryClient.invalidateQueries({ queryKey: ["effets-juridiques"] });
       const message = hasEffet && effetData.article_cible_id
         ? "Article créé et version de l'article cible mise à jour automatiquement"

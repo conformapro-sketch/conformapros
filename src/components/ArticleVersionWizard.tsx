@@ -46,7 +46,7 @@ interface ArticleVersionWizardProps {
     id: string;
     numero?: string;
     numero_article?: string;
-    contenu: string;
+    contenu?: string; // May not exist on articles table - will be loaded from active version
     texte_id: string;
     texte?: {
       type: string;
@@ -90,10 +90,27 @@ export function ArticleVersionWizard({
   const [showQuickAddTexte, setShowQuickAddTexte] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize content with current article content
+  // Initialize content with current article's active version content
   useEffect(() => {
     if (open && targetArticle) {
-      setContenuModifie(targetArticle.contenu || "");
+      // Fetch active version content
+      const fetchActiveVersion = async () => {
+        const { data } = await supabase
+          .from("article_versions")
+          .select("contenu")
+          .eq("article_id", targetArticle.id)
+          .eq("statut", "en_vigueur")
+          .order("date_effet", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (data?.contenu) {
+          setContenuModifie(data.contenu);
+        } else {
+          setContenuModifie(targetArticle.contenu || "");
+        }
+      };
+      fetchActiveVersion();
     }
   }, [open, targetArticle]);
 
@@ -222,7 +239,7 @@ export function ArticleVersionWizard({
        <p>Date d'effet : ${new Date(dateEffet).toLocaleDateString("fr-FR")}</p>
        <p>Raison : ${raisonModification}</p>
      </div>`
-            : (contenuModifie.trim() || targetArticle.contenu || "<p>Contenu non spécifié</p>"),
+            : (contenuModifie.trim() || currentVersion?.contenu || "<p>Contenu non spécifié</p>"),
           date_effet: dateEffet,
           statut: "en_vigueur",
           source_texte_id: selectedTexteSource.id,
@@ -268,6 +285,8 @@ export function ArticleVersionWizard({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
       queryClient.invalidateQueries({ queryKey: ["article-versions"] });
+      queryClient.invalidateQueries({ queryKey: ["article-versions-map"] });
+      queryClient.invalidateQueries({ queryKey: ["article-active-versions"] });
       queryClient.invalidateQueries({ queryKey: ["article-effets-cible"] });
       queryClient.invalidateQueries({ queryKey: ["articles-effets"] });
       queryClient.invalidateQueries({ queryKey: ["effets-juridiques-texte"] });
