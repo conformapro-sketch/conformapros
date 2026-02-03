@@ -213,9 +213,9 @@ export default function TexteDetail() {
                 <div>
                   <div className="text-sm text-muted-foreground mb-2">Domaines</div>
                   <div className="flex flex-wrap gap-2">
-                    {texte.domaines.map((domaine: string, idx: number) => (
+                    {texte.domaines.map((item: any, idx: number) => (
                       <Badge key={idx} variant="secondary">
-                        {domaine}
+                        {typeof item === 'string' ? item : item?.domaine?.libelle || item?.libelle || 'N/A'}
                       </Badge>
                     ))}
                   </div>

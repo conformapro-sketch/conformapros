@@ -57,7 +57,13 @@ export default function VeilleReglementaire() {
   // Filter by domaine (client-side since domaines is an array)
   const filteredTextes = textes.filter((texte) => {
     if (domaineFilter === "all") return true;
-    return texte.domaines?.includes(domaineFilter);
+    if (Array.isArray(texte.domaines)) {
+      // Handle both string array and object array formats
+      return texte.domaines.some((d: any) => 
+        typeof d === 'string' ? d === domaineFilter : d?.domaine?.id === domaineFilter || d?.id === domaineFilter
+      );
+    }
+    return false;
   });
 
   // Calculate statistics
@@ -288,9 +294,9 @@ export default function VeilleReglementaire() {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          {texte.domaines?.slice(0, 2).map((domaine, idx) => (
+                          {texte.domaines?.slice(0, 2).map((item: any, idx: number) => (
                             <Badge key={idx} variant="outline" className="text-xs">
-                              {domaine}
+                              {typeof item === 'string' ? item : item?.domaine?.libelle || item?.libelle || ''}
                             </Badge>
                           ))}
                           <Badge
@@ -359,9 +365,9 @@ export default function VeilleReglementaire() {
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {texte.domaines?.slice(0, 2).map((domaine, idx) => (
+                              {texte.domaines?.slice(0, 2).map((item: any, idx: number) => (
                                 <Badge key={idx} variant="outline" className="text-xs">
-                                  {domaine}
+                                  {typeof item === 'string' ? item : item?.domaine?.libelle || item?.libelle || ''}
                                 </Badge>
                               ))}
                               {texte.domaines && texte.domaines.length > 2 && (

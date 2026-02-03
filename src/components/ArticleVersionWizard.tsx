@@ -44,13 +44,16 @@ interface ArticleVersionWizardProps {
   onOpenChange: (open: boolean) => void;
   targetArticle?: {
     id: string;
-    numero_article: string;
+    numero?: string;
+    numero_article?: string;
     contenu: string;
     texte_id: string;
     texte?: {
       type: string;
-      reference_officielle: string;
-      intitule: string;
+      reference?: string;
+      reference_officielle?: string;
+      intitule?: string;
+      titre?: string;
     };
   };
   onSuccess?: () => void;
@@ -419,13 +422,13 @@ export function ArticleVersionWizard({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Numéro</span>
-                  <span className="font-medium">{targetArticle?.numero_article}</span>
+                  <span className="font-medium">{targetArticle?.numero || targetArticle?.numero_article}</span>
                 </div>
                 <div className="flex items-start justify-between gap-4">
                   <span className="text-sm text-muted-foreground">Texte parent</span>
                   <div className="text-right">
-                    <div className="font-medium text-sm">{targetArticle?.texte?.reference_officielle}</div>
-                    <div className="text-xs text-muted-foreground">{targetArticle?.texte?.intitule}</div>
+                    <div className="font-medium text-sm">{targetArticle?.texte?.reference || targetArticle?.texte?.reference_officielle}</div>
+                    <div className="text-xs text-muted-foreground">{targetArticle?.texte?.titre || targetArticle?.texte?.intitule}</div>
                   </div>
                 </div>
                 <div className="pt-2 mt-2 border-t">

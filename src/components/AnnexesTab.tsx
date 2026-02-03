@@ -38,6 +38,7 @@ export function AnnexesTab({ acteId }: AnnexesTabProps) {
         // Create annexe record
         return await annexesQueries.create({
           acte_id: acteId,
+          texte_id: acteId,
           label,
           file_url: fileUrl,
           file_type: file.type,

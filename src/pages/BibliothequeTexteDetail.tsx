@@ -127,20 +127,24 @@ export default function BibliothequeTexteDetail() {
     let filtered = articles;
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = articles.filter((article) => {
+      filtered = articles.filter((article: any) => {
+        const numero = article.numero || article.numero_article || '';
+        const titre = article.titre || article.titre_court || '';
+        const resume = article.resume || '';
+        const contenu = article.contenu || '';
         return (
-          article.numero_article?.toLowerCase().includes(query) ||
-          article.titre_court?.toLowerCase().includes(query) ||
-          stripHtml(article.resume || "").toLowerCase().includes(query) ||
-          stripHtml(article.contenu || "").toLowerCase().includes(query)
+          numero.toLowerCase().includes(query) ||
+          titre.toLowerCase().includes(query) ||
+          stripHtml(resume).toLowerCase().includes(query) ||
+          stripHtml(contenu).toLowerCase().includes(query)
         );
       });
     }
     
-    // 2. Sort alphabetically by numero_article
-    return [...filtered].sort((a, b) => {
-      const numA = a.numero_article || "";
-      const numB = b.numero_article || "";
+    // 2. Sort alphabetically by numero
+    return [...filtered].sort((a: any, b: any) => {
+      const numA = a.numero || a.numero_article || "";
+      const numB = b.numero || b.numero_article || "";
       return numA.localeCompare(numB, 'fr', { numeric: true, sensitivity: 'base' });
     });
   }, [articles, searchQuery]);
@@ -509,9 +513,9 @@ export default function BibliothequeTexteDetail() {
                                       <ChevronRight className="h-4 w-4" />
                                     )}
                                      <h3 className="font-semibold text-lg flex items-center gap-2 flex-wrap">
-                                       {article.numero_article}
-                                       {article.titre_court && <span className="text-muted-foreground">- {article.titre_court}</span>}
-                                       {article.porte_exigence ? (
+                                       {article.numero || article.numero_article}
+                                       {(article.titre || article.titre_court) && <span className="text-muted-foreground">- {article.titre || article.titre_court}</span>}
+                                       {(article.porte_exigence || article.is_exigence) ? (
                                          <Badge variant="default" className="text-xs">
                                            Exigence réglementaire
                                          </Badge>
@@ -526,7 +530,7 @@ export default function BibliothequeTexteDetail() {
                               </CollapsibleTrigger>
                               {(article.resume || article.contenu) && (
                                 <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                  {article.resume ? stripHtml(article.resume) : stripHtml(article.contenu)}
+                                  {article.resume ? stripHtml(article.resume) : stripHtml(article.contenu || '')}
                                 </p>
                               )}
                             </div>

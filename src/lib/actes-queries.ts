@@ -504,16 +504,16 @@ export const articlesEffetsJuridiquesQueries = {
       .from("articles_effets_juridiques")
       .select(`
         *,
-        texte_cible:actes_reglementaires!articles_effets_juridiques_texte_cible_id_fkey(
+        texte_cible:textes_reglementaires!articles_effets_juridiques_texte_cible_id_fkey(
           id,
-          reference_officielle,
-          intitule,
-          type_acte
+          reference,
+          titre,
+          type
         ),
-        article_cible:textes_articles!articles_effets_juridiques_article_cible_id_fkey(
+        article_cible:articles!articles_effets_juridiques_article_cible_id_fkey(
           id,
-          numero_article,
-          titre_court
+          numero,
+          titre
         )
       `)
       .eq("article_source_id", articleSourceId)
@@ -527,19 +527,19 @@ export const articlesEffetsJuridiquesQueries = {
       .from("articles_effets_juridiques")
       .select(`
         *,
-        texte_source:actes_reglementaires!articles_effets_juridiques_texte_source_id_fkey(
+        texte_source:textes_reglementaires!articles_effets_juridiques_texte_source_id_fkey(
           id,
-          reference_officielle,
-          intitule,
-          type_acte
+          reference,
+          titre,
+          type
         ),
-        article_source:textes_articles!articles_effets_juridiques_article_source_id_fkey(
+        article_source:articles!articles_effets_juridiques_article_source_id_fkey(
           id,
-          numero_article,
-          titre_court,
-          texte:actes_reglementaires(
-            reference_officielle,
-            intitule
+          numero,
+          titre,
+          texte:textes_reglementaires(
+            reference,
+            titre
           )
         )
       `)
@@ -554,21 +554,21 @@ export const articlesEffetsJuridiquesQueries = {
       .from("articles_effets_juridiques")
       .select(`
         *,
-        article_source:textes_articles!articles_effets_juridiques_article_source_id_fkey(
+        article_source:articles!articles_effets_juridiques_article_source_id_fkey(
           id,
-          numero_article,
-          titre_court
+          numero,
+          titre
         ),
-        texte_cible:actes_reglementaires!articles_effets_juridiques_texte_cible_id_fkey(
+        texte_cible:textes_reglementaires!articles_effets_juridiques_texte_cible_id_fkey(
           id,
-          reference_officielle,
-          intitule,
-          type_acte
+          reference,
+          titre,
+          type
         ),
-        article_cible:textes_articles!articles_effets_juridiques_article_cible_id_fkey(
+        article_cible:articles!articles_effets_juridiques_article_cible_id_fkey(
           id,
-          numero_article,
-          titre_court
+          numero,
+          titre
         )
       `)
       .eq("texte_source_id", texteSourceId)
@@ -582,19 +582,19 @@ export const articlesEffetsJuridiquesQueries = {
       .from("articles_effets_juridiques")
       .select(`
         *,
-        article_source:textes_articles!articles_effets_juridiques_article_source_id_fkey(
+        article_source:articles!articles_effets_juridiques_article_source_id_fkey(
           id,
-          numero_article,
-          titre_court,
-          texte:actes_reglementaires(
-            reference_officielle,
-            intitule
+          numero,
+          titre,
+          texte:textes_reglementaires(
+            reference,
+            titre
           )
         ),
-        article_cible:textes_articles!articles_effets_juridiques_article_cible_id_fkey(
+        article_cible:articles!articles_effets_juridiques_article_cible_id_fkey(
           id,
-          numero_article,
-          titre_court
+          numero,
+          titre
         )
       `)
       .eq("texte_cible_id", texteCibleId)

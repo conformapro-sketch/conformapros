@@ -40,9 +40,9 @@ export function ArticleFormModal({
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     numero: "",
-    titre_court: "",
+    titre: "",
     contenu: "",
-    is_exigence: false,
+    porte_exigence: false,
   });
   const [selectedSousDomaines, setSelectedSousDomaines] = useState<string[]>([]);
   
@@ -88,10 +88,10 @@ export function ArticleFormModal({
   useEffect(() => {
     if (article) {
       setFormData({
-        numero: article.numero_article || "",
-        titre_court: article.titre_court || "",
+        numero: article.numero || article.numero_article || "",
+        titre: article.titre || article.titre_court || "",
         contenu: article.contenu || "",
-        is_exigence: article.is_exigence || false,
+        porte_exigence: article.porte_exigence ?? article.is_exigence ?? false,
       });
       
       // Load existing sous-domaines
@@ -184,9 +184,9 @@ export function ArticleFormModal({
   const resetForm = () => {
     setFormData({
       numero: "",
-      titre_court: "",
+      titre: "",
       contenu: "",
-      is_exigence: false,
+      porte_exigence: false,
     });
   };
 
@@ -359,10 +359,10 @@ export function ArticleFormModal({
 
     const cleanData = {
       texte_id: texteId,
-      numero_article: formData.numero.trim(),
-      titre_court: formData.titre_court.trim() || null,
-      contenu: formData.contenu.trim() || "",
-      is_exigence: formData.is_exigence,
+      numero: formData.numero.trim(),
+      titre: formData.titre.trim() || null,
+      porte_exigence: formData.porte_exigence,
+      est_introductif: false,
     };
 
     if (article) {
@@ -408,13 +408,13 @@ export function ArticleFormModal({
               />
             </div>
 
-            {/* Titre court */}
+            {/* Titre */}
             <div className="space-y-2">
-              <Label htmlFor="titre_court">Titre court</Label>
+              <Label htmlFor="titre">Titre de l'article</Label>
               <Input
-                id="titre_court"
-                value={formData.titre_court}
-                onChange={(e) => setFormData({ ...formData, titre_court: e.target.value })}
+                id="titre"
+                value={formData.titre}
+                onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
                 placeholder="Titre descriptif de l'article"
               />
             </div>
@@ -430,16 +430,16 @@ export function ArticleFormModal({
             {/* Article exigence réglementaire */}
             <div className="flex items-start space-x-2 p-3 border rounded-md bg-muted/50">
               <Checkbox
-                id="is_exigence"
-                checked={formData.is_exigence}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_exigence: checked === true })}
+                id="porte_exigence"
+                checked={formData.porte_exigence}
+                onCheckedChange={(checked) => setFormData({ ...formData, porte_exigence: checked === true })}
               />
               <div className="space-y-1">
                 <Label 
-                  htmlFor="is_exigence" 
+                  htmlFor="porte_exigence" 
                   className="text-sm font-medium cursor-pointer"
                 >
-                  Est une exigence réglementaire
+                  Porte une exigence réglementaire
                 </Label>
                 <p className="text-xs text-muted-foreground">
                   Cochez si cet article impose des obligations applicables nécessitant une évaluation de conformité
