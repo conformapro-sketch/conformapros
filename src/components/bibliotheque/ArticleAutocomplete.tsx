@@ -43,11 +43,11 @@ export function ArticleAutocomplete({
     enabled: !!texteId && open,
   });
 
-  const filteredArticles = articles.filter((article: any) =>
-    `${article.numero_article} ${article.titre_court || ""}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
+  const filteredArticles = articles.filter((article: any) => {
+    const numero = article.numero || article.numero_article || '';
+    const titre = article.titre || article.titre_court || '';
+    return `${numero} ${titre}`.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -63,8 +63,8 @@ export function ArticleAutocomplete({
             "Chargement..."
           ) : value ? (
             <span className="truncate">
-              {value.numero_article}
-              {value.titre_court && ` - ${value.titre_court}`}
+              {value.numero || value.numero_article}
+              {(value.titre || value.titre_court) && ` - ${value.titre || value.titre_court}`}
             </span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
@@ -99,10 +99,10 @@ export function ArticleAutocomplete({
                     )}
                   />
                   <div className="flex-1">
-                    <div className="font-medium">{article.numero_article}</div>
-                    {article.titre_court && (
+                    <div className="font-medium">{article.numero || article.numero_article}</div>
+                    {(article.titre || article.titre_court) && (
                       <div className="text-xs text-muted-foreground">
-                        {article.titre_court}
+                        {article.titre || article.titre_court}
                       </div>
                     )}
                   </div>

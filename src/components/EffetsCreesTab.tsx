@@ -82,8 +82,8 @@ export function EffetsCreesTab({ texteId }: EffetsCreesTabProps) {
               {effet.article_source && (
                 <div className="text-sm">
                   <span className="font-medium">Article source : </span>
-                  {effet.article_source.numero_article}
-                  {effet.article_source.titre_court && ` - ${effet.article_source.titre_court}`}
+                  {effet.article_source.numero || effet.article_source.numero_article}
+                  {(effet.article_source.titre || effet.article_source.titre_court) && ` - ${effet.article_source.titre || effet.article_source.titre_court}`}
                 </div>
               )}
               
@@ -94,11 +94,11 @@ export function EffetsCreesTab({ texteId }: EffetsCreesTabProps) {
                 {effet.texte_cible && effet.article_cible ? (
                   <Link 
                     to={`/bibliotheque/textes/${effet.texte_cible.id}`}
-                    className="text-blue-600 hover:underline"
+                    className="text-primary hover:underline"
                   >
-                    {effet.article_cible.numero_article}
+                    {effet.article_cible.numero || effet.article_cible.numero_article}
                     {" du "}
-                    {effet.texte_cible.reference_officielle}
+                    {effet.texte_cible.reference || effet.texte_cible.reference_officielle}
                   </Link>
                 ) : (
                   <span className="text-muted-foreground">Article cible non trouvé</span>

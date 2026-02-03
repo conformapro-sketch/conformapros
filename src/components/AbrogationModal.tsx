@@ -249,11 +249,11 @@ export function AbrogationModal({
                         />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium">
-                            Article {article.numero_article}
+                            Article {article.numero || article.numero_article}
                           </div>
-                          {article.titre_court && (
+                          {(article.titre || article.titre_court) && (
                             <div className="text-sm text-muted-foreground truncate">
-                              {article.titre_court}
+                              {article.titre || article.titre_court}
                             </div>
                           )}
                         </div>

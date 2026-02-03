@@ -4,10 +4,10 @@ import { Calendar, Plus, Edit, Trash2 } from "lucide-react";
 
 interface ChangelogEntry {
   id: string;
-  type_changement: "ajout" | "modification" | "abrogation";
+  type_changement: string;
   description: string;
   date_changement: string;
-  version?: number;
+  version?: number | string;
   created_at?: string;
 }
 
