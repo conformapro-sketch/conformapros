@@ -120,6 +120,7 @@ function BibliothequeReglementaireContent() {
         count: filteredData.length,
       };
     },
+    placeholderData: (previousData) => previousData,
   });
 
   const deleteMutation = useMutation({

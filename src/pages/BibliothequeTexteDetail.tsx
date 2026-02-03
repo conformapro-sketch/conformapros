@@ -93,12 +93,14 @@ export default function BibliothequeTexteDetail() {
     queryKey: ["texte-detail", id],
     queryFn: () => textesQueries.getById(id!),
     enabled: !!id,
+    placeholderData: (previousData) => previousData,
   });
 
   const { data: articles = [], isLoading: articlesLoading } = useQuery({
     queryKey: ["texte-articles", id],
     queryFn: () => articlesQueries.getByTexteId(id!),
     enabled: !!id,
+    placeholderData: (previousData) => previousData,
   });
 
   // Fetch active versions for all articles (for display purposes)
