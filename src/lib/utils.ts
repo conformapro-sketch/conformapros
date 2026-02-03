@@ -16,3 +16,16 @@ export function slugifyRole(role: string): string {
     .replace(/[\u0300-\u036f]/g, '') // Remove accents
     .replace(/\s+/g, '_'); // Replace spaces with underscores
 }
+
+/**
+ * Check if HTML content is visually empty
+ * Handles TipTap/rich text editor output like <p></p>, &nbsp;, etc.
+ */
+export function isHtmlContentEmpty(html: string | null | undefined): boolean {
+  if (!html) return true;
+  const textContent = html
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/&nbsp;/g, ' ') // Replace non-breaking spaces
+    .trim();
+  return textContent.length === 0;
+}
