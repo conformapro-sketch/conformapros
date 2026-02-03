@@ -300,7 +300,14 @@ export default function BibliothequeTexteDetail() {
   });
 
   const handleEditArticle = (article: any) => {
-    setEditingArticle(article);
+    // Enrich article with content from its active version
+    const activeVersion = activeVersionsMap[article.id];
+    setEditingArticle({
+      ...article,
+      contenu: activeVersion?.contenu || "",
+      _activeVersionId: activeVersion?.id,
+      _activeVersionNumero: activeVersion?.numero_version,
+    });
     setShowEditArticleModal(true);
   };
 
@@ -751,14 +758,24 @@ export default function BibliothequeTexteDetail() {
         </TabsContent>
       </Tabs>
 
-      {/* Modals */}
+      {/* Modals - Single ArticleFormModal for both create and edit */}
       <ArticleFormModal
-        open={showArticleModal}
-        onOpenChange={setShowArticleModal}
+        open={showArticleModal || showEditArticleModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowArticleModal(false);
+            setShowEditArticleModal(false);
+            setEditingArticle(null);
+          }
+        }}
         texteId={id!}
-        article={editingArticle}
+        article={showEditArticleModal ? editingArticle : null}
         onSuccess={() => {
           setEditingArticle(null);
+          setShowArticleModal(false);
+          setShowEditArticleModal(false);
+          queryClient.invalidateQueries({ queryKey: ["texte-articles", id] });
+          queryClient.invalidateQueries({ queryKey: ["article-active-versions", id] });
         }}
       />
 
@@ -770,18 +787,6 @@ export default function BibliothequeTexteDetail() {
           currentVersion={comparisonArticle}
         />
       )}
-
-      {/* Article Form Modal - For editing existing articles */}
-      <ArticleFormModal
-        open={showEditArticleModal}
-        onOpenChange={setShowEditArticleModal}
-        texteId={id!}
-        article={editingArticle}
-        onSuccess={() => {
-          setEditingArticle(null);
-          queryClient.invalidateQueries({ queryKey: ["texte-articles", id] });
-        }}
-      />
 
       {/* Article Version Wizard */}
       {targetArticleForEffet && (
