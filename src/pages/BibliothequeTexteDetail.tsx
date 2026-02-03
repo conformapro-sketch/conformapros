@@ -97,7 +97,35 @@ export default function BibliothequeTexteDetail() {
     enabled: !!id,
   });
 
-  // Fetch versions for a specific article when expanded
+  // Fetch active versions for all articles (for display purposes)
+  const { data: activeVersionsMap = {} } = useQuery({
+    queryKey: ["article-active-versions", id, articles?.map((a: any) => a.id)],
+    queryFn: async () => {
+      if (!articles || articles.length === 0) return {};
+      const map: Record<string, any> = {};
+      
+      // Fetch active version for each article
+      const promises = articles.map(async (article: any) => {
+        const { data } = await supabase
+          .from("article_versions")
+          .select("*")
+          .eq("article_id", article.id)
+          .eq("statut", "en_vigueur")
+          .order("date_effet", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data) {
+          map[article.id] = data;
+        }
+      });
+      
+      await Promise.all(promises);
+      return map;
+    },
+    enabled: !!id && articles && articles.length > 0,
+  });
+
+  // Fetch all versions for expanded articles (for timeline)
   const { data: articleVersionsMap = {} } = useQuery({
     queryKey: ["article-versions-map", id, expandedArticles],
     queryFn: async () => {
@@ -131,7 +159,9 @@ export default function BibliothequeTexteDetail() {
         const numero = article.numero || article.numero_article || '';
         const titre = article.titre || article.titre_court || '';
         const resume = article.resume || '';
-        const contenu = article.contenu || '';
+        // Get content from active version
+        const activeVersion = activeVersionsMap[article.id];
+        const contenu = activeVersion?.contenu || '';
         return (
           numero.toLowerCase().includes(query) ||
           titre.toLowerCase().includes(query) ||
@@ -147,7 +177,7 @@ export default function BibliothequeTexteDetail() {
       const numB = b.numero || b.numero_article || "";
       return numA.localeCompare(numB, 'fr', { numeric: true, sensitivity: 'base' });
     });
-  }, [articles, searchQuery]);
+  }, [articles, searchQuery, activeVersionsMap]);
 
   // Show error toast if query fails
   if (error) {
@@ -247,14 +277,13 @@ export default function BibliothequeTexteDetail() {
             statut: 'remplacee'
           }))
       );
-      
-      // 4. Mettre à jour le contenu actuel de l'article
-      await textesArticlesQueries.update(articleId, { contenu: version.contenu });
+      // Note: Content is now stored in article_versions, not articles table
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
       queryClient.invalidateQueries({ queryKey: ["article-versions"] });
       queryClient.invalidateQueries({ queryKey: ["article-versions-map"] });
+      queryClient.invalidateQueries({ queryKey: ["article-active-versions"] });
       toast.success("✅ Version restaurée avec succès - Nouvelle version créée dans l'historique");
       setShowRestoreConfirm(false);
       setVersionToRestore(null);
@@ -490,6 +519,8 @@ export default function BibliothequeTexteDetail() {
               {sortedAndFilteredArticles.map((article, index) => {
                 const isExpanded = expandedArticles.includes(article.id);
                 const versionsData = articleVersionsMap[article.id] || [];
+                const activeVersion = activeVersionsMap[article.id];
+                const displayContent = activeVersion?.contenu || article.resume || null;
 
                 return (
                   <Card key={article.id} className="shadow-soft">
@@ -528,9 +559,14 @@ export default function BibliothequeTexteDetail() {
                                   </div>
                                 </Button>
                               </CollapsibleTrigger>
-                              {(article.resume || article.contenu) && (
+                              {displayContent && (
                                 <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                  {article.resume ? stripHtml(article.resume) : stripHtml(article.contenu || '')}
+                                  {stripHtml(displayContent)}
+                                </p>
+                              )}
+                              {!displayContent && !activeVersion && (
+                                <p className="text-sm text-muted-foreground/60 mt-2 italic">
+                                  Aucune version active - ajoutez du contenu
                                 </p>
                               )}
                             </div>
@@ -562,7 +598,7 @@ export default function BibliothequeTexteDetail() {
                                   onClick={() => handleCreateEffet(article)}
                                   title="Créer une version"
                                 >
-                                  <FileEdit className="h-4 w-4 text-blue-600" />
+                                  <FileEdit className="h-4 w-4 text-primary" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -580,16 +616,35 @@ export default function BibliothequeTexteDetail() {
                         <CollapsibleContent>
                           <Separator className="my-4" />
                           
-                          {/* Article Content */}
-                          {article.contenu && (
+                          {/* Article Content from Active Version */}
+                          {activeVersion?.contenu ? (
                             <div className="mb-4">
-                              <h4 className="text-sm font-medium text-muted-foreground mb-2">Contenu actuel:</h4>
+                              <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                                Contenu actuel (Version {activeVersion.numero_version} - {new Date(activeVersion.date_effet).toLocaleDateString("fr-FR")}):
+                                <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/20">
+                                  En vigueur
+                                </Badge>
+                              </h4>
                               <div className="p-3 bg-muted/50 rounded-md prose prose-sm max-w-none">
                                 <div 
-                                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.contenu) }}
+                                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeVersion.contenu) }}
                                   className="text-sm"
                                 />
                               </div>
+                            </div>
+                          ) : (
+                            <div className="mb-4 p-4 border-2 border-dashed border-muted-foreground/20 rounded-md text-center">
+                              <p className="text-muted-foreground mb-2">Aucune version active pour cet article</p>
+                              {isStaff && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCreateEffet(article)}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Ajouter du contenu
+                                </Button>
+                              )}
                             </div>
                           )}
 
