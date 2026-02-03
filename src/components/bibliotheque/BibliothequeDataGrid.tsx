@@ -151,6 +151,16 @@ export function BibliothequeDataGrid({
       },
     },
     {
+      accessorKey: "statut_vigueur",
+      header: "Statut",
+      size: 100,
+      cell: ({ row }) => {
+        const statut = row.original.statut_vigueur || "en_vigueur";
+        const { label, variant } = getStatutBadge(statut);
+        return <Badge variant={variant}>{label}</Badge>;
+      },
+    },
+    {
       id: "actions",
       size: 100,
       cell: ({ row }) => (

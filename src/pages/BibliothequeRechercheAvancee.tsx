@@ -16,10 +16,13 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { textesReglementairesQueries, domainesQueries } from "@/lib/textes-queries";
 import { fetchSousDomainesByDomaine } from "@/lib/domaines-queries";
+import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { BibliothequeSearchBar } from "@/components/bibliotheque/BibliothequeSearchBar";
+import { BibliothequeHeader } from "@/components/bibliotheque/BibliothequeHeader";
 import { stripHtml } from "@/lib/sanitize-html";
 import { ArticleViewModal } from "@/components/ArticleViewModal";
 import { TexteViewModal } from "@/components/TexteViewModal";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const TYPE_LABELS: Record<string, string> = {
   LOI: "Loi",
@@ -76,7 +79,7 @@ const getPreview = (content: string, searchTerm: string, maxLength: number = 200
 export default function BibliothequeRechercheAvancee() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
   const [sousDomaineFilter, setSousDomaineFilter] = useState<string>("all");
@@ -88,14 +91,6 @@ export default function BibliothequeRechercheAvancee() {
   const [articleModalOpen, setArticleModalOpen] = useState(false);
   const [texteModalOpen, setTexteModalOpen] = useState(false);
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
   const { data: domainesList } = useQuery({
     queryKey: ["domaines"],
     queryFn: () => domainesQueries.getActive(),
@@ -105,6 +100,23 @@ export default function BibliothequeRechercheAvancee() {
     queryKey: ["sous-domaines", domaineFilter],
     queryFn: () => fetchSousDomainesByDomaine(domaineFilter),
     enabled: domaineFilter !== "all",
+  });
+
+  // Pre-load available years independently
+  const { data: availableYears } = useQuery({
+    queryKey: ["bibliotheque-available-years"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("textes_reglementaires")
+        .select("annee")
+        .not("annee", "is", null)
+        .is("deleted_at", null)
+        .order("annee", { ascending: false });
+      
+      if (error) throw error;
+      return [...new Set((data || []).map((t: any) => t.annee))].filter(Boolean) as number[];
+    },
+    staleTime: 1000 * 60 * 10, // Cache for 10 minutes
   });
 
   // Reset sous-domaine when domaine changes
@@ -136,16 +148,6 @@ export default function BibliothequeRechercheAvancee() {
 
   const results = searchResults?.results || [];
   const totalCount = searchResults?.totalCount || 0;
-
-  // Extract unique years from results
-  const uniqueYears = Array.from(
-    new Set(
-      results
-        .filter(r => r.type === 'texte')
-        .map(r => r.data.annee)
-        .filter((y): y is number => y !== null)
-    )
-  ).sort((a, b) => b - a);
 
   const clearAllFilters = () => {
     setTypeFilter("all");
@@ -270,7 +272,7 @@ export default function BibliothequeRechercheAvancee() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les années</SelectItem>
-                {uniqueYears.map((year) => (
+                {(availableYears || []).map((year) => (
                   <SelectItem key={year} value={String(year)}>
                     {year}
                   </SelectItem>
