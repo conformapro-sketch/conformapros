@@ -44,13 +44,15 @@ export const sousDomainesQueries = {
   async getActive(domaineId?: string) {
     let query = supabase
       .from("sous_domaines_application")
-      .select("*");
+      .select("*, domaine:domaines_reglementaires(id, libelle, code)")
+      .eq("actif", true)
+      .is("deleted_at", null);
     
     if (domaineId) {
       query = query.eq("domaine_id", domaineId);
     }
     
-    const { data, error } = await query.order("libelle");
+    const { data, error } = await query.order("ordre").order("libelle");
     if (error) throw error;
     return data || [];
   },
@@ -81,9 +83,19 @@ export const textesReglementairesQueries = {
       `);
 
     if (searchTerm) {
-      textesQuery = textesQuery.or(
-        `titre.ilike.%${searchTerm}%,reference.ilike.%${searchTerm}%,autorite_emettrice.ilike.%${searchTerm}%`
-      );
+      // Tokenization: split search term into words for better matching
+      const words = searchTerm.split(/\s+/).filter(w => w.length >= 2);
+      if (words.length > 1) {
+        // Build OR conditions for each word across multiple fields
+        const conditions = words.map(word => 
+          `titre.ilike.%${word}%,reference.ilike.%${word}%,autorite_emettrice.ilike.%${word}%`
+        ).join(',');
+        textesQuery = textesQuery.or(conditions);
+      } else {
+        textesQuery = textesQuery.or(
+          `titre.ilike.%${searchTerm}%,reference.ilike.%${searchTerm}%,autorite_emettrice.ilike.%${searchTerm}%`
+        );
+      }
     }
 
     if (filters?.typeFilter && filters.typeFilter !== "all") {

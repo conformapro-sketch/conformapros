@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Plus,
   Upload,
   Scale,
+  FileDown,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-queries";
@@ -23,10 +25,13 @@ import { BibliothequeHorizontalFilters } from "@/components/bibliotheque/Bibliot
 import { BibliothequeQuickFilters } from "@/components/bibliotheque/BibliothequeQuickFilters";
 import { BibliothequeTableSkeleton } from "@/components/bibliotheque/BibliothequeTableSkeleton";
 import { BibliothequeViewToggle } from "@/components/bibliotheque/BibliothequeViewToggle";
+import { BibliothequeHeader } from "@/components/bibliotheque/BibliothequeHeader";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
+import { ExportButton } from "@/components/shared/ExportButton";
 import { BibliothequePreferencesProvider, useBibliothequePreferences } from "@/contexts/BibliothequePreferencesContext";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   Pagination,
   PaginationContent,
@@ -52,6 +57,7 @@ function BibliothequeReglementaireContent() {
   
   // États des filtres
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
   const [sousDomaineFilter, setSousDomaineFilter] = useState<string>("all");
@@ -93,10 +99,10 @@ function BibliothequeReglementaireContent() {
   });
 
   const { data: result, isLoading, error } = useQuery({
-    queryKey: ["textes-reglementaires", typeFilter, domaineFilter, sousDomaineFilter, anneeFilter, searchTerm, page, pageSize],
+    queryKey: ["textes-reglementaires", typeFilter, domaineFilter, sousDomaineFilter, anneeFilter, debouncedSearchTerm, page, pageSize],
     queryFn: async () => {
       const data = await textesReglementairesQueries.getAll({
-        searchTerm,
+        searchTerm: debouncedSearchTerm,
         typeFilter: typeFilter !== "all" ? typeFilter : undefined,
         domaineFilter: domaineFilter !== "all" ? domaineFilter : undefined,
         sousDomaineFilter: sousDomaineFilter !== "all" ? sousDomaineFilter : undefined,
@@ -235,37 +241,44 @@ function BibliothequeReglementaireContent() {
   return (
     <div className="container mx-auto p-6 space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-primary shadow-elegant">
-            <Scale className="h-6 w-6 text-white" />
+      <BibliothequeHeader
+        title="Bibliothèque Réglementaire"
+        subtitle={`${totalCount} texte${totalCount > 1 ? 's' : ''} réglementaire${totalCount > 1 ? 's' : ''}`}
+        icon={<Scale className="h-6 w-6 text-white" />}
+        actions={
+          <div className="flex items-center gap-3">
+            {!isMobile && <BibliothequeViewToggle view={view} onViewChange={setView} />}
+            <ExportButton
+              data={textes.map((t: any) => ({
+                Reference: t.reference,
+                Titre: t.titre,
+                Type: t.type,
+                DatePublication: t.date_publication,
+                Statut: t.statut_vigueur || "en_vigueur",
+              }))}
+              fileName="bibliotheque-reglementaire"
+              sheetName="Textes"
+              disabled={textes.length === 0}
+              variant="outline"
+            />
+            {canManageTextes && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowImportDialog(true)}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importer
+                </Button>
+                <Button onClick={() => { setEditingTexte(null); setShowFormModal(true); }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter un texte
+                </Button>
+              </>
+            )}
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">Bibliothèque Réglementaire</h1>
-            <p className="text-muted-foreground">
-              {totalCount} texte{totalCount > 1 ? 's' : ''} réglementaire{totalCount > 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          {!isMobile && <BibliothequeViewToggle view={view} onViewChange={setView} />}
-          {canManageTextes && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => setShowImportDialog(true)}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Importer
-              </Button>
-              <Button onClick={() => { setEditingTexte(null); setShowFormModal(true); }}>
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter un texte
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       {/* Stats Cards */}
       <BibliothequeStatsCards stats={stats} />
@@ -364,9 +377,22 @@ function BibliothequeReglementaireContent() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Affichage {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalCount)} sur {totalCount}
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-muted-foreground">
+                      Affichage {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalCount)} sur {totalCount}
+                    </div>
+                    <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+                      <SelectTrigger className="w-[100px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Pagination>
                     <PaginationContent>
