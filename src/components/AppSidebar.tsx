@@ -176,7 +176,7 @@ export function AppSidebar() {
                             <HoverCard openDelay={100} closeDelay={100}>
                               <HoverCardTrigger asChild>
                                 <SidebarMenuButton 
-                                  className="sidebar-hover justify-center data-[active=true]:bg-primary/15 data-[active=true]:text-primary"
+                                  className="sidebar-hover justify-center data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:ring-2 data-[active=true]:ring-primary"
                                   aria-label={item.title}
                                   isActive={isModuleActive(item)}
                                 >
@@ -200,9 +200,9 @@ export function AppSidebar() {
                                         <NavLink
                                           key={subItem.url}
                                           to={subItem.url}
-                                          className={`block px-3 py-2 text-sm rounded-md sidebar-hover ${
+                                        className={`block px-3 py-2 text-sm rounded-md sidebar-hover ${
                                             subIsActive
-                                              ? "bg-primary/15 text-primary font-bold border-l-4 border-primary pl-2"
+                                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-bold border-l-4 border-primary pl-2"
                                               : "text-sidebar-foreground hover:bg-sidebar-accent/50"
                                           }`}
                                         >
@@ -219,7 +219,7 @@ export function AppSidebar() {
                               <CollapsibleTrigger asChild>
                                 <SidebarMenuButton 
                                   aria-expanded={isOpen}
-                                  className="sidebar-hover data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold"
+                                  className="sidebar-hover data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold"
                                   isActive={isModuleActive(item)}
                                 >
                                   <item.icon className="h-5 w-5" />
@@ -241,7 +241,7 @@ export function AppSidebar() {
                                         <SidebarMenuSubButton 
                                           asChild
                                           isActive={subIsActive}
-                                          className="sidebar-hover transition-all duration-200 rounded-md pl-4 data-[active=true]:border-l-4 data-[active=true]:border-primary data-[active=true]:bg-primary/15 data-[active=true]:pl-3 data-[active=true]:font-bold data-[active=true]:text-primary data-[active=true]:shadow-sm"
+                                          className="sidebar-hover transition-all duration-200 rounded-md pl-4 data-[active=true]:border-l-4 data-[active=true]:border-primary data-[active=true]:bg-sidebar-accent data-[active=true]:pl-3 data-[active=true]:font-bold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-sm"
                                         >
                                           <NavLink to={subItem.url}>
                                             <span>{subItem.title}</span>
@@ -263,7 +263,7 @@ export function AppSidebar() {
                                 <SidebarMenuButton 
                                   asChild
                                   isActive={isActivePrefix(item.url!)}
-                                  className="data-[active=true]:bg-primary/15 data-[active=true]:text-primary"
+                                  className="data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:ring-2 data-[active=true]:ring-primary"
                                 >
                                   <NavLink
                                     to={item.url!}
@@ -287,7 +287,7 @@ export function AppSidebar() {
                             <SidebarMenuButton 
                               asChild
                               isActive={isActivePrefix(item.url!)}
-                              className="sidebar-hover data-[active=true]:border-l-4 data-[active=true]:border-primary data-[active=true]:bg-primary/15 data-[active=true]:font-bold data-[active=true]:text-primary data-[active=true]:shadow-sm"
+                              className="sidebar-hover data-[active=true]:border-l-4 data-[active=true]:border-primary data-[active=true]:bg-sidebar-accent data-[active=true]:font-bold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-sm"
                             >
                               <NavLink to={item.url!}>
                                 <item.icon className="h-5 w-5" />
