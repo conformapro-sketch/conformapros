@@ -88,11 +88,15 @@ export function ArticleFormModal({
     .filter(Boolean) || [];
 
   useEffect(() => {
+    // Only process when modal is open
+    if (!open) return;
+    
     if (article) {
+      // Edit mode - populate form with article data
       setFormData({
         numero: article.numero || article.numero_article || "",
         titre: article.titre || article.titre_court || "",
-        contenu: article.contenu || "",
+        contenu: article.contenu || "", // Content enriched by parent from activeVersionsMap
         porte_exigence: article.porte_exigence ?? article.is_exigence ?? false,
         date_effet: new Date().toISOString().split('T')[0],
       });
@@ -104,8 +108,11 @@ export function ArticleFormModal({
           .map((sd: any) => sd.sous_domaine?.id)
           .filter(Boolean);
         setSelectedSousDomaines(sousDomaineIds);
+      } else {
+        setSelectedSousDomaines([]);
       }
     } else {
+      // Create mode - reset all form fields
       resetForm();
       setSelectedSousDomaines([]);
       setHasEffet(false);
