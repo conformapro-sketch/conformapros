@@ -1,326 +1,223 @@
 
-# Plan de Séparation: Interfaces Textes Réglementaires et Articles
+# Plan de Vérification et Correction - Page /bibliotheque/articles
 
-## Objectif
+## Analyse Complète des Problèmes Identifiés
 
-Séparer l'entrée "Textes & articles" du menu de navigation en deux interfaces distinctes:
-1. **Textes Réglementaires** - Navigation et recherche par textes (loi, décret, arrêté, circulaire)
-2. **Articles** - Navigation et recherche par articles avec filtres spécifiques
+### 1. Problèmes Critiques
 
-Cette séparation permettra aux utilisateurs de:
-- Rechercher rapidement par texte (référence, titre, type, année)
-- OU rechercher directement dans les articles (numéro, contenu, sous-domaines, exigences)
+#### 1.1 Page BibliothequeArticleVersions: Incohérence des Colonnes
 
----
+La page `BibliothequeArticleVersions.tsx` attend des colonnes qui n'existent pas dans la table `article_versions`:
 
-## Architecture Actuelle
+| Colonne Attendue | Colonne Réelle | Impact |
+|------------------|----------------|--------|
+| `version.effective_from` | `date_effet` | Comparaison de dates échoue |
+| `version.effective_to` | N'existe pas | isVersionActive() toujours faux |
+| `version.modification_type` | N'existe pas | Badges de type non affichés |
+| `version.date_version` | `date_effet` | Filtrage par période échoue |
+| `version.version_label` | N'existe pas | Affichage vide |
+| `version.version_numero` | `numero_version` | Affichage incorrect |
+| `version.raison_modification` | N'existe pas | Recherche échoue |
+| `article.contenu` | N'existe pas dans `articles` | Contenu actuel non affiché |
 
-```text
-BIBLIOTHÈQUE (menu)
-├── Tableau de bord      → /bibliotheque/dashboard
-├── Textes & articles    → /bibliotheque/           ← Page unique combinée
-├── Codes juridiques     → /codes-juridiques
-├── Recherche avancée    → /bibliotheque/recherche
-└── Paramètres           → /bibliotheque/parametres
-```
+**Solution:** Adapter la page aux vraies colonnes de `article_versions`:
+- `id`, `article_id`, `numero_version`, `date_effet`, `statut`, `source_texte_id`, `contenu`, `notes_modifications`
 
-La page actuelle `/bibliotheque/` (BibliothequeReglementaire.tsx) affiche uniquement les **textes** avec un compteur d'articles par texte.
+#### 1.2 Article Content: Architecture Incorrecte
 
----
+La page `BibliothequeArticleVersions` cherche `article.contenu` mais la table `articles` ne contient PAS de colonne `contenu`. Le contenu est stocké dans `article_versions.contenu` (version active).
 
-## Nouvelle Architecture
+**Solution:** Charger la version "en_vigueur" pour afficher le contenu actuel.
 
-```text
-BIBLIOTHÈQUE (menu)
-├── Tableau de bord      → /bibliotheque/dashboard
-├── Textes réglementaires→ /bibliotheque/textes     ← NOUVEAU (renommage)
-├── Articles             → /bibliotheque/articles   ← NOUVELLE PAGE
-├── Codes juridiques     → /codes-juridiques
-├── Recherche avancée    → /bibliotheque/recherche
-└── Paramètres           → /bibliotheque/parametres
-```
+#### 1.3 BibliothequeHeader: Lien Breadcrumb Cassé
+
+Le lien "Bibliothèque" pointe vers `/bibliotheque` qui fait une redirection vers `/bibliotheque/textes`. Techniquement fonctionnel mais pourrait être plus direct vers `/bibliotheque/dashboard`.
 
 ---
 
-## Modifications à Effectuer
+### 2. Problèmes de Cohérence UI
 
-### 1. Mise à jour de la Navigation
+#### 2.1 Bouton "Voir l'article" Non Connecté
 
-**Fichier: `src/lib/module-navigation-map.ts`**
-
-Modifier la configuration du module BIBLIOTHEQUE:
+Dans `ArticlesDataGrid.tsx`, le bouton "Voir l'article" (icône Eye) appelle `onViewArticle?.(article)` mais cette prop n'est pas passée dans `BibliothequeArticles.tsx`:
 
 ```typescript
-BIBLIOTHEQUE: {
-  icon: Library,
-  subItems: [
-    { title: "Tableau de bord", url: "/bibliotheque/dashboard" },
-    { title: "Textes réglementaires", url: "/bibliotheque/textes" },  // ← Renommé
-    { title: "Articles", url: "/bibliotheque/articles" },             // ← NOUVEAU
-    { title: "Codes juridiques", url: "/codes-juridiques" },
-    { title: "Recherche avancée", url: "/bibliotheque/recherche" },
-    { title: "Paramètres", url: "/bibliotheque/parametres" },
-  ],
-},
+// BibliothequeArticles.tsx ligne 168-171
+<ArticlesDataGrid
+  articles={articlesResult?.data || []}
+  isLoading={articlesLoading}
+  // MANQUANT: onViewArticle handler
+/>
 ```
 
-Même modification pour les clients (section non-staff):
+**Solution:** Ajouter soit une modal QuickView, soit une navigation vers la page de détail.
+
+#### 2.2 Références Texte Parent dans DataGrid
+
+Le champ `texte?.reference_officielle` et `texte?.intitule` sont référencés dans `BibliothequeArticleVersions` mais les données retournées par `textesArticlesQueries.getById` utilisent `textes_reglementaires.reference` et `textes_reglementaires.titre`.
+
+---
+
+### 3. Problèmes de Filtrage
+
+#### 3.1 Filtre Statut Version: Logique Incomplète
+
+Dans `articles-queries.ts`, quand `statutVersionFilter !== "all"`, les articles sans version correspondante sont filtrés côté client APRÈS la pagination, ce qui fausse le count et crée des pages vides.
+
+**Solution:** Appliquer le filtre AVANT la pagination ou utiliser une jointure SQL.
+
+---
+
+## Plan de Corrections
+
+### Phase 1: Corrections Critiques (Page Versions)
+
+**Fichier: `src/pages/BibliothequeArticleVersions.tsx`**
+
+1. Adapter les noms de colonnes:
+   - `version.effective_from` → `version.date_effet`
+   - `version.version_numero` → `version.numero_version`
+   - Supprimer références à `effective_to`, `modification_type`, `version_label`, `raison_modification`
+
+2. Charger le contenu depuis la version active:
 ```typescript
-if (module.code === 'BIBLIOTHEQUE' && !isStaff) {
-  config = {
-    icon: config.icon,
-    subItems: [
-      { title: "Textes", url: "/client-bibliotheque/textes" },
-      { title: "Articles", url: "/client-bibliotheque/articles" },
-      { title: "Codes juridiques", url: "/client/codes-juridiques" },
-      { title: "Recherche avancée", url: "/client/recherche-avancee" },
-    ],
-  };
-}
-```
-
-### 2. Création de la Page Articles
-
-**Nouveau fichier: `src/pages/BibliothequeArticles.tsx`**
-
-Interface dédiée à la recherche et navigation par articles:
-
-| Fonctionnalité | Description |
-|----------------|-------------|
-| **Recherche** | Par numéro d'article, titre, contenu (version en vigueur) |
-| **Filtres** | Type de texte parent, Domaine, Sous-domaine, Année, Exigence (oui/non), Introductif (oui/non) |
-| **Affichage** | Liste avec numéro, titre, résumé, texte parent (référence cliquable), statut version |
-| **Actions** | Voir détail, voir texte parent, voir historique versions |
-| **Export** | CSV/Excel des résultats filtrés |
-
-Structure de la page:
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  [Header] Articles réglementaires          [Export] [Recherche] │
-├─────────────────────────────────────────────────────────────────┤
-│  [Stats Cards] Total | Exigences | Introductifs | En vigueur   │
-├─────────────────────────────────────────────────────────────────┤
-│  [Filtres]                                                      │
-│  Type texte ▾ | Domaine ▾ | Sous-domaine ▾ | Année ▾           │
-│  □ Exigences uniquement  □ Introductifs uniquement             │
-├─────────────────────────────────────────────────────────────────┤
-│  [Résultats]                                                    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ Art. 1 - Champ d'application                  [En vigueur]  │
-│  │ Décret n°2024-123 du 15 janvier 2024          [Exigence]    │
-│  │ Domaine: SST > Équipements                                  │
-│  │ Résumé: Lorem ipsum dolor sit amet...                       │
-│  └─────────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ Art. 2 - Obligations générales                [En vigueur]  │
-│  │ ...                                                          │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│  [Pagination] ◀ 1 2 3 ... 10 ▶     Affichage: 25 ▾             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 3. Création des Requêtes Articles
-
-**Fichier: `src/lib/textes-queries.ts`**
-
-Ajouter de nouvelles fonctions de requête:
-
-```typescript
-export const articlesListQueries = {
-  // Liste paginée avec filtres
-  async getAll(filters?: {
-    searchTerm?: string;
-    typeTexteFilter?: string;      // loi, decret, arrete, circulaire
-    domaineFilter?: string;
-    sousDomaineFilter?: string;
-    anneeFilter?: string;
-    exigenceOnly?: boolean;        // porte_exigence = true
-    introductifOnly?: boolean;     // est_introductif = true
-    page?: number;
-    pageSize?: number;
-  }) {
-    // Requête optimisée avec jointures
+const { data: activeVersion } = useQuery({
+  queryKey: ["article-active-version", articleId],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from("article_versions")
+      .select("*")
+      .eq("article_id", articleId)
+      .eq("statut", "en_vigueur")
+      .order("date_effet", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data;
   },
-  
-  // Récupérer les statistiques
-  async getStats() {
-    // Total, exigences, introductifs, en_vigueur
-  }
+  enabled: !!articleId,
+});
+```
+
+3. Simplifier la fonction `isVersionActive`:
+```typescript
+const isVersionActive = (version: any) => {
+  return version.statut === "en_vigueur";
 };
 ```
 
-### 4. Création du Composant DataGrid Articles
+4. Adapter les filtres aux colonnes existantes:
+   - Remplacer filtre `modification_type` par filtre `statut` (en_vigueur, remplacee, abrogee)
+   - Recherche sur `notes_modifications` seulement
 
-**Nouveau fichier: `src/components/bibliotheque/ArticlesDataGrid.tsx`**
+5. Corriger l'affichage de référence texte parent:
+```typescript
+// Ligne 166-168
+<p className="text-muted-foreground mt-2">
+  {texte?.reference} - {texte?.titre}
+</p>
+```
 
-Colonnes du tableau:
+### Phase 2: Connexion du Bouton "Voir Article"
 
-| Colonne | Description |
-|---------|-------------|
-| Numéro | Numéro de l'article |
-| Titre | Titre de l'article |
-| Texte parent | Référence cliquable vers le texte |
-| Domaines | Badges des domaines/sous-domaines |
-| Statut | Badge en_vigueur/modifié/abrogé |
-| Type | Badge Exigence ou Introductif |
-| Actions | Voir, Historique, Éditer (staff) |
+**Fichier: `src/pages/BibliothequeArticles.tsx`**
 
-### 5. Mise à jour des Routes
-
-**Fichier: `src/App.tsx`**
-
-Ajouter les nouvelles routes:
+Ajouter un handler pour visualiser l'article avec la modale `BibliothequeQuickView` ou navigation:
 
 ```typescript
-// Route existante redirigée
-<Route path="bibliotheque" element={<Navigate to="/bibliotheque/textes" replace />} />
+import { BibliothequeQuickView } from "@/components/bibliotheque/BibliothequeQuickView";
 
-// Nouvelles routes
-<Route path="bibliotheque/textes" element={<BibliothequeReglementaire />} />
-<Route path="bibliotheque/articles" element={<BibliothequeArticles />} />
+const [selectedArticle, setSelectedArticle] = useState<ArticleWithDetails | null>(null);
 
-// Routes client
-<Route path="client-bibliotheque" element={<Navigate to="/client-bibliotheque/textes" replace />} />
-<Route path="client-bibliotheque/textes" element={<ClientBibliotheque />} />
-<Route path="client-bibliotheque/articles" element={<ClientBibliothequeArticles />} />
+// Dans le JSX
+<ArticlesDataGrid
+  articles={articlesResult?.data || []}
+  isLoading={articlesLoading}
+  onViewArticle={(article) => setSelectedArticle(article)}
+/>
+
+{selectedArticle && (
+  <BibliothequeQuickView
+    open={!!selectedArticle}
+    onClose={() => setSelectedArticle(null)}
+    type="article"
+    item={selectedArticle}
+  />
+)}
 ```
 
-### 6. Renommage de la Page Textes
+OU créer une nouvelle modal dédiée aux articles.
 
-**Fichier: `src/pages/BibliothequeReglementaire.tsx`**
+### Phase 3: Amélioration du Filtre Statut Version
 
-Modifications mineures:
-- Titre: "Textes Réglementaires" (au lieu de "Bibliothèque Réglementaire")
-- Breadcrumb: Bibliothèque > Textes réglementaires
-- Bouton retour: vers /bibliotheque/dashboard
+**Fichier: `src/lib/articles-queries.ts`**
 
----
+Optimiser la requête pour appliquer le filtre statut version côté base de données:
 
-## Détails Techniques
+```typescript
+// Approche: utiliser un RPC ou restructurer la requête
+// Option simple: joindre article_versions directement dans la requête principale
+// avec filtre sur statut
 
-### Requête Articles avec Jointures
-
-```sql
-SELECT 
-  a.id,
-  a.numero,
-  a.titre,
-  a.resume,
-  a.est_introductif,
-  a.porte_exigence,
-  av.contenu,
-  av.statut,
-  av.date_effet,
-  t.id as texte_id,
-  t.reference,
-  t.type,
-  t.annee,
-  ARRAY_AGG(DISTINCT sd.libelle) as sous_domaines,
-  ARRAY_AGG(DISTINCT d.libelle) as domaines
-FROM articles a
-JOIN article_versions av ON av.article_id = a.id AND av.statut = 'en_vigueur'
-JOIN textes_reglementaires t ON t.id = a.texte_id
-LEFT JOIN article_sous_domaines asd ON asd.article_id = a.id
-LEFT JOIN sous_domaines_application sd ON sd.id = asd.sous_domaine_id
-LEFT JOIN domaines_reglementaires d ON d.id = sd.domaine_id
-WHERE t.deleted_at IS NULL
-GROUP BY a.id, av.id, t.id
-ORDER BY t.date_publication DESC, a.numero
+let query = supabase
+  .from("articles")
+  .select(`
+    *,
+    texte:textes_reglementaires!articles_texte_id_fkey(...),
+    version_active:article_versions!inner(
+      id, contenu, statut, date_effet
+    ),
+    sous_domaines:article_sous_domaines(...)
+  `, { count: "exact" })
+  .eq("article_versions.statut", filters.statutVersionFilter || "en_vigueur");
 ```
 
-### Filtres Spécifiques Articles
+### Phase 4: Correction BibliothequeHeader
 
-| Filtre | Type | Source |
-|--------|------|--------|
-| Type texte | Select | textes_reglementaires.type |
-| Domaine | Select | domaines_reglementaires |
-| Sous-domaine | Select (dépendant) | sous_domaines_application |
-| Année | Select | textes_reglementaires.annee |
-| Exigences uniquement | Checkbox | articles.porte_exigence |
-| Introductifs uniquement | Checkbox | articles.est_introductif |
-| Statut version | Select | article_versions.statut |
+**Fichier: `src/components/bibliotheque/BibliothequeHeader.tsx`**
+
+Changer le lien breadcrumb de base:
+```typescript
+// Ligne 41
+<Link to="/bibliotheque/dashboard">Bibliothèque</Link>
+```
 
 ---
 
-## Fichiers à Créer/Modifier
+## Fichiers à Modifier
 
-| # | Fichier | Action | Description |
-|---|---------|--------|-------------|
-| 1 | `src/lib/module-navigation-map.ts` | Modifier | Séparer navigation Textes/Articles |
-| 2 | `src/pages/BibliothequeArticles.tsx` | Créer | Nouvelle page liste articles |
-| 3 | `src/components/bibliotheque/ArticlesDataGrid.tsx` | Créer | Tableau articles |
-| 4 | `src/components/bibliotheque/ArticlesCardView.tsx` | Créer | Vue cartes articles (mobile) |
-| 5 | `src/components/bibliotheque/ArticlesFilters.tsx` | Créer | Filtres spécifiques articles |
-| 6 | `src/components/bibliotheque/ArticlesStatsCards.tsx` | Créer | Statistiques articles |
-| 7 | `src/lib/textes-queries.ts` | Modifier | Ajouter articlesListQueries |
-| 8 | `src/App.tsx` | Modifier | Ajouter routes articles |
-| 9 | `src/pages/BibliothequeReglementaire.tsx` | Modifier | Renommer titre |
-| 10 | `src/pages/ClientBibliothequeArticles.tsx` | Créer | Version client de la page articles |
+| # | Fichier | Modifications |
+|---|---------|---------------|
+| 1 | `src/pages/BibliothequeArticleVersions.tsx` | Adapter aux colonnes réelles, charger version active |
+| 2 | `src/pages/BibliothequeArticles.tsx` | Ajouter handler onViewArticle |
+| 3 | `src/components/bibliotheque/ArticlesDataGrid.tsx` | Vérifier le comportement du bouton Eye |
+| 4 | `src/lib/articles-queries.ts` | Optimiser filtre statut version |
+| 5 | `src/components/bibliotheque/BibliothequeHeader.tsx` | Corriger lien breadcrumb |
 
 ---
 
-## Comportement des Filtres
+## Tests de Validation
 
-### Page Textes (existante)
+Après corrections, vérifier:
 
-- Type de texte (loi, décret, arrêté, circulaire)
-- Domaine
-- Sous-domaine
-- Année de publication
-- Avec PDF (checkbox)
-- Favoris (checkbox)
+1. **Page Articles `/bibliotheque/articles`**:
+   - Chargement des statistiques (4 cartes)
+   - Recherche textuelle fonctionne
+   - Tous les filtres (Type, Domaine, Sous-domaine, Année, Statut)
+   - Checkboxes Exigences/Introductifs
+   - Bouton Reset visible quand filtres actifs
+   - Bouton Export génère un fichier
+   - Pagination fonctionne
+   - Clic sur "Voir l'article" ouvre une prévisualisation
+   - Clic sur "Historique versions" navigue vers la page versions
+   - Clic sur "Voir le texte" navigue vers le texte parent
 
-### Page Articles (nouvelle)
+2. **Page Versions `/bibliotheque/articles/:id/versions`**:
+   - Affichage du contenu de la version active
+   - Liste des versions historiques
+   - Badges de statut corrects
+   - Filtres fonctionnels
+   - Comparaison de versions
 
-- Type de texte parent
-- Domaine (via article_sous_domaines)
-- Sous-domaine (via article_sous_domaines)
-- Année du texte parent
-- **Exigences uniquement** (nouveau) - filtre articles.porte_exigence = true
-- **Introductifs uniquement** (nouveau) - filtre articles.est_introductif = true
-- **Statut version** (nouveau) - en_vigueur, modifié, abrogé
-
----
-
-## Navigation Entre les Deux Vues
-
-### Depuis la page Textes
-
-- Clic sur un texte → Page détail texte (`/bibliotheque/textes/:id`)
-- La page détail affiche les articles du texte (comportement actuel conservé)
-
-### Depuis la page Articles
-
-- Clic sur un article → Modal de prévisualisation rapide (QuickView)
-- Bouton "Voir le texte" → Page détail texte
-- Bouton "Historique" → Modal versions ou page versions
-
----
-
-## Impact Utilisateur
-
-### Avant
-
-L'utilisateur doit:
-1. Aller dans "Textes & articles"
-2. Trouver le texte qui l'intéresse
-3. Cliquer pour voir les articles
-4. Chercher l'article spécifique
-
-### Après
-
-L'utilisateur peut:
-- **Option A**: Chercher par texte (si connaît la référence/loi)
-- **Option B**: Chercher directement l'article (par mot-clé, domaine, exigence)
-
----
-
-## Priorité d'Implémentation
-
-1. **HAUTE** - Navigation et routes (navigation-map, App.tsx)
-2. **HAUTE** - Page BibliothequeArticles avec requêtes
-3. **MOYENNE** - Composants DataGrid et filtres
-4. **MOYENNE** - Stats cards et export
-5. **BASSE** - Version client (ClientBibliothequeArticles)
-
+3. **Navigation**:
+   - Breadcrumb cliquable et correct
+   - Bouton retour fonctionne
