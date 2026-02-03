@@ -49,6 +49,7 @@ export function BibliothequeRowActionsMenu({
           size="sm"
           className="h-9 w-9 p-0 hover:bg-accent/10 data-[state=open]:bg-accent/10"
           disabled={isLoading}
+          onClick={(e) => e.stopPropagation()}
         >
           <MoreVertical className="h-4 w-4" />
           <span className="sr-only">Ouvrir le menu</span>
