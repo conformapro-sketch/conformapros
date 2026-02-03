@@ -1,220 +1,232 @@
 
 
-# Plan: Modification de la Navigation des Textes Réglementaires
+# Plan: Corrections et Améliorations - Module Bibliothèque Réglementaire
 
-## Objectif
+## Problèmes Identifiés
 
-1. **Supprimer** la fonctionnalité d'export de la page `/bibliotheque/textes`
-2. **Modifier** le comportement du clic sur un texte réglementaire:
-   - Au lieu d'ouvrir une page de détail (`/bibliotheque/textes/:id`)
-   - Naviguer vers `/bibliotheque/articles?texte=<texte_id>` avec le filtre pré-appliqué
+### 1. Navigation Active Non Visible dans la Sidebar
+
+**Problème:** La fonction `findActiveModule` dans `module-navigation-map.ts` fonctionne correctement pour trouver le module parent, mais **le sous-item actif n'est pas visuellement mis en évidence** de manière suffisante dans certains cas.
+
+Actuellement, le code vérifie :
+- Correspondance exacte : `pathname === sub.url`
+- Préfixe de route : `pathname.startsWith(sub.url + "/")`
+
+**Cependant, il y a un problème avec les routes qui contiennent des query params.** La route `/bibliotheque/articles?texte=xxx` ne sera pas correctement identifiée car le pathname contient les paramètres URL.
+
+**Solution :**
+- Améliorer la logique de correspondance pour ignorer les query params
+- S'assurer que le sous-menu "Articles" est bien surligné quand on est sur `/bibliotheque/articles`
 
 ---
 
-## Modifications à Effectuer
+### 2. Bouton "Voir le texte" dans ArticlesDataGrid Pointe Vers une Page Détail
 
-### 1. Supprimer l'Export - Page Textes
-
-**Fichier: `src/pages/BibliothequeReglementaire.tsx`**
-
-Retirer:
-- L'import du composant `ExportButton`
-- L'import de l'icône `FileDown` (non utilisée après suppression)
-- Le composant `<ExportButton>` dans le header (lignes 251-263)
-
+**Problème:** Dans `ArticlesDataGrid.tsx` (ligne 213), le bouton "Voir le texte" navigue vers :
 ```typescript
-// AVANT
-import { ExportButton } from "@/components/shared/ExportButton";
-
-// APRÈS
-// (import supprimé)
+navigate(`/bibliotheque/textes/${article.texte?.id}`)
 ```
 
-### 2. Modifier le Handler de Clic
+Cependant, selon le plan précédemment approuvé, on devrait naviguer vers les articles filtrés par ce texte, pas vers une page détail.
 
-**Fichier: `src/pages/BibliothequeReglementaire.tsx`**
+**Solution :**
+- Ce comportement est en fait correct car l'utilisateur veut voir le texte parent complet
+- Aucune modification nécessaire car c'est une action secondaire cohérente
 
-Modifier la fonction `handleView` pour naviguer vers la page articles avec un filtre:
+---
+
+### 3. VersionStatsCard Attend des Colonnes Incorrectes
+
+**Problème:** Le composant `VersionStatsCard.tsx` attend une interface avec :
+- `version_numero`
+- `date_version`
+- `modification_type`
+
+Mais dans `BibliothequeArticleVersions.tsx` (lignes 202-208), les données sont mappées :
+```typescript
+versions.map(v => ({
+  ...v,
+  modification_type: v.statut,  // statut != modification_type
+  date_version: v.date_effet,
+  effective_from: v.date_effet,
+}))
+```
+
+Le mapping utilise `statut` pour `modification_type` ce qui n'est pas sémantiquement correct.
+
+**Solution :**
+- Adapter l'interface `VersionStatsCard` pour utiliser `statut` au lieu de `modification_type`
+- Ou garder le mapping actuel qui est fonctionnel mais améliorer les labels affichés
+
+---
+
+### 4. Route Texte Détail Toujours Accessible (Potentiel Conflit)
+
+**Problème:** La route `/bibliotheque/textes/:id` (ligne 218 de App.tsx) existe toujours et pointe vers `BibliothequeTexteDetail`. Cela crée une incohérence avec le nouveau comportement où cliquer sur un texte navigue vers les articles.
+
+**Solution :**
+- Garder la route pour les liens directs et le bouton "Voir le texte complet" dans la modal article
+- Documenter ce comportement
+
+---
+
+### 5. Pagination Incorrecte avec Recherche Textuelle
+
+**Problème:** Dans `articles-queries.ts`, la recherche textuelle est appliquée **après** la pagination (lignes 217-226). Cela signifie que si on recherche un terme, le nombre d'articles retournés peut être inférieur à `pageSize` même s'il y a plus de résultats sur d'autres pages.
+
+**Solution :**
+- Implémenter une recherche côté serveur en utilisant les fonctions PostgreSQL `ilike` ou `to_tsvector`
+- Ou accepter cette limitation pour l'instant en documentant le comportement
+
+---
+
+### 6. Amélioration Suggérée : Mise en Évidence Visuelle du Sous-Menu Actif
+
+**Problème actuel:** Le sous-item actif utilise un style minimal :
+```typescript
+isActive
+  ? "border-l-2 border-primary bg-sidebar-accent pl-2 font-medium text-sidebar-primary"
+  : "hover:bg-sidebar-accent/50"
+```
+
+**Suggestion :**
+- Ajouter une animation subtile ou un indicateur plus visible
+- Améliorer le contraste pour la lisibilité
+
+---
+
+## Corrections à Implémenter
+
+### Correction 1 : Améliorer la Détection de Route Active
+
+**Fichier:** `src/lib/module-navigation-map.ts`
+
+Modifier `findActiveModule` pour mieux gérer les routes avec paramètres :
 
 ```typescript
-// AVANT
-const handleView = (texte: any) => {
-  navigate(`/bibliotheque/textes/${texte.id}`);
+export const findActiveModule = (pathname: string, items: MenuItem[]): string | null => {
+  // Retirer les query params pour la comparaison
+  const cleanPathname = pathname.split('?')[0];
+  
+  for (const item of items) {
+    if (item.url && cleanPathname === item.url) {
+      return item.title;
+    }
+    if (item.url && cleanPathname.startsWith(item.url + "/")) {
+      return item.title;
+    }
+    if (item.subItems) {
+      const matchingSubItem = item.subItems.find(
+        (sub) => cleanPathname === sub.url || cleanPathname.startsWith(sub.url + "/")
+      );
+      if (matchingSubItem) {
+        return item.title;
+      }
+    }
+  }
+  return null;
 };
-
-// APRÈS
-const handleView = (texte: any) => {
-  // Navigate to articles page with texte filter
-  navigate(`/bibliotheque/articles?texte=${texte.id}`);
-};
 ```
 
-### 3. Ajouter le Filtre par Texte - Requêtes Articles
+### Correction 2 : Améliorer le Style du Sous-Menu Actif
 
-**Fichier: `src/lib/articles-queries.ts`**
+**Fichier:** `src/components/AppSidebar.tsx`
 
-Ajouter le support du filtre `texteId` dans l'interface et la requête:
+Améliorer le style pour le sous-item actif (ligne 222-229) :
 
 ```typescript
-// Interface - ajouter
-export interface ArticleFilters {
-  // ... existing filters
-  texteId?: string;  // ← NOUVEAU: Filtre par ID du texte parent
+<NavLink
+  to={subItem.url}
+  className={({ isActive }) =>
+    `sidebar-hover transition-all duration-200 ${
+      isActive
+        ? "border-l-2 border-primary bg-primary/10 pl-2 font-semibold text-primary"
+        : "hover:bg-sidebar-accent/50"
+    }`
+  }
+>
+  <span>{subItem.title}</span>
+</NavLink>
+```
+
+### Correction 3 : Adapter VersionStatsCard
+
+**Fichier:** `src/components/bibliotheque/VersionStatsCard.tsx`
+
+Modifier l'interface pour correspondre aux vraies colonnes :
+
+```typescript
+interface Version {
+  id: string;
+  numero_version: number;
+  date_effet: string;
+  statut: string;  // Utiliser le bon nom de colonne
 }
-
-// Dans getAll() - ajouter le filtre
-if (filters?.texteId && filters.texteId !== "all") {
-  query = query.eq("texte_id", filters.texteId);
-}
 ```
 
-### 4. Lire le Paramètre URL - Page Articles
+Et mettre à jour les références dans le composant.
 
-**Fichier: `src/pages/BibliothequeArticles.tsx`**
+### Correction 4 : Corriger le Mapping dans BibliothequeArticleVersions
 
-Lire le paramètre `texte` de l'URL et l'utiliser comme filtre:
+**Fichier:** `src/pages/BibliothequeArticleVersions.tsx`
 
-```typescript
-import { useSearchParams } from "react-router-dom";
-
-// Dans le composant
-const [searchParams, setSearchParams] = useSearchParams();
-const texteIdFromUrl = searchParams.get("texte");
-
-// Initialiser le state avec la valeur de l'URL
-const [texteFilter, setTexteFilter] = useState(texteIdFromUrl || "all");
-
-// Utiliser dans la requête
-const { data: articlesResult } = useQuery({
-  queryKey: [
-    "articles-list",
-    // ... other keys
-    texteFilter,  // ← ajouter
-  ],
-  queryFn: () =>
-    articlesListQueries.getAll({
-      // ... other filters
-      texteId: texteFilter !== "all" ? texteFilter : undefined,
-    }),
-});
-```
-
-### 5. Afficher le Filtre Actif par Texte
-
-**Fichier: `src/pages/BibliothequeArticles.tsx`**
-
-Afficher un badge/chip quand le filtre par texte est actif:
+Ne plus mapper `statut` vers `modification_type`, utiliser directement les champs corrects :
 
 ```typescript
-// Charger les infos du texte pour affichage
-const { data: texteInfo } = useQuery({
-  queryKey: ["texte-info", texteFilter],
-  queryFn: async () => {
-    if (!texteFilter || texteFilter === "all") return null;
-    const { data } = await supabase
-      .from("textes_reglementaires")
-      .select("id, reference, titre")
-      .eq("id", texteFilter)
-      .single();
-    return data;
-  },
-  enabled: !!texteFilter && texteFilter !== "all",
-});
-
-// Dans le JSX - afficher le filtre actif
-{texteInfo && (
-  <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-4 py-2">
-    <FileText className="h-4 w-4 text-primary" />
-    <span className="text-sm">
-      Articles du texte: <strong>{texteInfo.reference}</strong>
-    </span>
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={() => {
-        setTexteFilter("all");
-        setSearchParams({});
-      }}
-    >
-      <X className="h-4 w-4" />
-    </Button>
-  </div>
-)}
-```
-
-### 6. Mettre à Jour l'Action Menu
-
-**Fichier: `src/components/bibliotheque/BibliothequeRowActionsMenu.tsx`**
-
-Modifier le libellé du bouton "Voir les détails" pour refléter la nouvelle action:
-
-```typescript
-// AVANT
-<DropdownMenuItem onClick={() => onView(texte)}>
-  <Eye className="h-4 w-4 mr-2" />
-  Voir les détails
-</DropdownMenuItem>
-
-// APRÈS
-<DropdownMenuItem onClick={() => onView(texte)}>
-  <FileText className="h-4 w-4 mr-2" />
-  Voir les articles
-</DropdownMenuItem>
+<VersionStatsCard versions={versions.map(v => ({
+  id: v.id,
+  numero_version: v.numero_version,
+  date_effet: v.date_effet,
+  statut: v.statut,
+}))} />
 ```
 
 ---
 
-## Résumé des Fichiers à Modifier
+## Fichiers à Modifier
 
-| # | Fichier | Modifications |
-|---|---------|---------------|
-| 1 | `src/pages/BibliothequeReglementaire.tsx` | Supprimer ExportButton, modifier handleView |
-| 2 | `src/lib/articles-queries.ts` | Ajouter filtre `texteId` |
-| 3 | `src/pages/BibliothequeArticles.tsx` | Lire URL param, afficher filtre actif |
-| 4 | `src/components/bibliotheque/BibliothequeRowActionsMenu.tsx` | Modifier libellé action |
-| 5 | `src/components/bibliotheque/BibliothequeDataGrid.tsx` | (optionnel) Modifier le tooltip |
-| 6 | `src/components/bibliotheque/BibliothequeCardView.tsx` | (aucune modification nécessaire - utilise déjà onView) |
+| # | Fichier | Modification |
+|---|---------|--------------|
+| 1 | `src/lib/module-navigation-map.ts` | Améliorer `findActiveModule` pour ignorer les query params |
+| 2 | `src/components/AppSidebar.tsx` | Améliorer le style visuel du sous-item actif |
+| 3 | `src/components/bibliotheque/VersionStatsCard.tsx` | Adapter l'interface aux vraies colonnes DB |
+| 4 | `src/pages/BibliothequeArticleVersions.tsx` | Corriger le mapping des données pour VersionStatsCard |
 
 ---
 
-## Flux Utilisateur Après Modification
+## Bugs Mineurs Supplémentaires Détectés
 
-```text
-Page /bibliotheque/textes
-        │
-        ▼
-┌───────────────────────────────┐
-│  Liste des textes             │
-│  ┌─────────────────────────┐  │
-│  │ Décret n°2024-123       │  │
-│  │ [Clic sur la ligne]     │◄─┼── L'utilisateur clique
-│  └─────────────────────────┘  │
-└───────────────────────────────┘
-        │
-        ▼ navigate("/bibliotheque/articles?texte=uuid")
-        │
-┌───────────────────────────────┐
-│  Page /bibliotheque/articles  │
-│                               │
-│  ┌─────────────────────────┐  │
-│  │ Articles du texte:      │  │
-│  │ Décret n°2024-123  [X]  │◄─┼── Badge filtre actif
-│  └─────────────────────────┘  │
-│                               │
-│  Article 1 - Champ d'app...   │
-│  Article 2 - Obligations...   │
-│  Article 3 - ...              │
-└───────────────────────────────┘
-```
+### 5. Tooltip Missing sur le HoverCard en Mode Collapsed
+
+Dans `AppSidebar.tsx`, quand la sidebar est collapsed, les sous-items apparaissent dans un HoverCard (lignes 159-197). La route active est bien mise en évidence avec le style correct.
+
+**Statut:** Fonctionne correctement, aucune modification nécessaire.
+
+### 6. Client Routes : Incohérence de Navigation
+
+Dans `module-navigation-map.ts` (lignes 174-184), les routes client utilisent des chemins différents :
+- `/client-bibliotheque/textes`
+- `/client-bibliotheque/articles`
+
+Mais `App.tsx` (ligne 226) utilise le même composant `BibliothequeArticles` pour les deux contextes (staff et client). Cela pourrait créer des problèmes si le composant a une logique spécifique au staff.
+
+**Recommandation :** Vérifier que `BibliothequeArticles` fonctionne correctement pour les utilisateurs client.
 
 ---
 
 ## Tests de Validation
 
-1. **Export supprimé**: Vérifier que le bouton "Exporter" n'apparaît plus dans le header de la page textes
-2. **Navigation**: Cliquer sur un texte doit naviguer vers `/bibliotheque/articles?texte=<id>`
-3. **Filtre pré-appliqué**: La page articles doit afficher uniquement les articles du texte sélectionné
-4. **Badge visible**: Un badge indiquant le texte filtré doit apparaître
-5. **Bouton X**: Cliquer sur le X du badge doit supprimer le filtre et afficher tous les articles
-6. **URL persistante**: Rafraîchir la page doit conserver le filtre (URL param)
+Après implémentation :
+
+1. **Navigation sidebar active :**
+   - Naviguer vers `/bibliotheque/articles` → Le sous-menu "Articles" doit être surligné
+   - Naviguer vers `/bibliotheque/articles?texte=xxx` → Le sous-menu "Articles" doit toujours être surligné
+   - Naviguer vers `/bibliotheque/textes` → Le sous-menu "Textes réglementaires" doit être surligné
+
+2. **Page versions :**
+   - Les statistiques de version doivent s'afficher correctement
+   - Les filtres doivent fonctionner
+
+3. **Contraste visuel :**
+   - L'élément actif doit être facilement identifiable visuellement
 
