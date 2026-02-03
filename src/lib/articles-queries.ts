@@ -82,13 +82,8 @@ export const articlesListQueries = {
         )
       `, { count: "exact" });
 
-    // Search filter
-    if (filters?.searchTerm) {
-      const searchTerm = filters.searchTerm.trim();
-      query = query.or(
-        `numero.ilike.%${searchTerm}%,titre.ilike.%${searchTerm}%,resume.ilike.%${searchTerm}%`
-      );
-    }
+    // Search filter - applied after fetching to include version content
+    const searchTerm = filters?.searchTerm?.trim() || "";
 
     // Exigence filter
     if (filters?.exigenceOnly) {
@@ -207,10 +202,22 @@ export const articlesListQueries = {
     }
 
     // Combine articles with their active versions
-    const articlesWithVersions = (data || []).map(article => ({
+    let articlesWithVersions = (data || []).map(article => ({
       ...article,
       version_active: activeVersionsMap[article.id] || null,
     }));
+
+    // Apply search filter including version content
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      articlesWithVersions = articlesWithVersions.filter(article => {
+        const matchNumero = article.numero?.toLowerCase().includes(lowerSearch);
+        const matchTitre = article.titre?.toLowerCase().includes(lowerSearch);
+        const matchResume = article.resume?.toLowerCase().includes(lowerSearch);
+        const matchContenu = article.version_active?.contenu?.toLowerCase().includes(lowerSearch);
+        return matchNumero || matchTitre || matchResume || matchContenu;
+      });
+    }
 
     // If filtering by version status, exclude articles without matching version
     let filteredArticles = articlesWithVersions;
@@ -218,12 +225,15 @@ export const articlesListQueries = {
       filteredArticles = articlesWithVersions.filter(a => a.version_active !== null);
     }
 
+    // Recalculate count after client-side filtering
+    const finalCount = searchTerm ? filteredArticles.length : (count || 0);
+
     return {
       data: filteredArticles,
-      count: count || 0,
+      count: finalCount,
       page,
       pageSize,
-      totalPages: Math.ceil((count || 0) / pageSize)
+      totalPages: Math.ceil(finalCount / pageSize)
     };
   },
 
