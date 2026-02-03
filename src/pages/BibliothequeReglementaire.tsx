@@ -8,7 +8,6 @@ import {
   Plus,
   Upload,
   Scale,
-  FileDown,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, TexteReglementaire } from "@/lib/textes-queries";
@@ -27,7 +26,7 @@ import { BibliothequeTableSkeleton } from "@/components/bibliotheque/Bibliothequ
 import { BibliothequeViewToggle } from "@/components/bibliotheque/BibliothequeViewToggle";
 import { BibliothequeHeader } from "@/components/bibliotheque/BibliothequeHeader";
 import { PDFViewerModal } from "@/components/PDFViewerModal";
-import { ExportButton } from "@/components/shared/ExportButton";
+
 import { BibliothequePreferencesProvider, useBibliothequePreferences } from "@/contexts/BibliothequePreferencesContext";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
@@ -180,7 +179,8 @@ function BibliothequeReglementaireContent() {
   };
 
   const handleView = (texte: any) => {
-    navigate(`/bibliotheque/textes/${texte.id}`);
+    // Navigate to articles page with texte filter pre-applied
+    navigate(`/bibliotheque/articles?texte=${texte.id}`);
   };
 
   const handleEdit = (texte: TexteReglementaire) => {
@@ -248,19 +248,6 @@ function BibliothequeReglementaireContent() {
         actions={
           <div className="flex items-center gap-3">
             {!isMobile && <BibliothequeViewToggle view={view} onViewChange={setView} />}
-            <ExportButton
-              data={textes.map((t: any) => ({
-                Reference: t.reference,
-                Titre: t.titre,
-                Type: t.type,
-                DatePublication: t.date_publication,
-                Statut: t.statut_vigueur || "en_vigueur",
-              }))}
-              fileName="bibliotheque-reglementaire"
-              sheetName="Textes"
-              disabled={textes.length === 0}
-              variant="outline"
-            />
             {canManageTextes && (
               <>
                 <Button
