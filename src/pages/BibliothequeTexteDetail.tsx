@@ -40,8 +40,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EffetsCreesTab } from "@/components/EffetsCreesTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { textesReglementairesQueries, textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
-import { changelogQueries } from "@/lib/actes-queries";
+import { 
+  textesQueries, 
+  articlesQueries, 
+  versionsQueries,
+  changelogQueries 
+} from "@/lib/bibliotheque-unified-queries";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
@@ -87,13 +91,13 @@ export default function BibliothequeTexteDetail() {
 
   const { data: texte, isLoading, error } = useQuery({
     queryKey: ["texte-detail", id],
-    queryFn: () => textesReglementairesQueries.getById(id!),
+    queryFn: () => textesQueries.getById(id!),
     enabled: !!id,
   });
 
   const { data: articles = [], isLoading: articlesLoading } = useQuery({
     queryKey: ["texte-articles", id],
-    queryFn: () => textesArticlesQueries.getByTexteId(id!),
+    queryFn: () => articlesQueries.getByTexteId(id!),
     enabled: !!id,
   });
 
@@ -131,7 +135,7 @@ export default function BibliothequeTexteDetail() {
     queryFn: async () => {
       const map: Record<string, any[]> = {};
       for (const articleId of expandedArticles) {
-        const versions = await textesArticlesVersionsQueries.getByArticleId(articleId);
+        const versions = await versionsQueries.getByArticleId(articleId);
         map[articleId] = versions || [];
       }
       return map;
@@ -139,10 +143,10 @@ export default function BibliothequeTexteDetail() {
     enabled: !!id && expandedArticles.length > 0,
   });
 
-  // Fetch changelog for this act
+  // Fetch changelog for this text
   const { data: changelogEntries = [] } = useQuery({
     queryKey: ["changelog", id],
-    queryFn: () => changelogQueries.getByActeId(id!),
+    queryFn: () => changelogQueries.getByTexteId(id!),
     enabled: !!id,
   });
 
@@ -185,7 +189,7 @@ export default function BibliothequeTexteDetail() {
   }
 
   const deleteArticleMutation = useMutation({
-    mutationFn: (id: string) => textesArticlesQueries.delete(id),
+    mutationFn: (id: string) => articlesQueries.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
       toast.success("Article supprimé avec succès");
@@ -197,7 +201,7 @@ export default function BibliothequeTexteDetail() {
   });
 
   const deleteVersionMutation = useMutation({
-    mutationFn: (id: string) => textesArticlesVersionsQueries.deleteWithRepair(id),
+    mutationFn: (id: string) => versionsQueries.deleteWithRepair(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
         predicate: (q) => q.queryKey[0] === "article-versions-map" && q.queryKey[1] === id
@@ -255,11 +259,11 @@ export default function BibliothequeTexteDetail() {
       }
 
       // 1. Récupérer le prochain numéro de version
-      const existingVersions = await textesArticlesVersionsQueries.getByArticleId(articleId);
-      const nextVersionNum = Math.max(...existingVersions.map(v => v.numero_version), 0) + 1;
+      const existingVersions = await versionsQueries.getByArticleId(articleId);
+      const nextVersionNum = Math.max(...existingVersions.map((v: any) => v.numero_version), 0) + 1;
       
       // 2. Créer une nouvelle version (pas écraser l'article)
-      await textesArticlesVersionsQueries.create({
+      await versionsQueries.create({
         article_id: articleId,
         numero_version: nextVersionNum,
         contenu: version.contenu,
@@ -272,8 +276,8 @@ export default function BibliothequeTexteDetail() {
       // 3. Marquer les versions précédentes comme remplacées
       await Promise.all(
         existingVersions
-          .filter(v => v.statut === 'en_vigueur')
-          .map(v => textesArticlesVersionsQueries.update(v.id, { 
+          .filter((v: any) => v.statut === 'en_vigueur')
+          .map((v: any) => versionsQueries.update(v.id, { 
             statut: 'remplacee'
           }))
       );
@@ -303,10 +307,11 @@ export default function BibliothequeTexteDetail() {
   const handleCreateEffet = (article: any) => {
     setTargetArticleForEffet({
       ...article,
+      numero_article: article.numero, // Map for legacy component
       texte_id: id,
       texte: {
         type: texte?.type || "",
-        reference_officielle: texte?.reference_officielle || "",
+        reference_officielle: texte?.reference || "", // Use correct column
       }
     });
     setShowQuickEffetModal(true);
@@ -380,7 +385,8 @@ export default function BibliothequeTexteDetail() {
     );
   }
 
-  const statutInfo = getStatutBadge(texte.statut_vigueur);
+  // Note: statut_vigueur is now managed at article_versions level, not texte level
+  const statutInfo = { label: "Actif", variant: "success" as const };
 
   return (
     <div className="space-y-6">
@@ -398,7 +404,7 @@ export default function BibliothequeTexteDetail() {
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline">{texte.reference_officielle}</Badge>
+                <Badge variant="outline">{texte.reference}</Badge>
                 <Badge
                   className={
                     statutInfo.variant === "success"
@@ -414,24 +420,7 @@ export default function BibliothequeTexteDetail() {
                 </Badge>
               </div>
               <CardTitle className="text-2xl">{texte.titre}</CardTitle>
-              {texte.resume && (
-                <CardDescription className="mt-2">
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(texte.resume) }}
-                    className="prose prose-sm max-w-none"
-                  />
-                </CardDescription>
-              )}
             </div>
-            {texte.fichier_pdf_url && (
-              <Button
-                variant="outline"
-                onClick={() => setPdfViewerOpen(true)}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Voir le PDF
-              </Button>
-            )}
             {texte.pdf_url && (
               <Button
                 variant="outline"
@@ -463,10 +452,10 @@ export default function BibliothequeTexteDetail() {
                 </div>
               </div>
             )}
-            {texte.autorite && (
+            {(texte as any).autorite_emettrice && (
               <div>
                 <div className="text-sm font-medium text-muted-foreground">Autorité</div>
-                <div className="mt-1">{texte.autorite}</div>
+                <div className="mt-1">{(texte as any).autorite_emettrice}</div>
               </div>
             )}
             {texte.annee && (
@@ -729,13 +718,18 @@ export default function BibliothequeTexteDetail() {
         <TabsContent value="info">
           <Card>
             <CardContent className="pt-6 space-y-4">
-              {texte.code && (
+              {texte.source_url && (
                 <div>
-                  <div className="text-sm font-medium text-muted-foreground">Code</div>
-                  <div className="mt-1">{texte.code.titre}</div>
-                  {texte.code.description && (
-                    <div className="text-sm text-muted-foreground mt-1">{texte.code.description}</div>
-                  )}
+                  <div className="text-sm font-medium text-muted-foreground">Source officielle</div>
+                  <a 
+                    href={texte.source_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline flex items-center gap-1 mt-1"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Voir le document original
+                  </a>
                 </div>
               )}
               {texte.domaines && Array.isArray(texte.domaines) && texte.domaines.length > 0 && (
@@ -830,8 +824,8 @@ export default function BibliothequeTexteDetail() {
       <PDFViewerModal
         open={pdfViewerOpen}
         onOpenChange={setPdfViewerOpen}
-        pdfUrl={texte?.pdf_url || texte?.fichier_pdf_url || null}
-        title={texte?.reference_officielle}
+        pdfUrl={texte?.pdf_url || null}
+        title={texte?.reference}
       />
 
       {/* Restore Version Confirmation Dialog */}

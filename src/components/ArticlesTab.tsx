@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash2, GitBranch, Save, X, GitCompare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { articlesQueries, articleVersionsQueries } from "@/lib/actes-queries";
+import { articlesQueries, versionsQueries } from "@/lib/bibliotheque-unified-queries";
 import { supabaseAny as supabase } from "@/lib/supabase-any";
 import type { Article } from "@/types/textes";
 import { ArticleVersionComparison } from "./ArticleVersionComparison";
@@ -81,12 +81,12 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
     },
   });
 
-  // Fetch article-sous_domaines relationships
+  // Fetch article-sous_domaines relationships - Using CORRECT table: article_sous_domaines
   const { data: articlesSousDomainesData } = useQuery({
-    queryKey: ["articles-sous-domaines", acteId],
+    queryKey: ["article-sous-domaines", acteId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("articles_sous_domaines")
+        .from("article_sous_domaines")
         .select("article_id, sous_domaine_id, sous_domaines_application(libelle)");
       if (error) throw error;
       return data;
@@ -96,39 +96,33 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
   // Fetch versions for comparison article
   const { data: articleVersions } = useQuery({
     queryKey: ["article-versions", comparisonArticleId],
-    queryFn: () => articleVersionsQueries.getByArticleId(comparisonArticleId!),
+    queryFn: () => versionsQueries.getByArticleId(comparisonArticleId!),
     enabled: !!comparisonArticleId && comparisonOpen,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: ArticleFormData) => {
       const article = await articlesQueries.create({
-        acte_id: acteId,
+        texte_id: acteId, // Use correct column name
         numero: data.numero,
-        titre_court: data.titre_court,
-        ordre: data.ordre,
+        titre: data.titre_court, // Map to correct column
         porte_exigence: data.porte_exigence,
         est_introductif: data.est_introductif,
       });
 
-      // Insert sous-domaines relationships
+      // Insert sous-domaines relationships using CORRECT table
       if (data.sous_domaine_ids.length > 0) {
-        const relations = data.sous_domaine_ids.map((sdId) => ({
-          article_id: article.id,
-          sous_domaine_id: sdId,
-        }));
-        const { error } = await supabase.from("articles_sous_domaines").insert(relations);
-        if (error) throw error;
+        await articlesQueries.updateSousDomaines(article.id, data.sous_domaine_ids);
       }
 
       return article;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["articles", acteId] });
-      queryClient.invalidateQueries({ queryKey: ["articles-sous-domaines", acteId] });
+      queryClient.invalidateQueries({ queryKey: ["texte-articles", acteId] });
+      queryClient.invalidateQueries({ queryKey: ["article-sous-domaines", acteId] });
       toast({ title: "Article ajouté", description: "L'article a été créé avec succès" });
       resetForm();
-      resetPage(); // Reset pagination on new article
+      resetPage();
       setDialogOpen(false);
     },
     onError: (error: any) => {
@@ -144,26 +138,16 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
     mutationFn: async ({ id, data }: { id: string; data: ArticleFormData }) => {
       await articlesQueries.update(id, {
         numero: data.numero,
-        titre_court: data.titre_court,
-        ordre: data.ordre,
+        titre: data.titre_court,
         porte_exigence: data.porte_exigence,
         est_introductif: data.est_introductif,
       });
 
-      // Update sous-domaines relationships
-      await supabase.from("articles_sous_domaines").delete().eq("article_id", id);
-      if (data.sous_domaine_ids.length > 0) {
-        const relations = data.sous_domaine_ids.map((sdId) => ({
-          article_id: id,
-          sous_domaine_id: sdId,
-        }));
-        const { error } = await supabase.from("articles_sous_domaines").insert(relations);
-        if (error) throw error;
-      }
+      await articlesQueries.updateSousDomaines(id, data.sous_domaine_ids);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["articles", acteId] });
-      queryClient.invalidateQueries({ queryKey: ["articles-sous-domaines", acteId] });
+      queryClient.invalidateQueries({ queryKey: ["texte-articles", acteId] });
+      queryClient.invalidateQueries({ queryKey: ["article-sous-domaines", acteId] });
       toast({ title: "Article modifié", description: "L'article a été mis à jour avec succès" });
       resetForm();
       setDialogOpen(false);
@@ -180,8 +164,8 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => articlesQueries.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["articles", acteId] });
-      queryClient.invalidateQueries({ queryKey: ["articles-sous-domaines", acteId] });
+      queryClient.invalidateQueries({ queryKey: ["texte-articles", acteId] });
+      queryClient.invalidateQueries({ queryKey: ["article-sous-domaines", acteId] });
       toast({ title: "Article supprimé", description: "L'article a été supprimé avec succès" });
     },
     onError: (error: any) => {
@@ -211,8 +195,8 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
 
     setFormData({
       numero: article.numero,
-      titre_court: article.titre_court || "",
-      ordre: article.ordre || 0,
+      titre_court: article.titre || "", // Map from correct column
+      ordre: 0, // ordre not used in new schema
       sous_domaine_ids: articleSousDomaines,
       porte_exigence: article.porte_exigence,
       est_introductif: article.est_introductif,
@@ -415,7 +399,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
                         </TableCell>
                         <TableCell className="text-sm">
                           <div className="space-y-1">
-                            <div>{article.titre_court || <span className="text-muted-foreground">—</span>}</div>
+                            <div>{article.titre || <span className="text-muted-foreground">—</span>}</div>
                             <div className="flex items-center gap-2">
                               {article.porte_exigence ? (
                                 <Badge variant="default" className="text-xs">
@@ -442,7 +426,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-center">{article.ordre || 0}</TableCell>
+                        <TableCell className="text-center">-</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(article)}>
