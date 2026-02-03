@@ -209,21 +209,24 @@ export const buildNavigationFromModules = (modules: ModuleSysteme[], isStaff: bo
 
 // Helper to check if a route matches any subitem
 export const findActiveModule = (pathname: string, items: MenuItem[]): string | null => {
+  // Remove query params for matching - ensures /bibliotheque/articles?texte=xxx matches /bibliotheque/articles
+  const cleanPathname = pathname.split('?')[0];
+  
   for (const item of items) {
     // Check direct URL match
-    if (item.url && pathname === item.url) {
+    if (item.url && cleanPathname === item.url) {
       return item.title;
     }
 
     // Check if route starts with URL
-    if (item.url && pathname.startsWith(item.url + "/")) {
+    if (item.url && cleanPathname.startsWith(item.url + "/")) {
       return item.title;
     }
 
     // Check subitems
     if (item.subItems) {
       const matchingSubItem = item.subItems.find(
-        (sub) => pathname === sub.url || pathname.startsWith(sub.url + "/")
+        (sub) => cleanPathname === sub.url || cleanPathname.startsWith(sub.url + "/")
       );
       if (matchingSubItem) {
         return item.title;
