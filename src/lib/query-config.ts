@@ -26,8 +26,8 @@ export const queryConfig = {
       // Refetch on window focus (but respects staleTime)
       refetchOnWindowFocus: true,
       
-      // Don't refetch on mount if data is fresh
-      refetchOnMount: false,
+      // Refetch on mount to ensure fresh data after navigation
+      refetchOnMount: true,
       
       // Enable suspense mode for better loading states
       suspense: false,
