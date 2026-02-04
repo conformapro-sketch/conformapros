@@ -395,35 +395,9 @@ export const textesReglementairesQueries = {
   },
 
   async deleteWithCascade(texteId: string) {
-    // 1. Get all article IDs for this texte
-    const { data: articles } = await supabase
-      .from("articles")
-      .select("id")
-      .eq("texte_id", texteId);
-    
-    const articleIds = articles?.map(a => a.id) || [];
-    
-    // 2. Delete article dependencies first
-    if (articleIds.length > 0) {
-      await supabase.from("article_sous_domaines").delete().in("article_id", articleIds);
-      await supabase.from("article_tags").delete().in("article_id", articleIds);
-      await supabase.from("article_versions").delete().in("article_id", articleIds);
-      await supabase.from("articles").delete().in("id", articleIds);
-    }
-    
-    // 3. Delete texte dependencies (junction tables)
-    await supabase.from("textes_domaines").delete().eq("texte_id", texteId);
-    await supabase.from("textes_sous_domaines").delete().eq("texte_id", texteId);
-    await supabase.from("texte_tags").delete().eq("texte_id", texteId);
-    await supabase.from("textes_codes").delete().eq("texte_id", texteId);
-    await supabase.from("changelog_reglementaire").delete().eq("acte_id", texteId);
-    await supabase.from("textes_articles").delete().eq("texte_id", texteId);
-    
-    // 4. Finally delete the texte itself
-    const { error } = await supabase
-      .from("textes_reglementaires")
-      .delete()
-      .eq("id", texteId);
+    const { error } = await supabase.rpc('delete_texte_cascade', {
+      p_texte_id: texteId
+    });
     
     if (error) throw error;
   },
