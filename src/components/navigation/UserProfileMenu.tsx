@@ -67,25 +67,25 @@ export function UserProfileMenu({ onProfileClick, onLogout }: UserProfileMenuPro
         <Button
           type="button"
           variant="ghost"
-          className="h-9 gap-2 rounded-full pl-1 pr-2 text-foreground transition-colors hover:text-[#2FB200]"
+          className="h-8 sm:h-9 gap-1 sm:gap-2 rounded-full pl-1 pr-1 sm:pr-2 text-foreground transition-colors hover:text-[#2FB200]"
           aria-label="Ouvrir le menu utilisateur"
         >
-          <Avatar className="h-7 w-7">
+          <Avatar className="h-6 w-6 sm:h-7 sm:w-7">
             <AvatarImage src={userDisplayInfo.avatarUrl} alt={userDisplayInfo.name} />
-            <AvatarFallback className="text-xs">{userDisplayInfo.initials}</AvatarFallback>
+            <AvatarFallback className="text-[10px] sm:text-xs">{userDisplayInfo.initials}</AvatarFallback>
           </Avatar>
-          <div className="hidden min-w-0 flex-col items-start leading-tight sm:flex">
-            <span className="max-w-[10rem] truncate text-left text-sm font-medium">
+          <div className="hidden min-w-0 flex-col items-start leading-tight md:flex">
+            <span className="max-w-[8rem] lg:max-w-[10rem] truncate text-left text-sm font-medium">
               {userDisplayInfo.name}
             </span>
             {userDisplayInfo.role && (
-              <span className="text-xs text-muted-foreground">{userDisplayInfo.role}</span>
+              <span className="text-xs text-muted-foreground truncate max-w-[8rem]">{userDisplayInfo.role}</span>
             )}
           </div>
-          <ChevronDown className="hidden h-4 w-4 sm:block" />
+          <ChevronDown className="hidden h-4 w-4 md:block" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-64 sm:w-56">
         {userDisplayInfo.clientName && (
           <>
             <DropdownMenuLabel className="font-normal">

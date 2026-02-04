@@ -19,7 +19,7 @@ export function Layout() {
         <AppSidebar />
         <div className="flex flex-1 flex-col">
           <TopNavBar onProfileClick={() => navigate("/profile")} />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden px-4 pb-8 pt-20 sm:px-6 lg:px-8">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-6 pt-18 sm:px-4 sm:pb-8 sm:pt-20 md:px-6 lg:px-8 safe-area-pb">
             <Outlet />
           </main>
         </div>

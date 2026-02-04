@@ -52,7 +52,7 @@ export default function Dashboard() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Documents conformes"
           value="124/142"
@@ -118,7 +118,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Conformité par domaine */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         <Card className="shadow-soft">
           <CardHeader>
             <CardTitle>Conformité HSE</CardTitle>

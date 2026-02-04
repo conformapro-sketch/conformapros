@@ -36,17 +36,17 @@ export function SiteSwitcher() {
         <Button
           variant="outline"
           role="combobox"
-          className="h-9 justify-between gap-2 text-sm font-medium"
+          className="h-8 sm:h-9 justify-between gap-1 sm:gap-2 text-xs sm:text-sm font-medium max-w-[140px] sm:max-w-[200px] md:max-w-none"
         >
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            <span className="hidden sm:inline">{currentSite.nom}</span>
-            <span className="sm:hidden">{currentSite.code_site || currentSite.nom}</span>
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+            <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+            <span className="hidden md:inline truncate">{currentSite.nom}</span>
+            <span className="md:hidden truncate">{currentSite.code_site || currentSite.nom.slice(0, 10)}</span>
           </div>
-          <ChevronDown className="h-4 w-4 opacity-50" />
+          <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-50 flex-shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-2 bg-popover z-50" align="start">
+      <PopoverContent className="w-[260px] sm:w-[280px] p-2 bg-popover z-50" align="start">
         <div className="space-y-1">
           {availableSites.map((site) => (
             <button
