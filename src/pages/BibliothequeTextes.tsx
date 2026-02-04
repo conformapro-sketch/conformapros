@@ -16,11 +16,33 @@ import {
   Upload,
   Download,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  ExternalLink
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { textesReglementairesQueries, domainesQueries, sousDomainesQueries } from "@/lib/textes-queries";
 import { TexteFormModal } from "@/components/TexteFormModal";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const TYPE_LABELS: Record<string, string> = {
   LOI: "Loi",
@@ -32,6 +54,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function BibliothequeTextes() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [domaineFilter, setDomaineFilter] = useState<string>("all");
@@ -42,6 +65,7 @@ export default function BibliothequeTextes() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showTexteModal, setShowTexteModal] = useState(false);
   const [editingTexte, setEditingTexte] = useState<any>(null);
+  const [deleteConfirmTexte, setDeleteConfirmTexte] = useState<any>(null);
   const pageSize = 25;
 
   const { data: domainesList } = useQuery({
@@ -69,6 +93,18 @@ export default function BibliothequeTextes() {
         sortBy,
         sortOrder,
       }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => textesReglementairesQueries.deleteWithCascade(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
+      toast.success("Texte supprimé avec succès");
+      setDeleteConfirmTexte(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de la suppression");
+    },
   });
 
   const textes = result?.data || [];
@@ -108,6 +144,50 @@ export default function BibliothequeTextes() {
     }
     setPage(1);
   };
+
+  const handleEdit = (texte: any) => {
+    setEditingTexte(texte);
+    setShowTexteModal(true);
+  };
+
+  const handleDelete = (texte: any) => {
+    setDeleteConfirmTexte(texte);
+  };
+
+  const RowActionsMenu = ({ texte }: { texte: any }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <MoreVertical className="h-4 w-4" />
+          <span className="sr-only">Actions</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}>
+          <Eye className="h-4 w-4 mr-2" />
+          Voir les articles
+        </DropdownMenuItem>
+        {texte.pdf_url && (
+          <DropdownMenuItem onClick={() => window.open(texte.pdf_url, "_blank")}>
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Ouvrir le PDF
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => handleEdit(texte)}>
+          <Pencil className="h-4 w-4 mr-2" />
+          Modifier
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          onClick={() => handleDelete(texte)}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Supprimer
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="space-y-6">
@@ -285,7 +365,7 @@ export default function BibliothequeTextes() {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-medium">
-                            {texte.reference_officielle || "—"}
+                            {texte.reference_officielle || texte.reference || "—"}
                           </TableCell>
                           <TableCell>
                             <div className="max-w-md">
@@ -300,7 +380,7 @@ export default function BibliothequeTextes() {
                             </div>
                           </TableCell>
                           <TableCell className="text-sm">
-                            {texte.autorite || "—"}
+                            {texte.autorite || texte.autorite_emettrice || "—"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {texte.date_publication
@@ -340,16 +420,7 @@ export default function BibliothequeTextes() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/bibliotheque/textes/${texte.id}`);
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <RowActionsMenu texte={texte} />
                           </TableCell>
                         </TableRow>
                       );
@@ -367,32 +438,37 @@ export default function BibliothequeTextes() {
                   return (
                     <div
                       key={texte.id}
-                      className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
+                      className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                     >
                       <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {TYPE_LABELS[texte.type] || texte.type}
-                          </Badge>
-                          <Badge
-                            className={
-                              statutInfo.variant === "success"
-                                ? "bg-success text-success-foreground"
-                                : statutInfo.variant === "warning"
-                                ? "bg-warning text-warning-foreground"
-                                : statutInfo.variant === "destructive"
-                                ? "bg-destructive text-destructive-foreground"
-                                : ""
-                            }
-                          >
-                            {statutInfo.label}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {TYPE_LABELS[texte.type] || texte.type}
+                            </Badge>
+                            <Badge
+                              className={
+                                statutInfo.variant === "success"
+                                  ? "bg-success text-success-foreground"
+                                  : statutInfo.variant === "warning"
+                                  ? "bg-warning text-warning-foreground"
+                                  : statutInfo.variant === "destructive"
+                                  ? "bg-destructive text-destructive-foreground"
+                                  : ""
+                              }
+                            >
+                              {statutInfo.label}
+                            </Badge>
+                          </div>
+                          <RowActionsMenu texte={texte} />
                         </div>
                         
-                        <div>
+                        <div 
+                          className="cursor-pointer"
+                          onClick={() => navigate(`/bibliotheque/textes/${texte.id}`)}
+                        >
                           <div className="font-semibold text-foreground mb-1">
-                            {texte.reference_officielle} - {texte.titre}
+                            {texte.reference_officielle || texte.reference} - {texte.titre}
                           </div>
                           {texte.resume && (
                             <div className="text-sm text-muted-foreground line-clamp-2">
@@ -401,9 +477,9 @@ export default function BibliothequeTextes() {
                           )}
                         </div>
 
-                        {texte.autorite && (
+                        {(texte.autorite || texte.autorite_emettrice) && (
                           <div className="text-xs text-muted-foreground">
-                            Autorité: {texte.autorite}
+                            Autorité: {texte.autorite || texte.autorite_emettrice}
                           </div>
                         )}
 
@@ -476,6 +552,7 @@ export default function BibliothequeTextes() {
         </CardContent>
       </Card>
 
+      {/* Texte Form Modal */}
       <TexteFormModal 
         open={showTexteModal}
         onOpenChange={setShowTexteModal}
@@ -483,8 +560,37 @@ export default function BibliothequeTextes() {
         onSuccess={() => {
           setEditingTexte(null);
           setShowTexteModal(false);
+          queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmTexte} onOpenChange={() => setDeleteConfirmTexte(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Êtes-vous sûr de vouloir supprimer ce texte réglementaire ?</p>
+              <p className="font-semibold text-foreground">
+                {deleteConfirmTexte?.reference_officielle || deleteConfirmTexte?.reference} - {deleteConfirmTexte?.titre}
+              </p>
+              <p className="text-destructive">
+                ⚠️ Cette action supprimera également tous les articles associés et est irréversible.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate(deleteConfirmTexte?.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
