@@ -129,14 +129,19 @@ function BibliothequeReglementaireContent() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => textesReglementairesQueries.softDelete(id),
+    mutationFn: (id: string) => textesReglementairesQueries.deleteWithCascade(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
-      toast.success("Texte supprimé avec succès");
+      toast.success("Texte réglementaire supprimé avec succès");
       setDeleteTexteId(null);
     },
-    onError: () => {
-      toast.error("Erreur lors de la suppression");
+    onError: (error: any) => {
+      const errorMessage = error?.message || "Une erreur inconnue s'est produite";
+      console.error("Delete error:", error);
+      toast.error("Échec de la suppression", {
+        description: errorMessage,
+        duration: 5000,
+      });
     },
   });
 
@@ -446,21 +451,26 @@ function BibliothequeReglementaireContent() {
         title={selectedPdfTitle}
       />
 
-      <AlertDialog open={!!deleteTexteId} onOpenChange={() => setDeleteTexteId(null)}>
+      <AlertDialog open={!!deleteTexteId} onOpenChange={() => !deleteMutation.isPending && setDeleteTexteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce texte ? Cette action est irréversible.
+            <AlertDialogDescription className="space-y-2">
+              <p>Êtes-vous sûr de vouloir supprimer ce texte réglementaire ?</p>
+              <p className="font-medium text-destructive">
+                ⚠️ Cette action supprimera également tous les articles et versions associés.
+              </p>
+              <p className="text-xs">Cette action est irréversible.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteTexteId && deleteMutation.mutate(deleteTexteId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
             >
-              Supprimer
+              {deleteMutation.isPending ? "Suppression..." : "Supprimer définitivement"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

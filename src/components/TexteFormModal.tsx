@@ -232,13 +232,26 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Client-side validation
+    // Client-side validation with clear error messages
+    const errors: string[] = [];
+    
     if (!formData.reference.trim()) {
-      toast.error("La référence est requise");
-      return;
+      errors.push("La référence du texte est obligatoire");
     }
     if (!formData.titre.trim()) {
-      toast.error("Le titre est requis");
+      errors.push("Le titre du texte est obligatoire");
+    }
+    if (!formData.type) {
+      errors.push("Veuillez sélectionner un type de texte");
+    }
+    if (formData.source_url && !formData.source_url.startsWith("http")) {
+      errors.push("Le lien source doit commencer par http:// ou https://");
+    }
+    
+    if (errors.length > 0) {
+      errors.forEach((error, index) => {
+        setTimeout(() => toast.error(error), index * 100);
+      });
       return;
     }
     
@@ -249,11 +262,19 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
     }
   };
 
+  const isPending = createMutation.isPending || updateMutation.isPending || isUploading;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isPending && onOpenChange(isOpen)}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{texte ? "Modifier le texte" : "Créer un texte réglementaire"}</DialogTitle>
+          <DialogTitle>{texte ? "Modifier le texte réglementaire" : "Créer un nouveau texte réglementaire"}</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {texte 
+              ? "Modifiez les informations du texte réglementaire ci-dessous." 
+              : "Remplissez les champs obligatoires (*) pour créer un nouveau texte réglementaire."
+            }
+          </p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -431,22 +452,25 @@ export function TexteFormModal({ open, onOpenChange, texte, onSuccess }: TexteFo
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="border-t pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
               Annuler
             </Button>
-            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
+            <Button type="submit" disabled={isPending}>
               {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Upload en cours...
+                  Upload du PDF en cours...
                 </>
               ) : createMutation.isPending || updateMutation.isPending ? (
-                "Enregistrement..."
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {texte ? "Modification..." : "Création..."}
+                </>
               ) : texte ? (
-                "Modifier"
+                "Enregistrer les modifications"
               ) : (
-                "Créer"
+                "Créer le texte"
               )}
             </Button>
           </DialogFooter>
