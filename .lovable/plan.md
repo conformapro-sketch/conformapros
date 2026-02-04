@@ -1,122 +1,191 @@
 
-# Plan: Fix Texte Réglementaire Deletion - Database Trigger Conflict
+# Plan: Fix Bibliothèque Réglementaire Module - Comprehensive Audit
 
-## Problem Identified
+## Problems Identified
 
-The deletion fails due to **two conflicting database triggers** that create an impossible situation:
+### 1. Article Deletion on `/bibliotheque/articles` Fails
+**Root Cause:** The `deleteMutation` in `BibliothequeArticles.tsx` (line 140-174) manually deletes article dependencies but then calls `textesArticlesQueries.delete(articleId)` which performs a direct `DELETE FROM articles` query. This triggers the `prevent_article_deletion_with_versions` database trigger that blocks deletion if versions exist - even though versions were just deleted!
 
-### Trigger 1: `check_article_has_no_versions_before_delete`
-```sql
--- Prevents deleting an article if it has versions
-RAISE EXCEPTION 'Impossible de supprimer cet article car il possède des versions...'
-```
+**Why it happens:** The trigger runs BEFORE each DELETE, but the JavaScript code deletes versions first, then tries to delete the article. However, the JavaScript deletions are separate queries, not a transaction. The trigger still sees versions in the database at check time.
 
-### Trigger 2: `check_article_has_at_least_one_version`
-```sql
--- Prevents deleting the last version of an article  
-RAISE EXCEPTION 'Impossible de supprimer la dernière version d''un article...'
-```
+### 2. Database Trigger Deadlock (Same as Textes)
+The same deadlock pattern affects articles:
+- Trigger `check_article_has_no_versions_before_delete` - blocks article deletion if versions exist
+- Trigger `check_article_has_at_least_one_version` - blocks deleting the last version
 
-### Why It Fails
-When `deleteWithCascade()` runs:
-1. Tries to delete versions → **BLOCKED** by trigger 2 (can't delete last version)
-2. Tries to delete articles → **BLOCKED** by trigger 1 (articles still have versions)
+### 3. No RPC Function for Article Cascade Delete
+Unlike textes which now have `delete_texte_cascade`, articles have no equivalent bypass mechanism.
 
-**Result:** Deadlock - nothing can be deleted
+### 4. Client Users See CRUD Buttons
+`/client-bibliotheque/articles` uses the same `BibliothequeArticles` component as staff, exposing edit/delete buttons to clients.
+
+### 5. Legacy Code References
+Several components still reference legacy columns and tables (`numero_article`, `titre_court`, `textes_articles`, `articles_sous_domaines`).
 
 ---
 
-## Solution
+## Solution Architecture
 
-Create a **database RPC function** with `SECURITY DEFINER` that can properly cascade delete while temporarily bypassing the validation triggers using a session variable flag.
+### Phase 1: Database - Create `delete_article_cascade` RPC
 
-### Step 1: New Database Migration
-
-Create an RPC function `delete_texte_cascade(texte_id UUID)` that:
-1. Sets a session variable `app.cascade_delete = true`
-2. Deletes in the correct order without trigger interference
-3. Resets the session variable
+Create a new RPC function that:
+1. Sets the `app.cascade_delete = true` session variable
+2. Deletes article dependencies (tags, sous_domaines, codes_liens)
+3. Deletes all article_versions
+4. Deletes the article itself
+5. Resets the session variable
 
 ```sql
--- Add bypass check to prevent_last_version_deletion trigger
-CREATE OR REPLACE FUNCTION prevent_last_version_deletion()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Skip validation during cascade delete operations
-  IF current_setting('app.cascade_delete', true) = 'true' THEN
-    RETURN OLD;
-  END IF;
-  
-  -- Original logic...
-END;
-$$ LANGUAGE plpgsql;
-
--- Add bypass check to prevent_article_deletion_with_versions trigger
-CREATE OR REPLACE FUNCTION prevent_article_deletion_with_versions()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Skip validation during cascade delete operations
-  IF current_setting('app.cascade_delete', true) = 'true' THEN
-    RETURN OLD;
-  END IF;
-  
-  -- Original logic...
-END;
-$$ LANGUAGE plpgsql;
-
--- Create cascade delete RPC function
-CREATE OR REPLACE FUNCTION delete_texte_cascade(p_texte_id UUID)
+CREATE OR REPLACE FUNCTION delete_article_cascade(p_article_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path TO 'public'
 AS $$
-DECLARE
-  v_article_ids UUID[];
 BEGIN
-  -- Enable cascade delete mode
+  -- Enable cascade delete bypass
   PERFORM set_config('app.cascade_delete', 'true', true);
   
-  -- Get all article IDs for this texte
-  SELECT ARRAY_AGG(id) INTO v_article_ids
-  FROM articles WHERE texte_id = p_texte_id;
+  -- Delete junction table records
+  DELETE FROM article_sous_domaines WHERE article_id = p_article_id;
+  DELETE FROM article_tags WHERE article_id = p_article_id;
+  DELETE FROM codes_liens_articles WHERE article_id = p_article_id;
   
-  IF v_article_ids IS NOT NULL THEN
-    -- Delete article dependencies
-    DELETE FROM article_sous_domaines WHERE article_id = ANY(v_article_ids);
-    DELETE FROM article_tags WHERE article_id = ANY(v_article_ids);
-    DELETE FROM article_versions WHERE article_id = ANY(v_article_ids);
-    DELETE FROM articles WHERE id = ANY(v_article_ids);
-  END IF;
+  -- Delete all versions
+  DELETE FROM article_versions WHERE article_id = p_article_id;
   
-  -- Delete texte dependencies
-  DELETE FROM textes_domaines WHERE texte_id = p_texte_id;
-  DELETE FROM textes_sous_domaines WHERE texte_id = p_texte_id;
-  DELETE FROM texte_tags WHERE texte_id = p_texte_id;
-  DELETE FROM textes_codes WHERE texte_id = p_texte_id;
-  DELETE FROM changelog_reglementaire WHERE acte_id = p_texte_id;
-  DELETE FROM textes_articles WHERE texte_id = p_texte_id;
+  -- Delete the article
+  DELETE FROM articles WHERE id = p_article_id;
   
-  -- Delete the texte itself
-  DELETE FROM textes_reglementaires WHERE id = p_texte_id;
-  
-  -- Disable cascade delete mode (auto-reset at end of transaction)
+  -- Reset flag
   PERFORM set_config('app.cascade_delete', 'false', true);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION delete_article_cascade(UUID) TO authenticated;
 ```
 
-### Step 2: Update Frontend Code
+### Phase 2: Frontend - Update Article Deletion Logic
 
-Update `textes-queries.ts` to call the RPC function instead of individual deletes:
+**File: `src/lib/textes-queries.ts`**
+
+Add `deleteWithCascade` method to `textesArticlesQueries`:
 
 ```typescript
-async deleteWithCascade(texteId: string) {
-  const { error } = await supabase.rpc('delete_texte_cascade', {
-    p_texte_id: texteId
+async deleteWithCascade(articleId: string) {
+  const { error } = await supabase.rpc('delete_article_cascade', {
+    p_article_id: articleId
   });
-  
   if (error) throw error;
+}
+```
+
+**File: `src/pages/BibliothequeArticles.tsx`**
+
+Replace the inline deletion logic with the RPC call:
+
+```typescript
+const deleteMutation = useMutation({
+  mutationFn: (articleId: string) => textesArticlesQueries.deleteWithCascade(articleId),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["articles-list"] });
+    queryClient.invalidateQueries({ queryKey: ["articles-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
+    toast.success("Article supprimé avec succès");
+    setDeleteDialogOpen(false);
+    setArticleToDelete(null);
+  },
+  onError: (error: any) => {
+    toast.error("Échec de la suppression", {
+      description: error.message || "Une erreur est survenue"
+    });
+  },
+});
+```
+
+### Phase 3: Client Access - Hide CRUD for Client Users
+
+**File: `src/pages/BibliothequeArticles.tsx`**
+
+Add user type detection and conditionally pass CRUD handlers:
+
+```typescript
+import { useUserType } from "@/hooks/useUserType";
+
+export default function BibliothequeArticles() {
+  const userType = useUserType();
+  const isStaff = userType === 'staff';
+  
+  // ... existing code ...
+  
+  return (
+    <div>
+      {/* Hide Create button for clients */}
+      {isStaff && (
+        <Button onClick={handleCreateArticle}>
+          <Plus /> Créer un article
+        </Button>
+      )}
+      
+      {/* Pass CRUD handlers only for staff */}
+      <ArticlesDataGrid
+        articles={articlesResult?.data || []}
+        isLoading={articlesLoading}
+        onViewArticle={(article) => setSelectedArticle(article)}
+        onEditArticle={isStaff ? handleEditArticle : undefined}
+        onDeleteArticle={isStaff ? handleDeleteArticle : undefined}
+      />
+      
+      {/* Only render form modal for staff */}
+      {isStaff && isFormOpen && (
+        <ArticleFormModal ... />
+      )}
+      
+      {/* Only render delete dialog for staff */}
+      {isStaff && (
+        <AlertDialog open={deleteDialogOpen} ...>
+          ...
+        </AlertDialog>
+      )}
+    </div>
+  );
+}
+```
+
+### Phase 4: Update All Article Delete Call Sites
+
+Other files that call `articlesQueries.delete()` need updating:
+
+| File | Change |
+|------|--------|
+| `src/pages/GestionTexteDetail.tsx` | Use `deleteWithCascade` |
+| `src/pages/BibliothequeTexteDetail.tsx` | Use `deleteWithCascade` |
+| `src/components/ArticlesTab.tsx` | Use `deleteWithCascade` |
+| `src/components/ArticleManager.tsx` | Use `deleteWithCascade` |
+| `src/lib/bibliotheque-unified-queries.ts` | Update export alias |
+
+### Phase 5: Improve Error Messages
+
+**File: `src/components/TexteFormModal.tsx`**
+
+Already has validation - verify error toast descriptions are clear.
+
+**File: `src/pages/BibliothequeArticles.tsx`**
+
+Improve delete error display:
+
+```typescript
+onError: (error: any) => {
+  const message = error?.message || "Une erreur est survenue";
+  
+  // Parse known error patterns for user-friendly messages
+  if (message.includes("versions")) {
+    toast.error("Impossible de supprimer l'article", {
+      description: "Veuillez réessayer. Si le problème persiste, contactez le support."
+    });
+  } else {
+    toast.error("Échec de la suppression", { description: message });
+  }
 }
 ```
 
@@ -126,8 +195,14 @@ async deleteWithCascade(texteId: string) {
 
 | # | File | Changes |
 |---|------|---------|
-| 1 | **New Migration** | Create `delete_texte_cascade` RPC function + update trigger functions |
-| 2 | `src/lib/textes-queries.ts` | Update `deleteWithCascade` to use RPC |
+| 1 | **Migration** | Create `delete_article_cascade` RPC function |
+| 2 | `src/lib/textes-queries.ts` | Add `deleteWithCascade` to `textesArticlesQueries` |
+| 3 | `src/lib/bibliotheque-unified-queries.ts` | Add `deleteWithCascade` to `articlesQueries` export |
+| 4 | `src/pages/BibliothequeArticles.tsx` | Use RPC for deletion, hide CRUD for clients, improve errors |
+| 5 | `src/pages/GestionTexteDetail.tsx` | Update to use `deleteWithCascade` |
+| 6 | `src/pages/BibliothequeTexteDetail.tsx` | Update to use `deleteWithCascade` |
+| 7 | `src/components/ArticlesTab.tsx` | Update to use `deleteWithCascade` |
+| 8 | `src/components/ArticleManager.tsx` | Update to use `deleteWithCascade` |
 
 ---
 
@@ -136,122 +211,99 @@ async deleteWithCascade(texteId: string) {
 ### Migration SQL
 
 ```sql
--- 1. Update trigger function to respect cascade delete flag
-CREATE OR REPLACE FUNCTION prevent_last_version_deletion()
-RETURNS TRIGGER AS $$
-DECLARE
-  version_count INTEGER;
-BEGIN
-  -- Skip validation during cascade delete operations
-  IF current_setting('app.cascade_delete', true) = 'true' THEN
-    RETURN OLD;
-  END IF;
-
-  SELECT COUNT(*) INTO version_count
-  FROM article_versions
-  WHERE article_id = OLD.article_id;
-  
-  IF version_count = 1 THEN
-    RAISE EXCEPTION 'Impossible de supprimer la dernière version d''un article. Un article doit avoir au moins une version.';
-  END IF;
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
--- 2. Update trigger function to respect cascade delete flag  
-CREATE OR REPLACE FUNCTION prevent_article_deletion_with_versions()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Skip validation during cascade delete operations
-  IF current_setting('app.cascade_delete', true) = 'true' THEN
-    RETURN OLD;
-  END IF;
-
-  IF EXISTS (
-    SELECT 1 FROM article_versions 
-    WHERE article_id = OLD.id
-  ) THEN
-    RAISE EXCEPTION 'Impossible de supprimer cet article car il possède des versions. Supprimez d''abord toutes les versions.';
-  END IF;
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
--- 3. Create the cascade delete RPC function
-CREATE OR REPLACE FUNCTION delete_texte_cascade(p_texte_id UUID)
+-- Create cascade delete function for articles
+CREATE OR REPLACE FUNCTION delete_article_cascade(p_article_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path TO 'public'
 AS $$
-DECLARE
-  v_article_ids UUID[];
 BEGIN
-  -- Enable cascade delete mode (transaction-local)
+  -- Enable cascade delete bypass for trigger validation
   PERFORM set_config('app.cascade_delete', 'true', true);
   
-  -- Get all article IDs for this texte
-  SELECT ARRAY_AGG(id) INTO v_article_ids
-  FROM articles WHERE texte_id = p_texte_id;
+  -- Delete article junction tables
+  DELETE FROM article_sous_domaines WHERE article_id = p_article_id;
+  DELETE FROM article_tags WHERE article_id = p_article_id;
+  DELETE FROM codes_liens_articles WHERE article_id = p_article_id;
   
-  IF v_article_ids IS NOT NULL AND array_length(v_article_ids, 1) > 0 THEN
-    -- Delete article dependencies first
-    DELETE FROM article_sous_domaines WHERE article_id = ANY(v_article_ids);
-    DELETE FROM article_tags WHERE article_id = ANY(v_article_ids);
-    DELETE FROM article_versions WHERE article_id = ANY(v_article_ids);
-    DELETE FROM articles WHERE id = ANY(v_article_ids);
-  END IF;
+  -- Delete all versions of this article
+  DELETE FROM article_versions WHERE article_id = p_article_id;
   
-  -- Delete texte junction tables
-  DELETE FROM textes_domaines WHERE texte_id = p_texte_id;
-  DELETE FROM textes_sous_domaines WHERE texte_id = p_texte_id;
-  DELETE FROM texte_tags WHERE texte_id = p_texte_id;
-  DELETE FROM textes_codes WHERE texte_id = p_texte_id;
-  DELETE FROM changelog_reglementaire WHERE acte_id = p_texte_id;
-  DELETE FROM textes_articles WHERE texte_id = p_texte_id;
+  -- Delete the article itself
+  DELETE FROM articles WHERE id = p_article_id;
   
-  -- Finally delete the texte
-  DELETE FROM textes_reglementaires WHERE id = p_texte_id;
-  
-  -- Reset flag (auto-resets at transaction end anyway)
+  -- Reset cascade delete flag
   PERFORM set_config('app.cascade_delete', 'false', true);
 END;
 $$;
 
--- 4. Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION delete_texte_cascade(UUID) TO authenticated;
+-- Grant access to authenticated users
+GRANT EXECUTE ON FUNCTION delete_article_cascade(UUID) TO authenticated;
 ```
 
-### TypeScript Update
+### TypeScript Changes
 
+**textes-queries.ts - Add method:**
 ```typescript
-// src/lib/textes-queries.ts - Replace lines 397-429
-
-async deleteWithCascade(texteId: string) {
-  const { error } = await supabase.rpc('delete_texte_cascade', {
-    p_texte_id: texteId
+// Inside textesArticlesQueries object, after line 517:
+async deleteWithCascade(articleId: string) {
+  const { error } = await supabase.rpc('delete_article_cascade', {
+    p_article_id: articleId
   });
-  
   if (error) throw error;
 }
 ```
 
----
+**BibliothequeArticles.tsx - Key changes:**
+```typescript
+// Add import
+import { useUserType } from "@/hooks/useUserType";
 
-## Why This Solution Works
+// Add hook usage inside component
+const userType = useUserType();
+const isStaff = userType === 'staff';
 
-1. **Session Variable Flag**: `app.cascade_delete` is set only for the duration of the transaction
-2. **Trigger Bypass**: Both validation triggers check this flag and skip validation when true
-3. **Security**: The RPC function uses `SECURITY DEFINER` to ensure proper permissions
-4. **Atomic Transaction**: Everything happens in a single database transaction - if any part fails, everything rolls back
-5. **No Breaking Changes**: Normal delete operations (single article, single version) still go through validation
+// Update deleteMutation
+const deleteMutation = useMutation({
+  mutationFn: (articleId: string) => textesArticlesQueries.deleteWithCascade(articleId),
+  // ... rest unchanged
+});
+
+// Conditionally render Create button
+{isStaff && (
+  <Button onClick={handleCreateArticle} className="gap-2">
+    <Plus className="h-4 w-4" />
+    <span>Créer un article</span>
+  </Button>
+)}
+
+// Pass undefined for CRUD callbacks for clients
+<ArticlesDataGrid
+  onEditArticle={isStaff ? handleEditArticle : undefined}
+  onDeleteArticle={isStaff ? handleDeleteArticle : undefined}
+/>
+```
 
 ---
 
 ## Expected Behavior After Fix
 
-1. Click delete on a texte réglementaire → Confirmation dialog appears
-2. Confirm deletion → RPC function executes
-3. All articles, versions, and junction records are deleted atomically
-4. Success toast appears
-5. List refreshes without the deleted texte
+1. Staff can delete any article - RPC bypasses triggers and cleanly removes all related data
+2. Client users see the articles list but no Create/Edit/Delete buttons
+3. Error messages are clear and actionable
+4. All deletion call sites use the same reliable RPC method
+5. No orphaned records in junction tables after deletion
+
+---
+
+## Testing Checklist
+
+After implementation, verify:
+- [ ] Staff can delete an article with multiple versions
+- [ ] Staff can delete an article with tags and sous-domaines
+- [ ] Staff can create/edit articles normally
+- [ ] Client users on `/client-bibliotheque/articles` see no CRUD buttons
+- [ ] Client users cannot access article creation/editing modals
+- [ ] Error toasts display meaningful messages on failure
+- [ ] Texte deletion still works correctly (regression test)
