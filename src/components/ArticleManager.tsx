@@ -86,7 +86,7 @@ export function ArticleManager({ acteId, articles }: ArticleManagerProps) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => articlesQueries.delete(id),
+    mutationFn: (id: string) => articlesQueries.deleteWithCascade(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["articles", acteId] });
       toast({ title: "Article supprimé", description: "L'article a été supprimé avec succès" });

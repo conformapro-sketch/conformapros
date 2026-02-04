@@ -392,6 +392,13 @@ export const articlesQueries = {
     if (error) throw error;
   },
 
+  async deleteWithCascade(articleId: string) {
+    const { error } = await supabase.rpc('delete_article_cascade', {
+      p_article_id: articleId
+    });
+    if (error) throw error;
+  },
+
   async updateSousDomaines(articleId: string, sousDomaineIds: string[]) {
     // Use correct table: article_sous_domaines (NOT articles_sous_domaines)
     await supabase.from("article_sous_domaines").delete().eq("article_id", articleId);

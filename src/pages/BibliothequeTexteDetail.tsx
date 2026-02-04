@@ -191,14 +191,16 @@ export default function BibliothequeTexteDetail() {
   }
 
   const deleteArticleMutation = useMutation({
-    mutationFn: (id: string) => articlesQueries.delete(id),
+    mutationFn: (id: string) => articlesQueries.deleteWithCascade(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
       toast.success("Article supprimé avec succès");
       setDeleteArticleId(null);
     },
-    onError: () => {
-      toast.error("Erreur lors de la suppression");
+    onError: (error: any) => {
+      toast.error("Erreur lors de la suppression", {
+        description: error?.message || "Une erreur est survenue"
+      });
     },
   });
 

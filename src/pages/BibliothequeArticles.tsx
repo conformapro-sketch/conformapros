@@ -15,6 +15,7 @@ import { articlesListQueries, type ArticleWithDetails } from "@/lib/articles-que
 import { domainesQueries, sousDomainesQueries, textesArticlesQueries } from "@/lib/textes-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useUserType } from "@/hooks/useUserType";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -29,6 +30,8 @@ import {
 
 export default function BibliothequeArticles() {
   const queryClient = useQueryClient();
+  const userType = useUserType();
+  const isStaff = userType === 'staff';
   
   // URL params for texte filter
   const [searchParams, setSearchParams] = useSearchParams();
@@ -136,30 +139,9 @@ export default function BibliothequeArticles() {
       }),
   });
 
-  // Delete mutation
+  // Delete mutation - using RPC for cascade delete
   const deleteMutation = useMutation({
-    mutationFn: async (articleId: string) => {
-      // First delete related sous_domaines
-      await supabase
-        .from("article_sous_domaines")
-        .delete()
-        .eq("article_id", articleId);
-      
-      // Delete article versions
-      await supabase
-        .from("article_versions")
-        .delete()
-        .eq("article_id", articleId);
-      
-      // Delete article tags
-      await supabase
-        .from("article_tags")
-        .delete()
-        .eq("article_id", articleId);
-      
-      // Delete the article
-      await textesArticlesQueries.delete(articleId);
-    },
+    mutationFn: (articleId: string) => textesArticlesQueries.deleteWithCascade(articleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["articles-list"] });
       queryClient.invalidateQueries({ queryKey: ["articles-stats"] });
@@ -169,7 +151,10 @@ export default function BibliothequeArticles() {
       setArticleToDelete(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erreur lors de la suppression");
+      const message = error?.message || "Une erreur est survenue";
+      toast.error("Échec de la suppression", {
+        description: message
+      });
     },
   });
 
@@ -229,11 +214,13 @@ export default function BibliothequeArticles() {
           title="Articles réglementaires"
           breadcrumbs={[{ label: "Articles" }]}
         />
-        <Button onClick={handleCreateArticle} className="gap-2">
-          <Plus className="h-4 w-4" />
-          <span className="hidden xs:inline">Créer un article</span>
-          <span className="xs:hidden">Créer</span>
-        </Button>
+        {isStaff && (
+          <Button onClick={handleCreateArticle} className="gap-2">
+            <Plus className="h-4 w-4" />
+            <span className="hidden xs:inline">Créer un article</span>
+            <span className="xs:hidden">Créer</span>
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -307,8 +294,8 @@ export default function BibliothequeArticles() {
         articles={articlesResult?.data || []}
         isLoading={articlesLoading}
         onViewArticle={(article) => setSelectedArticle(article)}
-        onEditArticle={handleEditArticle}
-        onDeleteArticle={handleDeleteArticle}
+        onEditArticle={isStaff ? handleEditArticle : undefined}
+        onDeleteArticle={isStaff ? handleDeleteArticle : undefined}
       />
 
       {/* Article Quick View Modal */}
@@ -318,8 +305,8 @@ export default function BibliothequeArticles() {
         article={selectedArticle}
       />
 
-      {/* Article Form Modal - for create/edit */}
-      {isFormOpen && (
+      {/* Article Form Modal - for create/edit (staff only) */}
+      {isStaff && isFormOpen && (
         <ArticleFormModal
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
@@ -329,28 +316,30 @@ export default function BibliothequeArticles() {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer l'article ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. L'article "{articleToDelete?.numero} - {articleToDelete?.titre}" 
-              sera définitivement supprimé avec toutes ses versions.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete Confirmation Dialog (staff only) */}
+      {isStaff && (
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Supprimer l'article ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action est irréversible. L'article "{articleToDelete?.numero} - {articleToDelete?.titre}" 
+                sera définitivement supprimé avec toutes ses versions.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       {/* Pagination */}
       <PaginationControls
