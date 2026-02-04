@@ -105,19 +105,23 @@ export default function ClientBibliotheque() {
             </>
           )}
           <BreadcrumbItem>
-            <BreadcrumbPage>Bibliothèque réglementaire</BreadcrumbPage>
+            <BreadcrumbLink href="/client-bibliotheque/dashboard">Bibliothèque</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Textes</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
-      {/* Header */}
+      {/* Header - NO CREATE/EDIT buttons for clients */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Bibliothèque réglementaire
+            Textes réglementaires
           </h1>
           <p className="text-muted-foreground mt-2">
-            Textes réglementaires applicables à votre site
+            Textes applicables à votre site
           </p>
         </div>
         <div className="flex gap-2">

@@ -85,7 +85,11 @@ export default function ClientTexteDetail() {
             </>
           )}
           <BreadcrumbItem>
-            <BreadcrumbLink href="/client-bibliotheque">Bibliothèque réglementaire</BreadcrumbLink>
+            <BreadcrumbLink href="/client-bibliotheque/dashboard">Bibliothèque</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/client-bibliotheque/textes">Textes</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -99,7 +103,7 @@ export default function ClientTexteDetail() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/client-bibliotheque")}
+          onClick={() => navigate("/client-bibliotheque/textes")}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
