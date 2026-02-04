@@ -182,46 +182,62 @@ const App = () => (
               <Route path="textes/nouveau" element={<TexteForm />} />
               <Route path="textes/:id" element={<TexteDetail />} />
               <Route path="textes/:id/editer" element={<TexteForm />} />
-              {/* Bibliothèque Routes - Module indépendant */}
-              <Route path="bibliotheque" element={<Navigate to="/bibliotheque/textes" replace />} />
-              <Route path="bibliotheque/textes" element={<BibliothequeReglementaire />} />
-              <Route path="bibliotheque/articles" element={<BibliothequeArticles />} />
-              <Route 
-                path="bibliotheque/dashboard" 
-                element={
-                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global"]}>
-                    <BibliothequeTableauDeBord />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="bibliotheque/domain" 
-                element={
-                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global"]}>
-                    <DomainesPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="bibliotheque/autorites" 
-                element={
-                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global"]}>
-                    <GestionAutorites />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="bibliotheque/parametres" 
-                element={
-                  <ProtectedRoute allowedRoles={["Super Admin", "Admin Global"]}>
-                    <BibliothequeParametres />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="bibliotheque/textes/:id" element={<BibliothequeTexteDetail />} />
-              <Route path="bibliotheque/textes/:id/articles" element={<BibliothequeTexteArticles />} />
-              <Route path="bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
-              <Route path="bibliotheque/recherche" element={<BibliothequeRechercheAvancee />} />
+              {/* Bibliothèque Routes - Staff Only with smart redirect for clients */}
+              <Route path="bibliotheque" element={
+                <StaffRouteGuard>
+                  <Navigate to="/bibliotheque/textes" replace />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/textes" element={
+                <StaffRouteGuard>
+                  <BibliothequeReglementaire />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/articles" element={
+                <StaffRouteGuard>
+                  <BibliothequeArticles />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/dashboard" element={
+                <StaffRouteGuard>
+                  <BibliothequeTableauDeBord />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/domain" element={
+                <StaffRouteGuard>
+                  <DomainesPage />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/autorites" element={
+                <StaffRouteGuard>
+                  <GestionAutorites />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/parametres" element={
+                <StaffRouteGuard>
+                  <BibliothequeParametres />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/textes/:id" element={
+                <StaffRouteGuard>
+                  <BibliothequeTexteDetail />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/textes/:id/articles" element={
+                <StaffRouteGuard>
+                  <BibliothequeTexteArticles />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/articles/:articleId/versions" element={
+                <StaffRouteGuard>
+                  <BibliothequeArticleVersions />
+                </StaffRouteGuard>
+              } />
+              <Route path="bibliotheque/recherche" element={
+                <StaffRouteGuard>
+                  <BibliothequeRechercheAvancee />
+                </StaffRouteGuard>
+              } />
               
               {/* Client Bibliothèque Routes - READ ONLY */}
               <Route path="client-bibliotheque" element={<Navigate to="/client-bibliotheque/dashboard" replace />} />
