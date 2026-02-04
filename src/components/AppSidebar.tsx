@@ -308,11 +308,11 @@ export function AppSidebar() {
 
       </SidebarContent>
 
-      {/* Bouton flottant pour réouvrir la sidebar en mode collapsed - plus petit et mieux positionné */}
+      {/* Bouton flottant pour réouvrir la sidebar en mode collapsed - repositionné pour éviter le chevauchement */}
       {isCollapsed && (
         <button
           onClick={() => toggleSidebar()}
-          className="fixed bottom-6 left-2 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground shadow-strong hover:shadow-brand sidebar-hover md:bottom-4 md:left-4 md:h-11 md:w-11"
+          className="fixed bottom-20 left-2 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground shadow-strong hover:shadow-brand sidebar-hover md:bottom-4 md:left-4 md:h-11 md:w-11 safe-area-pb"
           aria-label="Ouvrir le menu"
         >
           <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />

@@ -53,13 +53,13 @@ export default function TopNavBar({
       role="navigation"
       aria-label="Barre de navigation principale"
     >
-      <div className="mx-auto flex h-full w-full max-w-screen-2xl items-center gap-1 sm:gap-2 md:gap-3 px-2 sm:px-4 md:px-6">
-        <div className="flex min-w-0 sm:min-w-[120px] md:min-w-[170px] items-center gap-2 sm:gap-3 md:gap-4">
+      <div className="mx-auto flex h-full w-full max-w-screen-2xl items-center gap-0.5 xs:gap-1 sm:gap-2 md:gap-3 px-2 sm:px-4 md:px-6">
+        <div className="flex min-w-0 items-center gap-1 xs:gap-2 sm:gap-3">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 sm:h-9 sm:w-9 text-foreground transition-colors hover:text-[#2FB200] md:hidden flex-shrink-0"
+            className="h-8 w-8 text-foreground transition-colors hover:text-[#2FB200] md:hidden flex-shrink-0"
             aria-label="Ouvrir la navigation"
             onClick={toggleSidebar}
           >
@@ -67,12 +67,12 @@ export default function TopNavBar({
           </Button>
           <Link
             to="/"
-            className="group flex items-center gap-2 rounded-md p-1 transition-colors hover:text-[#2FB200]"
+            className="group flex items-center rounded-md p-0.5 transition-colors hover:text-[#2FB200]"
           >
             <img 
               src="/src/assets/conforma-pro-logo.png" 
               alt="ConformaPro" 
-              className="h-6 sm:h-7 md:h-8 w-auto object-contain"
+              className="h-5 xs:h-6 sm:h-7 md:h-8 w-auto object-contain"
             />
           </Link>
           {userProfile?.clientLogo && (
@@ -100,11 +100,15 @@ export default function TopNavBar({
           </TooltipProvider>
         </div>
 
-        <div className="flex items-center justify-end gap-0.5 sm:gap-1 md:gap-2 min-w-0 sm:min-w-[100px] md:min-w-[170px]">
+        <div className="flex items-center justify-end gap-0.5 sm:gap-1 md:gap-2 min-w-0">
           <TooltipProvider>
             <NotificationsButton count={notifications} />
-            <ThemeToggle />
-            <SettingsButton />
+            <div className="hidden xs:block">
+              <ThemeToggle />
+            </div>
+            <div className="hidden sm:block">
+              <SettingsButton />
+            </div>
             <UserProfileMenu onProfileClick={onProfileClick} onLogout={onLogout} />
           </TooltipProvider>
         </div>

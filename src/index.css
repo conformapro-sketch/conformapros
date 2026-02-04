@@ -193,6 +193,28 @@
   .scrollbar-track-transparent::-webkit-scrollbar-track {
     background: transparent;
   }
+
+  /* Horizontal scroll indicator with fade effect */
+  .horizontal-scroll-fade {
+    position: relative;
+  }
+  
+  .horizontal-scroll-fade::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    background: linear-gradient(to left, hsl(var(--background)), transparent);
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  /* Hide overflow on mobile */
+  .overflow-x-clip {
+    overflow-x: clip;
+  }
 }
 
 /* Prevent iOS zoom on form inputs */

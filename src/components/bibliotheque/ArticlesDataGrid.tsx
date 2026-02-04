@@ -68,18 +68,18 @@ function MobileArticleCard({
 
   return (
     <div 
-      className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+      className="p-3.5 sm:p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer active:bg-muted/70"
       onClick={onView}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="flex items-start justify-between gap-2 mb-2.5">
         <span className="font-semibold text-sm">Art. {article.numero}</span>
-        <div className="flex flex-wrap gap-1 justify-end">
+        <div className="flex flex-wrap gap-1.5 justify-end">
           {typeBadge && (
-            <Badge variant={typeBadge.variant} className={`${typeBadge.className} text-xs`}>
+            <Badge variant={typeBadge.variant} className={`${typeBadge.className} text-xs px-2.5 py-1`}>
               {typeBadge.label}
             </Badge>
           )}
-          <Badge variant={statutBadge.variant} className={`${statutBadge.className} text-xs`}>
+          <Badge variant={statutBadge.variant} className={`${statutBadge.className} text-xs px-2.5 py-1`}>
             {statutBadge.label}
           </Badge>
         </div>

@@ -60,7 +60,7 @@ export function PaginationControls({
               value={pageSize.toString()}
               onValueChange={(value) => onPageSizeChange(parseInt(value))}
             >
-              <SelectTrigger className="h-9 w-16 sm:w-20">
+              <SelectTrigger className="h-10 sm:h-9 w-16 sm:w-20">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -83,7 +83,7 @@ export function PaginationControls({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 w-9 p-0"
+              className="h-10 w-10 sm:h-9 sm:w-9 p-0"
               onClick={() => onPageChange(currentPage - 1)}
               disabled={!hasPrevPage}
             >
@@ -92,7 +92,7 @@ export function PaginationControls({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 w-9 p-0"
+              className="h-10 w-10 sm:h-9 sm:w-9 p-0"
               onClick={() => onPageChange(currentPage + 1)}
               disabled={!hasNextPage}
             >

@@ -15,11 +15,11 @@ export function Layout() {
   
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-background overflow-x-hidden">
         <AppSidebar />
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col overflow-x-hidden">
           <TopNavBar onProfileClick={() => navigate("/profile")} />
-          <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-6 pt-18 sm:px-4 sm:pb-8 sm:pt-20 md:px-6 lg:px-8 safe-area-pb">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-6 pt-16 sm:px-4 sm:pb-8 sm:pt-[72px] md:px-6 lg:px-8 safe-area-pb">
             <Outlet />
           </main>
         </div>
