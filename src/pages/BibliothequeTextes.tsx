@@ -242,8 +242,8 @@ export default function BibliothequeTextes() {
             <div className="text-center py-8 text-muted-foreground">Chargement...</div>
           ) : textes.length > 0 ? (
             <>
-              {/* Desktop Table */}
-              <div className="hidden lg:block overflow-x-auto">
+              {/* Desktop/Tablet Table */}
+              <div className="hidden md:block overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -359,7 +359,7 @@ export default function BibliothequeTextes() {
               </div>
 
               {/* Mobile Cards */}
-              <div className="block lg:hidden space-y-4">
+              <div className="block md:hidden space-y-3">
                 {textes.map((texte: any) => {
                   const statutInfo = getStatutBadge(texte.statut_vigueur);
                   const articleCount = texte.articles?.[0]?.count || 0;
