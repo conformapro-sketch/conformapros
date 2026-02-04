@@ -138,7 +138,7 @@ export default function BibliothequeArticles() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <BibliothequeHeader
         title="Articles réglementaires"
@@ -150,13 +150,14 @@ export default function BibliothequeArticles() {
 
       {/* Texte Filter Badge (when filtering by specific texte) */}
       {texteInfo && (
-        <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
-          <FileText className="h-5 w-5 text-primary" />
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 bg-primary/5 border border-primary/20 rounded-lg px-3 sm:px-4 py-3">
+          <FileText className="h-5 w-5 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">
-              Articles du texte: <span className="text-primary">{texteInfo.reference}</span>
+              <span className="hidden sm:inline">Articles du texte: </span>
+              <span className="text-primary">{texteInfo.reference}</span>
             </p>
-            <p className="text-xs text-muted-foreground truncate max-w-md">
+            <p className="text-xs text-muted-foreground truncate">
               {texteInfo.titre}
             </p>
           </div>
@@ -164,7 +165,7 @@ export default function BibliothequeArticles() {
             variant="ghost"
             size="sm"
             onClick={clearTexteFilter}
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 shrink-0"
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Effacer le filtre</span>
@@ -174,16 +175,16 @@ export default function BibliothequeArticles() {
 
       {/* Search */}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 w-full md:max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par numéro, titre, contenu..."
+            placeholder="Rechercher par numéro, titre..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setPage(1);
             }}
-            className="pl-10"
+            className="pl-10 text-base"
           />
         </div>
       </div>

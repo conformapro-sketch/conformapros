@@ -60,19 +60,19 @@ export function BibliothequeHeader({
       )}
 
       {/* Header Content */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-primary shadow-elegant">
-            {icon || <Scale className="h-6 w-6 text-white" />}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-2 sm:p-3 rounded-xl bg-gradient-primary shadow-elegant shrink-0">
+            {icon || <Scale className="h-5 w-5 sm:h-6 sm:w-6 text-white" />}
           </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">{title}</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{title}</h1>
             {subtitle && (
-              <p className="text-muted-foreground text-sm">{subtitle}</p>
+              <p className="text-muted-foreground text-xs sm:text-sm truncate">{subtitle}</p>
             )}
           </div>
         </div>
-        {actions && <div className="flex items-center gap-3">{actions}</div>}
+        {actions && <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto">{actions}</div>}
       </div>
     </div>
   );

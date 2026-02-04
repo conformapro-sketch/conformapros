@@ -35,32 +35,32 @@ export function PaginationControls({
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-3">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 px-2 py-3">
       {/* Left: Total count and range */}
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
         <span className="font-medium">
-          {totalItems} élément{totalItems > 1 ? "s" : ""} au total
+          {totalItems} élément{totalItems > 1 ? "s" : ""}
         </span>
         {totalItems > 0 && (
-          <span>
-            Affichage de {startItem} à {endItem}
+          <span className="hidden sm:inline">
+            ({startItem} à {endItem})
           </span>
         )}
       </div>
 
       {/* Right: Page size selector and navigation */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Page size selector */}
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
-              Lignes par page :
+            <span className="hidden sm:inline text-sm text-muted-foreground whitespace-nowrap">
+              Lignes :
             </span>
             <Select
               value={pageSize.toString()}
               onValueChange={(value) => onPageSizeChange(parseInt(value))}
             >
-              <SelectTrigger className="h-8 w-20">
+              <SelectTrigger className="h-9 w-16 sm:w-20">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -77,12 +77,13 @@ export function PaginationControls({
         {/* Page navigation */}
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Page {currentPage} / {totalPages}
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              {currentPage}/{totalPages}
             </span>
             <Button
               variant="outline"
               size="sm"
+              className="h-9 w-9 p-0"
               onClick={() => onPageChange(currentPage - 1)}
               disabled={!hasPrevPage}
             >
@@ -91,6 +92,7 @@ export function PaginationControls({
             <Button
               variant="outline"
               size="sm"
+              className="h-9 w-9 p-0"
               onClick={() => onPageChange(currentPage + 1)}
               disabled={!hasNextPage}
             >
