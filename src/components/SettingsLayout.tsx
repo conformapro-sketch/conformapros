@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Settings as SettingsIcon, ArrowLeft, Shield, Users, Building2, Layers, Globe, User } from "lucide-react";
+import { Settings as SettingsIcon, ArrowLeft, Shield, Users, Building2, Layers, Globe, User, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -84,8 +84,8 @@ const settingsNavSections = [
       },
       {
         id: "logs",
-        label: "Logs",
-        icon: SettingsIcon,
+        label: "Journal d'audit",
+        icon: FileText,
         path: "/settings/logs",
       },
     ],

@@ -98,6 +98,7 @@ import StaffDashboard from "./pages/settings/StaffDashboard";
 import StaffUsersManagement from "./pages/settings/StaffUsersManagement";
 import StaffRolesManagement from "./pages/settings/StaffRolesManagement";
 import StaffPermissionsManagement from "./pages/settings/StaffPermissionsManagement";
+import AuditLogsManagement from "./pages/settings/AuditLogsManagement";
 import ClientsManagement from "./pages/settings/ClientsManagement";
 import ClientUsersManagement from "./pages/settings/ClientUsersManagement";
 import SitesManagement from "./pages/settings/SitesManagement";
@@ -362,7 +363,7 @@ const App = () => (
               <Route path="clientusers" element={<ClientUsersManagement />} />
               <Route path="modules" element={<SiteModulesOverview />} />
               <Route path="domains" element={<SiteDomainsManagement />} />
-              <Route path="logs" element={<StaffPermissionsManagement />} />
+              <Route path="logs" element={<AuditLogsManagement />} />
             </Route>
             
             {/* Catch-all 404 */}
