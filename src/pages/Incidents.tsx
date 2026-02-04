@@ -9,7 +9,6 @@ import { AlertCircle, Plus, TrendingUp, CheckCircle, Clock, Filter, BarChart3, R
 import { fetchIncidents, fetchIncidentStats } from "@/lib/incidents-queries";
 import { IncidentFormModal } from "@/components/IncidentFormModal";
 import { IncidentDetailDrawer } from "@/components/IncidentDetailDrawer";
-import { IncidentExport } from "@/components/IncidentExport";
 import { TYPE_INCIDENT_LABELS, GRAVITE_INCIDENT_COLORS, STATUT_INCIDENT_LABELS } from "@/types/incidents";
 import { StatCard } from "@/components/StatCard";
 
@@ -65,13 +64,10 @@ export default function Incidents() {
             Gestion des incidents Hygiène, Sécurité, Environnement
           </p>
         </div>
-        <div className="flex gap-2">
-          <IncidentExport incidents={filteredIncidents || []} />
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Déclarer un incident
-          </Button>
-        </div>
+        <Button onClick={() => setIsFormOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Déclarer un incident
+        </Button>
       </div>
 
       {/* Statistics Cards */}

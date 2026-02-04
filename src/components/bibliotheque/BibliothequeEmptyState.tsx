@@ -70,16 +70,6 @@ export function BibliothequeEmptyState({
           <Plus className="h-5 w-5 mr-2" />
           Créer le premier texte
         </Button>
-        <Button variant="outline" size="lg" onClick={() => {}}>
-          <FileText className="h-5 w-5 mr-2" />
-          Importer des textes
-        </Button>
-      </div>
-      
-      <div className="mt-8 p-4 rounded-lg bg-muted/30 border border-border max-w-md">
-        <p className="text-xs text-muted-foreground text-center">
-          💡 <strong>Astuce :</strong> Vous pouvez importer plusieurs textes en une seule fois via un fichier CSV
-        </p>
       </div>
     </div>
   );

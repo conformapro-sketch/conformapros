@@ -33,13 +33,11 @@ interface Version {
 interface VersionBeforeAfterViewProps {
   versionBefore: Version;
   versionAfter: Version;
-  onExport?: () => void;
 }
 
 export function VersionBeforeAfterView({
   versionBefore,
   versionAfter,
-  onExport,
 }: VersionBeforeAfterViewProps) {
   const [showOnlyChanges, setShowOnlyChanges] = useState(false);
   const [viewMode, setViewMode] = useState<"split" | "unified">("split");
@@ -85,12 +83,6 @@ export function VersionBeforeAfterView({
             Visualisation détaillée des modifications entre deux versions
           </p>
         </div>
-        {onExport && (
-          <Button variant="outline" onClick={onExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Exporter PDF
-          </Button>
-        )}
       </div>
 
       {/* Version headers */}

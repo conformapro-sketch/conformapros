@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { textesArticlesQueries, textesArticlesVersionsQueries } from "@/lib/textes-queries";
-import { Download, Calendar, FileText, PlusCircle, Info, Clock } from "lucide-react";
+import { Calendar, FileText, PlusCircle, Info, Clock } from "lucide-react";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -154,10 +154,6 @@ export function ConsolidatedTextViewer({ texteId }: ConsolidatedTextViewerProps)
           >
             <Info className="h-4 w-4 mr-2" />
             {showAnnotations ? "Masquer" : "Afficher"} annotations
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
           </Button>
         </div>
       </div>

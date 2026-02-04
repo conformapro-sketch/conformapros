@@ -63,7 +63,6 @@ import {
   Upload,
   Edit,
   Filter,
-  Download,
   Sparkles,
   TrendingUp,
   Eye,
@@ -728,10 +727,6 @@ export default function ConformiteEvaluationNew() {
               Actions groupées ({selectedRows.length})
             </Button>
           )}
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exporter
-          </Button>
         </div>
       </div>
 

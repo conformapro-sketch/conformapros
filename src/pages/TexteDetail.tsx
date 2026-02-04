@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, FileText, Download, Edit, ExternalLink, GitBranch } from "lucide-react";
+import { ArrowLeft, FileText, Edit, ExternalLink, GitBranch, Download } from "lucide-react";
 import { actesQueries, articlesQueries } from "@/lib/actes-queries";
 import { ArticlesTab } from "@/components/ArticlesTab";
 import { ChangelogManager } from "@/components/ChangelogManager";
 import { AnnexesTab } from "@/components/AnnexesTab";
 import { TexteVersionDrawer } from "@/components/TexteVersionDrawer";
-import { ExportTextePDF } from "@/components/ExportTextePDF";
 
 export default function TexteDetail() {
   const { id } = useParams();
@@ -121,7 +120,6 @@ export default function TexteDetail() {
             <GitBranch className="h-4 w-4 mr-2" />
             Versions
           </Button>
-          <ExportTextePDF texteId={id!} texteTitle={texte.intitule} variant="outline" size="sm" />
           <Button variant="outline" size="sm" onClick={() => navigate(`/actes/${id}/editer`)}>
             <Edit className="h-4 w-4 mr-2" />
             Éditer

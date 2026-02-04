@@ -6,12 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Eye, FileText, Download, Upload, ChevronLeft, ChevronRight, Library } from "lucide-react";
+import { Plus, Search, Eye, FileText, ChevronLeft, ChevronRight, Library } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { actesQueries, domainesQueries, sousDomainesQueries } from "@/lib/actes-queries";
-import { ImportCSVDialog } from "@/components/ImportCSVDialog";
-import * as XLSX from 'xlsx';
 
 const TYPE_LABELS: Record<string, string> = {
   loi: "Loi",
@@ -33,7 +31,6 @@ export default function TextesReglementaires() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("date_publication_jort");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [showImportDialog, setShowImportDialog] = useState(false);
   const pageSize = 25;
 
   const { data: domainesList } = useQuery({
@@ -112,24 +109,6 @@ export default function TextesReglementaires() {
     setPage(1);
   };
 
-  const handleExportExcel = () => {
-    const exportData = textes.map((t: any) => ({
-      Type: TYPE_LABELS[t.type_acte] || t.type_acte,
-      Référence: t.reference_officielle || t.numero_officiel,
-      Titre: t.intitule,
-      Autorité: t.autorite_emettrice || '',
-      'Date publication': t.date_publication_jort ? new Date(t.date_publication_jort).toLocaleDateString('fr-FR') : '',
-      Statut: getStatutBadge(t.statut_vigueur).label,
-      '#Articles': t.articles?.[0]?.count || 0
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Textes');
-    XLSX.writeFile(wb, `textes_reglementaires_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast({ title: "Export réussi" });
-  };
-
   return (
     <div className="space-y-6">
       {/* En-tête */}
@@ -143,14 +122,6 @@ export default function TextesReglementaires() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => setShowImportDialog(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Importer CSV
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportExcel}>
-            <Download className="h-4 w-4 mr-2" />
-            Exporter Excel
-          </Button>
           <Button
             className="bg-gradient-primary shadow-medium"
             size="sm"
@@ -507,15 +478,6 @@ export default function TextesReglementaires() {
           )}
         </CardContent>
       </Card>
-      
-      {/* Import Dialog */}
-      <ImportCSVDialog 
-        open={showImportDialog} 
-        onOpenChange={setShowImportDialog}
-        onSuccess={() => {
-          window.location.reload();
-        }}
-      />
     </div>
   );
 }

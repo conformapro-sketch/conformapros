@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertBadge } from "@/components/AlertBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Upload, Search, Filter, Download, Eye } from "lucide-react";
+import { FileText, Upload, Search, Filter, Eye } from "lucide-react";
 
 export default function DossierReglementaire() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -116,10 +116,6 @@ export default function DossierReglementaire() {
               <Filter className="h-4 w-4 mr-2" />
               Filtrer
             </Button>
-            <Button variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Exporter
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -162,9 +158,6 @@ export default function DossierReglementaire() {
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm">
                       <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Download className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>

@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, FileDown, Upload, Clock } from "lucide-react";
+import { Plus, Search, FileDown, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { STATUT_STOCK_COLORS } from "@/types/environnement";
@@ -167,16 +167,10 @@ export default function EnvironnementDechets() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Enlèvements & Bordereaux</CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Téléverser bordereau
-                  </Button>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nouvel enlèvement
-                  </Button>
-                </div>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvel enlèvement
+                </Button>
               </div>
             </CardHeader>
             <CardContent>

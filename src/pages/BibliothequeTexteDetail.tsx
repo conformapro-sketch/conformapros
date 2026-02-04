@@ -897,9 +897,6 @@ export default function BibliothequeTexteDetail() {
             <VersionBeforeAfterView
               versionBefore={compareVersions.before}
               versionAfter={compareVersions.after}
-              onExport={() => {
-                toast.info("Export PDF en cours de développement");
-              }}
             />
           )}
         </DialogContent>

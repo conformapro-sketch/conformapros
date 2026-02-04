@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { EPIHistoryTimeline } from "@/components/epi/EPIHistoryTimeline";
 
 const STATUT_LABELS = {
@@ -59,10 +59,6 @@ export default function EPIHistorique() {
             </p>
           </div>
         </div>
-        <Button variant="outline">
-          <FileDown className="h-4 w-4 mr-2" />
-          Export PDF
-        </Button>
       </div>
 
       <Card>
