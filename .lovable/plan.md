@@ -1,83 +1,251 @@
 
-Objectif
-- Faire ressortir clairement l’item actif (page courante) dans la navbar verticale, de façon fiable sur toutes les pages (y compris /codes-juridiques et /codes-juridiques/:id, et les pages Bibliothèque avec paramètres de filtre).
+# Plan: UI Responsive - Adaptation pour Desktop, Tablette et Mobile
 
-Constat (cause probable du “still not working”)
-- Dans AppSidebar, plusieurs liens React Router (<NavLink/>) sont enveloppés avec les composants shadcn SidebarMenuButton / SidebarMenuSubButton en mode asChild.
-- Ces composants utilisent Radix Slot et injectent leur propre className sur l’enfant.
-- Résultat fréquent : le className “fonction” de NavLink (className={({isActive}) => ...}) est écrasé par le className injecté via Slot, donc vos styles “isActive” ne s’appliquent pas, et visuellement l’item actif ne change pas (ou très peu).
-- La bonne façon avec ce Sidebar est d’utiliser les props isActive de SidebarMenuButton / SidebarMenuSubButton (elles posent data-active=true) puis de styler via data-[active=true]:...
+## Analyse de l'existant
 
-Approche de correction (robuste)
-1) Centraliser la détection “actif” dans AppSidebar (sans dépendre du className-fonction de NavLink)
-- Dans src/components/AppSidebar.tsx :
-  - Calculer cleanPath = location.pathname (déjà sans query) + supporter les sous-routes :
-    - activeExact(url): cleanPath === url
-    - activePrefix(url): cleanPath === url || cleanPath.startsWith(url + "/")
-  - Pour chaque module :
-    - moduleIsActive = si item.url match (prefix) OU un de ses subItems match (prefix)
-  - Pour chaque subItem :
-    - subIsActive = activePrefix(subItem.url)
-  - Important : /codes-juridiques/:id doit continuer à marquer “Codes juridiques” actif => activePrefix("/codes-juridiques")
+### Points forts actuels
+- Le projet utilise déjà Tailwind CSS avec des breakpoints standards (sm:640px, md:768px, lg:1024px, xl:1280px)
+- La sidebar utilise un Sheet/drawer sur mobile (< 768px) via `useIsMobile`
+- Certaines pages comme Dashboard et BibliothequeTextes ont déjà des grilles responsives
+- TopNavBar adapte son contenu selon la taille d'écran
 
-2) Utiliser isActive sur les composants Sidebar (au lieu du className dynamique sur NavLink)
-- Sub-items (expanded, dans SidebarMenuSubButton asChild) :
-  - Passer isActive={subIsActive} à <SidebarMenuSubButton>
-  - Retirer le className={({isActive})=>...} du <NavLink> (ou le réduire à un className statique minimal), pour éviter l’écrasement.
-  - Ajouter le style fort d’actif sur SidebarMenuSubButton via className avec data selectors, par ex :
-    - className="
-        sidebar-hover
-        data-[active=true]:bg-primary/15
-        data-[active=true]:text-primary
-        data-[active=true]:font-bold
-        data-[active=true]:shadow-sm
-        data-[active=true]:border-l-4
-        data-[active=true]:border-primary
-        data-[active=true]:pl-3
-      "
-    - et un padding normal quand inactif (ex: pl-4) directement sur SidebarMenuSubButton.
-  - Conserver NavLink uniquement pour la navigation (to, end si souhaité), sans logique de style.
+### Problèmes identifiés
 
-- Items top-level sans sous-menu (expanded + collapsed) :
-  - Passer isActive={itemIsActive} à <SidebarMenuButton asChild>
-  - Mettre le style “actif fort” sur SidebarMenuButton (data-[active=true]:...) plutôt que sur NavLink.
+1. **Sidebar (AppSidebar.tsx)**
+   - Le bouton flottant de réouverture (bottom-4 left-4) peut chevaucher le contenu sur mobile
+   - En mode collapsed, les HoverCards ne sont pas adaptés au tactile
+   - La largeur fixe w-64 (256px) prend trop de place sur tablette
 
-- Bouton module (CollapsibleTrigger) quand on est dans une page du module :
-  - Passer isActive={moduleIsActive} à <SidebarMenuButton> (celui qui affiche le titre du module + chevron)
-  - Ainsi, même si l’utilisateur ne regarde pas le sous-item, il voit clairement quel “bloc” est actif.
+2. **TopNavBar (TopNavBar.tsx)**
+   - min-w-[170px] est trop rigide pour petits écrans
+   - Le SiteSwitcher peut déborder sur mobile
+   - La barre de recherche masquée sur mobile mais le dialog n'est pas optimisé
 
-- Mode collapsed (icône uniquement) :
-  - Passer isActive={moduleIsActive} au SidebarMenuButton de l’icône (HoverCardTrigger) pour avoir un indicateur visible même sans ouvrir le hover.
+3. **Layout principal (Layout.tsx)**
+   - Le padding main (px-4 sm:px-6 lg:px-8) est correct mais pt-20 pourrait être ajusté
+   - Pas de gestion de la hauteur sur tablette
 
-3) Harmoniser aussi le rendu dans le HoverCard (sidebar collapsed)
-- Dans la branche isCollapsed, les subItems sont des NavLink “directs” (pas de Slot).
-- Mettre une logique de style cohérente (activePrefix) pour que /codes-juridiques/:id reste clairement actif.
-- Option : réutiliser les mêmes classes “fortes” que l’expanded.
+4. **Composants de pages**
+   - StatCard: Le texte value (text-3xl) peut déborder sur très petit écran
+   - BibliothequeDataGrid: Table non responsive (hidden lg:block mais les cards mobiles pourraient être améliorées)
+   - UserProfileMenu: Le nom utilisateur n'apparaît pas sur tablette (hidden sm:flex devrait être sm:hidden md:flex)
 
-Fichiers à modifier
-- src/components/AppSidebar.tsx
-  - Ajouter helpers activeExact/activePrefix
-  - Remplacer les styles “isActive” sur NavLink (quand ils sont enfants de SidebarMenuButton/SubButton) par :
-    - isActive prop sur SidebarMenuButton/SidebarMenuSubButton
-    - className avec data-[active=true] sur SidebarMenuButton/SidebarMenuSubButton
-  - Rendre actif aussi le parent (module) via isActive sur son SidebarMenuButton.
+5. **Composants de navigation**
+   - SiteSwitcher: hidden sm:inline sur le nom complet mais le bouton peut être trop grand
+   - NotificationsButton: Pas de problème majeur
+   - SearchBar: Le dialogue mobile fonctionne mais pourrait être en plein écran
 
-Pourquoi ça va marcher
-- SidebarMenuButton et SidebarMenuSubButton sont conçus pour styliser l’état actif via data-active.
-- En alimentant isActive nous-mêmes, on n’est plus dépendant de la mécanique NavLink/className-fonction qui peut être cassée par le Slot.
+---
 
-Tests de validation (à faire après implémentation)
-1) Aller sur /codes-juridiques
-   - “Codes juridiques” doit être très clairement surligné
-   - Le module “Bibliothèque …” doit aussi être visuellement “actif”
-2) Aller sur /codes-juridiques/123
-   - “Codes juridiques” doit rester actif
-3) Aller sur /bibliotheque/articles?texte=...
-   - “Articles” doit être actif
-4) Tester sidebar collapsed + hover
-   - L’icône du module actif doit être distinguable même sans hover
-5) Tester dark mode si vous l’utilisez
-   - Contraste lisible (bg-primary/15 + text-primary)
+## Corrections à implémenter
 
-Amélioration optionnelle (si besoin)
-- Ajouter un petit “dot”/barre indicatrice (pseudo-element) pour l’actif plutôt qu’un border-left qui peut bouger légèrement les alignements.
+### 1. Sidebar Responsive (AppSidebar.tsx)
+
+**Modifications:**
+- Ajuster le bouton flottant pour qu'il soit moins intrusif sur mobile (plus petit, position ajustée)
+- Sur tablette (md), permettre un mode semi-collapsed par défaut
+- Améliorer le touch target des items de menu
+
+```text
+Changements:
+- Bouton flottant: h-10 w-10 (au lieu de h-12 w-12), bottom-6 left-2
+- Ajouter des classes pour améliorer le touch: min-h-[44px] sur les items
+- Pour tablette: le Sheet mobile devrait s'activer à md au lieu de juste mobile
+```
+
+### 2. TopNavBar Responsive (TopNavBar.tsx)
+
+**Modifications:**
+- Réduire min-w sur le conteneur gauche pour petits écrans
+- Masquer le logo ConformaPro sur très petit écran (< 400px) pour plus d'espace
+- Améliorer l'espacement des boutons d'action
+
+```text
+Changements:
+- min-w-[170px] → min-w-0 sm:min-w-[140px] md:min-w-[170px]
+- Logo: hidden xs:block (ou min-w-[100px])
+- Client logo: hidden lg:flex (au lieu de md:flex)
+- Gap: gap-1 xs:gap-2 md:gap-3
+```
+
+### 3. Layout Principal (Layout.tsx)
+
+**Modifications:**
+- Ajuster le padding pour mieux utiliser l'espace sur tablette
+- Ajouter une gestion safe-area pour les appareils avec encoche
+
+```text
+Changements:
+- main: px-3 sm:px-4 md:px-6 lg:px-8
+- Ajouter env(safe-area-inset-*) support dans CSS
+```
+
+### 4. StatCard Responsive (StatCard.tsx)
+
+**Modifications:**
+- Adapter la taille du texte value pour petits écrans
+- Réduire le padding sur mobile
+
+```text
+Changements:
+- value: text-2xl sm:text-3xl
+- CardHeader padding ajusté
+- Icon: h-4 w-4 sm:h-5 sm:w-5
+```
+
+### 5. UserProfileMenu Responsive (UserProfileMenu.tsx)
+
+**Modifications:**
+- Améliorer l'affichage du nom sur tablette
+- Dropdown plus large sur mobile pour meilleure lisibilité
+
+```text
+Changements:
+- Nom: hidden md:flex (tablette montre, phone cache)
+- Dropdown: w-[280px] sm:w-56 (plus large sur mobile)
+```
+
+### 6. SiteSwitcher Responsive (SiteSwitcher.tsx)
+
+**Modifications:**
+- Réduire la taille sur mobile
+- Utiliser seulement le code site sur petit écran
+
+```text
+Changements:
+- Button hauteur: h-8 sm:h-9
+- Texte: truncate avec max-w adaptatif
+- Popover: w-[260px] sm:w-[280px]
+```
+
+### 7. SearchBar Responsive (SearchBar.tsx)
+
+**Modifications:**
+- Dialog mobile en quasi plein écran
+- Meilleur focus management
+
+```text
+Changements:
+- DialogContent: top-4 sm:top-1/2 pour être plus haut sur mobile
+- Input: text-base pour éviter le zoom iOS
+```
+
+### 8. BibliothequeDataGrid Responsive (BibliothequeDataGrid.tsx)
+
+**Modifications:**
+- Améliorer l'affichage horizontal avec scroll
+- Cards mobiles plus compactes
+
+```text
+Changements:
+- Ajouter horizontal scroll indicator
+- Breakpoint table: hidden md:block (tablette voit la table)
+- Cards: spacing réduit
+```
+
+### 9. CSS Global (index.css)
+
+**Modifications:**
+- Ajouter des utilitaires pour le responsive
+- Safe area padding
+
+```css
+@layer utilities {
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Prevent iOS zoom on form inputs */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+```
+
+### 10. Pages avec Grilles (Dashboard.tsx, StaffDashboard.tsx)
+
+**Modifications:**
+- Ajuster les grilles pour tablette
+- Meilleur espacement
+
+```text
+Changements:
+- grid-cols-2 lg:grid-cols-4 → grid-cols-1 sm:grid-cols-2 lg:grid-cols-4
+- gap-4 sm:gap-6
+```
+
+---
+
+## Fichiers à modifier
+
+| # | Fichier | Type de modification |
+|---|---------|---------------------|
+| 1 | `src/components/AppSidebar.tsx` | Bouton flottant, touch targets |
+| 2 | `src/components/TopNavBar.tsx` | Min-width, espacement, visibilité |
+| 3 | `src/components/Layout.tsx` | Padding responsive |
+| 4 | `src/components/StatCard.tsx` | Taille texte, padding |
+| 5 | `src/components/navigation/UserProfileMenu.tsx` | Affichage nom tablette |
+| 6 | `src/components/navigation/SiteSwitcher.tsx` | Taille bouton, texte |
+| 7 | `src/components/navigation/SearchBar.tsx` | Dialog mobile |
+| 8 | `src/components/bibliotheque/BibliothequeDataGrid.tsx` | Scroll horizontal, breakpoints |
+| 9 | `src/index.css` | Safe area, input zoom fix |
+| 10 | `src/pages/Dashboard.tsx` | Grilles responsives |
+| 11 | `src/pages/settings/StaffDashboard.tsx` | Grilles responsives |
+| 12 | `src/hooks/use-mobile.tsx` | Optionnel: ajouter useIsTablet |
+
+---
+
+## Priorité d'implémentation
+
+**Phase 1 - Navigation (critique)**
+1. AppSidebar - Bouton flottant moins intrusif
+2. TopNavBar - Espacement et visibilité
+3. Layout - Padding global
+
+**Phase 2 - Composants clés**
+4. StatCard - Taille responsive
+5. UserProfileMenu - Affichage tablette
+6. SiteSwitcher - Taille adaptative
+
+**Phase 3 - Contenus**
+7. SearchBar - Dialog mobile
+8. BibliothequeDataGrid - Table scroll
+9. CSS Global - Utilitaires
+
+**Phase 4 - Pages**
+10. Dashboard - Grilles
+11. StaffDashboard - Grilles
+
+---
+
+## Tests de validation
+
+Après implémentation, tester sur:
+
+1. **Mobile (< 640px)**: iPhone SE, iPhone 14
+   - Sidebar en Sheet fonctionne
+   - TopNavBar compact, boutons accessibles
+   - Cards en colonne unique
+
+2. **Tablette (768px - 1024px)**: iPad Mini, iPad
+   - Sidebar peut être collapsed
+   - TopNavBar montre les éléments essentiels
+   - Grilles 2 colonnes
+
+3. **Desktop (> 1024px)**: MacBook, écran large
+   - Sidebar expanded par défaut
+   - Tous éléments visibles
+   - Grilles 4 colonnes
+
+4. **Orientation**:
+   - Portrait et paysage fonctionnent
+   - Pas de débordement horizontal
+
+5. **Accessibilité tactile**:
+   - Touch targets minimum 44x44px
+   - Espacement suffisant entre éléments cliquables
