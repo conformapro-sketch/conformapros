@@ -1,250 +1,279 @@
 
+# Plan: Fix CRUD Operations for Textes Réglementaires on /bibliotheque/textes
 
-# Plan: Comprehensive Mobile-Friendly UI Overhaul - Phase 3
+## Problem Analysis
 
-## Diagnostic complet des problèmes restants
+The `/bibliotheque/textes` page currently has incomplete CRUD functionality:
 
-Après analyse approfondie du code actuel, voici les problèmes majeurs identifiés qui rendent l'application non mobile-friendly:
+1. **Missing Delete Feature**: No delete button, no delete confirmation dialog, no delete mutation
+2. **Missing Edit Access in Table**: Only a "View" button exists, no edit/delete row actions
+3. **Foreign Key Constraints**: When deletion is attempted, it fails because the delete function doesn't handle dependent records in the correct order
 
-### Problèmes critiques identifiés
+### Database Dependencies
 
-1. **BibliothequeDataGrid.tsx** - Déjà implémenté avec mode carte, mais utilise `min-w-[800px]` pour la table qui peut causer des problèmes
-2. **BibliothequeTextes.tsx** - Le breakpoint table est à `lg:hidden/lg:block` au lieu de `md:hidden/md:block`, créant une zone morte sur tablette
-3. **TopNavBar.tsx** - Plusieurs problèmes:
-   - Le logo peut prendre trop de place sur très petit écran
-   - Le gap entre éléments peut être trop grand
-   - SiteSwitcher visible sans contrainte de taille
-4. **Layout.tsx** - `pt-18` n'est pas une classe Tailwind valide (devrait être `pt-[72px]` ou `pt-20`)
-5. **AppSidebar.tsx** - Le bouton flottant peut encore chevaucher le contenu
-6. **PaginationControls.tsx** - Touch targets trop petits sur certains éléments
-7. **Formulaires et modales** - Plusieurs composants n'ont pas de gestion responsive appropriée
-8. **Absence de breakpoint xs** - Tailwind n'a pas de breakpoint xs par défaut, mais le code l'utilise
+When deleting a `textes_reglementaires` record, these dependent tables must be cleaned first (in order):
+
+```text
+textes_reglementaires
+├── article_versions (via articles.texte_id → source_texte_id)
+├── article_sous_domaines (via articles.texte_id → article_id)
+├── articles (texte_id)
+├── textes_domaines (texte_id)
+├── textes_sous_domaines (texte_id)
+├── texte_tags (texte_id)
+├── textes_articles (legacy table, texte_id)
+└── changelog_reglementaire (acte_id)
+```
 
 ---
 
-## Corrections détaillées à implémenter
+## Solution
 
-### 1. Ajouter le breakpoint xs à Tailwind (tailwind.config.ts)
+### 1. Create Cascading Delete Function in textes-queries.ts
 
-**Problème:** Le code utilise `xs:` qui n'existe pas par défaut dans Tailwind
-**Solution:** Ajouter le breakpoint xs à 480px
+Add a new function `deleteWithCascade` that properly handles all dependencies:
 
-```javascript
-// tailwind.config.ts
-theme: {
-  screens: {
-    'xs': '480px',
-    'sm': '640px',
-    'md': '768px',
-    'lg': '1024px',
-    'xl': '1280px',
-    '2xl': '1536px',
+```typescript
+async deleteWithCascade(texteId: string) {
+  // 1. Get all article IDs for this texte
+  const { data: articles } = await supabase
+    .from("articles")
+    .select("id")
+    .eq("texte_id", texteId);
+  
+  const articleIds = articles?.map(a => a.id) || [];
+  
+  if (articleIds.length > 0) {
+    // 2. Delete article_sous_domaines for these articles
+    await supabase
+      .from("article_sous_domaines")
+      .delete()
+      .in("article_id", articleIds);
+    
+    // 3. Delete article_versions for these articles
+    await supabase
+      .from("article_versions")
+      .delete()
+      .in("article_id", articleIds);
+    
+    // 4. Delete articles
+    await supabase
+      .from("articles")
+      .delete()
+      .in("id", articleIds);
   }
+  
+  // 5. Delete textes_domaines junction
+  await supabase
+    .from("textes_domaines")
+    .delete()
+    .eq("texte_id", texteId);
+  
+  // 6. Delete textes_sous_domaines junction
+  await supabase
+    .from("textes_sous_domaines")
+    .delete()
+    .eq("texte_id", texteId);
+  
+  // 7. Delete texte_tags junction
+  await supabase
+    .from("texte_tags")
+    .delete()
+    .eq("texte_id", texteId);
+  
+  // 8. Delete changelog entries
+  await supabase
+    .from("changelog_reglementaire")
+    .delete()
+    .eq("acte_id", texteId);
+  
+  // 9. Delete legacy textes_articles (if any)
+  await supabase
+    .from("textes_articles")
+    .delete()
+    .eq("texte_id", texteId);
+  
+  // 10. Finally delete the texte itself
+  const { error } = await supabase
+    .from("textes_reglementaires")
+    .delete()
+    .eq("id", texteId);
+  
+  if (error) throw error;
 }
 ```
 
-### 2. Corriger Layout.tsx
+### 2. Update BibliothequeTextes.tsx Page
 
-**Problème:** `pt-18` n'est pas valide
-**Solution:** Utiliser `pt-[72px]` ou `pt-16`
+Add complete CRUD functionality:
 
-```text
-Changements:
-- pt-18 → pt-16 sm:pt-[72px] (top navbar fait 64px = h-16)
-- Ajouter overflow-x-hidden sur le container principal
+**New State Variables:**
+```typescript
+const [editingTexte, setEditingTexte] = useState<any>(null);
+const [deleteConfirmTexte, setDeleteConfirmTexte] = useState<any>(null);
 ```
 
-### 3. Améliorer TopNavBar.tsx
-
-**Problème:** Éléments trop larges sur mobile
-**Solution:** 
-- Réduire davantage le logo sur très petit écran
-- Masquer certains éléments sur xs
-- Améliorer les gaps
-
-```text
-Changements:
-- Logo: h-5 xs:h-6 sm:h-7 md:h-8
-- Gap principal: gap-0.5 xs:gap-1 sm:gap-2 md:gap-3
-- SiteSwitcher: max-w-[100px] xs:max-w-[120px] sm:max-w-none
-- Masquer SettingsButton sur xs: hidden xs:flex
+**Add Delete Mutation:**
+```typescript
+const deleteMutation = useMutation({
+  mutationFn: (id: string) => textesReglementairesQueries.deleteWithCascade(id),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
+    toast.success("Texte supprimé avec succès");
+    setDeleteConfirmTexte(null);
+  },
+  onError: (error: any) => {
+    toast.error(error.message || "Erreur lors de la suppression");
+  },
+});
 ```
 
-### 4. Corriger BibliothequeTextes.tsx breakpoints
+**Add Handler Functions:**
+```typescript
+const handleEdit = (texte: any) => {
+  setEditingTexte(texte);
+  setShowTexteModal(true);
+};
 
-**Problème:** Table visible seulement sur lg+ (1024px), laissant un trou sur tablette
-**Solution:** Aligner sur md (768px) comme les autres composants
-
-```text
-Changements:
-- hidden lg:block → hidden md:block
-- block lg:hidden → block md:hidden
+const handleDelete = (texte: any) => {
+  setDeleteConfirmTexte(texte);
+};
 ```
 
-### 5. Améliorer BibliothequeDataGrid.tsx
+**Add Row Actions Menu**: Replace the simple "View" button with a dropdown menu containing:
+- View Articles
+- Edit (opens TexteFormModal)
+- Delete (opens confirmation dialog)
 
-**Problème:** min-w-[800px] peut être trop large
-**Solution:** Réduire légèrement et améliorer l'indicateur de scroll
-
-```text
-Changements:
-- min-w-[800px] → min-w-[700px]
-- Ajouter une ombre visuelle pour indiquer le scroll horizontal
+**Add AlertDialog for Delete Confirmation:**
+```tsx
+<AlertDialog open={!!deleteConfirmTexte} onOpenChange={() => setDeleteConfirmTexte(null)}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+      <AlertDialogDescription>
+        Êtes-vous sûr de vouloir supprimer ce texte réglementaire ?
+        <br /><br />
+        <strong>{deleteConfirmTexte?.reference}</strong>
+        <br /><br />
+        Cette action supprimera également tous les articles associés et est irréversible.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Annuler</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={() => deleteMutation.mutate(deleteConfirmTexte?.id)}
+        className="bg-destructive text-destructive-foreground"
+        disabled={deleteMutation.isPending}
+      >
+        {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 ```
 
-### 6. Optimiser AppSidebar bouton flottant
+### 3. Add Row Actions Component
 
-**Problème:** Position peut chevaucher le contenu
-**Solution:** Ajuster la position et le z-index
+Create a reusable dropdown menu for table rows with actions:
+- View Articles (navigates to detail page)
+- View PDF (if available)
+- Edit
+- Delete
 
-```text
-Changements:
-- bottom-6 left-2 → bottom-20 left-2 (au-dessus des FAB typiques)
-- Ajouter safe-area-inset-bottom support
-```
+---
 
-### 7. Améliorer SiteSwitcher.tsx
+## Files to Modify
 
-**Problème:** Peut prendre trop de place
-**Solution:** Contraindre la taille et tronquer le texte
+| # | File | Changes |
+|---|------|---------|
+| 1 | `src/lib/textes-queries.ts` | Add `deleteWithCascade` function with proper dependency cleanup |
+| 2 | `src/pages/BibliothequeTextes.tsx` | Add delete mutation, edit/delete handlers, row actions menu, AlertDialog confirmation |
 
-```text
-Changements:
-- Trigger: max-w-[100px] xs:max-w-[120px] sm:max-w-[160px]
-- Texte: line-clamp-1 + title pour accessibilité
-```
+---
 
-### 8. Améliorer PaginationControls.tsx touch targets
+## Technical Details
 
-**Problème:** Boutons h-9 w-9 peuvent être trop petits pour le touch
-**Solution:** Augmenter à h-10 w-10 sur mobile
+### textes-queries.ts Changes
 
-```text
-Changements:
-- Boutons: h-10 w-10 sm:h-9 sm:w-9
-- Select trigger: h-10 sm:h-9
-```
+Add new function after line 395:
 
-### 9. Ajouter des styles globaux pour le scroll horizontal (index.css)
-
-**Problème:** Pas d'indicateur visuel clair pour le scroll horizontal
-**Solution:** Ajouter un effet visuel (gradient fade)
-
-```css
-.horizontal-scroll-indicator {
-  position: relative;
+```typescript
+async deleteWithCascade(texteId: string) {
+  // Get all articles for this texte
+  const { data: articles } = await supabase
+    .from("articles")
+    .select("id")
+    .eq("texte_id", texteId);
+  
+  const articleIds = articles?.map(a => a.id) || [];
+  
+  // Delete article dependencies first
+  if (articleIds.length > 0) {
+    await supabase.from("article_sous_domaines").delete().in("article_id", articleIds);
+    await supabase.from("article_versions").delete().in("article_id", articleIds);
+    await supabase.from("articles").delete().in("id", articleIds);
+  }
+  
+  // Delete texte dependencies
+  await supabase.from("textes_domaines").delete().eq("texte_id", texteId);
+  await supabase.from("textes_sous_domaines").delete().eq("texte_id", texteId);
+  await supabase.from("texte_tags").delete().eq("texte_id", texteId);
+  await supabase.from("changelog_reglementaire").delete().eq("acte_id", texteId);
+  await supabase.from("textes_articles").delete().eq("texte_id", texteId);
+  
+  // Delete the texte
+  const { error } = await supabase
+    .from("textes_reglementaires")
+    .delete()
+    .eq("id", texteId);
+  
+  if (error) throw error;
 }
-.horizontal-scroll-indicator::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 20px;
-  background: linear-gradient(to left, hsl(var(--background)), transparent);
-  pointer-events: none;
-}
 ```
 
-### 10. Améliorer les formulaires pour mobile
+### BibliothequeTextes.tsx Changes
 
-**Problème:** Les modales/drawers peuvent être trop étroits ou larges
-**Solution:** Standardiser les largeurs
-
-```text
-ArticleQuickViewModal - déjà OK
-TexteFormModal - vérifier w-full sm:max-w-lg
-Autres modales - auditer et corriger
+1. **Add imports**:
+```typescript
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreVertical, Pencil, Trash2, FileSearch } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 ```
 
-### 11. Fixer l'overflow horizontal global
+2. **Add state and mutation** after existing useState declarations
 
-**Problème:** Possibilité de scroll horizontal non désiré sur la page entière
-**Solution:** Ajouter overflow-x-hidden sur les containers principaux
+3. **Replace View button** with dropdown menu in both table and mobile cards
 
-```text
-Layout.tsx:
-- div principal: overflow-x-hidden
-App container: overflow-x-hidden
-```
-
-### 12. Améliorer le contraste des badges sur mobile
-
-**Problème:** Les badges peuvent être difficiles à lire sur petit écran
-**Solution:** Augmenter légèrement la taille de police
-
-```text
-Changements dans BibliothequeDataGrid MobileCard:
-- text-xs → text-xs sm:text-xs (garder mais améliorer le padding)
-- Badge: px-2 py-0.5 → px-2.5 py-1
-```
+4. **Add AlertDialog** before closing `</div>` of the component
 
 ---
 
-## Fichiers à modifier
+## Implementation Order
 
-| # | Fichier | Type de modification |
-|---|---------|---------------------|
-| 1 | `tailwind.config.ts` | Ajouter breakpoint xs |
-| 2 | `src/components/Layout.tsx` | Corriger pt-18, ajouter overflow-x-hidden |
-| 3 | `src/components/TopNavBar.tsx` | Réduire tailles, améliorer gaps, masquer éléments |
-| 4 | `src/pages/BibliothequeTextes.tsx` | Changer breakpoint lg → md |
-| 5 | `src/components/bibliotheque/BibliothequeDataGrid.tsx` | Réduire min-w, améliorer scroll |
-| 6 | `src/components/AppSidebar.tsx` | Repositionner bouton flottant |
-| 7 | `src/components/navigation/SiteSwitcher.tsx` | Contraindre largeur |
-| 8 | `src/components/shared/PaginationControls.tsx` | Augmenter touch targets |
-| 9 | `src/index.css` | Ajouter utilitaires scroll horizontal |
-| 10 | `src/components/bibliotheque/ArticlesDataGrid.tsx` | Améliorer padding cartes mobile |
-| 11 | `src/components/ui/input.tsx` | Garantir text-base sur mobile |
+1. First: Add `deleteWithCascade` to `textes-queries.ts`
+2. Second: Update `BibliothequeTextes.tsx` with:
+   - New imports
+   - State for delete confirmation
+   - Delete mutation
+   - Handler functions
+   - Row actions dropdown menu (replacing View button)
+   - AlertDialog component
 
 ---
 
-## Ordre d'implémentation
+## Expected Behavior After Fix
 
-**Phase A - Fondations (critique)**
-1. tailwind.config.ts - breakpoint xs
-2. Layout.tsx - overflow et padding
-3. index.css - utilitaires additionnels
-
-**Phase B - Navigation**
-4. TopNavBar.tsx - tailles et gaps
-5. SiteSwitcher.tsx - contraintes
-6. AppSidebar.tsx - bouton flottant
-
-**Phase C - Contenu**
-7. BibliothequeTextes.tsx - breakpoints
-8. BibliothequeDataGrid.tsx - scroll
-9. ArticlesDataGrid.tsx - padding cartes
-10. PaginationControls.tsx - touch targets
-
----
-
-## Résumé des breakpoints standardisés
-
-| Breakpoint | Largeur | Comportement cible |
-|------------|---------|-------------------|
-| Base | < 480px | Mode ultra-compact, cartes empilées, nav minimale |
-| xs | ≥ 480px | Cartes 2 colonnes possibles, un peu plus d'espace |
-| sm | ≥ 640px | Labels visibles, filtres en grille 2 cols |
-| md | ≥ 768px | Tables visibles, sidebar Sheet ferme |
-| lg | ≥ 1024px | Layout complet desktop |
-
----
-
-## Tests de validation post-implémentation
-
-1. **iPhone SE (320px)** - Le plus petit, tout doit tenir sans scroll horizontal
-2. **iPhone 14 (390px)** - Mobile standard
-3. **iPhone 14 Plus (430px)** - Mobile large, proche de xs
-4. **iPad Mini (768px)** - Tablette, tables doivent s'afficher
-5. **iPad (820px)** - Tablette standard
-6. **Laptop (1024px+)** - Desktop, tout visible
-
-**Points de contrôle:**
-- [ ] Aucun scroll horizontal sur la page principale
-- [ ] Cartes lisibles et cliquables sur mobile
-- [ ] Navigation fonctionnelle et accessible
-- [ ] Filtres utilisables sans débordement
-- [ ] Pagination avec touch targets corrects
-- [ ] Modales/drawers à bonne taille
+1. Each row shows a "..." menu with View, Edit, and Delete options
+2. Clicking Delete opens a confirmation dialog showing the texte reference
+3. Confirming deletion properly removes:
+   - All articles and their versions/sous-domaines
+   - All junction table records (domaines, sous-domaines, tags)
+   - Changelog entries
+   - The texte itself
+4. Success toast appears after deletion
+5. List automatically refreshes
+6. Edit opens the TexteFormModal with pre-filled data
 
