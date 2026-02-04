@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { Search, FileText, X } from "lucide-react";
+import { Search, FileText, X, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BibliothequeHeader } from "@/components/bibliotheque/BibliothequeHeader";
@@ -10,12 +10,26 @@ import { ArticlesFilters } from "@/components/bibliotheque/ArticlesFilters";
 import { ArticlesDataGrid } from "@/components/bibliotheque/ArticlesDataGrid";
 import { ArticleQuickViewModal } from "@/components/bibliotheque/ArticleQuickViewModal";
 import { PaginationControls } from "@/components/shared/PaginationControls";
+import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { articlesListQueries, type ArticleWithDetails } from "@/lib/articles-queries";
-import { domainesQueries, sousDomainesQueries } from "@/lib/textes-queries";
+import { domainesQueries, sousDomainesQueries, textesArticlesQueries } from "@/lib/textes-queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function BibliothequeArticles() {
+  const queryClient = useQueryClient();
+  
   // URL params for texte filter
   const [searchParams, setSearchParams] = useSearchParams();
   const texteIdFromUrl = searchParams.get("texte");
@@ -35,6 +49,12 @@ export default function BibliothequeArticles() {
   const [introductifOnly, setIntroductifOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  // CRUD state
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<ArticleWithDetails | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<ArticleWithDetails | null>(null);
 
   // Sync texte filter with URL params
   useEffect(() => {
@@ -116,6 +136,43 @@ export default function BibliothequeArticles() {
       }),
   });
 
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (articleId: string) => {
+      // First delete related sous_domaines
+      await supabase
+        .from("article_sous_domaines")
+        .delete()
+        .eq("article_id", articleId);
+      
+      // Delete article versions
+      await supabase
+        .from("article_versions")
+        .delete()
+        .eq("article_id", articleId);
+      
+      // Delete article tags
+      await supabase
+        .from("article_tags")
+        .delete()
+        .eq("article_id", articleId);
+      
+      // Delete the article
+      await textesArticlesQueries.delete(articleId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["articles-list"] });
+      queryClient.invalidateQueries({ queryKey: ["articles-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
+      toast.success("Article supprimé avec succès");
+      setDeleteDialogOpen(false);
+      setArticleToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erreur lors de la suppression");
+    },
+  });
+
   // Clear texte filter
   const clearTexteFilter = () => {
     setTexteFilter("all");
@@ -137,13 +194,47 @@ export default function BibliothequeArticles() {
     setPage(1);
   };
 
+  // CRUD handlers
+  const handleCreateArticle = () => {
+    setEditingArticle(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEditArticle = (article: ArticleWithDetails) => {
+    setEditingArticle(article);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteArticle = (article: ArticleWithDetails) => {
+    setArticleToDelete(article);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (articleToDelete) {
+      deleteMutation.mutate(articleToDelete.id);
+    }
+  };
+
+  const handleFormSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["articles-list"] });
+    queryClient.invalidateQueries({ queryKey: ["articles-stats"] });
+  };
+
   return (
     <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
-      {/* Header */}
-      <BibliothequeHeader
-        title="Articles réglementaires"
-        breadcrumbs={[{ label: "Articles" }]}
-      />
+      {/* Header with Create Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <BibliothequeHeader
+          title="Articles réglementaires"
+          breadcrumbs={[{ label: "Articles" }]}
+        />
+        <Button onClick={handleCreateArticle} className="gap-2">
+          <Plus className="h-4 w-4" />
+          <span className="hidden xs:inline">Créer un article</span>
+          <span className="xs:hidden">Créer</span>
+        </Button>
+      </div>
 
       {/* Stats Cards */}
       <ArticlesStatsCards stats={stats} isLoading={statsLoading} />
@@ -216,6 +307,8 @@ export default function BibliothequeArticles() {
         articles={articlesResult?.data || []}
         isLoading={articlesLoading}
         onViewArticle={(article) => setSelectedArticle(article)}
+        onEditArticle={handleEditArticle}
+        onDeleteArticle={handleDeleteArticle}
       />
 
       {/* Article Quick View Modal */}
@@ -224,6 +317,40 @@ export default function BibliothequeArticles() {
         onOpenChange={(open) => !open && setSelectedArticle(null)}
         article={selectedArticle}
       />
+
+      {/* Article Form Modal - for create/edit */}
+      {isFormOpen && (
+        <ArticleFormModal
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          texteId={editingArticle?.texte_id || texteFilter !== "all" ? (editingArticle?.texte_id || texteFilter) : ""}
+          article={editingArticle}
+          onSuccess={handleFormSuccess}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer l'article ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L'article "{articleToDelete?.numero} - {articleToDelete?.titre}" 
+              sera définitivement supprimé avec toutes ses versions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Pagination */}
       <PaginationControls
