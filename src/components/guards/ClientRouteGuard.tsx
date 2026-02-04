@@ -18,17 +18,8 @@ export function ClientRouteGuard({ children }: ClientRouteGuardProps) {
   }
 
   if (userType === 'staff') {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="space-y-4 text-center">
-          <h1 className="text-2xl font-bold text-destructive">Accès refusé</h1>
-          <p className="text-muted-foreground">
-            Le personnel ConformaPro ne peut pas accéder aux interfaces clients.
-          </p>
-          <Navigate to="/staff/dashboard" replace />
-        </div>
-      </div>
-    );
+    // Redirect immediately without showing message to avoid flash
+    return <Navigate to="/staff/dashboard" replace />;
   }
 
   return <>{children}</>;
