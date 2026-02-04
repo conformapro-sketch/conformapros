@@ -516,6 +516,13 @@ export const textesArticlesQueries = {
     if (error) throw error;
   },
 
+  async deleteWithCascade(articleId: string) {
+    const { error } = await supabase.rpc('delete_article_cascade', {
+      p_article_id: articleId
+    });
+    if (error) throw error;
+  },
+
   async updateArticleSousDomaines(articleId: string, sousDomaineIds: string[]) {
     // Delete existing associations
     await supabase

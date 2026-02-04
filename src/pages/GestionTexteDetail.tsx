@@ -64,14 +64,16 @@ export default function GestionTexteDetail() {
   });
 
   const deleteArticleMutation = useMutation({
-    mutationFn: (articleId: string) => articlesQueries.delete(articleId),
+    mutationFn: (articleId: string) => articlesQueries.deleteWithCascade(articleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles"] });
       toast.success("Article supprimé avec succès");
       setDeleteArticleId(null);
     },
-    onError: () => {
-      toast.error("Erreur lors de la suppression");
+    onError: (error: any) => {
+      toast.error("Erreur lors de la suppression", {
+        description: error?.message || "Une erreur est survenue"
+      });
     },
   });
 

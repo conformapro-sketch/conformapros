@@ -4042,6 +4042,10 @@ export type Database = {
           total_count: number
         }[]
       }
+      delete_article_cascade: {
+        Args: { p_article_id: string }
+        Returns: undefined
+      }
       delete_texte_cascade: { Args: { p_texte_id: string }; Returns: undefined }
       get_active_articles_for_site: {
         Args: { site_uuid: string }

@@ -162,7 +162,7 @@ export function ArticlesTab({ acteId, articles }: ArticlesTabProps) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => articlesQueries.delete(id),
+    mutationFn: (id: string) => articlesQueries.deleteWithCascade(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["texte-articles", acteId] });
       queryClient.invalidateQueries({ queryKey: ["article-sous-domaines", acteId] });
