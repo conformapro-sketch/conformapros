@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, FileText, Download, Filter } from "lucide-react";
+import { Search, FileText, Filter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -76,10 +76,6 @@ export default function ControlesHistorique() {
           <h1 className="text-3xl font-bold">Historique des Contrôles</h1>
           <p className="text-muted-foreground">Traçabilité complète des contrôles effectués</p>
         </div>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Exporter
-        </Button>
       </div>
 
       {/* Filters */}

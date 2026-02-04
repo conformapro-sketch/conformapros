@@ -14,8 +14,6 @@ import {
   FileText,
   Search,
   Plus,
-  Upload,
-  Download,
   Eye,
   Calendar,
   Filter,
@@ -123,14 +121,6 @@ export default function BibliothequeNavigationTree() {
           <Button variant="outline" size="sm" onClick={() => navigate("/bibliotheque/dashboard")}>
             <BarChart3 className="h-4 w-4 mr-2" />
             Tableau de bord
-          </Button>
-          <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
-            Importer
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter
           </Button>
           <Button size="sm" onClick={() => setShowFormModal(true)}>
             <Plus className="h-4 w-4 mr-2" />

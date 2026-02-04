@@ -6,7 +6,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Plus,
-  Upload,
   Scale,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,7 +14,6 @@ import { domainesQueries, sousDomainesQueries } from "@/lib/actes-queries";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { TexteFormModal } from "@/components/TexteFormModal";
-import { ImportCSVDialog } from "@/components/ImportCSVDialog";
 import { BibliothequeStatsCards } from "@/components/bibliotheque/BibliothequeStatsCards";
 import { BibliothequeActiveFilters } from "@/components/bibliotheque/BibliothequeActiveFilters";
 import { BibliothequeDataGrid } from "@/components/bibliotheque/BibliothequeDataGrid";
@@ -69,7 +67,6 @@ function BibliothequeReglementaireContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [showFormModal, setShowFormModal] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingTexte, setEditingTexte] = useState<TexteReglementaire | null>(null);
   const [deleteTexteId, setDeleteTexteId] = useState<string | null>(null);
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
@@ -254,19 +251,10 @@ function BibliothequeReglementaireContent() {
           <div className="flex items-center gap-3">
             {!isMobile && <BibliothequeViewToggle view={view} onViewChange={setView} />}
             {canManageTextes && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowImportDialog(true)}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Importer
-                </Button>
                 <Button onClick={() => { setEditingTexte(null); setShowFormModal(true); }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Ajouter un texte
                 </Button>
-              </>
             )}
           </div>
         }
@@ -432,15 +420,6 @@ function BibliothequeReglementaireContent() {
           queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
           setShowFormModal(false);
           setEditingTexte(null);
-        }}
-      />
-
-      <ImportCSVDialog
-        open={showImportDialog}
-        onOpenChange={setShowImportDialog}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ["textes-reglementaires"] });
-          setShowImportDialog(false);
         }}
       />
 

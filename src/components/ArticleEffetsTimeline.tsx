@@ -16,7 +16,6 @@ import {
   ChevronDown,
   ChevronUp,
   GitCompare,
-  FileDown,
   Eye,
   Clock,
   User,
@@ -72,7 +71,6 @@ interface ArticleEffetsTimelineProps {
   effets: ArticleEffet[];
   isLoading?: boolean;
   onCompare?: (effetId: string) => void;
-  onExport?: (effetId: string) => void;
   onViewSource?: (effetId: string) => void;
 }
 
@@ -175,7 +173,6 @@ export function ArticleEffetsTimeline({
   effets, 
   isLoading,
   onCompare,
-  onExport,
   onViewSource
 }: ArticleEffetsTimelineProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set([effets[0]?.id]));
@@ -455,17 +452,6 @@ export function ArticleEffetsTimeline({
                         >
                           <Eye className="h-3 w-3" />
                           Voir source
-                        </Button>
-                      )}
-                      {onExport && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onExport(effet.id)}
-                          className="gap-1"
-                        >
-                          <FileDown className="h-3 w-3" />
-                          Exporter PDF
                         </Button>
                       )}
                     </div>

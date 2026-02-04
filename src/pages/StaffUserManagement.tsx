@@ -5,14 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Search, Download, RefreshCw } from "lucide-react";
+import { Users, UserPlus, Search, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ClientAutocomplete } from "@/components/shared/ClientAutocomplete";
 import { StaffUserDetailsPanel } from "@/components/staff/StaffUserDetailsPanel";
 import { StaffUserDataGrid } from "@/components/staff/StaffUserDataGrid";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useExportData } from "@/hooks/useExportData";
 import { UserWithDetails, UserManagementStats } from "@/types/user-management";
 import { ClientUserFormModal } from "@/components/ClientUserFormModal";
 
@@ -26,7 +25,6 @@ export default function StaffUserManagement() {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 
   const debouncedSearch = useDebounce(search, 500);
-  const { exportToExcel } = useExportData();
 
   // Fetch users via edge function
   const { data: usersData, isLoading, refetch } = useQuery({
@@ -65,21 +63,6 @@ export default function StaffUserManagement() {
     setIsPanelOpen(true);
   };
 
-  const handleExport = () => {
-    const exportData = users.map(u => ({
-      Email: u.email,
-      Nom: u.nom || '',
-      Prénom: u.prenom || '',
-      Téléphone: u.telephone || '',
-      Statut: u.actif ? 'Actif' : 'Inactif',
-      'Admin Client': u.is_client_admin ? 'Oui' : 'Non',
-      Client: u.client?.nom || '',
-      'Nombre de sites': u.site_count || 0,
-      'Nombre de permissions': u.permission_count || 0,
-    }));
-    exportToExcel(exportData, 'utilisateurs-clients', 'Utilisateurs');
-  };
-
   return (
     <div className="container mx-auto py-6 space-y-6">
         {/* Header */}
@@ -92,10 +75,6 @@ export default function StaffUserManagement() {
             <Button variant="outline" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Actualiser
-            </Button>
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Exporter
             </Button>
             <Button onClick={() => setIsAddUserOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
