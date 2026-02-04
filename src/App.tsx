@@ -87,6 +87,8 @@ import StaffMemberManagement from "./pages/StaffMemberManagement";
 import GestionAutorites from "./pages/GestionAutorites";
 import BibliothequeParametres from "./pages/BibliothequeParametres";
 import ClientBibliotheque from "./pages/ClientBibliotheque";
+import ClientBibliothequeDashboard from "./pages/ClientBibliothequeDashboard";
+import ClientBibliothequeArticles from "./pages/ClientBibliothequeArticles";
 import ClientDashboard from "./pages/ClientDashboard";
 import ClientTexteDetail from "./pages/ClientTexteDetail";
 import ClientCodesJuridiques from "./pages/ClientCodesJuridiques";
@@ -221,10 +223,11 @@ const App = () => (
               <Route path="bibliotheque/articles/:articleId/versions" element={<BibliothequeArticleVersions />} />
               <Route path="bibliotheque/recherche" element={<BibliothequeRechercheAvancee />} />
               
-              {/* Client Bibliothèque Routes */}
-              <Route path="client-bibliotheque" element={<Navigate to="/client-bibliotheque/textes" replace />} />
+              {/* Client Bibliothèque Routes - READ ONLY */}
+              <Route path="client-bibliotheque" element={<Navigate to="/client-bibliotheque/dashboard" replace />} />
+              <Route path="client-bibliotheque/dashboard" element={<ClientBibliothequeDashboard />} />
               <Route path="client-bibliotheque/textes" element={<ClientBibliotheque />} />
-              <Route path="client-bibliotheque/articles" element={<BibliothequeArticles />} />
+              <Route path="client-bibliotheque/articles" element={<ClientBibliothequeArticles />} />
               <Route path="client/bibliotheque/textes/:id" element={<ClientTexteDetail />} />
               <Route path="client/codes-juridiques" element={<ClientCodesJuridiques />} />
               <Route path="client/recherche-avancee" element={<ClientRechercheAvancee />} />

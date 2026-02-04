@@ -170,11 +170,12 @@ export const buildNavigationFromModules = (modules: ModuleSysteme[], isStaff: bo
   modules.forEach((module) => {
     let config = MODULE_NAV_CONFIG[module.code];
     
-    // Override Bibliothèque navigation for client users
+    // Override Bibliothèque navigation for client users - READ ONLY with dashboard
     if (module.code === 'BIBLIOTHEQUE' && !isStaff) {
       config = {
         icon: config.icon,
         subItems: [
+          { title: "Tableau de bord", url: "/client-bibliotheque/dashboard" },
           { title: "Textes", url: "/client-bibliotheque/textes" },
           { title: "Articles", url: "/client-bibliotheque/articles" },
           { title: "Codes juridiques", url: "/client/codes-juridiques" },
