@@ -13,9 +13,10 @@ interface TexteAutocompleteProps {
   placeholder?: string;
 }
 
-const TYPE_LABELS = {
+const TYPE_LABELS: Record<string, string> = {
   loi: "Loi",
   decret: "Décret",
+  "decret-loi": "Décret-Loi",
   arrete: "Arrêté",
   circulaire: "Circulaire",
 };
@@ -34,8 +35,15 @@ export function TexteAutocomplete({ value, onChange, placeholder = "Rechercher u
     enabled: open,
   });
 
+  // Fetch the selected texte details when we have a value but popover is closed
+  const { data: selectedTexteDetails } = useQuery({
+    queryKey: ['texte-detail', value],
+    queryFn: () => textesReglementairesQueries.getById(value!),
+    enabled: !!value && !open,
+  });
+
   const selectedTexte = value 
-    ? textes?.data?.find((t: any) => t.id === value)
+    ? textes?.data?.find((t: any) => t.id === value) || selectedTexteDetails
     : undefined;
 
   return (
@@ -50,7 +58,7 @@ export function TexteAutocomplete({ value, onChange, placeholder = "Rechercher u
           {selectedTexte ? (
             <span className="flex items-center gap-2 truncate">
               <FileText className="h-4 w-4 shrink-0" />
-              <span className="truncate">{selectedTexte.reference_officielle}</span>
+              <span className="truncate">{selectedTexte.reference || selectedTexte.reference_officielle}</span>
             </span>
           ) : (
             <span className="text-muted-foreground">{placeholder}</span>
@@ -87,12 +95,12 @@ export function TexteAutocomplete({ value, onChange, placeholder = "Rechercher u
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium text-muted-foreground">
-                        {TYPE_LABELS[texte.type_acte as keyof typeof TYPE_LABELS] || texte.type_acte}
+                        {TYPE_LABELS[texte.type] || texte.type}
                       </span>
-                      <span className="font-medium">{texte.reference_officielle}</span>
+                      <span className="font-medium">{texte.reference}</span>
                     </div>
                     <span className="text-xs text-muted-foreground line-clamp-1">
-                      {texte.intitule}
+                      {texte.titre}
                     </span>
                   </div>
                 </CommandItem>

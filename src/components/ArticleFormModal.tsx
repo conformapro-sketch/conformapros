@@ -26,7 +26,7 @@ import { isHtmlContentEmpty } from "@/lib/utils";
 interface ArticleFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  texteId: string;
+  texteId?: string; // Optional - if not provided, user can select a texte
   article?: any | null;
   onSuccess?: () => void;
 }
@@ -34,11 +34,18 @@ interface ArticleFormModalProps {
 export function ArticleFormModal({ 
   open, 
   onOpenChange, 
-  texteId,
+  texteId: texteIdProp,
   article, 
   onSuccess 
 }: ArticleFormModalProps) {
   const queryClient = useQueryClient();
+  
+  // State for selected texte (when texteIdProp is not provided)
+  const [selectedTexteId, setSelectedTexteId] = useState<string>(texteIdProp || "");
+  
+  // The effective texteId is either the prop or the selected one
+  const texteId = texteIdProp || selectedTexteId;
+  
   const [formData, setFormData] = useState({
     numero: "",
     titre: "",
@@ -116,6 +123,10 @@ export function ArticleFormModal({
       resetForm();
       setSelectedSousDomaines([]);
       setHasEffet(false);
+      // Reset selected texte if no prop was provided
+      if (!texteIdProp) {
+        setSelectedTexteId("");
+      }
       setEffetData({
         type_effet: "MODIFIE" as TypeEffet,
         texte_cible_id: "",
@@ -402,6 +413,12 @@ export function ArticleFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Texte is required
+    if (!texteId) {
+      toast.error("Vous devez sélectionner un texte réglementaire");
+      return;
+    }
+
     if (!formData.numero.trim()) {
       toast.error("La référence de l'article est requise");
       return;
@@ -472,6 +489,33 @@ export function ArticleFormModal({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 📄 Texte parent (only show if no texteId prop) */}
+          {!texteIdProp && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                <span>📄</span> Texte réglementaire parent *
+              </h3>
+              <TexteAutocomplete
+                value={selectedTexteId}
+                onChange={(texte) => setSelectedTexteId(texte?.id || "")}
+                placeholder="Sélectionner le texte parent..."
+              />
+              {texteData && (
+                <p className="text-sm text-muted-foreground">
+                  {texteData.titre}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Show selected texte info when provided via prop */}
+          {texteIdProp && texteData && (
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm font-medium">{texteData.reference}</p>
+              <p className="text-xs text-muted-foreground">{texteData.titre}</p>
+            </div>
+          )}
+
           {/* 📋 Informations de base */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">

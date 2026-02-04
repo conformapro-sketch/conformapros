@@ -3,12 +3,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Eye, History, ExternalLink, MoreVertical } from "lucide-react";
+import { Eye, History, ExternalLink, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ArticleWithDetails } from "@/lib/articles-queries";
@@ -17,6 +18,8 @@ interface ArticlesDataGridProps {
   articles: ArticleWithDetails[];
   isLoading?: boolean;
   onViewArticle?: (article: ArticleWithDetails) => void;
+  onEditArticle?: (article: ArticleWithDetails) => void;
+  onDeleteArticle?: (article: ArticleWithDetails) => void;
 }
 
 function getTypeBadge(porte_exigence: boolean, est_introductif: boolean) {
@@ -56,10 +59,14 @@ function getTypeTexteBadge(type?: string) {
 function MobileArticleCard({ 
   article, 
   onView, 
+  onEdit,
+  onDelete,
   onNavigate 
 }: { 
   article: ArticleWithDetails; 
   onView: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   onNavigate: (path: string) => void;
 }) {
   const typeBadge = getTypeBadge(article.porte_exigence, article.est_introductif);
@@ -110,6 +117,12 @@ function MobileArticleCard({
               <Eye className="h-4 w-4 mr-2" />
               Voir l'article
             </DropdownMenuItem>
+            {onEdit && (
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Modifier
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => onNavigate(`/bibliotheque/articles/${article.id}/versions`)}>
               <History className="h-4 w-4 mr-2" />
               Historique versions
@@ -120,6 +133,18 @@ function MobileArticleCard({
                 Voir le texte
               </DropdownMenuItem>
             )}
+            {onDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={onDelete}
+                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -127,7 +152,13 @@ function MobileArticleCard({
   );
 }
 
-export function ArticlesDataGrid({ articles, isLoading, onViewArticle }: ArticlesDataGridProps) {
+export function ArticlesDataGrid({ 
+  articles, 
+  isLoading, 
+  onViewArticle,
+  onEditArticle,
+  onDeleteArticle 
+}: ArticlesDataGridProps) {
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -144,7 +175,7 @@ export function ArticlesDataGrid({ articles, isLoading, onViewArticle }: Article
                 <TableHead className="w-[150px]">Domaines</TableHead>
                 <TableHead className="w-[100px]">Type</TableHead>
                 <TableHead className="w-[100px]">Statut</TableHead>
-                <TableHead className="w-[120px] text-right">Actions</TableHead>
+                <TableHead className="w-[140px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -204,7 +235,7 @@ export function ArticlesDataGrid({ articles, isLoading, onViewArticle }: Article
               <TableHead className="w-[150px]">Domaines</TableHead>
               <TableHead className="w-[100px]">Type</TableHead>
               <TableHead className="w-[100px]">Statut</TableHead>
-              <TableHead className="w-[120px] text-right">Actions</TableHead>
+              <TableHead className="w-[140px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -289,6 +320,22 @@ export function ArticlesDataGrid({ articles, isLoading, onViewArticle }: Article
                         <TooltipContent>Voir l'article</TooltipContent>
                       </Tooltip>
 
+                      {onEditArticle && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => onEditArticle(article)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Modifier</TooltipContent>
+                        </Tooltip>
+                      )}
+
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -318,6 +365,22 @@ export function ArticlesDataGrid({ articles, isLoading, onViewArticle }: Article
                           <TooltipContent>Voir le texte</TooltipContent>
                         </Tooltip>
                       )}
+
+                      {onDeleteArticle && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => onDeleteArticle(article)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Supprimer</TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -334,6 +397,8 @@ export function ArticlesDataGrid({ articles, isLoading, onViewArticle }: Article
             key={article.id} 
             article={article}
             onView={() => onViewArticle?.(article)}
+            onEdit={onEditArticle ? () => onEditArticle(article) : undefined}
+            onDelete={onDeleteArticle ? () => onDeleteArticle(article) : undefined}
             onNavigate={navigate}
           />
         ))}
