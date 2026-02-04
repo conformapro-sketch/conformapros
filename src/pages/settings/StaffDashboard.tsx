@@ -22,15 +22,15 @@ export default function StaffDashboard() {
   const inactiveUsers = (staffUsers?.length || 0) - activeUsers;
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
+    <div className="container mx-auto py-4 sm:py-6 md:py-8 space-y-6 sm:space-y-8 px-2 sm:px-4">
       <div>
-        <h1 className="text-3xl font-bold">Gestion du Staff ConformaPro</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Gestion du Staff ConformaPro</h1>
+        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
           Administration des comptes et permissions du personnel
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
         {/* Staff Users Summary */}
         <Card>
           <CardHeader>
@@ -125,7 +125,7 @@ export default function StaffDashboard() {
           <CardDescription>Accès direct aux fonctions de gestion avancée</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             <Link to="/settings/staff-users">
               <Button variant="outline" className="w-full justify-start">
                 <Users className="h-4 w-4 mr-2" />

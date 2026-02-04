@@ -22,7 +22,7 @@ export function SearchBar({ searchOpen, onSearchOpenChange }: SearchBarProps) {
   return (
     <>
       {/* Desktop Search */}
-      <div className="hidden w-full max-w-xl md:flex">
+      <div className="hidden w-full max-w-md lg:max-w-xl md:flex">
         <div className="relative w-full">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -54,7 +54,7 @@ export function SearchBar({ searchOpen, onSearchOpenChange }: SearchBarProps) {
 
       {/* Mobile Search Dialog */}
       <Dialog open={searchOpen} onOpenChange={onSearchOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-md top-[10%] sm:top-[50%] translate-y-0 sm:-translate-y-1/2">
           <DialogHeader>
             <DialogTitle>Recherche</DialogTitle>
             <DialogDescription>Rechercher dans ConformaPro.</DialogDescription>
@@ -66,7 +66,7 @@ export function SearchBar({ searchOpen, onSearchOpenChange }: SearchBarProps) {
               type="search"
               placeholder="Tapez votre recherche..."
               aria-label="Recherche"
-              className="w-full rounded-full border border-slate-200/60 bg-background pl-9 pr-3 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-[#2FB200]"
+              className="w-full rounded-full border border-slate-200/60 bg-background pl-9 pr-3 text-base shadow-sm focus-visible:ring-2 focus-visible:ring-[#2FB200]"
             />
           </div>
         </DialogContent>

@@ -194,8 +194,8 @@ export function BibliothequeDataGrid({
 
   return (
     <div className="rounded-md border bg-card w-full">
-      <div className="overflow-x-auto">
-        <Table className="table-fixed w-full">
+      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+        <Table className="min-w-[800px] lg:min-w-full table-fixed w-full">
           <TableHeader className="sticky top-0 bg-card z-[1] border-b shadow-sm">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
