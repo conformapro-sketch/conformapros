@@ -45,33 +45,33 @@ export function ArticleQuickViewModal({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-lg md:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <div className="flex items-start justify-between gap-4 mb-2">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-start justify-between gap-3 sm:gap-4 mb-2">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 {article.porte_exigence && (
-                  <Badge variant="default" className="bg-primary text-primary-foreground">
+                  <Badge variant="default" className="bg-primary text-primary-foreground text-xs">
                     Exigence
                   </Badge>
                 )}
                 {article.est_introductif && (
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-xs">
                     Introductif
                   </Badge>
                 )}
-                <Badge className={statutInfo.className}>
+                <Badge className={`${statutInfo.className} text-xs`}>
                   <StatusIcon className="h-3 w-3 mr-1" />
                   {statutInfo.label}
                 </Badge>
               </div>
-              <SheetTitle className="text-2xl">Article {article.numero}</SheetTitle>
-              <SheetDescription className="flex items-center gap-2 text-sm">
-                <span className="font-semibold text-primary">{article.titre}</span>
+              <SheetTitle className="text-xl sm:text-2xl">Article {article.numero}</SheetTitle>
+              <SheetDescription className="flex items-start gap-2 text-sm">
+                <span className="font-semibold text-primary line-clamp-2">{article.titre}</span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 shrink-0"
                   onClick={handleCopyNumero}
                 >
                   <Copy className="h-3 w-3" />
@@ -81,9 +81,9 @@ export function ArticleQuickViewModal({
           </div>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
           {/* Quick Info Grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {article.texte && (
               <div className="space-y-1 col-span-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">

@@ -87,11 +87,11 @@ export function ArticlesFilters({
     introductifOnly;
 
   return (
-    <div className="space-y-4">
-      {/* Main filters row */}
-      <div className="flex flex-wrap gap-3 items-end">
+<div className="space-y-4">
+      {/* Main filters grid - responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
         {/* Type texte */}
-        <div className="flex flex-col gap-1.5 min-w-[150px]">
+        <div className="flex flex-col gap-1.5">
           <Label className="text-xs text-muted-foreground">Type de texte</Label>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="h-9">
@@ -108,7 +108,7 @@ export function ArticlesFilters({
         </div>
 
         {/* Domaine */}
-        <div className="flex flex-col gap-1.5 min-w-[180px]">
+        <div className="flex flex-col gap-1.5">
           <Label className="text-xs text-muted-foreground">Domaine</Label>
           <Select value={domaineFilter} onValueChange={(value) => {
             setDomaineFilter(value);
@@ -132,7 +132,7 @@ export function ArticlesFilters({
         </div>
 
         {/* Sous-domaine */}
-        <div className="flex flex-col gap-1.5 min-w-[200px]">
+        <div className="flex flex-col gap-1.5">
           <Label className="text-xs text-muted-foreground">Sous-domaine</Label>
           <Select value={sousDomaineFilter} onValueChange={setSousDomaineFilter}>
             <SelectTrigger className="h-9">
@@ -150,7 +150,7 @@ export function ArticlesFilters({
         </div>
 
         {/* Année */}
-        <div className="flex flex-col gap-1.5 min-w-[120px]">
+        <div className="flex flex-col gap-1.5">
           <Label className="text-xs text-muted-foreground">Année</Label>
           <Select value={anneeFilter} onValueChange={setAnneeFilter}>
             <SelectTrigger className="h-9">
@@ -168,7 +168,7 @@ export function ArticlesFilters({
         </div>
 
         {/* Statut version */}
-        <div className="flex flex-col gap-1.5 min-w-[150px]">
+        <div className="flex flex-col gap-1.5">
           <Label className="text-xs text-muted-foreground">Statut version</Label>
           <Select value={statutVersionFilter} onValueChange={setStatutVersionFilter}>
             <SelectTrigger className="h-9">
@@ -183,6 +183,39 @@ export function ArticlesFilters({
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* Checkboxes and reset - responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="exigence-only" 
+              checked={exigenceOnly}
+              onCheckedChange={(checked) => setExigenceOnly(checked === true)}
+            />
+            <Label 
+              htmlFor="exigence-only" 
+              className="text-sm cursor-pointer"
+            >
+              Exigences uniquement
+            </Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="introductif-only" 
+              checked={introductifOnly}
+              onCheckedChange={(checked) => setIntroductifOnly(checked === true)}
+            />
+            <Label 
+              htmlFor="introductif-only" 
+              className="text-sm cursor-pointer"
+            >
+              Introductifs uniquement
+            </Label>
+          </div>
+        </div>
 
         {/* Reset button */}
         {hasActiveFilters && (
@@ -190,43 +223,13 @@ export function ArticlesFilters({
             variant="ghost" 
             size="sm" 
             onClick={onReset}
-            className="h-9 px-3"
+            className="h-9 px-3 self-start sm:self-auto"
           >
             <RotateCcw className="h-4 w-4 mr-1" />
-            Réinitialiser
+            <span className="hidden sm:inline">Réinitialiser</span>
+            <span className="sm:hidden">Reset</span>
           </Button>
         )}
-      </div>
-
-      {/* Checkboxes row */}
-      <div className="flex gap-6">
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="exigence-only" 
-            checked={exigenceOnly}
-            onCheckedChange={(checked) => setExigenceOnly(checked === true)}
-          />
-          <Label 
-            htmlFor="exigence-only" 
-            className="text-sm cursor-pointer"
-          >
-            Exigences uniquement
-          </Label>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="introductif-only" 
-            checked={introductifOnly}
-            onCheckedChange={(checked) => setIntroductifOnly(checked === true)}
-          />
-          <Label 
-            htmlFor="introductif-only" 
-            className="text-sm cursor-pointer"
-          >
-            Introductifs uniquement
-          </Label>
-        </div>
       </div>
     </div>
   );
