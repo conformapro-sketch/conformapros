@@ -1,251 +1,282 @@
 
-# Plan: UI Responsive - Adaptation pour Desktop, Tablette et Mobile
 
-## Analyse de l'existant
+# Plan: Correction UI Mobile-Friendly - Phase 2
 
-### Points forts actuels
-- Le projet utilise déjà Tailwind CSS avec des breakpoints standards (sm:640px, md:768px, lg:1024px, xl:1280px)
-- La sidebar utilise un Sheet/drawer sur mobile (< 768px) via `useIsMobile`
-- Certaines pages comme Dashboard et BibliothequeTextes ont déjà des grilles responsives
-- TopNavBar adapte son contenu selon la taille d'écran
+## Contexte
 
-### Problèmes identifiés
+Après la première phase de corrections responsive, plusieurs composants de la page `/bibliotheque/articles` et d'autres pages similaires restent problématiques sur mobile. L'analyse révèle des problèmes spécifiques dans:
 
-1. **Sidebar (AppSidebar.tsx)**
-   - Le bouton flottant de réouverture (bottom-4 left-4) peut chevaucher le contenu sur mobile
-   - En mode collapsed, les HoverCards ne sont pas adaptés au tactile
-   - La largeur fixe w-64 (256px) prend trop de place sur tablette
-
-2. **TopNavBar (TopNavBar.tsx)**
-   - min-w-[170px] est trop rigide pour petits écrans
-   - Le SiteSwitcher peut déborder sur mobile
-   - La barre de recherche masquée sur mobile mais le dialog n'est pas optimisé
-
-3. **Layout principal (Layout.tsx)**
-   - Le padding main (px-4 sm:px-6 lg:px-8) est correct mais pt-20 pourrait être ajusté
-   - Pas de gestion de la hauteur sur tablette
-
-4. **Composants de pages**
-   - StatCard: Le texte value (text-3xl) peut déborder sur très petit écran
-   - BibliothequeDataGrid: Table non responsive (hidden lg:block mais les cards mobiles pourraient être améliorées)
-   - UserProfileMenu: Le nom utilisateur n'apparaît pas sur tablette (hidden sm:flex devrait être sm:hidden md:flex)
-
-5. **Composants de navigation**
-   - SiteSwitcher: hidden sm:inline sur le nom complet mais le bouton peut être trop grand
-   - NotificationsButton: Pas de problème majeur
-   - SearchBar: Le dialogue mobile fonctionne mais pourrait être en plein écran
+1. **ArticlesDataGrid** - Table non-responsive, pas de mode carte mobile
+2. **ArticlesFilters** - Filtres avec `min-w` fixes qui débordent sur mobile
+3. **BibliothequeArticles** - Container sans padding mobile adapté
+4. **PaginationControls** - Texte et contrôles trop denses sur mobile
+5. **ArticlesStatsCards** - Déjà responsive mais peut être amélioré
+6. **BibliothequeHeader** - Layout flex qui peut casser sur très petit écran
 
 ---
 
 ## Corrections à implémenter
 
-### 1. Sidebar Responsive (AppSidebar.tsx)
+### 1. ArticlesDataGrid.tsx - Mode hybride table/cartes
 
-**Modifications:**
-- Ajuster le bouton flottant pour qu'il soit moins intrusif sur mobile (plus petit, position ajustée)
-- Sur tablette (md), permettre un mode semi-collapsed par défaut
-- Améliorer le touch target des items de menu
+**Problème actuel:** 
+- Table classique sans scroll horizontal ni mode carte
+- Sur mobile, les colonnes se compressent et deviennent illisibles
+- Pas de breakpoint pour basculer en mode carte
 
+**Solution:**
+- Ajouter un wrapper avec scroll horizontal + indicateur visuel pour la table (desktop/tablet)
+- Créer un mode carte mobile (< 768px) similaire à BibliothequeTextes
+- Masquer la table sur mobile avec `hidden md:block`
+- Afficher les cartes sur mobile avec `block md:hidden`
+
+**Changements:**
 ```text
-Changements:
-- Bouton flottant: h-10 w-10 (au lieu de h-12 w-12), bottom-6 left-2
-- Ajouter des classes pour améliorer le touch: min-h-[44px] sur les items
-- Pour tablette: le Sheet mobile devrait s'activer à md au lieu de juste mobile
+Structure:
+- Wrapper: overflow-x-auto scrollbar-thin
+- Table: hidden md:block, min-w-[900px]
+- Mobile cards: block md:hidden, cards compactes avec infos essentielles
 ```
 
-### 2. TopNavBar Responsive (TopNavBar.tsx)
+### 2. ArticlesFilters.tsx - Grille responsive
 
-**Modifications:**
-- Réduire min-w sur le conteneur gauche pour petits écrans
-- Masquer le logo ConformaPro sur très petit écran (< 400px) pour plus d'espace
-- Améliorer l'espacement des boutons d'action
+**Problème actuel:**
+- `min-w-[150px]`, `min-w-[180px]`, `min-w-[200px]` fixes
+- Sur mobile, les Select débordent ou s'empilent mal
+- Checkboxes en ligne, peuvent casser sur petit écran
 
+**Solution:**
+- Remplacer les min-w fixes par une grille responsive
+- grid-cols-1 (mobile) → grid-cols-2 (sm) → grid-cols-3 (md) → auto-flow (lg)
+- Checkboxes en colonne sur mobile, ligne sur sm+
+
+**Changements:**
 ```text
-Changements:
-- min-w-[170px] → min-w-0 sm:min-w-[140px] md:min-w-[170px]
-- Logo: hidden xs:block (ou min-w-[100px])
-- Client logo: hidden lg:flex (au lieu de md:flex)
-- Gap: gap-1 xs:gap-2 md:gap-3
+- Conteneur filtres: grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap
+- Supprimer min-w fixes, utiliser w-full dans la grille
+- Checkboxes: flex flex-col sm:flex-row gap-3 sm:gap-6
 ```
 
-### 3. Layout Principal (Layout.tsx)
+### 3. BibliothequeArticles.tsx - Padding et espacement
 
-**Modifications:**
-- Ajuster le padding pour mieux utiliser l'espace sur tablette
-- Ajouter une gestion safe-area pour les appareils avec encoche
+**Problème actuel:**
+- `container mx-auto py-6` mais pas de padding horizontal explicite
+- Sur mobile, le contenu peut toucher les bords
 
+**Solution:**
+- Ajouter padding horizontal responsive
+- Réduire les gaps sur mobile
+
+**Changements:**
 ```text
-Changements:
-- main: px-3 sm:px-4 md:px-6 lg:px-8
-- Ajouter env(safe-area-inset-*) support dans CSS
+- Container: px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6
+- Texte filter badge: flex-col sm:flex-row, texte plus compact
 ```
 
-### 4. StatCard Responsive (StatCard.tsx)
+### 4. PaginationControls.tsx - Compact mobile
 
-**Modifications:**
-- Adapter la taille du texte value pour petits écrans
-- Réduire le padding sur mobile
+**Problème actuel:**
+- Texte "Lignes par page" prend de la place
+- Navigation sur 2 lignes mais dense
 
+**Solution:**
+- Masquer le label "Lignes par page" sur mobile, garder le Select
+- Simplifier l'affichage du total sur mobile
+- Boutons de navigation plus grands (touch-friendly)
+
+**Changements:**
 ```text
-Changements:
-- value: text-2xl sm:text-3xl
-- CardHeader padding ajusté
-- Icon: h-4 w-4 sm:h-5 sm:w-5
+- Label "Lignes par page": hidden sm:inline
+- Total: "X éléments" sur mobile, version complète sur sm+
+- Boutons: h-9 w-9 (touch target 44px)
 ```
 
-### 5. UserProfileMenu Responsive (UserProfileMenu.tsx)
+### 5. ArticlesStatsCards.tsx - Amélioration mineure
 
-**Modifications:**
-- Améliorer l'affichage du nom sur tablette
-- Dropdown plus large sur mobile pour meilleure lisibilité
+**Problème actuel:**
+- Déjà `grid-cols-2 md:grid-cols-4`
+- Peut réduire encore le padding sur très petit écran
 
+**Solution:**
+- Padding cards: p-3 sm:p-4
+- Taille texte valeur: text-xl sm:text-2xl
+
+### 6. BibliothequeHeader.tsx - Flexbox responsive
+
+**Problème actuel:**
+- `flex items-center justify-between` peut casser avec des actions longues
+
+**Solution:**
+- Passer en flex-col sur mobile pour le header avec actions
+- Titre plus petit sur mobile
+
+**Changements:**
 ```text
-Changements:
-- Nom: hidden md:flex (tablette montre, phone cache)
-- Dropdown: w-[280px] sm:w-56 (plus large sur mobile)
+- Header: flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3
+- Titre: text-xl sm:text-2xl md:text-3xl
+- Icon container: p-2 sm:p-3, icon h-5 w-5 sm:h-6 sm:w-6
 ```
 
-### 6. SiteSwitcher Responsive (SiteSwitcher.tsx)
+### 7. ArticleQuickViewModal.tsx - Sheet mobile-friendly
 
-**Modifications:**
-- Réduire la taille sur mobile
-- Utiliser seulement le code site sur petit écran
+**Problème actuel:**
+- Sheet max-width fixe peut être trop large sur tablette
+- Contenu peut être dense
 
-```text
-Changements:
-- Button hauteur: h-8 sm:h-9
-- Texte: truncate avec max-w adaptatif
-- Popover: w-[260px] sm:w-[280px]
-```
-
-### 7. SearchBar Responsive (SearchBar.tsx)
-
-**Modifications:**
-- Dialog mobile en quasi plein écran
-- Meilleur focus management
-
-```text
-Changements:
-- DialogContent: top-4 sm:top-1/2 pour être plus haut sur mobile
-- Input: text-base pour éviter le zoom iOS
-```
-
-### 8. BibliothequeDataGrid Responsive (BibliothequeDataGrid.tsx)
-
-**Modifications:**
-- Améliorer l'affichage horizontal avec scroll
-- Cards mobiles plus compactes
-
-```text
-Changements:
-- Ajouter horizontal scroll indicator
-- Breakpoint table: hidden md:block (tablette voit la table)
-- Cards: spacing réduit
-```
-
-### 9. CSS Global (index.css)
-
-**Modifications:**
-- Ajouter des utilitaires pour le responsive
-- Safe area padding
-
-```css
-@layer utilities {
-  .safe-area-pb {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .safe-area-pt {
-    padding-top: env(safe-area-inset-top);
-  }
-}
-
-/* Prevent iOS zoom on form inputs */
-@media screen and (max-width: 768px) {
-  input, select, textarea {
-    font-size: 16px !important;
-  }
-}
-```
-
-### 10. Pages avec Grilles (Dashboard.tsx, StaffDashboard.tsx)
-
-**Modifications:**
-- Ajuster les grilles pour tablette
-- Meilleur espacement
-
-```text
-Changements:
-- grid-cols-2 lg:grid-cols-4 → grid-cols-1 sm:grid-cols-2 lg:grid-cols-4
-- gap-4 sm:gap-6
-```
+**Solution:**
+- Width: w-full sm:max-w-lg md:max-w-2xl
+- Grid infos: grid-cols-1 sm:grid-cols-2
 
 ---
 
 ## Fichiers à modifier
 
-| # | Fichier | Type de modification |
-|---|---------|---------------------|
-| 1 | `src/components/AppSidebar.tsx` | Bouton flottant, touch targets |
-| 2 | `src/components/TopNavBar.tsx` | Min-width, espacement, visibilité |
-| 3 | `src/components/Layout.tsx` | Padding responsive |
-| 4 | `src/components/StatCard.tsx` | Taille texte, padding |
-| 5 | `src/components/navigation/UserProfileMenu.tsx` | Affichage nom tablette |
-| 6 | `src/components/navigation/SiteSwitcher.tsx` | Taille bouton, texte |
-| 7 | `src/components/navigation/SearchBar.tsx` | Dialog mobile |
-| 8 | `src/components/bibliotheque/BibliothequeDataGrid.tsx` | Scroll horizontal, breakpoints |
-| 9 | `src/index.css` | Safe area, input zoom fix |
-| 10 | `src/pages/Dashboard.tsx` | Grilles responsives |
-| 11 | `src/pages/settings/StaffDashboard.tsx` | Grilles responsives |
-| 12 | `src/hooks/use-mobile.tsx` | Optionnel: ajouter useIsTablet |
+| # | Fichier | Modifications |
+|---|---------|---------------|
+| 1 | `src/components/bibliotheque/ArticlesDataGrid.tsx` | Mode carte mobile + scroll horizontal table |
+| 2 | `src/components/bibliotheque/ArticlesFilters.tsx` | Grille responsive, suppression min-w |
+| 3 | `src/pages/BibliothequeArticles.tsx` | Padding horizontal responsive |
+| 4 | `src/components/shared/PaginationControls.tsx` | Compactage mobile |
+| 5 | `src/components/bibliotheque/ArticlesStatsCards.tsx` | Padding/typo ajustés |
+| 6 | `src/components/bibliotheque/BibliothequeHeader.tsx` | Flexbox responsive |
+| 7 | `src/components/bibliotheque/ArticleQuickViewModal.tsx` | Sheet width responsive |
 
 ---
 
-## Priorité d'implémentation
+## Détail technique des modifications
 
-**Phase 1 - Navigation (critique)**
-1. AppSidebar - Bouton flottant moins intrusif
-2. TopNavBar - Espacement et visibilité
-3. Layout - Padding global
+### ArticlesDataGrid.tsx
 
-**Phase 2 - Composants clés**
-4. StatCard - Taille responsive
-5. UserProfileMenu - Affichage tablette
-6. SiteSwitcher - Taille adaptative
+**Nouvelle structure:**
+```tsx
+// Desktop/Tablet: Table avec scroll
+<div className="hidden md:block rounded-md border overflow-x-auto scrollbar-thin">
+  <Table className="min-w-[900px]">
+    {/* ... table content ... */}
+  </Table>
+</div>
 
-**Phase 3 - Contenus**
-7. SearchBar - Dialog mobile
-8. BibliothequeDataGrid - Table scroll
-9. CSS Global - Utilitaires
+// Mobile: Cartes
+<div className="block md:hidden space-y-3">
+  {articles.map((article) => (
+    <MobileArticleCard key={article.id} article={article} />
+  ))}
+</div>
+```
 
-**Phase 4 - Pages**
-10. Dashboard - Grilles
-11. StaffDashboard - Grilles
+**Carte mobile (nouveau composant inline):**
+```tsx
+<div className="p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+  <div className="flex items-start justify-between gap-2 mb-2">
+    <span className="font-semibold">Art. {article.numero}</span>
+    <div className="flex gap-1">
+      {badges: type, statut}
+    </div>
+  </div>
+  <p className="text-sm font-medium line-clamp-2">{article.titre}</p>
+  {article.texte && (
+    <p className="text-xs text-muted-foreground mt-1 truncate">
+      {article.texte.reference}
+    </p>
+  )}
+  <div className="flex justify-end mt-2">
+    {action buttons}
+  </div>
+</div>
+```
+
+### ArticlesFilters.tsx
+
+```tsx
+<div className="space-y-4">
+  {/* Main filters grid */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="flex flex-col gap-1.5">
+      {/* Select sans min-w, utilise w-full implicite */}
+    </div>
+    {/* ... autres filtres ... */}
+  </div>
+
+  {/* Checkboxes */}
+  <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
+    {/* checkboxes */}
+  </div>
+</div>
+```
+
+### PaginationControls.tsx
+
+```tsx
+<div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 px-2 py-3">
+  {/* Total - compact sur mobile */}
+  <div className="flex items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+    <span className="font-medium">
+      {totalItems} élément{totalItems > 1 ? "s" : ""}
+    </span>
+    <span className="hidden sm:inline">
+      Affichage de {startItem} à {endItem}
+    </span>
+  </div>
+
+  {/* Controls */}
+  <div className="flex items-center gap-3 sm:gap-4">
+    {/* Page size - label masqué sur mobile */}
+    <div className="flex items-center gap-2">
+      <span className="hidden sm:inline text-sm text-muted-foreground">
+        Lignes par page :
+      </span>
+      <Select ...>
+        <SelectTrigger className="h-9 w-16 sm:w-20">
+          ...
+        </SelectTrigger>
+      </Select>
+    </div>
+
+    {/* Navigation - boutons plus grands */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground whitespace-nowrap">
+        {currentPage}/{totalPages}
+      </span>
+      <Button size="sm" className="h-9 w-9">
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <Button size="sm" className="h-9 w-9">
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  </div>
+</div>
+```
+
+---
+
+## Résumé des breakpoints utilisés
+
+| Breakpoint | Largeur | Comportement |
+|------------|---------|--------------|
+| Base | < 640px | Cartes mobiles, grille 1 col, labels masqués |
+| sm | ≥ 640px | Grille 2 cols filtres, labels visibles |
+| md | ≥ 768px | Table visible, grille 3 cols filtres |
+| lg | ≥ 1024px | Layout complet, tous filtres en ligne |
 
 ---
 
 ## Tests de validation
 
-Après implémentation, tester sur:
+Après implémentation:
 
-1. **Mobile (< 640px)**: iPhone SE, iPhone 14
-   - Sidebar en Sheet fonctionne
-   - TopNavBar compact, boutons accessibles
-   - Cards en colonne unique
+1. **Mobile (iPhone SE/14):**
+   - Cartes articles lisibles et cliquables
+   - Filtres empilés verticalement, aucun débordement
+   - Pagination compacte, boutons touch-friendly
 
-2. **Tablette (768px - 1024px)**: iPad Mini, iPad
-   - Sidebar peut être collapsed
-   - TopNavBar montre les éléments essentiels
-   - Grilles 2 colonnes
+2. **Tablette (iPad):**
+   - Table avec scroll horizontal si nécessaire
+   - Filtres en grille 2-3 colonnes
+   - Sheet modal à bonne largeur
 
-3. **Desktop (> 1024px)**: MacBook, écran large
-   - Sidebar expanded par défaut
-   - Tous éléments visibles
-   - Grilles 4 colonnes
+3. **Desktop:**
+   - Table complète visible
+   - Tous les filtres sur une ligne
+   - Aucun changement de comportement
 
-4. **Orientation**:
-   - Portrait et paysage fonctionnent
-   - Pas de débordement horizontal
-
-5. **Accessibilité tactile**:
-   - Touch targets minimum 44x44px
-   - Espacement suffisant entre éléments cliquables
